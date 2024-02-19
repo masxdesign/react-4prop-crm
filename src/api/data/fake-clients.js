@@ -61,9 +61,9 @@ export const createRandomClients = (key, count) => localStorageController(key).g
 
 export const CSV_FIELDS = [
     ["company", true],
-    ["title", false],
+    ["title", true],
     ["first", false],
-    ["last", false],
+    ["last", true],
     ["email", false],
     ["phone", true],
     ["city", true],

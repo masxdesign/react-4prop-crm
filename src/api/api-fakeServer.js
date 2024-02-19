@@ -53,7 +53,9 @@ const clientsController = localStorageController(KEY_CLIENTS)
 
 export const addClient = async (newItem) => {
     await delay(200)
-    clientsController.add(createClientObject(newItem))
+    const savedItem = createClientObject(newItem)
+    clientsController.add(savedItem)
+    return savedItem
 }
 
 export const bulkInsertClient = async (rows) => {
@@ -82,4 +84,9 @@ export const addLog = async (newItem) => {
     const item = createLogObject(newItem)
     logController.add(item)
     return item
+}
+
+export const deleteLog = async (id) => {
+    await delay(200)
+    logController.delete({ id })
 }

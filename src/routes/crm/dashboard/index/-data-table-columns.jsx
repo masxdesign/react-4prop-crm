@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { addLog, fetchLog, updateClient } from '@/api/api-fakeServer';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { addLog, deleteLog, fetchLog, updateClient } from '@/api/api-fakeServer';
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,10 +19,11 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import { cva } from 'class-variance-authority';
+import * as Yup from "yup"
 
 const columnHelper = createColumnHelper()
 
-const useLogFieldUpdate = (uid, curr_field) => {
+const useLogFieldUpdate = (uid, curr_field, onSuccess) => {
   const queryClient = useQueryClient()
 
   const user = useAuthStore.use.user()
@@ -39,13 +40,14 @@ const useLogFieldUpdate = (uid, curr_field) => {
           ...row.id === uid ? variables : null
         })))
         queryClient.setQueryData(['log', uid], (rows) => ([...rows, log]))
+        onSuccess && onSuccess()
       }
   })
 
   return mutation
 }
 
-const ColumnContactDate = ({ info }) => {
+const ColumnContactDate = ({ info, onSuccess }) => {
   
   const curr_field = 'contact_date'
 
@@ -53,7 +55,7 @@ const ColumnContactDate = ({ info }) => {
 
   const value = info.row.getValue(curr_field)
 
-  const mutation = useLogFieldUpdate(uid, curr_field)
+  const mutation = useLogFieldUpdate(uid, curr_field, onSuccess)
   
   const handleSelect = () => {
     mutation.mutate({ [curr_field]: new Date })
@@ -92,7 +94,7 @@ const ColumnContactDate = ({ info }) => {
 
 }
 
-const ColumnNextContact = ({ info }) => {
+const ColumnNextContact = ({ info, onSuccess }) => {
 
   const uid = info.row.original.id
 
@@ -102,22 +104,16 @@ const ColumnNextContact = ({ info }) => {
 
   const value = info.row.getValue(curr_field)
 
-  const mutation = useLogFieldUpdate(uid, curr_field)
+  const mutation = useLogFieldUpdate(uid, curr_field, onSuccess)
 
   const handleSelect = (dateValue) => {
-    mutation.mutate({ [curr_field]: dateValue }, {
-      onSuccess: () => {
-        setOpen(false)
-      }
-    })
+    mutation.mutate({ [curr_field]: dateValue })
+    setOpen(false)
   }
 
   const handleClear = () => {
-    mutation.mutate({ [curr_field]: null }, {
-      onSuccess: () => {
-        setOpen(false)
-      }
-    })
+    mutation.mutate({ [curr_field]: null })
+    setOpen(false)
   }
 
   if(mutation.isPending) return <small className='text-muted-foreground flex items-center h-[40px]'>Saving...</small>
@@ -167,8 +163,10 @@ const ColumnNextContact = ({ info }) => {
 
 const Linkable = ({ info, className, ...props }) => {
 
+  const value = info.getValue()
+
   const handleClick = (e) => {
-    info.table.options.meta.showSheet(info, e.target.dataset.tab)
+    info.table.options.meta.showSheet(info, e.currentTarget.dataset.tab)
   }
 
   return (
@@ -180,7 +178,7 @@ const Linkable = ({ info, className, ...props }) => {
       )} 
       {...props}
     >
-      {info.getValue()}
+      {value?.length > 0 ? value : <i className='font-normal opacity-50'>(empty)</i>}
     </div>
   )
 }
@@ -226,7 +224,7 @@ const infoList = [
 ]
 
 const speechBubbleVariants = cva(
-  "flex w-max max-w-[75%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
+  "flex w-max max-w-[75%] flex-col gap-2 rounded-lg px-3 py-2 text-sm text-left cursor-pointer",
   {
     variants: {
       variant: {
@@ -243,33 +241,46 @@ const speechBubbleVariants = cva(
 )
 
 const SpeechBubble = ({ className, variant, ...props }) => (
-  <span className={cn(speechBubbleVariants({ variant }), className)} {...props} />
+  <div className={cn(speechBubbleVariants({ variant }), className)} {...props} />
 )
 
-const LogChat = ({ data }) => {
-  const ref = useRef()
-  const onMountRef = useRef(false)
+const LogChatbox = ({ data, onDelete, autoScroll, scrollBehavior }) => {
+  const containerRef = useRef(null)
 
-  useLayoutEffect(() => {
-    
-    ref.current.scroll({ top: ref.current.scrollHeight, behavior: onMountRef.current ? 'smooth' : undefined })
+  const scrollDown = useCallback(() => {
 
-    onMountRef.current = true
+    if(!autoScroll) return
+    containerRef.current.scroll({ top: containerRef.current.scrollHeight, behavior: scrollBehavior })
 
-  }, [data])
+  }, [scrollBehavior, autoScroll])
+
+  useEffect(() => {
+    scrollDown()
+  }, [data, scrollDown])
 
   return (
-    <div ref={ref} className='h-[300px] space-y-4 overflow-y-auto'>
+    <div ref={containerRef} className='h-[300px] space-y-4 overflow-y-auto'>
       {data.map(({ id, message, variant }) => (
-        <SpeechBubble key={id} variant={variant}>
+        <SpeechBubble key={id} variant={variant} className='group/speech relative'>
           {message}
+          <button onClick={() => onDelete(id)} className='shadow-sm absolute border border-red-400 flex items-center justify-center font-mono rounded-full text-red-700 bg-red-100 right-0 -top-2 h-5 w-5 invisible group-hover/speech:visible'>
+            &times;
+          </button>
         </SpeechBubble>
       ))}
     </div>
   )
 }
 
-const LogDialog = ({ info }) => {
+const messageSchema = Yup.object().shape({
+  message: Yup.string().required()
+})
+
+const LogChatboxContainer = ({ info }) => {
+  const [autoScroll, setAutoScroll] = useState(true)
+  const [scrollBehavior, setScrollBehavior] = useState(undefined)
+  const [value, setValue] = useState('')
+  const [error, setError] = useState(null)
 
   const user = useAuthStore.use.user()
   const currUserId = user.id
@@ -277,40 +288,83 @@ const LogDialog = ({ info }) => {
 
   const queryClient = useQueryClient()
 
-  const [value, setValue] = useState('')
-
-  const { data, isLoading } = useQuery({
+  const query = useQuery({
     queryKey: ['log', uid],
-    queryFn: () => fetchLog(uid),
-    select: (data) => data.map((row) => {
-      
-      let message = row.message
-
-      if(row.isJSON) {
-        const _j = JSON.parse(row.message)
-        switch (_j.type) {
-          case 'contact_date':
-            message = _j.data ? `Last contact ${format(_j.data, "d MMM yyy")}`: ''
-            break 
-          case 'contact_next_date':
-            message = _j.data ? `Next contact ${format(_j.data, "d MMM yyy")}`: ''
-            break
-          default:
-            message = '(empty)'
-        }
-      }
-
-      return {
-        ...row,
-        variant: row.author === currUserId ? 'author' : 'default',
-        message
-      }
-    }) 
+    queryFn: () => fetchLog(uid)
   })
-  
-  const mutation = useMutation({
+
+  const data = useMemo(() => query.data?.map((row) => {
+    let { message } = row
+    let variant = row.author === currUserId ? 'author' : 'default'
+
+    if(row.isJSON) {
+
+      variant = 'default'
+
+      let props = { label: null, value: null }
+      
+      const J = JSON.parse(message)
+
+      switch (J.type) {
+        case 'contact_date':
+
+          props.label = 'Last contact'
+
+          if(J.data) {
+            props.value = format(J.data, "d MMM yyy")
+          }
+
+          break 
+        case 'contact_next_date':
+
+          props.label = 'Next contact'
+
+          if(J.data) {
+            props.value = format(J.data, "d MMM yyy")
+          }
+          
+          break
+        default:
+          props = { label: J.type, value: J.data }
+      }
+
+      message = (
+        <p className='space-x-2'>
+          <span className='text-xs'>{props.label}</span>
+          {props.value ? (
+            <span>{props.value}</span>
+          ) : (
+            <span>No date</span>
+          )}
+        </p>
+      )
+    }
+
+    return {
+      ...row,
+      variant,
+      message
+    }
+  }), [query.data])
+
+  const DeleteMutation = useMutation({
+    mutationKey: ['log', uid],
+    mutationFn: deleteLog,
+    onSuccess: (_, id) => {
+      setAutoScroll(false)
+      queryClient.setQueryData(['log', uid], (rows) => rows.filter((row) => row.id !== id))
+    }
+  })
+
+  const handleDelete = (id) => {
+    DeleteMutation.mutate(id)
+  }
+
+  const addMutation = useMutation({
     mutationFn: addLog,
     onSuccess: (data) => {
+      setAutoScroll(true)
+      setScrollBehavior('smooth')
       queryClient.setQueryData(['log', uid], (rows) => ([...rows, data]))
       setValue('')
     }
@@ -321,15 +375,62 @@ const LogDialog = ({ info }) => {
   }
 
   const handleSubmit = () => {
-    mutation.mutate({ message: value, uid, author: currUserId })
+    try {
+
+      messageSchema.validateSync({ message: value })
+      addMutation.mutate({ message: value, uid, author: currUserId })
+      setError(null)
+
+    } catch (e) {
+      setError(e.message)
+    }
   }
 
+  const handleFocus = () => {
+    setError(null)
+  }
+  
+  const handleDateUpdate = () => {
+    setAutoScroll(true)
+    setScrollBehavior('smooth')
+  }
+
+  return (
+    <>
+       {query.isLoading ? (
+          <p>Loading...</p>
+        ) : (
+          <LogChatbox 
+            autoScroll={autoScroll} 
+            scrollBehavior={scrollBehavior} 
+            data={data} 
+            onDelete={handleDelete} 
+          />
+        )}
+        <div>
+          <Textarea placeholder="Type your message here." value={value} onFocus={handleFocus} onChange={handleChange} />
+          {error && <small className='text-red-500'>{error}</small>}
+        </div>
+        <div className="flex space-x-4 justify-start items-end">
+          <ColumnContactDate info={info} onSuccess={handleDateUpdate} />
+          <div className='flex justify-center flex-grow'>
+            <Button onClick={handleSubmit}>Make note</Button>
+          </div>
+          <div>
+            <ColumnNextContact info={info} onSuccess={handleDateUpdate} />
+          </div>
+        </div>
+    </>
+  )
+}
+
+const LogDialog = ({ info }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
         <ChatBubbleIcon className='cursor-pointer' />
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
         <Collapsible> 
           <DialogTitle>
@@ -356,23 +457,7 @@ const LogDialog = ({ info }) => {
           </DialogDescription>
           </Collapsible>
         </DialogHeader>
-        {isLoading ? (
-          <p>Loading...</p>
-        ) : (
-          <LogChat data={data} />
-        )}
-        <div>
-          <Textarea placeholder="Type your message here." value={value} onChange={handleChange} />
-        </div>
-        <div className="flex space-x-4 justify-start items-end">
-          <ColumnContactDate info={info} />
-          <div className='flex justify-center flex-grow'>
-            <Button onClick={handleSubmit}>Make note</Button>
-          </div>
-          <div>
-            <ColumnNextContact info={info} />
-          </div>
-        </div>
+        <LogChatboxContainer info={info} />        
       </DialogContent>
     </Dialog>
   )
@@ -488,12 +573,12 @@ export const columns = [
     cell: (info) => <Linkable info={info} className="max-w-[100px] truncate" data-tab="address" />,
     filterFn: "arrIncludes",
   }),
-  columnHelper.accessor((row) => format(row.created, "PPP"), {
+  columnHelper.accessor((row) => new Date(row.created), {
     id: 'created',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Created" />
     ),
-    cell: (info) => <div className="text-nowrap">{info.getValue()}</div>,
+    cell: (info) => <div className="text-nowrap">{format(info.getValue(), "PPP")}</div>,
     sortingFn: "datetime"
   }),
   // columnHelper.display({
