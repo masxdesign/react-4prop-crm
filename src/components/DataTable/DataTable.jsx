@@ -11,6 +11,7 @@ import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable 
 import { CSS } from '@dnd-kit/utilities'
 import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
+import { DragHandleHorizontalIcon } from '@radix-ui/react-icons'
 
 const DraggableTableHeader = ({ header }) => {
     const { 
@@ -24,7 +25,11 @@ const DraggableTableHeader = ({ header }) => {
     return (
         <TableHead 
             ref={setNodeRef}
-            className={cn('group relative flex items-center whitespace-nowrap', header.column.columnDef.meta?.className ?? "", isDragging ? "opacity-80 z-10": "opacity-100 z-0")} 
+            className={cn(
+                'group relative flex items-center whitespace-nowrap', 
+                header.column.columnDef.meta?.className ?? "", 
+                isDragging ? "opacity-80 z-10": "opacity-100 z-0"
+            )} 
             colSpan={header.colSpan}
             style={{
                 width: `calc(var(--header-${header?.id}-size) * 1px)`,
@@ -38,14 +43,14 @@ const DraggableTableHeader = ({ header }) => {
                 header.column.columnDef.header,
                 header.getContext()
             )}
-            <button {...attributes} {...listeners}>
-                🟰
+            <button className='absolute bottom-0 left-1/2 -ml-2 group-hover:opacity-100 opacity-0 cursor-grab' {...attributes} {...listeners}>
+                <DragHandleHorizontalIcon className='h-4 w-4' />
             </button>
             <div
                 onDoubleClick={() => header.column.resetSize()}
                 onMouseDown={header.getResizeHandler()}
                 onTouchStart={header.getResizeHandler()}
-                className={cn('group-hover:opacity-100 opacity-0 rounded-lg absolute top-3 bottom-3 right-0 w-[5px] cursor-col-resize select-none touch-none', header.column.getIsResizing() ? 'bg-sky-600 opacity-100' : 'bg-slate-400 group-hover:opacity-50')}
+                className={cn('absolute right-0 top-0 bottom-0 group-hover:opacity-100 opacity-0 rounded-lg h-full w-[5px] cursor-col-resize select-none touch-none', header.column.getIsResizing() ? 'bg-sky-600 opacity-100' : 'bg-slate-400 group-hover:opacity-50')}
             />
         </TableHead>
     )
@@ -57,7 +62,11 @@ const DragAlongCell = ({ cell }) => {
     return (
         <TableCell  
             ref={setNodeRef}
-            className={cn("relative flex items-center", cell.column.columnDef.meta?.className ?? "", isDragging ? "opacity-80 z-10": "opacity-100 z-0")}
+            className={cn(
+                "relative flex items-center", 
+                cell.column.columnDef.meta?.className ?? "", 
+                isDragging ? "opacity-80 z-10": "opacity-100 z-0"
+            )}
             style={{
                 width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
                 transform: CSS.Translate.toString(transform),
@@ -92,10 +101,10 @@ const DataTableBody = ({ table }) => (
                 </TableRow>                              
             ))
         ) : (
-            <TableRow className="flex items-center w-[fit-content]">
+            <TableRow>
                 <TableCell
-                    colSpan={columns.length}
-                    className="flex items-center h-24 text-center"
+                    colSpan={table.options.columns.length}
+                    className="items-center h-24 text-center"
                 >
                     No results.
                 </TableCell>
@@ -110,11 +119,13 @@ const MemoizedTableBody = memo(
 )
 
 const useLocalstorageState = (keyName, initialState) => {
+    const keyName_ = useMemo(() => JSON.stringify(keyName), [keyName])
+
     const [state, setState] = useState(() => {
-        const data = localStorage.getItem(keyName)
+        const data = localStorage.getItem(keyName_)
         if(!data) {
             const initialState_ = typeof initialState === 'function' ? initialState() : initialState
-            localStorage.setItem(keyName, JSON.stringify(initialState_))
+            localStorage.setItem(keyName_, JSON.stringify(initialState_))
             return initialState_
         }
         return JSON.parse(data)
@@ -123,8 +134,8 @@ const useLocalstorageState = (keyName, initialState) => {
     const setState_ = useCallback((newState) => {
         let newState_ = typeof newState === 'function' ? newState(state) : newState
         setState(newState_)
-        localStorage.setItem(keyName, JSON.stringify(newState_))
-    }, [state])
+        localStorage.setItem(keyName_, JSON.stringify(newState_))
+    }, [state, keyName_])
 
     return [state, setState_]
 }
@@ -134,9 +145,9 @@ const DataTable = ({ tableName = 'DataTable', columns, data, initialVisibilty = 
     const [columnVisibility, setColumnVisibility] = useState(initialVisibilty)
     const [columnFilters, setColumnFilters] = useState([])
     const [globalFilter, setGlobalFilter] = useState('')
-    const [columnSizing, setColumnSizing] = useLocalstorageState(tableName, defaultColumnSizing)
     const [columnSizingInfo, setColumnSizingInfo] = useState({})
-    const [columnOrder, setColumnOrder] = useState(() => columns.map((c) => c.id))
+    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
+    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], () => columns.map((c) => c.id))
 
     const sorting = useListStore.use.sorting()
     const setSorting = useListStore.use.setSorting()
