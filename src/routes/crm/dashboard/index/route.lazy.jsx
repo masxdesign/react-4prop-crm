@@ -66,6 +66,7 @@ function indexComponent() {
   return (
     <>
       <DataTable 
+        tableName="mainDataTable"
         columns={columns} 
         data={data} 
         initialVisibilty={initialVisibilty} 

@@ -111,7 +111,8 @@ const ColumnNextContact = ({ info, onSuccess }) => {
     setOpen(false)
   }
 
-  const handleClear = () => {
+  const handleClear = (e) => {
+    e.preventDefault()
     mutation.mutate({ [curr_field]: null })
     setOpen(false)
   }
@@ -485,16 +486,19 @@ export const columns = [
         className="translate-y-[2px]"
       />
     ),
+    size: 60,
     enableSorting: false,
     enableHiding: false,
   }),
   columnHelper.accessor('categories', {
+    id: "categories",
     header: "Categories",
     cell: (info) => <Categories info={info} />,
     filterFn: "arrIncludesSome",
     getUniqueValues: (row) => row.categories
   }),
   columnHelper.accessor('contact_date', {
+    id: "contact_date",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Date contacted" />
     ),
@@ -513,21 +517,25 @@ export const columns = [
   }),
   columnHelper.display({
     id: 'note',
-    cell: (info) => <LogDialog info={info} />
+    cell: (info) => <LogDialog info={info} />,
+    size: 60
   }),
   columnHelper.accessor('first', {
+    id: "first",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="First" />
     ),
     cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />
   }),
   columnHelper.accessor('last', {
+    id: 'last',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Last" />
     ),
     cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />
   }),
   columnHelper.accessor('company', {
+    id: 'company',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Company" />
     ),
@@ -545,21 +553,25 @@ export const columns = [
     meta: { label: 'Full name' }
   }),
   columnHelper.accessor('email', {
+    id: 'email',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Email" />
     ),
     cell: (info) => <Linkable info={info} className="max-w-[200px] truncate font-medium" data-tab="contact" />
   }),
   columnHelper.accessor('phone', {
+    id: 'phone',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Phone" />
     ),
     cell: (info) => <Linkable info={info} className="w-[200px] truncate" data-tab="contact" />
   }),
   columnHelper.accessor('gender', {
+    id: 'gender',
     header: "Gender"
   }),
   columnHelper.accessor('city', {
+    id: 'city',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="City" />
     ),
@@ -567,6 +579,7 @@ export const columns = [
     filterFn: "arrIncludes",
   }),
   columnHelper.accessor('postcode', {
+    id: 'postcode',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Postcode" />
     ),
