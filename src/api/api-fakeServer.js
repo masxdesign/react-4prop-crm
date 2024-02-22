@@ -39,7 +39,6 @@ export const fetchClients = async () => {
     console.log('server call: fetchClients');
     await delay(500)
     const clients = await createRandomClients(KEY_CLIENTS, 2000)
-    console.log(clients);
     return clients
 }
 

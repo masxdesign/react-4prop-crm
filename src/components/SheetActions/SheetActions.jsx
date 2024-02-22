@@ -39,7 +39,7 @@ const EditForm = ({ info, tab, onSelect, onSubmit }) => {
     )
 
     return (
-        <Clientform defaultValues={info.row.original} onSubmit={handleSubmit} className="space-y-8">
+        <Clientform focusOn={info.column.id} defaultValues={info.row.original} onSubmit={handleSubmit} className="space-y-8">
             <Clientform.Accordion type="single" value={tab} onValueChange={onSelect} collapsible>
                 <AccordionItem value="person">
                     <AccordionTrigger>

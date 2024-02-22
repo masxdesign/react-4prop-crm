@@ -9,21 +9,30 @@ import { ClientformContext, useClientformContext } from "./context"
 import { Accordion } from "../ui/accordion"
 import { Button } from "../ui/button"
 import { Checkbox } from "../ui/checkbox"
+import { useLayoutEffect, useRef } from "react"
 
 const schema = Yup.object().shape({
     first: Yup.string().required(),
     email: Yup.string().required(),
 })
 
-const Clientform = ({ children, defaultValues, onSubmit, ...props }) => {
+const Clientform = ({ children, defaultValues, focusOn, onSubmit, ...props }) => {
+    const formRef = useRef(null)
+
     const form = useForm({
         resolver: yupResolver(schema),
         defaultValues
     })
 
+    useLayoutEffect(() => {
+        if(focusOn) {
+            formRef.current.querySelector(`input[name="${focusOn}"]`)?.focus()
+        }
+    }, [focusOn])
+
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} {...props}>
+            <form ref={formRef} onSubmit={form.handleSubmit(onSubmit)} {...props}>
                 <ClientformContext.Provider value={{ form }}>
                     {children}
                 </ClientformContext.Provider>

@@ -27,7 +27,7 @@ const useLogFieldUpdate = (uid, curr_field, onSuccess) => {
   const queryClient = useQueryClient()
 
   const user = useAuthStore.use.user()
-  const author = user.id
+  const author = user?.id
 
   const mutation = useMutation({
       mutationFn: (data) => Promise.all([
