@@ -5,6 +5,7 @@ import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: "/react-4prop-crm",
   plugins: [
     react(),
     jsconfigPaths(),
