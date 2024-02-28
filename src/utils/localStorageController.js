@@ -3,6 +3,27 @@ import isMatch from 'lodash/isMatch'
 import reject from 'lodash/reject'
 import { reduce } from 'lodash'
 
+export const util_update = (predicate, newData, cb = null) => {
+    return (data) => map(data, (item) => {
+        if(!isMatch(item, predicate)) {
+            cb && cb(false, item)
+            return item
+        }
+        const item_ = { ...item, ...newData }
+        cb && cb(true, item_)
+        return item_
+    })
+}
+
+export const util_delete = (predicate) => (data) => reject(data, predicate)
+
+export const util_add = (newItem) => (data) => [...data, newItem]
+
+export const util_pagin_update = (predicate, newData, cb = null) => ([pagin, list]) => {
+    const listFn = util_update(predicate, newData, cb)
+    return [pagin, listFn(list)]
+}
+
 const localStorageController = (key, initialState = null) => {
     const controller = {
         get key_ () {
@@ -27,16 +48,14 @@ const localStorageController = (key, initialState = null) => {
             this.debug("bulkInsert", { rows })
         },
         add (newItem) {
-            const newState = [
-                ...this.data,
-                newItem
-            ]
-            this.save(newState)
+            const newStateFn = util_add(newItem)
+            this.save(newStateFn(this.data))
             this.debug("add", { newItem })
         },
         delete (predicate) {
             const prevCount = this.data.length
-            const newState = reject(this.data, predicate)
+            const newStateFn = util_delete(predicate)
+            const newState = newStateFn(this.data)
             this.save(newState)
 
             const rowsAffects = prevCount - newState.length
@@ -45,15 +64,8 @@ const localStorageController = (key, initialState = null) => {
         },
         update (predicate, newData) {
             let rowsAffects = 0
-            const newState = map(this.data, (item) => {
-                if(!isMatch(item, predicate)) return item
-                rowsAffects++
-                return {
-                    ...item,
-                    ...newData
-                }
-            })
-            this.save(newState)
+            const newStateFn = util_update(predicate, newData, (isUpdated) => { isUpdated && rowsAffects++ })
+            this.save(newStateFn(this.data))
             this.debug("update", { predicate, newData, rowsAffects })
         },
         save (newState) {

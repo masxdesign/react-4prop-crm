@@ -61,6 +61,7 @@ const VList = ({ column, options, facets, selectedValues }) => {
                               selectedValues.add(option.value)
                           }
                           const filterValues = Array.from(selectedValues)
+                          
                           column?.setFilterValue(
                               filterValues.length ? filterValues : undefined
                           )

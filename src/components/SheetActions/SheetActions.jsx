@@ -4,26 +4,33 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import { updateClient } from "@/api/api-fakeServer"
-import { isMatch } from "lodash"
 import Clientform from "../Clientform"
+import { util_pagin_update, util_update } from "@/utils/localStorageController"
 
 const EditForm = ({ info, tab, onSelect, onSubmit }) => {
 
     const queryClient = useQueryClient()
+
+    const { clientQueryKey } = info.table.options.meta
 
     const mutation = useMutation({
         mutationFn: (data) => updateClient({ id: data.id }, data)
     })
 
     const handleSubmit = async (data) => {
-        await mutation.mutateAsync(data)
-        
-        queryClient.setQueryData(['clients'], (old) => old.map((item) => {
-            if(!isMatch(item, { id: data.id })) return item
-            return { ...item, ...data }
-        }))
+        try {
 
-        onSubmit(data)
+            await mutation.mutateAsync(data)
+    
+            queryClient.setQueryData(clientQueryKey, util_pagin_update({ id: data.id }, data))
+    
+            onSubmit(data)
+
+        } catch (e) {
+
+            console.log(e);
+
+        }
     }
 
     const submitButton = (
@@ -39,8 +46,18 @@ const EditForm = ({ info, tab, onSelect, onSubmit }) => {
     )
 
     return (
-        <Clientform focusOn={info.column.id} defaultValues={info.row.original} onSubmit={handleSubmit} className="space-y-8">
-            <Clientform.Accordion type="single" value={tab} onValueChange={onSelect} collapsible>
+        <Clientform 
+            focusOn={info.column.id} 
+            defaultValues={info.row.original} 
+            onSubmit={handleSubmit} 
+            className="space-y-8"
+        >
+            <Clientform.Accordion 
+                type="single" 
+                value={tab} 
+                onValueChange={onSelect} 
+                collapsible
+            >
                 <AccordionItem value="person">
                     <AccordionTrigger>
                         Personal details

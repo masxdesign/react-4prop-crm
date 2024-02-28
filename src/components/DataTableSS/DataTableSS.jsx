@@ -1,19 +1,35 @@
-import {  useState } from 'react'
-import { getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table'
+import {  useEffect, useState } from 'react'
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import DataTablePagination from '../DataTablePagination'
 import DataTableToolbar from '../dataTableToolbar'
 import { fuzzyFilter } from '@/utils/fuzzyFilterSortFn'
 import { useListStore } from '@/store'
 import DataTableDnd from '../DataTableDnd'
 
-const DataTable = ({ tableName = 'DataTable', columns, data, initialVisibilty = {}, defaultColumnSizing = {}, meta = {} }) => {
+const DataTableSS = ({ 
+    tableName = 'DataTable', 
+    columns, 
+    data, 
+    initialVisibilty = {}, 
+    defaultColumnSizing = {}, 
+    sorting,
+    pagination,
+    columnFilters,
+    onSortingChange,
+    onPaginationChange,
+    onColumnFiltersChange,
+    pageCount,
+    meta = {}
+}) => {
     const [rowSelection, setRowSelection] = useState({})
     const [columnVisibility, setColumnVisibility] = useState(initialVisibilty)
-
-    const [columnFilters, setColumnFilters] = useState([])
     const [globalFilter, setGlobalFilter] = useState('')
-    const sorting = useListStore.use.sorting()
-    const setSorting = useListStore.use.setSorting()
+
+    useEffect(() => {
+
+        console.log(sorting, columnFilters, globalFilter, pagination);
+
+    }, [sorting, columnFilters, globalFilter, pagination])
 
     const table = useReactTable({
         columns, 
@@ -27,26 +43,27 @@ const DataTable = ({ tableName = 'DataTable', columns, data, initialVisibilty = 
             columnVisibility,
             rowSelection,
             columnFilters,
-            globalFilter
+            globalFilter,
+            pagination
         },
+        pageCount,
         defaultColumn: {
             minSize: 60,
             maxSize: 800
         },
         autoResetPageIndex: false,
         enableRowSelection: true,
+        manualFiltering: true,
+        manualPagination: true,
+        manualSorting: true,
+        onPaginationChange,
+        onColumnFiltersChange,
         onGlobalFilterChange: setGlobalFilter,
         globalFilterFn: fuzzyFilter,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: (fn) => setSorting(fn(sorting)),
-        onColumnFiltersChange: setColumnFilters,
+        onSortingChange: (fn) => onSortingChange(fn(sorting)),
         onColumnVisibilityChange: setColumnVisibility,
-        getCoreRowModel: getCoreRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFacetedRowModel: getFacetedRowModel(),
-        getFacetedUniqueValues: getFacetedUniqueValues(),
+        getCoreRowModel: getCoreRowModel()
     })
 
     return (
@@ -68,4 +85,4 @@ const DataTable = ({ tableName = 'DataTable', columns, data, initialVisibilty = 
     )
 }
 
-export default DataTable
+export default DataTableSS

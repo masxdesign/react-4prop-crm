@@ -20,11 +20,16 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 import { useAuthStore } from '@/store';
 import { cva } from 'class-variance-authority';
 import * as Yup from "yup"
+import { util_add, util_delete, util_pagin_update, util_update } from '@/utils/localStorageController';
 
 const columnHelper = createColumnHelper()
 
-const useLogFieldUpdate = (uid, curr_field, onSuccess) => {
+const useLogFieldUpdate = (info, curr_field, onSuccess) => {
   const queryClient = useQueryClient()
+
+  const uid = info.row.original.id
+
+  const { clientQueryKey } = info.table.options.meta
 
   const user = useAuthStore.use.user()
   const author = user?.id
@@ -35,11 +40,8 @@ const useLogFieldUpdate = (uid, curr_field, onSuccess) => {
         addLog({ isJSON: true, message: JSON.stringify({ type: curr_field, data: data[curr_field] }), uid, author })
       ]),
       onSuccess: ([_, log], variables) => {
-        queryClient.setQueryData(['clients'], (data) => data.map((row) => ({
-          ...row,
-          ...row.id === uid ? variables : null
-        })))
-        queryClient.setQueryData(['log', uid], (rows) => ([...rows, log]))
+        queryClient.setQueryData(clientQueryKey, util_pagin_update({ id: uid }, variables))
+        queryClient.setQueryData(['log', uid], util_add(log))
         onSuccess && onSuccess()
       }
   })
@@ -51,11 +53,9 @@ const ColumnContactDate = ({ info, onSuccess }) => {
   
   const curr_field = 'contact_date'
 
-  const uid = info.row.original.id
-
   const value = info.row.getValue(curr_field)
 
-  const mutation = useLogFieldUpdate(uid, curr_field, onSuccess)
+  const mutation = useLogFieldUpdate(info, curr_field, onSuccess)
   
   const handleSelect = () => {
     mutation.mutate({ [curr_field]: new Date })
@@ -96,15 +96,13 @@ const ColumnContactDate = ({ info, onSuccess }) => {
 
 const ColumnNextContact = ({ info, onSuccess }) => {
 
-  const uid = info.row.original.id
-
   const [open, setOpen] = useState(false)
 
   const curr_field = 'contact_next_date'
 
   const value = info.row.getValue(curr_field)
 
-  const mutation = useLogFieldUpdate(uid, curr_field, onSuccess)
+  const mutation = useLogFieldUpdate(info, curr_field, onSuccess)
 
   const handleSelect = (dateValue) => {
     mutation.mutate({ [curr_field]: dateValue })
@@ -353,7 +351,7 @@ const LogChatboxContainer = ({ info }) => {
     mutationFn: deleteLog,
     onSuccess: (_, id) => {
       setAutoScroll(false)
-      queryClient.setQueryData(['log', uid], (rows) => rows.filter((row) => row.id !== id))
+      queryClient.setQueryData(['log', uid], util_delete({ id: id }))
     }
   })
 
@@ -366,7 +364,7 @@ const LogChatboxContainer = ({ info }) => {
     onSuccess: (data) => {
       setAutoScroll(true)
       setScrollBehavior('smooth')
-      queryClient.setQueryData(['log', uid], (rows) => ([...rows, data]))
+      queryClient.setQueryData(['log', uid], util_add(data))
       setValue('')
     }
   })
@@ -593,22 +591,7 @@ export const columns = [
     ),
     cell: (info) => <div className="text-nowrap">{format(info.getValue(), "PPP")}</div>,
     sortingFn: "datetime"
-  }),
-  // columnHelper.display({
-  //   id: "actions",
-  //   meta: {
-  //     className: "sticky right-0 bg-white"
-  //   },
-  //   header: () => (
-  //     <div className='absolute inset-0 border-s' />
-  //   ),
-  //   cell: ({ row, table }) => (
-  //     <>
-  //       <div className='absolute inset-0 border-s' />
-  //       <DataTableRowActions table={table} row={row} />
-  //     </>
-  //   )
-  // }),
+  })
 ]
 
 export const initialVisibilty = {

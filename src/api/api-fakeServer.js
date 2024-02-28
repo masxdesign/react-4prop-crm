@@ -5,6 +5,7 @@ import localStorageController from "@/utils/localStorageController"
 import { categoriesController } from "./data/fake-data"
 import { createLogObject, logController } from "./data/fake-log"
 import { filter } from "lodash"
+import paginate from "@/utils/paginate"
 
 const KEY_CLIENTS = 'clients.0.2.4'
 
@@ -40,6 +41,27 @@ export const fetchClients = async () => {
     await delay(500)
     const clients = await createRandomClients(KEY_CLIENTS, 2000)
     return clients
+}
+
+const fakePageCount = 2_000
+
+export const fetchClientsPagin = async ({ queryKey }) => {
+    console.log('server call: fetchClientsPagin', queryKey);
+
+    const [_, pagination, sorting, columnFilters] = queryKey
+    const { pageIndex = 0, pageSize = 150 } = pagination
+
+    const o = {
+        count: fakePageCount,
+        page: pageIndex + 1,
+        perpage: pageSize
+    }
+    
+    const data = await fetchClients()
+
+    const pageData = paginate(data, o.perpage, o.page)
+
+    return [o, pageData]
 }
 
 export const fetchCategories = async () => {
