@@ -8,6 +8,7 @@ import { Route as CrmLogoutImport } from './routes/crm/logout'
 import { Route as CrmDashboardImport } from './routes/crm/dashboard'
 import { Route as CrmLoginRouteImport } from './routes/crm/login/route'
 import { Route as CrmDashboardImportRouteImport } from './routes/crm/dashboard/import/route'
+import { Route as CrmDashboardEachRouteImport } from './routes/crm/dashboard/each/route'
 import { Route as CrmDashboardAddRouteImport } from './routes/crm/dashboard/add/route'
 import { Route as CrmDashboardIndexRouteImport } from './routes/crm/dashboard/index/route'
 
@@ -40,6 +41,13 @@ const CrmDashboardImportRouteRoute = CrmDashboardImportRouteImport.update({
   getParentRoute: () => CrmDashboardRoute,
 } as any).lazy(() =>
   import('./routes/crm/dashboard/import/route.lazy').then((d) => d.Route),
+)
+
+const CrmDashboardEachRouteRoute = CrmDashboardEachRouteImport.update({
+  path: '/each',
+  getParentRoute: () => CrmDashboardRoute,
+} as any).lazy(() =>
+  import('./routes/crm/dashboard/each/route.lazy').then((d) => d.Route),
 )
 
 const CrmDashboardAddRouteRoute = CrmDashboardAddRouteImport.update({
@@ -84,6 +92,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CrmDashboardAddRouteImport
       parentRoute: typeof CrmDashboardImport
     }
+    '/crm/dashboard/each': {
+      preLoaderRoute: typeof CrmDashboardEachRouteImport
+      parentRoute: typeof CrmDashboardImport
+    }
     '/crm/dashboard/import': {
       preLoaderRoute: typeof CrmDashboardImportRouteImport
       parentRoute: typeof CrmDashboardImport
@@ -99,6 +111,7 @@ export const routeTree = rootRoute.addChildren([
   CrmDashboardRoute.addChildren([
     CrmDashboardIndexRouteRoute,
     CrmDashboardAddRouteRoute,
+    CrmDashboardEachRouteRoute,
     CrmDashboardImportRouteRoute,
   ]),
   CrmLogoutRoute,

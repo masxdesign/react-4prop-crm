@@ -2,11 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import jsconfigPaths from 'vite-jsconfig-paths'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/react-4prop-crm",
   plugins: [
+    basicSsl(),
     react(),
     jsconfigPaths(),
     TanStackRouterVite()

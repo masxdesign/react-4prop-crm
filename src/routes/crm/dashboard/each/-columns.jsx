@@ -72,16 +72,14 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="First" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />,
-    meta: { defaultVisibility: false }
+    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />
   }),
   columnHelper.accessor('last', {
     id: 'last',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Last" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />,
-    meta: { defaultVisibility: false }
+    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />
   }),
   columnHelper.accessor('company', {
     id: 'company',
@@ -117,8 +115,7 @@ export const columns = [
   }),
   columnHelper.accessor('gender', {
     id: 'gender',
-    header: "Gender",
-    meta: { defaultVisibility: false }
+    header: "Gender"
   }),
   columnHelper.accessor('city', {
     id: 'city',
@@ -145,9 +142,3 @@ export const columns = [
     sortingFn: "datetime"
   })
 ]
-
-export const initialVisibilty = {
-  first: false,
-  last: false,
-  gender: false
-}

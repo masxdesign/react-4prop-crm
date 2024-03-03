@@ -4,6 +4,8 @@ import DataTableFacetedFilter from "../dataTableFacetedFilter"
 import DataTableViewOptions from "../DataTableViewOptions"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
+import categoriesQueryOptions from "@/api/categoriesQueryOptions"
+import { useSuspenseQuery } from "@tanstack/react-query"
 
 const useFacets = (column) => {
     return useMemo(() => ([...column.getFacetedUniqueValues().keys()]
@@ -14,6 +16,18 @@ const useFacets = (column) => {
         }))), 
         [column.getFacetedUniqueValues()]
     )
+}
+
+const DataTableFacetedFilterCategories = ({ table }) => {
+  const { data } = useSuspenseQuery(categoriesQueryOptions)
+
+  return (
+    <DataTableFacetedFilter
+      column={table.getColumn("categories")}
+      title="Categories"
+      options={data}
+    />
+  )
 }
 
 const DataTableToolbar = ({ table, onInputFilterChange, inputFilter }) => {
@@ -33,11 +47,7 @@ const DataTableToolbar = ({ table, onInputFilterChange, inputFilter }) => {
           className="h-8 w-[150px] lg:w-[250px]"
         />
         {table.getColumn("categories") && (
-          <DataTableFacetedFilter
-            column={table.getColumn("categories")}
-            title="Categories"
-            options={table.options.meta.categories}
-          />
+          <DataTableFacetedFilterCategories table={table} />
         )}
         {table.getColumn("company") && (
           <DataTableFacetedFilter

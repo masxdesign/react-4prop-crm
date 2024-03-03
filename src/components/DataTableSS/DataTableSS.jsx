@@ -3,14 +3,15 @@ import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import DataTablePagination from '../DataTablePagination'
 import DataTableToolbar from '../dataTableToolbar'
 import { fuzzyFilter } from '@/utils/fuzzyFilterSortFn'
-import { useListStore } from '@/store'
 import DataTableDnd from '../DataTableDnd'
+
+const _o = (s, e) => (f) => e(typeof f === 'function' ? f(s) : f) 
 
 const DataTableSS = ({ 
     tableName = 'DataTable', 
     columns, 
     data, 
-    initialVisibilty = {}, 
+    defaultColumnVisibility = {}, 
     defaultColumnSizing = {}, 
     sorting,
     pagination,
@@ -21,15 +22,12 @@ const DataTableSS = ({
     pageCount,
     meta = {}
 }) => {
+
+    console.log(columns);
+
     const [rowSelection, setRowSelection] = useState({})
-    const [columnVisibility, setColumnVisibility] = useState(initialVisibilty)
+    const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility)
     const [globalFilter, setGlobalFilter] = useState('')
-
-    useEffect(() => {
-
-        console.log(sorting, columnFilters, globalFilter, pagination);
-
-    }, [sorting, columnFilters, globalFilter, pagination])
 
     const table = useReactTable({
         columns, 
@@ -56,12 +54,12 @@ const DataTableSS = ({
         manualFiltering: true,
         manualPagination: true,
         manualSorting: true,
-        onPaginationChange,
-        onColumnFiltersChange,
+        onPaginationChange: _o(pagination, onPaginationChange),
+        onColumnFiltersChange: _o(columnFilters, onColumnFiltersChange),
+        onSortingChange: _o(sorting, onSortingChange),
         onGlobalFilterChange: setGlobalFilter,
         globalFilterFn: fuzzyFilter,
         onRowSelectionChange: setRowSelection,
-        onSortingChange: (fn) => onSortingChange(fn(sorting)),
         onColumnVisibilityChange: setColumnVisibility,
         getCoreRowModel: getCoreRowModel()
     })
