@@ -1,4 +1,4 @@
-import {  useEffect, useMemo, useState } from 'react'
+import {  useMemo, useState } from 'react'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import DataTablePagination from '../DataTablePagination'
 import DataTableToolbar from '../dataTableToolbar'

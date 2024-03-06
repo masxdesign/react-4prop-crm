@@ -139,25 +139,31 @@ export const formBuilder = ({ schema, groups }) => {
         ([groupName, fields]) => {
 
             const fields_ = fields.map(({ type, queryOptions, items, ...rest }) => {
-                let Component
                 switch (type) {
                     case "checkbox":
+                        
                         if(queryOptions) {
-                            Component = FieldCheckboxGroupQuery
-                            break
+                            return {
+                                ...rest,
+                                queryOptions,                     
+                                Component: FieldCheckboxGroupQuery
+                            }
                         }
-                        if(!items) throw new Error('check box component `items` prop missing')
-                        Component = FieldCheckboxGroup
-                        break
-                    default:
-                        Component = Field
-                }
 
-                return {
-                    ...rest,
-                    items,
-                    queryOptions,
-                    Component 
+                        if(!items) throw new Error('check box component `items` prop missing')
+
+                        return {
+                            ...rest,
+                            items,                        
+                            Component: FieldCheckboxGroup
+                        }
+
+                    default:
+                        return {
+                            ...rest,
+                            items,                        
+                            Component: Field
+                        }
                 }
             })
 

@@ -10,8 +10,10 @@ const SheetActions = ({ info, open, tab, onOpenChange, onTabValueChange, side = 
 
     const queryClient = useQueryClient()
 
+    const { dataQueryKey } = info.table.options.meta
+
     const handleSubmit = (data) => {
-        queryClient.setQueryData(info.table.options.meta.currentQueryOptions.queryKey, util_pagin_update({ id: data.id }, data))
+        queryClient.setQueryData(dataQueryKey, util_pagin_update({ id: data.id }, data))
         toast({
             title: "Successfully updated",
             description: `${info.row.getValue('fullName')}`,

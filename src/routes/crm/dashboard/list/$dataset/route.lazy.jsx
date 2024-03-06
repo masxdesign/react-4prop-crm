@@ -1,10 +1,9 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { createLazyFileRoute } from '@tanstack/react-router'
 import DataTableSS from '@/components/DataTableSS';
 import useSheetState from '../../-hooks/use-sheetState';
 import useTableState from '../../-hooks/use-tableState';
 import SheetActions from '@/components/SheetActions';
-import { columns } from './-columns';
 
 export const Route = createLazyFileRoute('/crm/dashboard/list/$dataset')({
     component: DatasetComponent
@@ -12,22 +11,22 @@ export const Route = createLazyFileRoute('/crm/dashboard/list/$dataset')({
 
 function DatasetComponent() {
 
-  const { dataset } = Route.useParams()
+  const context = Route.useRouteContext()
   
   const { showSheet, sheetProps } = useSheetState()
 
-  const { queryOptions, tableProps } = useTableState({ dataset })
+  const tableProps = useTableState({ queryOptions: context.queryOptions })
 
   const meta = useMemo(() => ({ 
-    currentQueryOptions: queryOptions,
+    dataQueryKey: context.queryOptions.queryKey,
     showSheet
-  }), [queryOptions.queryKey])
+  }), [context.queryOptions.queryKey])
 
   return (
     <>
       <DataTableSS 
         tableName="dashboard"
-        columns={columns}
+        columns={context.columns}
         meta={meta}
         {...tableProps}
       />

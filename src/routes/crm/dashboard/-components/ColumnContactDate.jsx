@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { ResetIcon } from '@radix-ui/react-icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import usePrivateNotesMutation from '../-hooks/use-privateNotesMutation';
-import { isToday } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 const ColumnContactDate = ({ info, onSuccess }) => {
   

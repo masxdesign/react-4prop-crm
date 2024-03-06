@@ -1,3 +1,4 @@
+import { addLog, updateClient } from "@/api/api-fakeServer"
 import { useAuthStore } from "@/store"
 import { util_add, util_pagin_update } from "@/utils/localStorageController"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -7,7 +8,7 @@ const usePrivateNotesMutation = (info, curr_field, onSuccess) => {
   
     const uid = info.row.original.id
   
-    const { currentQueryOptions } = info.table.options.meta
+    const { dataQueryKey } = info.table.options.meta
   
     const user = useAuthStore.use.user()
     const author = user?.id
@@ -18,7 +19,7 @@ const usePrivateNotesMutation = (info, curr_field, onSuccess) => {
           addLog({ isJSON: true, message: JSON.stringify({ type: curr_field, data: data[curr_field] }), uid, author })
         ]),
         onSuccess: ([_, log], variables) => {
-          queryClient.setQueryData(currentQueryOptions.queryKey, util_pagin_update({ id: uid }, variables))
+          queryClient.setQueryData(dataQueryKey, util_pagin_update({ id: uid }, variables))
           queryClient.setQueryData(['log', uid], util_add(log))
           onSuccess && onSuccess()
         }

@@ -23,8 +23,6 @@ export const init =  (search) => ({
     columnFilters: search.columnFilters ?? initialState.columnFilters,
 })
 
-export const tableStateLoaderDeps = ({ search }) => init(search)
-
 const tableReducer = (state, action) => {
     switch (action.type) {
         case "CHANGE_PERPAGE":
@@ -36,13 +34,16 @@ const tableReducer = (state, action) => {
                 },
             }
         case "CHANGE_PAGE":
+            const pageSize = action.meta.pageSize ?? state.pagination.pageSize
+            const pageSizeChanged = state.pagination.pageSize !== pageSize
+
             return {
                 ...state,
                 pagination: {
                     ...state.pagination,
-                    pageIndex: action.payload,
-                    pageSize: action.meta.pageSize ?? state.pagination.pageSize,
-                },
+                    pageIndex: pageSizeChanged ? 0 : action.payload,
+                    pageSize
+                }
             }
         case "RESET_PAGE":
             return {
@@ -91,21 +92,40 @@ const changePageAction = (payload, pageSize = null) => ({
     meta: { pageSize },
 })
 
-const useTableState = ({ dataset }) => {
+const useSyncRoute = (state) => {
     const navigate = useNavigate({ strict: false })
-    const search = useSearch({ strict: false })
 
-    const [state, dispatch] = useReducer(tableReducer, search, init)
+    useEffect(() => {
+        navigate({
+            search: (prev) => routeSearchMapping(initialState, state, prev, (p, q) =>
+                p(
+                    q("pagination.pageIndex", "page"),
+                    q("pagination.pageSize", "perpage"),
+                    q("sorting"),
+                    q("columnFilters")
+                )
+            )
+        })
+    }, [state])
+}
 
-    const queryOptions = tableQueryOptions(dataset, state)
-
+const useLoadData = (queryOptions, pageSize) => {
     const { data } = useSuspenseQuery(queryOptions)
 
     const [{ count }, data_] = data
 
-    const { pageSize } = state.pagination
-
     const pageCount = useMemo(() => Math.round(count / pageSize), [count, pageSize])
+
+    return {
+        data: data_,
+        pageCount
+    }
+}
+
+const useTableReducer = () => {
+    const search = useSearch({ strict: false })
+    
+    const [state, dispatch] = useReducer(tableReducer, search, init)
 
     const onPaginationChange = useCallback((newPagination) => {
         const { pageIndex, pageSize } = newPagination
@@ -120,34 +140,35 @@ const useTableState = ({ dataset }) => {
         dispatch(changeSortingAction(newSorting))
     }, [])
 
-    useEffect(() => {
-        navigate({
-            search: (prev) => {
-                
-                const mapping = routeSearchMapping(initialState, state, prev, (p, q) =>
-                    p(
-                        q("pagination.pageIndex", "page"),
-                        q("pagination.pageSize", "perpage"),
-                        q("sorting"),
-                        q("columnFilters")
-                    )
-                )
-
-                return mapping
-            }
-        })
-    }, [state])
-
     return {
-        tableProps: {
+        state,
+        props: {
             ...state,
-            pageCount,
-            data: data_,
             onPaginationChange,
             onColumnFiltersChange,
             onSortingChange
-        },
-        queryOptions
+        }
+    }
+}
+
+const useTableState = ({ queryOptions }) => {
+
+    const table = useTableReducer()
+
+    const queryOptions_ = useMemo(() => (
+        typeof queryOptions === "function" 
+            ? queryOptions(table.state) 
+            : queryOptions    
+    ), [queryOptions, table.state])
+
+    const { data, pageCount } = useLoadData(queryOptions_, table.state.pagination.pageSize)
+
+    useSyncRoute(table.state)
+
+    return { 
+        ...table.props,
+        data, 
+        pageCount,
     }
 }
 
