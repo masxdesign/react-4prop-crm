@@ -24,15 +24,10 @@ const grantAccess = async () => {
 
 }
 
-export const fetchNegotiators = async ({ queryKey }) => {
-
-    // await grantAccess()
-
-    const [_, columnFilters, sorting, pageSize, pageIndex] = queryKey
-
+export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) => {
     let params = {
-        page: pageIndex + 1,
-        perpage: pageSize,
+        page: pagination.pageIndex + 1,
+        perpage: pagination.pageSize,
         include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website"
     }
 

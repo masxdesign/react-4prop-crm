@@ -1,17 +1,49 @@
-import { get, isEqual } from "lodash"
+import { compact, get, isEqual } from "lodash"
 
-const routeSearchMapping = (state, prevSearch, cb) => {
-    let u = prevSearch
-    const q = (t, m = null, n = null) => {
-      const e = get(state, t)
-      const h = isEqual(get(state, t), e) ? null : e
-      const o = m ?? t ?? n
-      if(u[o]) delete u[o]
-      if(m === 'page') return [o, h + 1]
-      return [o, h]
+const routeSearchMapping = (initialState, state, prev, cb) => {
+    
+  let prev_ = { ...prev }
+
+  const de = (o) => {
+    if(prev_[o]) delete prev_[o] 
+  }
+
+  const q = (t, m = null, n = null) => {
+
+    const o = m ?? t ?? n
+    
+    let s = get(state, t)
+    
+    if(isEqual(get(initialState, t), s)) {
+      de(o)
+      return null
     }
-    const p = (...l) => ({ ...u, ...Object.fromEntries(l.filter(([_, value]) => !!value)) })
-    return cb(p, q)
+
+    let p = get(prev, m)
+
+    if(m === 'page') {
+      p = parseInt(p || 1) - 1
+    }
+
+    if(isEqual(s, p)) return null
+    
+    if(m === 'page') {
+      s = s + 1
+    }
+    
+    de(o)
+
+    return [o, s]
+
+  }
+
+  const p = (...l) => ({ 
+    ...prev_, 
+    ...Object.fromEntries(compact(l)) 
+  })
+  
+  return cb(p, q)
+    
 }
 
 export default routeSearchMapping

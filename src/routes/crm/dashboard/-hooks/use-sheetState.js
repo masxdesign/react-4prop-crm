@@ -1,4 +1,4 @@
-import { useReducer } from "react"
+import { useCallback, useReducer } from "react"
 
 const initialSheetState = { info: null, tab: 'view', open: false }
 
@@ -36,17 +36,17 @@ const sheetReducer = (state, action) => {
 const useSheetState = () => {
     const [state, dispatch] = useReducer(sheetReducer, initialSheetState)
 
-    const onOpenChange = (open) => {
+    const onOpenChange = useCallback((open) => {
         dispatch({ type: 'open', payload: open })
-    }
+    }, [])
 
-    const onTabValueChange = (tab) => {
+    const onTabValueChange = useCallback((tab) => {
         dispatch({ type: 'tab', payload: tab })
-    }
+    }, [])
 
-    const showSheet = (info, tab) => {
+    const showSheet = useCallback((info, tab) => {
         dispatch({ type: 'show', payload: { info, tab } })
-    }
+    }, [])
 
     return {
         sheetProps: {

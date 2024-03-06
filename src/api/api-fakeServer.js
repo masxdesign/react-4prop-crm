@@ -45,10 +45,9 @@ export const fetchClients = async () => {
 
 const fakePageCount = 2_000
 
-export const fetchClientsPagin = async ({ queryKey }) => {
-    console.log('server call: fetchClientsPagin', queryKey);
+export const fetchClientsPagin = async ({ columnFilters, sorting, pagination }) => {
+    console.log('server call: fetchClientsPagin');
 
-    const [_, pagination, sorting, columnFilters] = queryKey
     const { pageIndex = 0, pageSize = 150 } = pagination
 
     const o = {

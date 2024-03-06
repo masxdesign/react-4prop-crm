@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import useCategoriesSuspenseQuery from './hooks/use-CategoriesSuspenseQuery';
+import useCategoriesSuspenseQuery from '../-hooks/use-CategoriesSuspenseQuery';
 import { Suspense } from 'react';
 
 const CategoriesPrimitiveList = ({ value, badgeClassName }) => {

@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/store';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import PendingComponent from './dashboard/-components/PendingComponent';
 
 export const Route = createFileRoute('/crm/dashboard')({
     beforeLoad: ({ location }) => {
@@ -14,7 +15,5 @@ export const Route = createFileRoute('/crm/dashboard')({
             })
         }
     },
-    pendingComponent: () => {
-        return <span>Loading...</span>
-    }
+    pendingComponent: PendingComponent
 })

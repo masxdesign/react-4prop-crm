@@ -4,8 +4,8 @@ import { columns, initialVisibilty } from './-data-table-columns';
 import SheetActions from '@/components/SheetActions';
 import DataTableSS from '@/components/DataTableSS';
 import negotiatorsQueryOptions from '@/api/negotiatorsQueryOptions';
-import useSheetState from '../-components/hooks/use-sheetState';
-import useTableState from '../-components/hooks/use-tableState';
+import useSheetState from '../-hooks/use-sheetState';
+import useTableState from '../-hooks/use-tableState';
 import clientsPaginQueryOptions from '@/api/clientsPaginQueryOptions';
 
 export const Route = createLazyFileRoute('/crm/dashboard/')({

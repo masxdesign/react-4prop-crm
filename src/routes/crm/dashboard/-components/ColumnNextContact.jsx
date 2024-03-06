@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { CalendarIcon, ResetIcon } from '@radix-ui/react-icons';
 import { format, subDays } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import usePrivateNotesMutation from './hooks/use-privateNotesMutation';
+import usePrivateNotesMutation from '../-hooks/use-privateNotesMutation';
 
 const ColumnNextContact = ({ info, onSuccess }) => {
 

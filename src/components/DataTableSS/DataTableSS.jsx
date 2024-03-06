@@ -1,17 +1,17 @@
-import {  useEffect, useState } from 'react'
+import {  useEffect, useMemo, useState } from 'react'
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
 import DataTablePagination from '../DataTablePagination'
 import DataTableToolbar from '../dataTableToolbar'
 import { fuzzyFilter } from '@/utils/fuzzyFilterSortFn'
 import DataTableDnd from '../DataTableDnd'
+import { get } from 'lodash'
 
 const _o = (s, e) => (f) => e(typeof f === 'function' ? f(s) : f) 
 
 const DataTableSS = ({ 
     tableName = 'DataTable', 
     columns, 
-    data, 
-    defaultColumnVisibility = {}, 
+    data,  
     defaultColumnSizing = {}, 
     sorting,
     pagination,
@@ -23,10 +23,15 @@ const DataTableSS = ({
     meta = {}
 }) => {
 
-    console.log(columns);
+    const defaultColumnVisibility = useMemo(() => (
+        Object.fromEntries(
+            columns.map(({ id, ...rest }) => ([id, get(rest, 'meta.defaultVisibilty', true)]))
+        )
+    ), [columns])
 
-    const [rowSelection, setRowSelection] = useState({})
     const [columnVisibility, setColumnVisibility] = useState(defaultColumnVisibility)
+    
+    const [rowSelection, setRowSelection] = useState({})
     const [globalFilter, setGlobalFilter] = useState('')
 
     const table = useReactTable({

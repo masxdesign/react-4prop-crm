@@ -3,11 +3,11 @@ import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { fuzzySort } from '@/utils/fuzzyFilterSortFn';
-import Linkable from '../-components/Linkable';
-import Categories from '../-components/Categories';
-import ColumnNextContact from '../-components/ColumnNextContact';
-import ColumnContactDate from '../-components/ColumnContactDate';
-import LogDialog from '../-components/LogDialog';
+import Linkable from '../../-components/Linkable';
+import Categories from '../../-components/Categories';
+import ColumnNextContact from '../../-components/ColumnNextContact';
+import ColumnContactDate from '../../-components/ColumnContactDate';
+import LogDialog from '../../-components/LogDialog';
 
 const columnHelper = createColumnHelper()
 
