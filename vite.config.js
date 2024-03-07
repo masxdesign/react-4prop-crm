@@ -29,6 +29,8 @@ export default defineConfig(({ command, mode }) => {
   return {
     base: '/new/agentab_crm',
     build: {
+      outDir: '../4prop-backend/web/volumes/html/seo/agentab_crm',
+      emptyOutDir: true,
       manifest: true,
       rollupOptions: {
         input: 'src/main.jsx'
