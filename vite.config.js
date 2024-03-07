@@ -5,12 +5,36 @@ import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: "/react-4prop-crm",
-  plugins: [
-    basicSsl(),
-    react(),
-    jsconfigPaths(),
-    TanStackRouterVite()
-  ]
+export default defineConfig(({ command, mode }) => {
+
+  const shared = {
+    base: "/crm",
+    plugins: [
+      basicSsl(),
+      react(),
+      jsconfigPaths(),
+      TanStackRouterVite()
+    ]
+  }
+
+  if (command === 'serve') {
+  
+    return {
+      base: shared.base,
+      plugins: [...shared.plugins]
+    }
+    
+  }
+
+  return {
+    base: '/new/agentab_crm',
+    build: {
+      manifest: true,
+      rollupOptions: {
+        input: 'src/main.jsx'
+      }
+    },
+    plugins: [...shared.plugins]
+  }
+
 })

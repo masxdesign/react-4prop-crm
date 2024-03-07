@@ -3,7 +3,7 @@ import { useListStore } from '@/store';
 import { useQueryClient } from '@tanstack/react-query';
 import { createLazyFileRoute, useNavigate, useRouter } from '@tanstack/react-router';
 
-export const Route = createLazyFileRoute('/crm/dashboard/add')({
+export const Route = createLazyFileRoute('/dashboard/add')({
   component: AddComponent,
 })
 

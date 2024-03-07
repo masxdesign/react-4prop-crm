@@ -3,86 +3,79 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as LogoutImport } from './routes/logout'
+import { Route as DashboardImport } from './routes/dashboard'
+import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as CrmLogoutImport } from './routes/crm/logout'
-import { Route as CrmDashboardImport } from './routes/crm/dashboard'
-import { Route as CrmLoginRouteImport } from './routes/crm/login/route'
-import { Route as CrmDashboardListImport } from './routes/crm/dashboard/list'
-import { Route as CrmDashboardImportRouteImport } from './routes/crm/dashboard/import/route'
-import { Route as CrmDashboardAddRouteImport } from './routes/crm/dashboard/add/route'
-import { Route as CrmDashboardIndexRouteImport } from './routes/crm/dashboard/index/route'
-import { Route as CrmDashboardListDatasetRouteImport } from './routes/crm/dashboard/list/$dataset/route'
-import { Route as CrmDashboardListIndexRouteImport } from './routes/crm/dashboard/list/index/route'
+import { Route as DashboardListImport } from './routes/dashboard/list'
+import { Route as DashboardImportRouteImport } from './routes/dashboard/import/route'
+import { Route as DashboardAddRouteImport } from './routes/dashboard/add/route'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index/route'
+import { Route as DashboardListDatasetRouteImport } from './routes/dashboard/list/$dataset/route'
+import { Route as DashboardListIndexRouteImport } from './routes/dashboard/list/index/route'
 
 // Create/Update Routes
+
+const LogoutRoute = LogoutImport.update({
+  path: '/logout',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DashboardRoute = DashboardImport.update({
+  path: '/dashboard',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/dashboard.lazy').then((d) => d.Route))
+
+const LoginRouteRoute = LoginRouteImport.update({
+  path: '/login',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/login/route.lazy').then((d) => d.Route))
 
 const IndexRoute = IndexImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
-const CrmLogoutRoute = CrmLogoutImport.update({
-  path: '/crm/logout',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const CrmDashboardRoute = CrmDashboardImport.update({
-  path: '/crm/dashboard',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/crm/dashboard.lazy').then((d) => d.Route))
-
-const CrmLoginRouteRoute = CrmLoginRouteImport.update({
-  path: '/crm/login',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() =>
-  import('./routes/crm/login/route.lazy').then((d) => d.Route),
-)
-
-const CrmDashboardListRoute = CrmDashboardListImport.update({
+const DashboardListRoute = DashboardListImport.update({
   path: '/list',
-  getParentRoute: () => CrmDashboardRoute,
+  getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
-  import('./routes/crm/dashboard/list.lazy').then((d) => d.Route),
+  import('./routes/dashboard/list.lazy').then((d) => d.Route),
 )
 
-const CrmDashboardImportRouteRoute = CrmDashboardImportRouteImport.update({
+const DashboardImportRouteRoute = DashboardImportRouteImport.update({
   path: '/import',
-  getParentRoute: () => CrmDashboardRoute,
+  getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
-  import('./routes/crm/dashboard/import/route.lazy').then((d) => d.Route),
+  import('./routes/dashboard/import/route.lazy').then((d) => d.Route),
 )
 
-const CrmDashboardAddRouteRoute = CrmDashboardAddRouteImport.update({
+const DashboardAddRouteRoute = DashboardAddRouteImport.update({
   path: '/add',
-  getParentRoute: () => CrmDashboardRoute,
+  getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
-  import('./routes/crm/dashboard/add/route.lazy').then((d) => d.Route),
+  import('./routes/dashboard/add/route.lazy').then((d) => d.Route),
 )
 
-const CrmDashboardIndexRouteRoute = CrmDashboardIndexRouteImport.update({
+const DashboardIndexRouteRoute = DashboardIndexRouteImport.update({
   path: '/',
-  getParentRoute: () => CrmDashboardRoute,
+  getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
-  import('./routes/crm/dashboard/index/route.lazy').then((d) => d.Route),
+  import('./routes/dashboard/index/route.lazy').then((d) => d.Route),
 )
 
-const CrmDashboardListDatasetRouteRoute =
-  CrmDashboardListDatasetRouteImport.update({
-    path: '/$dataset',
-    getParentRoute: () => CrmDashboardListRoute,
-  } as any).lazy(() =>
-    import('./routes/crm/dashboard/list/$dataset/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+const DashboardListDatasetRouteRoute = DashboardListDatasetRouteImport.update({
+  path: '/$dataset',
+  getParentRoute: () => DashboardListRoute,
+} as any).lazy(() =>
+  import('./routes/dashboard/list/$dataset/route.lazy').then((d) => d.Route),
+)
 
-const CrmDashboardListIndexRouteRoute = CrmDashboardListIndexRouteImport.update(
-  {
-    path: '/',
-    getParentRoute: () => CrmDashboardListRoute,
-  } as any,
-).lazy(() =>
-  import('./routes/crm/dashboard/list/index/route.lazy').then((d) => d.Route),
+const DashboardListIndexRouteRoute = DashboardListIndexRouteImport.update({
+  path: '/',
+  getParentRoute: () => DashboardListRoute,
+} as any).lazy(() =>
+  import('./routes/dashboard/list/index/route.lazy').then((d) => d.Route),
 )
 
 // Populate the FileRoutesByPath interface
@@ -93,41 +86,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/crm/login': {
-      preLoaderRoute: typeof CrmLoginRouteImport
+    '/login': {
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRoute
     }
-    '/crm/dashboard': {
-      preLoaderRoute: typeof CrmDashboardImport
+    '/dashboard': {
+      preLoaderRoute: typeof DashboardImport
       parentRoute: typeof rootRoute
     }
-    '/crm/logout': {
-      preLoaderRoute: typeof CrmLogoutImport
+    '/logout': {
+      preLoaderRoute: typeof LogoutImport
       parentRoute: typeof rootRoute
     }
-    '/crm/dashboard/': {
-      preLoaderRoute: typeof CrmDashboardIndexRouteImport
-      parentRoute: typeof CrmDashboardImport
+    '/dashboard/': {
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardImport
     }
-    '/crm/dashboard/add': {
-      preLoaderRoute: typeof CrmDashboardAddRouteImport
-      parentRoute: typeof CrmDashboardImport
+    '/dashboard/add': {
+      preLoaderRoute: typeof DashboardAddRouteImport
+      parentRoute: typeof DashboardImport
     }
-    '/crm/dashboard/import': {
-      preLoaderRoute: typeof CrmDashboardImportRouteImport
-      parentRoute: typeof CrmDashboardImport
+    '/dashboard/import': {
+      preLoaderRoute: typeof DashboardImportRouteImport
+      parentRoute: typeof DashboardImport
     }
-    '/crm/dashboard/list': {
-      preLoaderRoute: typeof CrmDashboardListImport
-      parentRoute: typeof CrmDashboardImport
+    '/dashboard/list': {
+      preLoaderRoute: typeof DashboardListImport
+      parentRoute: typeof DashboardImport
     }
-    '/crm/dashboard/list/': {
-      preLoaderRoute: typeof CrmDashboardListIndexRouteImport
-      parentRoute: typeof CrmDashboardListImport
+    '/dashboard/list/': {
+      preLoaderRoute: typeof DashboardListIndexRouteImport
+      parentRoute: typeof DashboardListImport
     }
-    '/crm/dashboard/list/$dataset': {
-      preLoaderRoute: typeof CrmDashboardListDatasetRouteImport
-      parentRoute: typeof CrmDashboardListImport
+    '/dashboard/list/$dataset': {
+      preLoaderRoute: typeof DashboardListDatasetRouteImport
+      parentRoute: typeof DashboardListImport
     }
   }
 }
@@ -136,15 +129,15 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
-  CrmLoginRouteRoute,
-  CrmDashboardRoute.addChildren([
-    CrmDashboardIndexRouteRoute,
-    CrmDashboardAddRouteRoute,
-    CrmDashboardImportRouteRoute,
-    CrmDashboardListRoute.addChildren([
-      CrmDashboardListIndexRouteRoute,
-      CrmDashboardListDatasetRouteRoute,
+  LoginRouteRoute,
+  DashboardRoute.addChildren([
+    DashboardIndexRouteRoute,
+    DashboardAddRouteRoute,
+    DashboardImportRouteRoute,
+    DashboardListRoute.addChildren([
+      DashboardListIndexRouteRoute,
+      DashboardListDatasetRouteRoute,
     ]),
   ]),
-  CrmLogoutRoute,
+  LogoutRoute,
 ])

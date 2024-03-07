@@ -2,7 +2,7 @@ import { useAuthStore } from '@/store';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import PendingComponent from './dashboard/-components/PendingComponent';
 
-export const Route = createFileRoute('/crm/dashboard')({
+export const Route = createFileRoute('/dashboard')({
     beforeLoad: ({ location }) => {
         const { user } = useAuthStore.getState()
         

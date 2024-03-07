@@ -1,4 +1,3 @@
-import tableQueryOptions from "@/api/tableQueryOptions"
 import routeSearchMapping from "@/utils/routeSearchMapping"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useNavigate, useSearch } from "@tanstack/react-router"

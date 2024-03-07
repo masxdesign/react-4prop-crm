@@ -1,7 +1,7 @@
 import LoginForm from '@/components/LoginForm';
 import { createLazyFileRoute, getRouteApi, useNavigate } from '@tanstack/react-router';
 
-export const Route = createLazyFileRoute('/crm/login')({
+export const Route = createLazyFileRoute('/login')({
     component: LoginComponent,
 })
 

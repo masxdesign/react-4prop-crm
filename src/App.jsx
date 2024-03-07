@@ -8,7 +8,7 @@ export const queryClient = new QueryClient()
 
 const router = createRouter({ 
   routeTree,
-  basepath: '/react-4prop-crm',
+  basepath: '/crm',
   context: {
     queryClient
   }

@@ -2,7 +2,7 @@ import { useAuthStore } from '@/store';
 import { Navigate, createFileRoute } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
-export const Route = createFileRoute('/crm/logout')({
+export const Route = createFileRoute('/logout')({
     component: logoutComponent
 })
 

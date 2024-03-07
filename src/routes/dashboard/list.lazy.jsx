@@ -1,6 +1,6 @@
 import { Outlet, createLazyFileRoute } from "@tanstack/react-router";
 
-export const Route = createLazyFileRoute('/crm/dashboard/list')({
+export const Route = createLazyFileRoute('/dashboard/list')({
     component: ListComponent
 })
 

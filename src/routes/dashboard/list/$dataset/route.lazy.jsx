@@ -5,7 +5,7 @@ import useSheetState from '../../-hooks/use-sheetState';
 import useTableState from '../../-hooks/use-tableState';
 import SheetActions from '@/components/SheetActions';
 
-export const Route = createLazyFileRoute('/crm/dashboard/list/$dataset')({
+export const Route = createLazyFileRoute('/dashboard/list/$dataset')({
     component: DatasetComponent
 })
 

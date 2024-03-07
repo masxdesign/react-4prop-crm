@@ -8,7 +8,7 @@ import useSheetState from '../-hooks/use-sheetState';
 import useTableState from '../-hooks/use-tableState';
 import clientsPaginQueryOptions from '@/api/clientsPaginQueryOptions';
 
-export const Route = createLazyFileRoute('/crm/dashboard/')({
+export const Route = createLazyFileRoute('/dashboard/')({
     component: indexComponent
 })
 

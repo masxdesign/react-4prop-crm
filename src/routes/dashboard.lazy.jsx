@@ -3,7 +3,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { useAuthStore } from '@/store';
 import { Link, Outlet, createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 
-export const Route = createLazyFileRoute('/crm/dashboard')({
+export const Route = createLazyFileRoute('/dashboard')({
     component: dashboardComponent,
 })
 

@@ -5,7 +5,7 @@ import { fetchNegotiators } from '@/api/fourProp';
 import { queryOptions } from '@tanstack/react-query';
 import { fetchClientsPagin } from '@/api/api-fakeServer';
 
-export const Route = createFileRoute('/crm/dashboard/list/$dataset')({
+export const Route = createFileRoute('/dashboard/list/$dataset')({
   loader: ({ context }) => context.queryClient.ensureQueryData(context.queryOptions),
   pendingComponent: PendingComponent,
   beforeLoad: async ({ search, params }) => {

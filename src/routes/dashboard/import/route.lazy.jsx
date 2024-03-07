@@ -7,7 +7,7 @@ import { CSV_FIELDS } from '@/api/data/fake-clients';
 import { bulkInsertClient } from '@/api/api-fakeServer';
 import { useListStore } from '@/store';
 
-export const Route = createLazyFileRoute('/crm/dashboard/import')({
+export const Route = createLazyFileRoute('/dashboard/import')({
   component: AddComponent,
 })
 
