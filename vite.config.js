@@ -8,7 +8,6 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig(({ command, mode }) => {
 
   const shared = {
-    base: "/crm",
     plugins: [
       basicSsl(),
       react(),
@@ -20,7 +19,7 @@ export default defineConfig(({ command, mode }) => {
   if (command === 'serve') {
   
     return {
-      base: shared.base,
+      base: "/crm",
       plugins: [...shared.plugins]
     }
     
