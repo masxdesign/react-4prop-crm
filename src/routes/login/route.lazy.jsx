@@ -1,16 +1,39 @@
+import { useState } from 'react';
+import { useAuth } from '@/components/Auth/Auth-context';
 import LoginForm from '@/components/LoginForm';
-import { createLazyFileRoute, getRouteApi, useNavigate } from '@tanstack/react-router';
+import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
+import { flushSync } from 'react-dom';
 
 export const Route = createLazyFileRoute('/login')({
     component: LoginComponent,
 })
 
 function LoginComponent() {
-  const navigate = useNavigate()
   const search = Route.useSearch()
+  const navigate = useNavigate({ from: '/login' })
 
-  const handleSuccess = () => {
-    navigate({ to: search.redirect })
+  const [errors, setErrors] = useState(null)
+
+  const auth = useAuth()
+
+  const handleSubmit = async (variables) => {
+    try {
+
+      const data = await auth.login.mutateAsync(variables)
+
+      if(data.error) throw new Error(data.error)
+
+      flushSync(() => {
+        auth.setUser(data)
+      })
+
+      navigate({ to: search.redirect })
+
+    } catch (e) {
+
+      setErrors({ root: e })
+
+    }
   }
 
   return (
@@ -20,7 +43,11 @@ function LoginComponent() {
           <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
         </div>
-        <LoginForm onSuccess={handleSuccess} />
+        <LoginForm 
+          onSubmit={handleSubmit} 
+          isPending={auth.login.isPending}
+          errors={errors}
+        />
       </div>
     </div>
   )

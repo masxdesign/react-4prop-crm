@@ -1,7 +1,9 @@
+import queryClient from "@/queryClient";
+import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
 
-const FOURPROP_BASEURL = 'https://www.4prop.com'
-// const FOURPROP_BASEURL = 'https://localhost:50443'
+// const FOURPROP_BASEURL = 'https://www.4prop.com'
+const FOURPROP_BASEURL = 'https://localhost:50443'
 
 const fourProp = axios.create({
     baseURL: FOURPROP_BASEURL,
@@ -25,8 +27,29 @@ const grantAccess = async () => {
 
 }
 
+export const authWhoisonlineQueryOptions = queryOptions({
+    queryKey: ['whoisonline'],
+    queryFn: async () => {
+        const { data } = await fourProp.post('api/login')
+        return data
+    },
+    staleTime: Infinity
+})
+
+export const authLogin = async ({ email, password }) => {
+    const { default: each_password_generator } = await import("@/utils/each_password_generator")
+
+    const { data } = await fourProp.post(
+        'api/login', 
+        { email, password, each_password: each_password_generator(password) }
+    )
+    
+    return data
+}
+
+export const authLogout = () => fourProp.post('api/account/logout')
+
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) => {
-    await grantAccess()
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,

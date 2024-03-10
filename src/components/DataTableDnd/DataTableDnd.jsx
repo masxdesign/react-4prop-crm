@@ -1,4 +1,4 @@
-import {  useMemo, memo } from 'react'
+import {  useMemo, memo, useEffect, useCallback, useRef } from 'react'
 import { CSS } from '@dnd-kit/utilities'
 import { flexRender } from '@tanstack/react-table'
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -123,8 +123,9 @@ const MemoizedTableBody = memo(
 )
 
 const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
+    const isMountedRef = useRef()
 
-    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
+    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], () => defaultColumnSizing)
     const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], () => table.options.columns.map((c) => c.id))
 
     table.setOptions((options) => ({
@@ -138,6 +139,17 @@ const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
         onColumnOrderChange: setColumnOrder,
         onColumnSizingChange: setColumnSizing
     }))
+
+    useEffect(() => {
+        if(isMountedRef.current) {
+            table.setColumnSizing(columnSizing)
+            table.setColumnOrder(columnOrder)
+        }
+    }, [table.options.columns])
+
+    useEffect(() => {
+        isMountedRef.current = true
+    }, [])
 
     const columnSizeVars = useMemo(() => {
         const headers = table.getFlatHeaders()

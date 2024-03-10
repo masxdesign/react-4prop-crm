@@ -25,7 +25,7 @@ function DatasetComponent() {
 
   return (
     <>
-      <div className='overflow-hidden rounded-[0.5rem] border bg-background shadow-md md:shadow-xl p-8'>
+      <div className='overflow-hidden p-4'>
         <DataTableSS 
           tableName={`d.v1.${cx.queryOptions.queryKey[0]}`}
           meta={meta}

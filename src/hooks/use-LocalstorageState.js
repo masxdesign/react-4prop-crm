@@ -25,7 +25,7 @@ const useLocalstorageState = (keyName, initialState) => {
 
     useEffect(() => {
         if(isMountedRef.current) {
-            setState(fetchData())
+            setState_(fetchData())
         }
     }, [keyName_])
 

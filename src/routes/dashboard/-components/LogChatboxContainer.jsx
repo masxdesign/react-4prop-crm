@@ -5,11 +5,11 @@ import { addLog, deleteLog, fetchLog } from '@/api/api-fakeServer';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuthStore } from '@/store';
 import { util_add, util_delete } from '@/utils/localStorageController';
 import LogChatbox from '../-components/LogChatbox';
 import ColumnNextContact from '../-components/ColumnNextContact';
 import ColumnContactDate from '../-components/ColumnContactDate';
+import { useAuth } from '@/components/Auth/Auth-context';
 
 const messageSchema = Yup.object().shape({
     message: Yup.string().required()
@@ -21,7 +21,7 @@ const LogChatboxContainer = ({ info }) => {
     const [value, setValue] = useState('')
     const [error, setError] = useState(null)
   
-    const user = useAuthStore.use.user()
+    const { user } = useAuth()
     const currUserId = user.id
     const uid = info.row.original.id
   

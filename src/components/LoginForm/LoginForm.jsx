@@ -4,8 +4,6 @@ import * as yup from "yup"
 import { Form } from "../ui/form"
 import { Button } from "../ui/button"
 import UIFormFieldLabel from "../UIFormFieldLabel/UIFormFieldLabel"
-import { useAuthStore } from "@/store"
-import { useMutation } from "@tanstack/react-query"
 
 const schema = yup.object({
     email: yup.string().required(),
@@ -17,30 +15,18 @@ const defaultValues = {
     password: ""
 }
 
-const LoginForm = ({ onSuccess }) => {
-    const login = useAuthStore.use.login()
-
+const LoginForm = ({ onSubmit, isPending, ...props }) => {
     const form = useForm({ 
         resolver: yupResolver(schema),
-        defaultValues
+        defaultValues,
+        errors: props.errors
     })
 
     const { formState: { errors } } = form
 
-    const { mutate, isPending } = useMutation({
-        mutationFn: login,
-        onSuccess,
-        onError: (e) => {
-            form.setError("root", {
-                type: "server",
-                message: e.message
-            })
-        }
-    })
-
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(mutate)} className="space-y-2">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
                 {errors.root && (
                     <p>{errors.root.message}</p>
                 )}
