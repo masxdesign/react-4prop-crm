@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const FOURPROP_BASEURL = 'https://localhost:50443'
+const FOURPROP_BASEURL = 'https://www.4prop.com'
+// const FOURPROP_BASEURL = 'https://localhost:50443'
 
 const fourProp = axios.create({
     baseURL: FOURPROP_BASEURL,
@@ -25,6 +26,7 @@ const grantAccess = async () => {
 }
 
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) => {
+    await grantAccess()
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,

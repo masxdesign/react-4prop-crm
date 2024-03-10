@@ -5,19 +5,17 @@ import usePrivateNotesMutation from '../-hooks/use-privateNotesMutation';
 import { format, isToday } from 'date-fns';
 
 const ColumnContactDate = ({ info, onSuccess }) => {
+
+    const value = info.getValue()
   
-    const curr_field = 'contact_date'
-  
-    const value = info.row.getValue(curr_field)
-  
-    const mutation = usePrivateNotesMutation(info, curr_field, onSuccess)
+    const mutation = usePrivateNotesMutation(info, onSuccess)
     
     const handleSelect = () => {
-      mutation.mutate({ [curr_field]: new Date })
+      mutation.mutate({ [info.column.id]: new Date })
     }
    
     const handleClear = () => {
-      mutation.mutate({ [curr_field]: null })
+      mutation.mutate({ [info.column.id]: null })
     }
   
     if(mutation.isPending) return <small className='text-muted-foreground flex items-center h-[46px]'>Saving...</small>

@@ -3,11 +3,11 @@ import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { fuzzySort } from '@/utils/fuzzyFilterSortFn';
-import Linkable from '../-components/Linkable';
-import Categories from '../-components/Categories';
-import ColumnNextContact from '../-components/ColumnNextContact';
-import ColumnContactDate from '../-components/ColumnContactDate';
-import LogDialog from '../-components/LogDialog';
+import Linkable from '../../../../-components/Linkable';
+import Categories from '../../../../-components/Categories';
+import ColumnNextContact from '../../../../-components/ColumnNextContact';
+import ColumnContactDate from '../../../../-components/ColumnContactDate';
+import LogDialog from '../../../../-components/LogDialog';
 
 const columnHelper = createColumnHelper()
 
@@ -72,23 +72,21 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="First" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />,
-    meta: { defaultVisibility: false }
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="person" />
   }),
   columnHelper.accessor('last', {
     id: 'last',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Last" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[150px] truncate" data-tab="person" />,
-    meta: { defaultVisibility: false }
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="person" />
   }),
   columnHelper.accessor('company', {
     id: 'company',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Company" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[200px] truncate font-medium" data-tab="person" />,
+    cell: (info) => <Linkable info={info} className="w-full truncate font-medium" tab="person" />,
     filterFn: "arrIncludes"
   }),
   columnHelper.accessor((row) => `${row.title} ${row.first} ${row.last}`, {
@@ -96,7 +94,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Full name" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[200px] truncate" data-tab="person" />,
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="person" />,
     filterFn: 'fuzzy',
     sortingFn: fuzzySort,
     meta: { label: 'Full name' }
@@ -106,26 +104,25 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Email" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[200px] truncate font-medium" data-tab="contact" />
+    cell: (info) => <Linkable info={info} className="w-full truncate font-medium" tab="contact" />
   }),
   columnHelper.accessor('phone', {
     id: 'phone',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Phone" />
     ),
-    cell: (info) => <Linkable info={info} className="w-[200px] truncate" data-tab="contact" />
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="contact" />
   }),
   columnHelper.accessor('gender', {
     id: 'gender',
-    header: "Gender",
-    meta: { defaultVisibility: false }
+    header: "Gender"
   }),
   columnHelper.accessor('city', {
     id: 'city',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="City" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[200px] truncate" data-tab="address" />,
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="address" />,
     filterFn: "arrIncludes",
   }),
   columnHelper.accessor('postcode', {
@@ -133,7 +130,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Postcode" />
     ),
-    cell: (info) => <Linkable info={info} className="max-w-[100px] truncate" data-tab="address" />,
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="address" />,
     filterFn: "arrIncludes",
   }),
   columnHelper.accessor((row) => new Date(row.created), {
@@ -145,9 +142,3 @@ export const columns = [
     sortingFn: "datetime"
   })
 ]
-
-export const initialVisibilty = {
-  first: false,
-  last: false,
-  gender: false
-}

@@ -33,7 +33,7 @@ const sheetReducer = (state, action) => {
     }
 }
 
-const useSheetState = () => {
+const useSheetState = ({ props = null }) => {
     const [state, dispatch] = useReducer(sheetReducer, initialSheetState)
 
     const onOpenChange = useCallback((open) => {
@@ -50,6 +50,7 @@ const useSheetState = () => {
 
     return {
         sheetProps: {
+            ...props,
             ...state,
             onOpenChange,
             onTabValueChange,

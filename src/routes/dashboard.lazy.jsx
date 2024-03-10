@@ -31,22 +31,7 @@ function dashboardComponent() {
       </div>
       <hr />
       <br />
-      <div className="container space-y-4">
-        <div className='flex justify-start gap-4 px-4'>
-          <Link to="/crm/dashboard/" className="[&.active]:font-bold">
-            list
-          </Link>
-          <Link to="/crm/dashboard/add" className="[&.active]:font-bold">
-            add
-          </Link>
-          <Link to="/crm/dashboard/import" className="[&.active]:font-bold">
-            import
-          </Link>
-        </div>
-        <div className='overflow-hidden rounded-[0.5rem] border bg-background shadow-md md:shadow-xl p-8'>
-          <Outlet />
-        </div>
-      </div>
+      <Outlet />
       <Toaster />
     </>
   )

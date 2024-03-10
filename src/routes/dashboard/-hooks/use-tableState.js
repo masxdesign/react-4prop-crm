@@ -150,7 +150,7 @@ const useTableReducer = () => {
     }
 }
 
-const useTableState = ({ queryOptions }) => {
+const useTableState = ({ queryOptions, props = null }) => {
 
     const table = useTableReducer()
 
@@ -165,6 +165,7 @@ const useTableState = ({ queryOptions }) => {
     useSyncRoute(table.state)
 
     return { 
+        ...props,
         ...table.props,
         data, 
         pageCount,

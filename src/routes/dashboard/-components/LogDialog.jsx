@@ -25,7 +25,7 @@ const LogDialog = ({ info }) => {
             </DialogTitle>
             <DialogDescription>
               <CollapsibleTrigger className='flex space-x-2 items-center'> 
-                <CategoriesPrimitive info={info} />
+                {/* <CategoriesPrimitive info={info} /> */}
                 <span>{info.row.getValue('company')}</span>
                 <CaretSortIcon className="h-4 w-4" />
               </CollapsibleTrigger>

@@ -7,18 +7,7 @@ export const Route = createLazyFileRoute('/dashboard/add')({
   component: AddComponent,
 })
 
-const defaultValues = {
-  company: '',
-  phone: '',
-  email: '',
-  title: '',
-  first: '',
-  last: '',
-  city: '',
-  postcode: '',
-  website: '',
-  categories: []
-}
+
 
 function AddComponent() {
 

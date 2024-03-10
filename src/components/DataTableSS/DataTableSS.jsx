@@ -20,7 +20,8 @@ const DataTableSS = ({
     onPaginationChange,
     onColumnFiltersChange,
     pageCount,
-    meta = {}
+    meta = {},
+    toolbar
 }) => {
 
     const defaultColumnVisibility = useMemo(() => (
@@ -71,11 +72,13 @@ const DataTableSS = ({
 
     return (
         <div className='space-y-4'>
-            <DataTableToolbar 
-                table={table} 
-                onInputFilterChange={setGlobalFilter} 
-                inputFilter={globalFilter} 
-            />
+            {toolbar && (
+                <DataTableToolbar 
+                    table={table} 
+                    onInputFilterChange={setGlobalFilter} 
+                    inputFilter={globalFilter} 
+                />
+            )}
             <div className='rounded-md border'>
                 <DataTableDnd 
                     table={table} 

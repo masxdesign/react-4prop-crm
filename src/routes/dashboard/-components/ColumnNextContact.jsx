@@ -12,20 +12,18 @@ const ColumnNextContact = ({ info, onSuccess }) => {
 
     const [open, setOpen] = useState(false)
   
-    const curr_field = 'contact_next_date'
+    const value = info.getValue()
   
-    const value = info.row.getValue(curr_field)
-  
-    const mutation = usePrivateNotesMutation(info, curr_field, onSuccess)
+    const mutation = usePrivateNotesMutation(info, onSuccess)
   
     const handleSelect = (dateValue) => {
-      mutation.mutate({ [curr_field]: dateValue })
+      mutation.mutate({ [info.column.id]: dateValue })
       setOpen(false)
     }
   
     const handleClear = (e) => {
       e.preventDefault()
-      mutation.mutate({ [curr_field]: null })
+      mutation.mutate({ [info.column.id]: null })
       setOpen(false)
     }
   

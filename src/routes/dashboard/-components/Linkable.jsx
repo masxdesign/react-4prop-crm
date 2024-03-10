@@ -1,11 +1,11 @@
 import { cn } from "@/lib/utils"
 
-const Linkable = ({ info, className, ...props }) => {
+const Linkable = ({ info, className, tab, ...props }) => {
 
     const value = info.getValue()
   
-    const handleClick = (e) => {
-      info.table.options.meta.showSheet(info, e.currentTarget.dataset.tab)
+    const handleClick = () => {
+      info.table.options.meta.showSheet(info, tab)
     }
   
     return (

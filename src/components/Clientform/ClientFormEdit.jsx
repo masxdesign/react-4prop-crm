@@ -1,10 +1,20 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { updateClient } from "@/api/api-fakeServer"
 import Form from "../Form/Form"
 import { AccordionContent, AccordionItem, AccordionTrigger } from "../ui/accordion"
 import Clientform from "./Clientform"
+import { useToast } from "../ui/use-toast"
+import { util_pagin_update } from "@/utils/localStorageController"
 
-const ClientFormEdit = ({ focusOn, defaultValues, tab, onSelect, onSubmit }) => {
+const ClientFormEdit = ({ info, tab, onSelect, onSubmit }) => {
+    const queryClient = useQueryClient()
+
+    const { toast } = useToast()
+
+    const { dataQueryKey } = info.table.options.meta
+
+    const defaultValues = info.row.original
+    const focusOn = info.column.id
 
     const mutation = useMutation({
         mutationFn: (data) => updateClient({ id: data.id }, data)
@@ -13,6 +23,11 @@ const ClientFormEdit = ({ focusOn, defaultValues, tab, onSelect, onSubmit }) => 
     const handleSubmit = async (data) => {
         try {
             await mutation.mutateAsync(data)
+            queryClient.setQueryData(dataQueryKey, util_pagin_update({ id: data.id }, data))
+            toast({
+                title: "Successfully updated",
+                description: `${info.row.getValue('fullName')}`,
+            })
             onSubmit(data)
         } catch (e) {
             console.log(e);

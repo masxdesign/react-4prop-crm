@@ -148,7 +148,7 @@ const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
           colSizes[`--col-${header.column.id}-size`] = header.column.getSize()
         }
         return colSizes
-    }, [table.getState().columnSizingInfo])
+    }, [table.options.columns, table.getState().columnSizingInfo])
 
     // reorder columns after drag & drop
     const handleDragEnd = (e) => {
