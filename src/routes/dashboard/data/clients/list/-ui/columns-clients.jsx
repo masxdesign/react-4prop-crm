@@ -3,11 +3,11 @@ import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { fuzzySort } from '@/utils/fuzzyFilterSortFn';
-import Linkable from '../../../../-ui/Linkable';
+import Linkable from './Linkable';
 import Categories from '../../../../-ui/Categories';
-import ColumnNextContact from '../../../../-ui/ColumnNextContact';
-import ColumnContactDate from '../../../../-ui/ColumnContactDate';
 import LogDialog from '../../../../-ui/LogDialog';
+import ColumnNextContactClients from '../../-ui/ColumnNextContactClients';
+import ColumnContactDateClients from '../../-ui/ColumnContactDateClients';
 
 const columnHelper = createColumnHelper()
 
@@ -44,21 +44,21 @@ export const columns = [
     filterFn: "arrIncludesSome",
     getUniqueValues: (row) => row.categories
   }),
-  columnHelper.accessor('contact_date', {
-    id: "contact_date",
+  columnHelper.accessor('last_contact', {
+    id: "last_contact",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Date contacted" />
     ),
-    cell: (info) => <ColumnContactDate info={info} />,
+    cell: (info) => <ColumnContactDateClients info={info} />,
     sortingFn: "datetime",
     meta: { label: 'Contact date' }
   }),
-  columnHelper.accessor((row) => row.contact_next_date ? new Date(row.contact_next_date): null, {
-    id: 'contact_next_date',
+  columnHelper.accessor('next_contact', {
+    id: 'next_contact',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Next contact" />
     ),
-    cell: (info) => <ColumnNextContact info={info} />,
+    cell: (info) => <ColumnNextContactClients info={info} />,
     sortingFn: "datetime",
     meta: { label: 'Contact next date' }
   }),
@@ -112,10 +112,6 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Phone" />
     ),
     cell: (info) => <Linkable info={info} className="w-full truncate" tab="contact" />
-  }),
-  columnHelper.accessor('gender', {
-    id: 'gender',
-    header: "Gender"
   }),
   columnHelper.accessor('city', {
     id: 'city',

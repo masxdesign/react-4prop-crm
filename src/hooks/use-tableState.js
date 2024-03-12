@@ -1,7 +1,7 @@
+import { useCallback, useEffect, useMemo, useReducer } from "react"
 import routeSearchMapping from "@/utils/routeSearchMapping"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { useCallback, useEffect, useMemo, useReducer } from "react"
 
 export const initialState = {
     pagination: { pageIndex: 0, pageSize: 10 },

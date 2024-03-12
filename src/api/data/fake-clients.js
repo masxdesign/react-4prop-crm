@@ -27,8 +27,8 @@ export const createClientObject = (newData = null) => ({
     postcode: '',
     website: '',
     categories: ['5'],
-    contact_date: null,
-    contact_next_date: null,
+    last_contact: null,
+    next_contact: null,
     created: `${new Date()}`,
     ...newData
 })

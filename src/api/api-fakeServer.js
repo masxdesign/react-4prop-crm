@@ -7,7 +7,7 @@ import { createLogObject, logController } from "./data/fake-log"
 import { filter } from "lodash"
 import paginate from "@/utils/paginate"
 
-const KEY_CLIENTS = 'clients.0.2.4'
+const KEY_CLIENTS = 'clients.0.2.5'
 
 export const whoisloggedin = async () => {
     const userId = localStorage.getItem('userId')

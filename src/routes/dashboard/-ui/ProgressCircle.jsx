@@ -1,8 +1,24 @@
 import { cn } from "@/lib/utils"
+import { cva } from "class-variance-authority"
 
-const ProgressCircle = ({ perc, className }) => {
+const progressCircleVariants = cva(
+    "relative",
+    {
+        variants: {
+            size: {
+                md: "w-10 h-10",
+                lg: "w-20 h-20",
+            },
+        },
+        defaultVariants: {
+            size: "md",
+        }
+    }
+)
+
+const ProgressCircle = ({ perc, className, size }) => {
     return (
-        <div className={cn("relative w-10 h-10", className)}>
+        <div className={cn(progressCircleVariants({ size }), className)}>
             <svg className="w-full h-full" viewBox="0 0 100 100">
                 <circle
                     className="text-gray-200 stroke-current"

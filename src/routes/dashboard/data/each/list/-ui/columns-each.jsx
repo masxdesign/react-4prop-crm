@@ -1,13 +1,13 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import Linkable from '../../../../-ui/Linkable';
 import ColumnNextContact from '@/routes/dashboard/-ui/ColumnNextContact';
 import ColumnContactDate from '@/routes/dashboard/-ui/ColumnContactDate';
 import LogDialog from '@/routes/dashboard/-ui/LogDialog';
 import AlertOpened from '@/routes/dashboard/-ui/AlertOpened';
 import AlertEmailClick from '@/routes/dashboard/-ui/AlertEmailClick';
 import ProgressCircle from '@/routes/dashboard/-ui/ProgressCircle';
+import Linkable from './Linkable';
 const columnHelper = createColumnHelper()
 
 export const columns = [
@@ -72,17 +72,17 @@ export const columns = [
   columnHelper.accessor('alertEmailClick', {
     id: 'alertEmailClick',
     header: 'EACH Alert clicked',
-    cell: (info) => <AlertEmailClick info={info} />,
+    cell: (info) => <AlertEmailClick info={info} showDate />,
   }),
   columnHelper.accessor('openedPerc', {
     id: 'openedPerc',
-    header: 'EACH Alert opened %',
-    cell: (info) => <ProgressCircle perc={info.getValue() ?? 0} className="mx-auto" />
+    header: 'EACH Alert opened',
+    cell: (info) => <ProgressCircle perc={info.getValue() ?? 0} />
   }),
   columnHelper.accessor('alertPerc', {
     id: 'alertPerc',
-    header: 'EACH Alert success %',
-    cell: (info) => <ProgressCircle perc={info.getValue() ?? 0} className="mx-auto" />
+    header: 'EACH Alert success',
+    cell: (info) => <ProgressCircle perc={info.getValue() ?? 0} />
   }),
   columnHelper.accessor('website', {
     id: 'website',

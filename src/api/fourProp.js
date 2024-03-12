@@ -1,6 +1,7 @@
 import queryClient from "@/queryClient";
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
+import { isEmpty } from "lodash";
 
 // const FOURPROP_BASEURL = 'https://www.4prop.com'
 const FOURPROP_BASEURL = 'https://localhost:50443'
@@ -87,4 +88,74 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) =
     const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
 
     return data
+}
+
+export const addNextContact = async (variables, { id }) => {
+
+    const { next_contact, message = '' } = variables
+
+    let body = {}
+
+    if (next_contact) {
+        body.type = isEmpty(message) ? '3' : '2'
+        body.next = next_contact
+    } else {
+        body.type = '4'
+        body.noNextDate = true
+    }
+
+    body.note = message
+
+    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
+
+    return data
+
+}
+
+export const addLastContact = async (variables, { id }) => {
+
+    const { last_contact, message = '' } = variables
+
+    if (isEmpty(last_contact)) throw new Error('last_contact is empty')
+
+    let body = {
+        type: '1',
+        last: last_contact,
+        note: message
+    }
+
+    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
+
+    return data
+
+}
+
+export const addNote = async (variables, { id }) => {
+
+    const { message = '' } = variables
+
+    if (isEmpty(message)) throw new Error('message is empty')
+
+    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
+        type: '0',
+        note: message
+    })
+
+    return data
+
+}
+
+export const fetchNotes = async ({ id }) => {
+
+    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/__notes/${id}`)
+
+    const [branch, [privateNotes, messages, users]] = data
+
+    const messages_ = messages.map((message) => ({
+        ...message,
+        author: users.find(({ id }) => id === message.uid)
+    }))
+
+    return [messages_, branch, privateNotes]
+
 }

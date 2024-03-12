@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { util_add, util_delete } from '@/utils/localStorageController';
-import LogChatbox from './LogChatbox';
-import ColumnNextContact from './ColumnNextContact';
-import ColumnContactDate from './ColumnContactDate';
+import LogChatbox from '../../../../-ui/LogChatbox';
+import ColumnNextContact from '../../../../-ui/ColumnNextContact';
+import ColumnContactDate from '../../../../-ui/ColumnContactDate';
 import { useAuth } from '@/components/Auth/Auth-context';
 
 const messageSchema = Yup.object().shape({

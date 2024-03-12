@@ -1,14 +1,14 @@
 import { useState } from 'react';
+import usePrivateNotesMutation from './use-privateNotesMutation';
 import NextContact from './NextContact';
-import { useMutation } from '@tanstack/react-query';
 
-const ColumnNextContact = ({ placeholder = "Pick a date", name = "next_contact", info, mutationOptions }) => {
+const ColumnNextContactClients = ({ placeholder = "Pick a date", name = "next_contact", info, onSuccess }) => {
 
     const [open, setOpen] = useState(false)
   
     const value = info.row.getValue(name)
   
-    const mutation = useMutation(mutationOptions)
+    const mutation = usePrivateNotesMutation({ name, info, onSuccess })
   
     const handleSelect = (dateValue) => {
       mutation.mutate({ [name]: dateValue })
@@ -35,4 +35,4 @@ const ColumnNextContact = ({ placeholder = "Pick a date", name = "next_contact",
     )
 }
 
-export default ColumnNextContact
+export default ColumnNextContactClients

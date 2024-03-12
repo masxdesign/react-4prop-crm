@@ -1,7 +1,7 @@
 import map from 'lodash/map'
 import isMatch from 'lodash/isMatch'
 import reject from 'lodash/reject'
-import { reduce } from 'lodash'
+import { isArray, reduce, union } from 'lodash'
 
 export const util_update = (predicate, newData, cb = null) => {
     return (data) => map(data, (item) => {
@@ -17,7 +17,7 @@ export const util_update = (predicate, newData, cb = null) => {
 
 export const util_delete = (predicate) => (data) => reject(data, predicate)
 
-export const util_add = (newItem) => (data) => [...data, newItem]
+export const util_add = (newItem) => (data) => isArray(newItem) ? union(data, newItem) : [...data, newItem]
 
 export const util_pagin_update = (predicate, newData, cb = null) => ([pagin, list]) => {
     const listFn = util_update(predicate, newData, cb)

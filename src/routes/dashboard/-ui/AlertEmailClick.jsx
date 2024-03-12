@@ -21,18 +21,16 @@ const Dot = React.memo(({ value }) => {
     )
 })
 
-const AlertEmailClick = ({ info }) => {
+const AlertEmailClick = ({ info, showDate }) => {
+    const { alertEmailDate, alertEmailClick } = info.row.original
 
-    const value = info.getValue()
-    const { alertEmailDate } = info.row.original
-
-    if(!value) return null
+    if(!alertEmailClick) return null
 
     return (
-        <div className="flex align-middle space-x-1">
-            <Date value={alertEmailDate} />
-            <AlertIcon isProp={value.includes('P')} />
-            <Dot value={value} />
+        <div className="flex flex-row items-center gap-1 text-xs">
+            {showDate && <Date value={alertEmailDate} />}
+            <AlertIcon isProp={alertEmailClick.includes('P')} />
+            <Dot value={alertEmailClick} />
         </div>
     )
 }

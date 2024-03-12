@@ -1,6 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import useTableState from '../../../-ui/use-tableState';
-import useSheetState from '@/routes/dashboard/-ui/use-sheetState';
+import useTableState from '../../../../../hooks/use-tableState';
+import useSheetState from '@/hooks/use-sheetState';
 import { useMemo } from 'react';
 import DataTableSS from '@/components/DataTableSS';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -11,7 +11,7 @@ import CategoriesPrimitive from '@/routes/dashboard/-ui/CategoriesPrimitive';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { CaretSortIcon } from '@radix-ui/react-icons';
 import { Mail, MapPin, Phone } from 'lucide-react';
-import LogChatboxContainer from '@/routes/dashboard/-ui/LogChatboxContainer';
+import LogChatboxContainer from '@/routes/dashboard/data/clients/list/-ui/LogChatboxContainer';
 
 export const Route = createLazyFileRoute('/dashboard/data/clients/list')({
     component: ClientsListComponent

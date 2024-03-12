@@ -1,11 +1,11 @@
+import usePrivateNotesMutation from './use-privateNotesMutation';
 import LastContact from './LastContact';
-import { useMutation } from '@tanstack/react-query';
 
-const ColumnContactDate = ({ variant, name = "last_contact", info, mutationOptions }) => {
+const ColumnContactDateClients = ({ variant, name = "last_contact", info, onSuccess }) => {
 
     const value = info.row.getValue(name)
   
-    const mutation = useMutation(mutationOptions)
+    const mutation = usePrivateNotesMutation({ name, info, onSuccess })
     
     const handleSelect = () => {
       mutation.mutate({ [name]: new Date })
@@ -27,4 +27,4 @@ const ColumnContactDate = ({ variant, name = "last_contact", info, mutationOptio
     )
 }
 
-export default ColumnContactDate
+export default ColumnContactDateClients
