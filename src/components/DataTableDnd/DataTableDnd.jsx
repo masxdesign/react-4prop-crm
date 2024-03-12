@@ -125,8 +125,10 @@ const MemoizedTableBody = memo(
 const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
     const isMountedRef = useRef()
 
-    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], () => defaultColumnSizing)
-    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], () => table.options.columns.map((c) => c.id))
+    const defaultColumnOrder = useMemo(() => table.options.columns.map((c) => c.id), [table.options.columns])
+
+    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], defaultColumnOrder)
+    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
 
     table.setOptions((options) => ({
         ...options,

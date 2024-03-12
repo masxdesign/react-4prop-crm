@@ -1,8 +1,9 @@
 import { Separator } from "../ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "../ui/sheet"
-import ClientFormEdit from "../Clientform/ClientFormEdit"
 
-const SheetActions = ({ info, open, tab, onOpenChange, onTabValueChange, side = "right", readOnly }) => {
+const SheetActions = ({ info, open, tab, onOpenChange, onTabValueChange, side = "right", editMode, component: ViewComponent }) => {
+
+    const bodyProps = { info, tab, onSelect: onTabValueChange }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -15,14 +16,15 @@ const SheetActions = ({ info, open, tab, onOpenChange, onTabValueChange, side = 
                         </SheetDescription>
                     </SheetHeader>
                     <Separator />
-                    {readOnly ? (
-                        <p>{info.row.getValue('first')}</p>
-                    ) : (
-                        <ClientFormEdit 
-                            info={info}
-                            tab={tab} 
-                            onSelect={onTabValueChange} 
+                    {editMode ? (
+                        <ViewComponent 
+                            {...bodyProps}
                             onSubmit={() => onOpenChange(false)}
+                        />
+                    ) : (
+                        <ViewComponent 
+                            {...bodyProps}
+                            onHide={() => onOpenChange(false)}
                         />
                     )}
                 </div>

@@ -3,25 +3,16 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as LogoutImport } from './routes/logout'
 import { Route as DashboardImport } from './routes/dashboard'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as DashboardDataImport } from './routes/dashboard/data'
-import { Route as DashboardImportRouteImport } from './routes/dashboard/import/route'
-import { Route as DashboardAddRouteImport } from './routes/dashboard/add/route'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index/route'
-import { Route as DashboardDataDatasetImport } from './routes/dashboard/data/$dataset'
-import { Route as DashboardDataIndexRouteImport } from './routes/dashboard/data/index/route'
-import { Route as DashboardDataDatasetListRouteImport } from './routes/dashboard/data/$dataset/list/route'
-import { Route as DashboardDataDatasetAddRouteImport } from './routes/dashboard/data/$dataset/add/route'
+import { Route as DashboardDataClientsImport } from './routes/dashboard/data/clients'
+import { Route as DashboardDataEachListRouteImport } from './routes/dashboard/data/each/list/route'
+import { Route as DashboardDataClientsListRouteImport } from './routes/dashboard/data/clients/list/route'
+import { Route as DashboardDataClientsImportRouteImport } from './routes/dashboard/data/clients/import/route'
+import { Route as DashboardDataClientsAddRouteImport } from './routes/dashboard/data/clients/add/route'
 
 // Create/Update Routes
-
-const LogoutRoute = LogoutImport.update({
-  path: '/logout',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const DashboardRoute = DashboardImport.update({
   path: '/dashboard',
@@ -38,64 +29,48 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
-const DashboardDataRoute = DashboardDataImport.update({
-  path: '/data',
+const DashboardDataClientsRoute = DashboardDataClientsImport.update({
+  path: '/data/clients',
   getParentRoute: () => DashboardRoute,
 } as any).lazy(() =>
-  import('./routes/dashboard/data.lazy').then((d) => d.Route),
+  import('./routes/dashboard/data/clients.lazy').then((d) => d.Route),
 )
 
-const DashboardImportRouteRoute = DashboardImportRouteImport.update({
-  path: '/import',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/import/route.lazy').then((d) => d.Route),
+const DashboardDataEachListRouteRoute = DashboardDataEachListRouteImport.update(
+  {
+    path: '/data/each/list',
+    getParentRoute: () => DashboardRoute,
+  } as any,
+).lazy(() =>
+  import('./routes/dashboard/data/each/list/route.lazy').then((d) => d.Route),
 )
 
-const DashboardAddRouteRoute = DashboardAddRouteImport.update({
-  path: '/add',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/add/route.lazy').then((d) => d.Route),
-)
-
-const DashboardIndexRouteRoute = DashboardIndexRouteImport.update({
-  path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/index/route.lazy').then((d) => d.Route),
-)
-
-const DashboardDataDatasetRoute = DashboardDataDatasetImport.update({
-  path: '/$dataset',
-  getParentRoute: () => DashboardDataRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/data/$dataset.lazy').then((d) => d.Route),
-)
-
-const DashboardDataIndexRouteRoute = DashboardDataIndexRouteImport.update({
-  path: '/',
-  getParentRoute: () => DashboardDataRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/data/index/route.lazy').then((d) => d.Route),
-)
-
-const DashboardDataDatasetListRouteRoute =
-  DashboardDataDatasetListRouteImport.update({
+const DashboardDataClientsListRouteRoute =
+  DashboardDataClientsListRouteImport.update({
     path: '/list',
-    getParentRoute: () => DashboardDataDatasetRoute,
+    getParentRoute: () => DashboardDataClientsRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/data/$dataset/list/route.lazy').then(
+    import('./routes/dashboard/data/clients/list/route.lazy').then(
       (d) => d.Route,
     ),
   )
 
-const DashboardDataDatasetAddRouteRoute =
-  DashboardDataDatasetAddRouteImport.update({
-    path: '/add',
-    getParentRoute: () => DashboardDataDatasetRoute,
+const DashboardDataClientsImportRouteRoute =
+  DashboardDataClientsImportRouteImport.update({
+    path: '/import',
+    getParentRoute: () => DashboardDataClientsRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/data/$dataset/add/route.lazy').then(
+    import('./routes/dashboard/data/clients/import/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDataClientsAddRouteRoute =
+  DashboardDataClientsAddRouteImport.update({
+    path: '/add',
+    getParentRoute: () => DashboardDataClientsRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/data/clients/add/route.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -116,41 +91,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardImport
       parentRoute: typeof rootRoute
     }
-    '/logout': {
-      preLoaderRoute: typeof LogoutImport
-      parentRoute: typeof rootRoute
-    }
-    '/dashboard/': {
-      preLoaderRoute: typeof DashboardIndexRouteImport
+    '/dashboard/data/clients': {
+      preLoaderRoute: typeof DashboardDataClientsImport
       parentRoute: typeof DashboardImport
     }
-    '/dashboard/add': {
-      preLoaderRoute: typeof DashboardAddRouteImport
+    '/dashboard/data/clients/add': {
+      preLoaderRoute: typeof DashboardDataClientsAddRouteImport
+      parentRoute: typeof DashboardDataClientsImport
+    }
+    '/dashboard/data/clients/import': {
+      preLoaderRoute: typeof DashboardDataClientsImportRouteImport
+      parentRoute: typeof DashboardDataClientsImport
+    }
+    '/dashboard/data/clients/list': {
+      preLoaderRoute: typeof DashboardDataClientsListRouteImport
+      parentRoute: typeof DashboardDataClientsImport
+    }
+    '/dashboard/data/each/list': {
+      preLoaderRoute: typeof DashboardDataEachListRouteImport
       parentRoute: typeof DashboardImport
-    }
-    '/dashboard/import': {
-      preLoaderRoute: typeof DashboardImportRouteImport
-      parentRoute: typeof DashboardImport
-    }
-    '/dashboard/data': {
-      preLoaderRoute: typeof DashboardDataImport
-      parentRoute: typeof DashboardImport
-    }
-    '/dashboard/data/': {
-      preLoaderRoute: typeof DashboardDataIndexRouteImport
-      parentRoute: typeof DashboardDataImport
-    }
-    '/dashboard/data/$dataset': {
-      preLoaderRoute: typeof DashboardDataDatasetImport
-      parentRoute: typeof DashboardDataImport
-    }
-    '/dashboard/data/$dataset/add': {
-      preLoaderRoute: typeof DashboardDataDatasetAddRouteImport
-      parentRoute: typeof DashboardDataDatasetImport
-    }
-    '/dashboard/data/$dataset/list': {
-      preLoaderRoute: typeof DashboardDataDatasetListRouteImport
-      parentRoute: typeof DashboardDataDatasetImport
     }
   }
 }
@@ -161,16 +120,11 @@ export const routeTree = rootRoute.addChildren([
   IndexRoute,
   LoginRouteRoute,
   DashboardRoute.addChildren([
-    DashboardIndexRouteRoute,
-    DashboardAddRouteRoute,
-    DashboardImportRouteRoute,
-    DashboardDataRoute.addChildren([
-      DashboardDataIndexRouteRoute,
-      DashboardDataDatasetRoute.addChildren([
-        DashboardDataDatasetAddRouteRoute,
-        DashboardDataDatasetListRouteRoute,
-      ]),
+    DashboardDataClientsRoute.addChildren([
+      DashboardDataClientsAddRouteRoute,
+      DashboardDataClientsImportRouteRoute,
+      DashboardDataClientsListRouteRoute,
     ]),
+    DashboardDataEachListRouteRoute,
   ]),
-  LogoutRoute,
 ])

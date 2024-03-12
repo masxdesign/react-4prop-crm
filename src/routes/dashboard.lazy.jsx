@@ -1,9 +1,8 @@
+import { flushSync } from 'react-dom';
 import { useAuth } from '@/components/Auth/Auth-context';
-import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/toaster';
 import { Link, Outlet, createLazyFileRoute, useNavigate } from '@tanstack/react-router';
-import { LogOut, LogOutIcon } from 'lucide-react';
-import { flushSync } from 'react-dom';
+import { LogOut } from 'lucide-react';
 
 export const Route = createLazyFileRoute('/dashboard')({
     component: dashboardComponent,
