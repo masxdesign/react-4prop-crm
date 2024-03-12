@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { util_add, util_delete } from '@/utils/localStorageController';
 import LogChatbox from '../../../../-ui/LogChatbox';
 import ColumnNextContact from '../../../../-ui/ColumnNextContact';
-import ColumnContactDate from '../../../../-ui/ColumnContactDate';
+import ColumnContactDate from '../../../../-ui/ColumnLastContact';
 import { useAuth } from '@/components/Auth/Auth-context';
 
 const messageSchema = Yup.object().shape({

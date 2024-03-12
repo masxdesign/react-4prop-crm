@@ -1,13 +1,13 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import ColumnNextContact from '@/routes/dashboard/-ui/ColumnNextContact';
-import ColumnContactDate from '@/routes/dashboard/-ui/ColumnContactDate';
 import LogDialog from '@/routes/dashboard/-ui/LogDialog';
 import AlertOpened from '@/routes/dashboard/-ui/AlertOpened';
 import AlertEmailClick from '@/routes/dashboard/-ui/AlertEmailClick';
 import ProgressCircle from '@/routes/dashboard/-ui/ProgressCircle';
 import Linkable from './Linkable';
+import ColumnLastContactEach from './ColumnLastContactEach';
+import ColumnNextContactEach from './ColumnNextContactEach';
 const columnHelper = createColumnHelper()
 
 export const columns = [
@@ -46,7 +46,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Date contacted" />
     ),
-    cell: (info) => <ColumnContactDate info={info} />,
+    cell: (info) => <ColumnLastContactEach info={info} />,
     meta: { label: 'Contact date' }
   }),
   columnHelper.accessor('next_contact', {
@@ -54,7 +54,7 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Next contact" />
     ),
-    cell: (info) => <ColumnNextContact info={info} />,
+    cell: (info) => <ColumnNextContactEach info={info} />,
     meta: { label: 'Contact next date' }
   }),
   columnHelper.accessor('company', {

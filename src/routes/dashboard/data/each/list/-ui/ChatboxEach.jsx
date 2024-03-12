@@ -5,6 +5,8 @@ import { format } from "date-fns"
 import { addNote, fetchNotes } from "@/api/fourProp"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/components/Auth/Auth-context"
+import ColumnLastContactEach from "./ColumnLastContactEach"
+import ColumnNextContactEach from "./ColumnNextContactEach"
 
 const NEXT = "2", LAST = "1", NEXT_ONLY = "3", NO_NEXT = "4"
 
@@ -117,6 +119,8 @@ const ChatboxEach = ({ info }) => {
           info={info} 
           addFn={addFn}
           deleteFn={deleteLog}
+          lastContactComponent={ColumnLastContactEach}
+          nextContactComponent={ColumnNextContactEach}
       />  
     )
 }

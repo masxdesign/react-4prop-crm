@@ -1,14 +1,10 @@
 import { useState } from 'react';
 import NextContact from './NextContact';
-import { useMutation } from '@tanstack/react-query';
 
-const ColumnNextContact = ({ placeholder = "Pick a date", name = "next_contact", info, mutationOptions }) => {
-
+const ColumnNextContact = ({ placeholder = "Pick a date", name = "next_contact", info, mutation }) => {
     const [open, setOpen] = useState(false)
   
     const value = info.row.getValue(name)
-  
-    const mutation = useMutation(mutationOptions)
   
     const handleSelect = (dateValue) => {
       mutation.mutate({ [name]: dateValue })

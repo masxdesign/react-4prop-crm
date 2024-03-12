@@ -1,11 +1,8 @@
 import LastContact from './LastContact';
 import { useMutation } from '@tanstack/react-query';
 
-const ColumnContactDate = ({ variant, name = "last_contact", info, mutationOptions }) => {
-
+const ColumnLastContact = ({ variant, name = "last_contact", info, mutation }) => {
     const value = info.row.getValue(name)
-  
-    const mutation = useMutation(mutationOptions)
     
     const handleSelect = () => {
       mutation.mutate({ [name]: new Date })
@@ -27,4 +24,4 @@ const ColumnContactDate = ({ variant, name = "last_contact", info, mutationOptio
     )
 }
 
-export default ColumnContactDate
+export default ColumnLastContact

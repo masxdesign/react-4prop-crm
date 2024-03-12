@@ -2,8 +2,6 @@ import { Suspense, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import LogChatbox from './LogChatbox';
-import ColumnNextContact from './ColumnNextContact';
-import ColumnContactDate from './ColumnContactDate';
 import useChat from '@/hooks/use-chat';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
@@ -24,7 +22,15 @@ const ChatboxMessages = ({ queryOptions, onFilterData, ...props }) => {
   )
 }
 
-const Chatbox = ({ info, queryOptions, onFilterData, deleteFn, addFn }) => {
+const Chatbox = ({ 
+  info, 
+  queryOptions, 
+  onFilterData, 
+  deleteFn, 
+  addFn, 
+  lastContactComponent: LastContactComponent,
+  nextContactComponent: NextContactComponent
+}) => {
     const {
       chatBoxProps,
       messageBoxProps,
@@ -55,9 +61,9 @@ const Chatbox = ({ info, queryOptions, onFilterData, deleteFn, addFn }) => {
             {error && <small className='text-red-500 absolute right-2 top-2'>{error}</small>}
           </div>
           <div className="flex flex-row gap-4 justify-between items-center py-2 px-3">
-            <ColumnContactDate info={info} onSuccess={resetScroll} />
+            <LastContactComponent info={info} onSuccess={resetScroll} />
             <Button variant="default" size="xs" onClick={submit}>Make note</Button>
-            <ColumnNextContact placeholder="Next contact" info={info} onSuccess={resetScroll} />
+            <NextContactComponent placeholder="Next contact" info={info} onSuccess={resetScroll} />
           </div>
         </div>
       </>

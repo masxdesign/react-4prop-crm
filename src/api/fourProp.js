@@ -91,7 +91,6 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) =
 }
 
 export const addNextContact = async (variables, { id }) => {
-
     const { next_contact, message = '' } = variables
 
     let body = {}
