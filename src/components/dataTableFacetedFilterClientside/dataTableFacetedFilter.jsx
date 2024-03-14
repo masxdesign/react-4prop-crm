@@ -60,29 +60,11 @@ const VList = ({ column, options, facets, selectedValues }) => {
                           } else {
                               selectedValues.add(option.value)
                           }
-
                           const filterValues = Array.from(selectedValues)
                           
                           column?.setFilterValue(
                               filterValues.length ? filterValues : undefined
                           )
-
-                          /* 
-                          if (isSelected) {
-                            column?.setFilterValue([])
-                              // selectedValues.delete(option.value)
-                          } else {
-                              column?.setFilterValue([option.value])
-                              // selectedValues.add(option.value)
-                          }
-
-                          return
-                          const filterValues = Array.from(selectedValues)
-                          
-                          column?.setFilterValue(
-                              filterValues.length ? filterValues : undefined
-                          )
-                          */
                       }}
                   >
                       <div
@@ -125,8 +107,6 @@ const VCommand = ({ title, column, facets, options, selectedValues }) => {
             event.preventDefault()
         }
     }
-
-    console.log(filteredOptions);
 
     /** fix!! */
     useEffect(() => {
@@ -171,9 +151,9 @@ const VCommand = ({ title, column, facets, options, selectedValues }) => {
 const DataTableFacetedFilter = ({
     column,
     title,
-    data
+    options
 }) => {
-  const { facets, options } = data
+  const facets = column?.getFacetedUniqueValues()
   const selectedValues = new Set(column?.getFilterValue())
 
   return (

@@ -26,8 +26,8 @@ export const util_delete_each = (predicate) => ([items, ...rest]) => ([
     ...rest
 ])
 
-export const util_add_each = (data) => ([items, ...rest]) => ([
-    [ ...items, data ],
+export const util_add_each = (data, predicateReject = null) => ([items, ...rest]) => ([
+    [ ...predicateReject ? reject(items, predicateReject) : items, data ],
     ...rest
 ])
 

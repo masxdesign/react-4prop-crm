@@ -1,24 +1,24 @@
-import { Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import LogChatbox from './LogChatbox';
-import useChat from '@/hooks/use-chat';
+import useChatbox from '@/hooks/use-Chatbox';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import ChatboxMessages from './ChatboxMessages';
 
-const ChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props }) => {
+const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props }) => {
   const query = useSuspenseQuery(queryOptions)
 
   const messages = useMemo(() => onFilterData(query.data), [query.data, onFilterData])
 
   return messages.length > 0 ? (
-    <LogChatbox 
+    <ChatboxMessages 
       data={messages}
       enableDelete={enableDelete}
       {...props}
     />
   ) : (
-    <div className='opacity-50 font-bold text-lg text-slate-400 w-full h-full flex justify-center items-center'>
-      No messages yet
+    <div className='uppercase opacity-50 font-bold text-sm text-slate-400 w-full h-full flex justify-center items-center'>
+      No messages
     </div>
   )
 }
@@ -35,13 +35,13 @@ const Chatbox = ({
       messageBoxProps,
       submit,
       error
-    } = useChat({ queryOptions, deleteMutationOptions, addMutationOptions })
+    } = useChatbox({ queryOptions, deleteMutationOptions, addMutationOptions })
   
     return (
       <div className='flex flex-col h-full'>
         <div className="bg-slate-100 shadow-inner h-full min-h-[420px] max-h-[600px]">
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
-            <ChatboxMessages 
+            <FetchChatboxMessages 
               queryOptions={queryOptions}
               onFilterData={onFilterData}
               className="h-full"

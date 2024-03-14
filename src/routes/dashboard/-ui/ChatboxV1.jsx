@@ -2,7 +2,7 @@ import { Suspense, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import LogChatbox from './LogChatbox';
-import useChat from '@/hooks/use-chat';
+import useChat from '@/hooks/use-Chatbox';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 const ChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props }) => {

@@ -1,9 +1,9 @@
 import axios from "axios";
 
-const API_BIZCHAT_PROD_URL = "http://localhost:8081" //"https://bizchat.uk"
+const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
 const bizchatAxios = axios.create({
-	baseURL: `${window.bizChatURL ?? API_BIZCHAT_PROD_URL}`,
+	baseURL: BIZCHAT_BASEURL,
     withCredentials: true
 })
 

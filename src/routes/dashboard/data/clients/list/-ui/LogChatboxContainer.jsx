@@ -34,7 +34,7 @@ const LogChatboxContainer = ({ info }) => {
   
     const data = useMemo(() => query.data?.map((row) => {
       let { message } = row
-      let variant = row.author === currUserId ? 'author' : 'default'
+      let variant = row.author === currUserId ? 'sender' : 'recipient'
   
       if(row.isJSON) {
   

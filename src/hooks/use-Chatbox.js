@@ -6,7 +6,7 @@ const messageSchema = Yup.object().shape({
     message: Yup.string().required()
 })
 
-const useChat = ({ deleteMutationOptions, addMutationOptions }) => {
+const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
     const [autoScroll, setAutoScroll] = useState(true)
     const [scrollBehavior, setScrollBehavior] = useState(undefined)
     const [value, setValue] = useState('')
@@ -85,4 +85,4 @@ const useChat = ({ deleteMutationOptions, addMutationOptions }) => {
 
 }
 
-export default useChat
+export default useChatbox
