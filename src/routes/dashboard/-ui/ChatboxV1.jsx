@@ -24,22 +24,26 @@ const ChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props })
 }
 
 const Chatbox = ({ 
+  info, 
   queryOptions, 
   onFilterData, 
   deleteMutationOptions, 
   addMutationOptions,
+  lastContactComponent: LastContactComponent,
+  nextContactComponent: NextContactComponent,
   enableDelete
 }) => {
     const {
       chatBoxProps,
       messageBoxProps,
       submit,
+      ResetAll,
       error
     } = useChat({ queryOptions, deleteMutationOptions, addMutationOptions })
   
     return (
-      <div className='flex flex-col h-full'>
-        <div className="bg-slate-100 shadow-inner h-full min-h-[420px] max-h-[600px]">
+      <>
+        <div className="h-[500px] bg-slate-100 shadow-inner">
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
             <ChatboxMessages 
               queryOptions={queryOptions}
@@ -59,12 +63,25 @@ const Chatbox = ({
             />
             {error && <small className='text-red-500 absolute right-2 top-2'>{error}</small>}
           </div>
-          <div className="flex flex-row gap-4 justify-end items-center py-2 px-3">
-            <Button variant="default" size="xs" onClick={submit} name="note">Make note</Button>
-            <Button variant="secondary" size="xs" onClick={submit} name="bizchat">Send Bizchat</Button>
+          <div className="flex flex-row gap-4 justify-between items-center py-2 px-3">
+            <LastContactComponent 
+              info={info} 
+              onSuccess={ResetAll} 
+              message={messageBoxProps.value} 
+            />
+            <div className="flex flex-row gap-2">
+              <Button variant="default" size="xs" onClick={submit}>Make note</Button>
+              <Button variant="secondary" size="xs" onClick={submit}>Send Bizchat</Button>
+            </div>
+            <NextContactComponent 
+              info={info} 
+              placeholder="Next contact" 
+              onSuccess={ResetAll} 
+              message={messageBoxProps.value} 
+            />
           </div>
         </div>
-      </div>
+      </>
     )
 }
 

@@ -1,47 +1,48 @@
 import { useState } from 'react';
 import * as Yup from "yup"
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { util_add, util_delete } from '@/utils/localStorageController';
+import { useMutation } from '@tanstack/react-query';
 
 const messageSchema = Yup.object().shape({
     message: Yup.string().required()
 })
 
-const useChat = ({ queryOptions, deleteFn, addFn }) => {
-    const queryClient = useQueryClient()
-
+const useChat = ({ deleteMutationOptions, addMutationOptions }) => {
     const [autoScroll, setAutoScroll] = useState(true)
     const [scrollBehavior, setScrollBehavior] = useState(undefined)
     const [value, setValue] = useState('')
     const [error, setError] = useState(null)
   
     const resetScroll = () => {
-        setAutoScroll(true)
-        setScrollBehavior('smooth')
-      }
-  
-    const deleteMutation = useMutation({
-      mutationFn: deleteFn,
-      onSuccess: (_, id) => {
-        setAutoScroll(false)
-        queryClient.setQueryData(queryOptions.queryKey, util_delete({ id: id }))
-      }
-    })
+      setAutoScroll(true)
+      setScrollBehavior('smooth')
+    }
+
+    const ResetAll = () => {
+      resetScroll()
+      setValue('')
+    }
   
     const addMutation = useMutation({
-        mutationFn: addFn,
-        onSuccess: (data) => {
-          resetScroll()
-          queryClient.setQueryData(queryOptions.queryKey, util_add(data))
-          setValue('')
-        }
+      ...addMutationOptions,
+      onSuccess: (...args) => {
+        addMutationOptions.onSuccess?.(...args)
+        ResetAll()
+      }
+    })
+
+    const deleteMutation = useMutation({
+      ...deleteMutationOptions,
+      onSuccess: (...args) => {
+        deleteMutationOptions.onSuccess?.(...args)
+        setAutoScroll(false)
+      }
     })
     
-    const handleSubmit = () => {
+    const handleSubmit = (e) => {
       try {
-  
+
         messageSchema.validateSync({ message: value })
-        addMutation.mutate({ message: value })
+        addMutation.mutate({ message: value, _button: e.target.name })
         setError(null)
   
       } catch (e) {
@@ -78,6 +79,7 @@ const useChat = ({ queryOptions, deleteFn, addFn }) => {
         messageBoxProps,
         submit: handleSubmit,
         resetScroll,
+        ResetAll,
         error
     }
 

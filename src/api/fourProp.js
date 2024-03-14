@@ -1,7 +1,8 @@
 import queryClient from "@/queryClient";
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { isEmpty } from "lodash";
+import { isEmpty, truncate } from "lodash";
+import { sendBizchatMessage } from "./bizchat";
 
 // const FOURPROP_BASEURL = 'https://www.4prop.com'
 const FOURPROP_BASEURL = 'https://localhost:50443'
@@ -129,9 +130,29 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
-export const addNote = async (variables, { id }) => {
+export const addNote = async (variables, { id, user }) => {
 
-    const { message = '' } = variables
+    const { message = '', _button } = variables
+
+    if(_button === "bizchat") {
+
+        if(!user?.id) throw new Error('user.id is not defined')
+
+        const chat_id = await sendBizchatMessage({ 
+            from: user.id, 
+            recipient: id, 
+            message 
+        })
+
+        const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${id}`, {
+            nid: user.id,
+            chat_id,
+            teaser: truncate(message, { length: 30 })
+        })
+
+        return data
+
+    }
 
     if (isEmpty(message)) throw new Error('message is empty')
 

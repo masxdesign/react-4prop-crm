@@ -8,6 +8,8 @@ import { DragHandleHorizontalIcon } from '@radix-ui/react-icons'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
 import useLocalstorageState from '@/hooks/use-LocalstorageState'
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
+import { HoverCardPortal } from '@radix-ui/react-hover-card'
 
 const ResizeHandler = ({ header }) => (
     <div
@@ -63,11 +65,15 @@ const DraggableTableHeader = ({ header }) => {
 const DragAlongCell = ({ cell }) => {
     const { isDragging, setNodeRef, transform } = useSortable({ id: cell.column.id })
 
-    return (
+    const context = cell.getContext()
+
+    const { hoverCardComponent: HoverCardComponent } = context.table.options.meta
+
+    const tableCell = (
         <TableCell  
             ref={setNodeRef}
             className={cn(
-                "relative flex items-center", 
+                "relative flex items-center cursor-pointer", 
                 cell.column.columnDef.meta?.className ?? "", 
                 isDragging ? "opacity-80 z-10": "opacity-100 z-0"
             )}
@@ -77,11 +83,25 @@ const DragAlongCell = ({ cell }) => {
                 transition: 'width transform 0.2s ease-in-out'
             }}
         >
+                
             {flexRender(
                 cell.column.columnDef.cell,
-                cell.getContext()
-            )}
+                context
+            )}                
         </TableCell>
+    )
+
+    if(!HoverCardComponent) return tableCell
+
+    return (
+        <HoverCard>
+            <HoverCardTrigger asChild>{tableCell}</HoverCardTrigger>
+            <HoverCardPortal container={document.body}>
+                <HoverCardContent>
+                    <HoverCardComponent cell={cell} />
+                </HoverCardContent>
+            </HoverCardPortal>
+        </HoverCard>
     )
 }
 

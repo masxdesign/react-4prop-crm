@@ -17,7 +17,19 @@ export const util_update = (predicate, newData, cb = null) => {
 
 export const util_delete = (predicate) => (data) => reject(data, predicate)
 
-export const util_add = (newItem) => (data) => isArray(newItem) ? union(data, newItem) : [...data, newItem]
+export const util_add = (newItem) => (data) => {
+    return isArray(newItem) ? union(data, newItem) : [...data, newItem]
+}
+
+export const util_delete_each = (predicate) => ([items, ...rest]) => ([
+    reject(items, predicate),
+    ...rest
+])
+
+export const util_add_each = (data) => ([items, ...rest]) => ([
+    [ ...items, data ],
+    ...rest
+])
 
 export const util_pagin_update = (predicate, newData, cb = null) => ([pagin, list]) => {
     const listFn = util_update(predicate, newData, cb)

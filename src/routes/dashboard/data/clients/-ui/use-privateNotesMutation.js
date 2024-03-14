@@ -21,7 +21,7 @@ const usePrivateNotesMutation = ({ name, info, onSuccess }) => {
         onSuccess: ([_, log], variables) => {
           queryClient.setQueryData(dataQueryKey, util_pagin_update({ id: uid }, variables))
           queryClient.setQueryData(['log', uid], util_add(log))
-          onSuccess && onSuccess()
+          onSuccess?.()
         }
     })
   
