@@ -117,7 +117,7 @@ const ChatboxEach = ({ queryOptions, info, user }) => {
                       className="flex bg-emerald-500 hover:bg-emerald-400 text-white items-center gap-2"
                       href={`/bizchat/rooms/${i}?i=${user.bz_hash}`}
                     >
-                      View and reply
+                      View all messages
                     </a>
                   </Button>
                 </span>
