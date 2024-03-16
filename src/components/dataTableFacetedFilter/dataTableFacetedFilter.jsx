@@ -20,7 +20,7 @@ import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { useVirtualizer } from "@tanstack/react-virtual"
 
-const VList = ({ column, options, facets, selectedValues }) => {
+const VList = ({ column, options, facets, selectedValues, multiple }) => {
 
     const parentRef = useRef(null)
 
@@ -30,6 +30,35 @@ const VList = ({ column, options, facets, selectedValues }) => {
       estimateSize: () => 35,
       overscan: 5
     })
+
+    const handleSelect = (option) => {
+        const isSelected = selectedValues.has(option.value)
+
+        if (multiple) {
+
+          if (isSelected) {
+              selectedValues.delete(option.value)
+          } else {
+              selectedValues.add(option.value)
+          }          
+
+        } else {
+
+          selectedValues.clear()
+
+          if (!isSelected) {
+            selectedValues.add(option.value)
+          }
+
+        }
+
+        const filterValues = Array.from(selectedValues)
+          
+        column?.setFilterValue(
+            filterValues.length ? filterValues : undefined
+        )
+
+    }
 
     return (
         <div ref={parentRef} className={`max-h-[300px] overflow-y-auto overflow-x-hidden`}>
@@ -54,36 +83,7 @@ const VList = ({ column, options, facets, selectedValues }) => {
                           height: `${virtualRow.size}px`,
                           transform: `translateY(${virtualRow.start}px)`,
                       }}
-                      onSelect={() => {
-                          if (isSelected) {
-                              selectedValues.delete(option.value)
-                          } else {
-                              selectedValues.add(option.value)
-                          }
-
-                          const filterValues = Array.from(selectedValues)
-                          
-                          column?.setFilterValue(
-                              filterValues.length ? filterValues : undefined
-                          )
-
-                          /* 
-                          if (isSelected) {
-                            column?.setFilterValue([])
-                              // selectedValues.delete(option.value)
-                          } else {
-                              column?.setFilterValue([option.value])
-                              // selectedValues.add(option.value)
-                          }
-
-                          return
-                          const filterValues = Array.from(selectedValues)
-                          
-                          column?.setFilterValue(
-                              filterValues.length ? filterValues : undefined
-                          )
-                          */
-                      }}
+                      onSelect={() => handleSelect(option)}
                   >
                       <div
                           className={cn(
@@ -112,7 +112,7 @@ const VList = ({ column, options, facets, selectedValues }) => {
     )
 }
 
-const VCommand = ({ title, column, facets, options, selectedValues }) => {
+const VCommand = ({ title, column, facets, options, selectedValues, multiple }) => {
 
     const [search, setSearch] = useState('')
 
@@ -125,8 +125,6 @@ const VCommand = ({ title, column, facets, options, selectedValues }) => {
             event.preventDefault()
         }
     }
-
-    console.log(filteredOptions);
 
     /** fix!! */
     useEffect(() => {
@@ -148,6 +146,7 @@ const VCommand = ({ title, column, facets, options, selectedValues }) => {
                 options={filteredOptions} 
                 facets={facets} 
                 selectedValues={selectedValues} 
+                multiple={multiple}
               />
             </CommandGroup>
           </CommandList>
@@ -171,7 +170,8 @@ const VCommand = ({ title, column, facets, options, selectedValues }) => {
 const DataTableFacetedFilter = ({
     column,
     title,
-    data
+    data,
+    multiple
 }) => {
   const { facets, options } = data
   const selectedValues = new Set(column?.getFilterValue())
@@ -224,6 +224,7 @@ const DataTableFacetedFilter = ({
           facets={facets}
           options={options}
           selectedValues={selectedValues}
+          multiple={multiple}
         />
       </PopoverContent>
     </Popover>

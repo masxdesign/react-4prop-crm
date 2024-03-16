@@ -142,37 +142,7 @@ const MemoizedTableBody = memo(
     (prev, next) => prev.table.options.data === next.table.options.data
 )
 
-const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
-    const isMountedRef = useRef()
-
-    const defaultColumnOrder = useMemo(() => table.options.columns.map((c) => c.id), [table.options.columns])
-
-    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], defaultColumnOrder)
-    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
-
-    table.setOptions((options) => ({
-        ...options,
-        state: {
-            ...options.state,
-            columnSizing,
-            columnOrder
-        },
-        columnResizeMode: 'onChange',
-        onColumnOrderChange: setColumnOrder,
-        onColumnSizingChange: setColumnSizing
-    }))
-
-    useEffect(() => {
-        if(isMountedRef.current) {
-            table.setColumnSizing(columnSizing)
-            table.setColumnOrder(columnOrder)
-        }
-    }, [table.options.columns])
-
-    useEffect(() => {
-        isMountedRef.current = true
-    }, [])
-
+const DataTableDnd = ({ table }) => {
     const columnSizeVars = useMemo(() => {
         const headers = table.getFlatHeaders()
         const colSizes = {}
@@ -219,7 +189,7 @@ const DataTableDnd = ({ tableName, table, defaultColumnSizing = {} }) => {
                     {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id} className="flex items-center w-[fit-content]">
                             <SortableContext
-                                items={columnOrder}
+                                items={table.getState().columnOrder}
                                 strategy={horizontalListSortingStrategy}
                             >                                
                                 {headerGroup.headers.map((header) => (

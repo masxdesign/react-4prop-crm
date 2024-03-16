@@ -141,4 +141,11 @@ export const columns = [
     ),
     cell: (info) => <Linkable info={info} className="w-full truncate" tab="address" />,
   }),
+  columnHelper.accessor('a', {
+    id: 'a',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Postcode 2" />
+    ),
+    cell: (info) => <Linkable info={info} className="w-full truncate" tab="address" />,
+  }),
 ]

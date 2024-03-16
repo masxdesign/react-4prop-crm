@@ -13,7 +13,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { CaretSortIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { PhoneCallIcon } from 'lucide-react';
-import { findLast, isEmpty } from 'lodash';
+import { findLast, get, isEmpty } from 'lodash';
 import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import ColumnLastContactEach from './-ui/ColumnLastContactEach';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -23,6 +23,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';
+import useTableSS from '@/components/DataTableSS/use-TableSS';
+import DataTableDnd from '@/components/DataTableDnd';
+import DataTablePagination from '@/components/DataTablePagination';
 
 const Dd = forwardRef(({ bold, label, value, className, labelClassName = 'min-w-[90px] max-w-[120px]', collapsible, ...props }, ref) => (
   <div ref={ref} className={cn('flex flex-row items-center gap-4', className)} {...props}>
@@ -96,34 +99,38 @@ export const Route = createLazyFileRoute('/dashboard/data/each/list')({
 
 function ClientsListComponent() {
   const { tableName, queryOptions, columns, auth } = Route.useRouteContext()
-  
-  const tableProps = useTableState({ queryOptions })
 
   const [infoDialog, dialog, showDialog] = useSheetState()
-
-  const meta = useMemo(() => ({ 
-    dataQueryKey: queryOptions.queryKey,
-    showDialog,
-    hoverCardComponent: TableHoverCard
-  }), [queryOptions.queryKey])
+  
+  const table = useTableSS({ 
+    tableName,
+    queryOptions, 
+    columns,
+    meta: {
+      showDialog,
+      hoverCardComponent: TableHoverCard
+    }
+  })
 
   return (
     <>
-      <div className='overflow-hidden p-4'>
-        <DataTableSS 
-          tableName={tableName}
-          columns={columns}
-          meta={meta}
-          {...tableProps}
-        />
-        {infoDialog && (
-          <DialogEach 
-            info={infoDialog} 
-            user={auth.user}
-            {...dialog} 
-          />
-        )}
+      <div className='overflow-hidden p-4 space-y-4'>
+        <div className='space-x-3'>
+          <FacetedFilter queryKey={[tableName, 'facet', 'company']} title="Companies" columnId="company" table={table} />
+          <FacetedFilter queryKey={[tableName, 'facet', 'a']} title="Postcode" columnId="a" table={table} />
+        </div>
+        <div className='rounded-md border'>
+            <DataTableDnd table={table} />
+        </div>
+        <DataTablePagination table={table} />
       </div>
+      {infoDialog && (
+        <DialogEach 
+          info={infoDialog} 
+          user={auth.user}
+          {...dialog} 
+        />
+      )}
     </>
   )
 }
@@ -398,5 +405,35 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
           </DropdownMenuItem>
       ))}
     </DropdownMenuContent>
+  )
+}
+
+function FacetedFilter ({ queryKey, table, title, columnId }) {
+  const { data } = useSuspenseQuery({
+    queryKey: queryKey,
+    queryFn: () => fetchFacets({ column: columnId }),
+    select: data => {
+
+      let data_ = data.split('`').map((item) => item.split('^'))
+
+      let options = []
+      let facets = new Map
+
+      for(const [label, count] of data_) {
+          options.push({ label, value: label })
+          facets.set(label, count)
+      }
+
+      return { options, facets }
+
+    }
+  })
+
+  return (
+    <DataTableFacetedFilter
+      column={table.getColumn(columnId)}
+      title={title}
+      data={data}
+    />
   )
 }
