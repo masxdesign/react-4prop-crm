@@ -1,3 +1,4 @@
+import { useIsFirstRender } from "@uidotdev/usehooks"
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react"
 
 const _getState = (data, prevData) => typeof data === 'function' ? data(prevData) : data
@@ -50,7 +51,7 @@ const changeData = (key, payload) => ({
 })
 
 const useLocalstorageState = (keyName, initialData) => {
-    const isMountedRef = useRef()
+    const isFirstRender = useIsFirstRender()
 
     const keyName_ = JSON.stringify(keyName)
 
@@ -73,15 +74,11 @@ const useLocalstorageState = (keyName, initialData) => {
     }, [keyName_, state_, dispatch])
 
     useEffect(() => {
-        if(isMountedRef.current) {
+        if(!isFirstRender) {
             dispatch(addData(keyName_, hydrateData(keyName_, initialData)))
         }
     }, [keyName_])
-
-    useEffect(() => {
-        isMountedRef.current = true
-    }, [])
-
+    
     return [state_, setState_]
 }
 

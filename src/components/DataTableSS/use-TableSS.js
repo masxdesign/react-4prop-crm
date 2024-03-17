@@ -1,26 +1,23 @@
 import useLocalstorageState from '@/hooks/use-LocalstorageState'
-import useTableState from '@/hooks/use-tableState'
+import useTableState from '@/hooks/use-TableModel'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { functionalUpdate } from '@tanstack/react-router'
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import { getCoreRowModel, makeStateUpdater, useReactTable } from '@tanstack/react-table'
+import { useIsFirstRender } from '@uidotdev/usehooks'
 import { get, isUndefined } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 const useTableSS = ({
     tableName,
     queryOptions,
     columns,
-    meta
+    state,
+    meta,
+    onSortingChange,
+    onPaginationChange,
+    onColumnFiltersChange
 }) => {
-    const {
-        data, 
-        sorting,
-        pageCount,
-        pagination,
-        columnFilters,
-        onSortingChange,
-        onPaginationChange,
-        onColumnFiltersChange
-    } = useTableState({ queryOptions })
+    const { data, pageCount } = useLoadData(queryOptions, state)
 
     const defaultColumnOrder = useMemo(() => columns.map((c) => c.id), [columns])
     const defaultColumnSizing = {}
@@ -32,12 +29,6 @@ const useTableSS = ({
     const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
     const [columnVisibility, setColumnVisibility] = useLocalstorageState([tableName, 'visibility'], defaultColumnVisibility)
 
-    // const [rowSelection, setRowSelection] = useState({})
-
-    const selectedIds = useMemo(() => new Set, [])
-
-    console.log(selectedIds);
-
     const table = useReactTable({
         columns, 
         data, 
@@ -46,9 +37,7 @@ const useTableSS = ({
             dataQueryKey: queryOptions.queryKey
         },
         state: {
-            sorting,
-            columnFilters,
-            pagination,
+            ...state,
             columnVisibility,
             columnOrder,
             columnSizing
@@ -63,9 +52,9 @@ const useTableSS = ({
         manualFiltering: true,
         manualPagination: true,
         manualSorting: true,
-        onPaginationChange: _o(pagination, onPaginationChange),
-        onColumnFiltersChange: _o(columnFilters, onColumnFiltersChange),
-        onSortingChange: _o(sorting, onSortingChange),
+        onPaginationChange: _o(state.pagination, onPaginationChange),
+        onColumnFiltersChange: _o(state.columnFilters, onColumnFiltersChange),
+        onSortingChange: _o(state.sorting, onSortingChange),
         onColumnVisibilityChange: setColumnVisibility,
         columnResizeMode: 'onChange',
         onColumnOrderChange: setColumnOrder,
@@ -73,57 +62,42 @@ const useTableSS = ({
         getCoreRowModel: getCoreRowModel()
     })
 
-    const onRowSelectionChange = (newValue) => {
-        const newValue_ = functionalUpdate(newValue, table.getState().rowSelection)
-        const rows = table.getRowModel().rows
-
-        console.log(selectedIds);
-
-        for(const row of rows) {
-            if(newValue_[row.index]) {
-                selectedIds.add(row.original.id)
-            } else {
-                selectedIds.delete(row.original.id)
-            }
-        }
-        
-    }
-
-    table.setOptions((options) => ({
-        ...options,
-        onRowSelectionChange
-    }))
-
-    useEffect(() => {
-        
-
-        table.setRowSelection(
-            Object.fromEntries(
-                table.getRowModel().rows
-                    .map((row) => ([row.index, selectedIds.has(row.original.id)]))
-            )
-        )
-
-    }, [selectedIds.size])
-
-    const isMountedRef = useRef()
+    const isFirstRender = useIsFirstRender()
     
     useEffect(() => {
-        if(isMountedRef.current) {
+
+        if(!isFirstRender) {
             table.setColumnSizing(columnSizing)
             table.setColumnOrder(columnOrder)
         }
-    }, [columns])
 
-    useEffect(() => {
-        isMountedRef.current = true
-    }, [])
+    }, [columns])
 
     return table
 }
 
 function _o (newValue, onChange) {
     return (fn) => onChange(functionalUpdate(fn, newValue))
+}
+
+function useLoadData (queryOptions, tableState) {
+    const { pageSize } = tableState.pagination
+
+    const queryOptions_ = useMemo(() => 
+        functionalUpdate(queryOptions, tableState), 
+        [queryOptions, tableState]
+    )
+
+    const { data } = useSuspenseQuery(queryOptions_)
+
+    const [{ count }, data_] = data
+
+    const pageCount = useMemo(() => Math.round(count / pageSize), [count, pageSize])
+
+    return {
+        data: data_,
+        pageCount
+    }
 }
 
 export default useTableSS

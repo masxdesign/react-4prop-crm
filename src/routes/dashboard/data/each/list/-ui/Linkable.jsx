@@ -5,7 +5,7 @@ const Linkable = ({ info, className, tab, ...props }) => {
     const value = info.getValue()
   
     const handleClick = () => {
-      info.table.options.meta.showDialog(info, tab)
+      info.table.options.meta.showDialog(info.row.original.id, tab)
     }
   
     return (

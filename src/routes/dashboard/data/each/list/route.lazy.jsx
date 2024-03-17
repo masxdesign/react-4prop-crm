@@ -1,8 +1,7 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import useTableState from '../../../../../hooks/use-tableState';
+import { createLazyFileRoute, defaultParseSearch, useNavigate, useSearch } from '@tanstack/react-router'
+import useTableModel from '@/hooks/use-TableModel';
 import useSheetState from '@/hooks/use-sheetState';
 import { Suspense, forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import DataTableSS from '@/components/DataTableSS';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProgressCircle from '@/routes/dashboard/-ui/ProgressCircle';
 import AlertEmailClick from '@/routes/dashboard/-ui/AlertEmailClick';
@@ -11,9 +10,9 @@ import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNotes } from '@/api/fourProp';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CaretSortIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
+import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { PhoneCallIcon } from 'lucide-react';
-import { findLast, get, isEmpty } from 'lodash';
+import { findLast, get, isEmpty, isEqual } from 'lodash';
 import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import ColumnLastContactEach from './-ui/ColumnLastContactEach';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -26,6 +25,9 @@ import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';
 import useTableSS from '@/components/DataTableSS/use-TableSS';
 import DataTableDnd from '@/components/DataTableDnd';
 import DataTablePagination from '@/components/DataTablePagination';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const Dd = forwardRef(({ bold, label, value, className, labelClassName = 'min-w-[90px] max-w-[120px]', collapsible, ...props }, ref) => (
   <div ref={ref} className={cn('flex flex-row items-center gap-4', className)} {...props}>
@@ -100,33 +102,92 @@ export const Route = createLazyFileRoute('/dashboard/data/each/list')({
 function ClientsListComponent() {
   const { tableName, queryOptions, columns, auth } = Route.useRouteContext()
 
-  const [infoDialog, dialog, showDialog] = useSheetState()
-  
-  const table = useTableSS({ 
-    tableName,
-    queryOptions, 
-    columns,
-    meta: {
-      showDialog,
-      hoverCardComponent: TableHoverCard
-    }
-  })
+  const navigate = useNavigate({ from: '/dashboard/data/each/list' })
+
+  const [infoDialogId, dialog, showDialog] = useSheetState()
+
+  const tableModel = useTableModel()
+
+  const table = useTableModel.use.tableSS(
+    { 
+      tableName, 
+      queryOptions, 
+      columns, 
+      meta: {
+        showDialog,
+        hoverCardComponent: TableHoverCard
+      } 
+    }, 
+    tableModel
+  )
+
+  const selection = useTableModel.use.selection(tableModel, table)
 
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
-        <div className='space-x-3'>
-          <FacetedFilter queryKey={[tableName, 'facet', 'company']} title="Companies" columnId="company" table={table} />
-          <FacetedFilter queryKey={[tableName, 'facet', 'a']} title="Postcode" columnId="a" table={table} />
+        <div className='flex flex-row gap-3'>
+          <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 border-dashed">
+                  <CheckIcon className={cn("h-4 w-4")} />
+                  {selection.length > 0 && (
+                    <>
+                      <Separator orientation="vertical" className="mx-2 h-4" />
+                      <Badge
+                        variant="secondary"
+                        className="rounded-sm px-1 font-normal"
+                      >
+                        {selection.length}
+                      </Badge>
+                    </>
+                  )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className={`w-80 overflow-y-auto max-h-96 p-0`} align="start">
+              {selection.map((item) => (
+                <UserCard 
+                  key={item.id} 
+                  data={item} 
+                  className="w-full p-3 hover:bg-muted/50 cursor-pointer"
+                  onView={() => {
+                    navigate({
+                      search: (prev) => {
+
+                        return {
+                          ...prev,
+                          open: true,
+                          info: item.id
+                        }
+                      }
+                    })
+                  }} 
+                  hideContact 
+                />
+              ))}
+            </PopoverContent>
+          </Popover>
+          {[
+            { columnId: "company", title: "Companies" },
+            { columnId: "a", title: "Postcode" },
+          ].map((props) => (
+            <FacetedFilter 
+              key={props.columnId}
+              queryKey={[tableName, 'facet', props.columnId]}
+              table={table} 
+              {...props}
+            />
+          ))}
         </div>
         <div className='rounded-md border'>
             <DataTableDnd table={table} />
         </div>
         <DataTablePagination table={table} />
       </div>
-      {infoDialog && (
+      {infoDialogId && (
         <DialogEach 
-          info={infoDialog} 
+          id={infoDialogId} 
+          table={table}
           user={auth.user}
           {...dialog} 
         />
@@ -135,8 +196,8 @@ function ClientsListComponent() {
   )
 }
 
-function DialogEach ({ info, user, ...props }) {
-  const { id } = info.row.original
+function DialogEach ({ id, table, user, ...props }) {
+  const info = useTableModel.use.findInfoById(id, table)
 
   const chatboxQueryOptions = {
     queryKey: ['chatboxEach', id],
@@ -173,31 +234,37 @@ function DialogEach ({ info, user, ...props }) {
   )
 }
 
+const UserCard = ({ data, onView, hideView, hideContact, className }) => (
+  <div className={cn('text-sm space-y-2', className)}>
+    <div className='flex flex-row justify-between gap-4'>
+      <div className='space-y-1 max-w-[180px]'>
+        <b>{data.first} {data.last}</b>
+        <div className='text-nowrap truncate text-muted-foreground'>{data.company}</div>
+      </div>
+      {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={() => onView(data)}>View</Button>}
+    </div>
+    {!hideContact && [
+      { label: <EnvelopeClosedIcon className="w-4 h-4" />, name: "email" },
+      { label: <PhoneCallIcon className="w-4 h-4" /> , name: "phone" },
+    ].map((props) => (
+      <DD key={props.name} row={data} labelClassName="max-w-[10px]" {...props} />
+    ))}
+  </div>
+)
+
 function TableHoverCard ({ cell, hideView }) {
-  const { first, last, company, ...row } = cell.row.original
-  
   const info = cell.table ? cell : cell.getContext()
 
-  const handleShowDialog = () => {
-    info.table.options.meta.showDialog(info)
+  const handleShowDialog = ({ id }) => {
+    info.table.options.meta.showDialog(id)
   }
 
   return (
-    <div className='text-sm space-y-2'>
-      <div className='flex flex-row justify-between gap-4'>
-        <div className='space-y-1 max-w-[180px]'>
-          <b>{first} {last}</b>
-          <div className='text-nowrap truncate text-muted-foreground'>{company}</div>
-        </div>
-        {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={handleShowDialog}>View</Button>}
-      </div>
-      {[
-        { label: <EnvelopeClosedIcon className="w-4 h-4" />, name: "email" },
-        { label: <PhoneCallIcon className="w-4 h-4" /> , name: "phone" },
-      ].map((props) => (
-        <DD key={props.name} row={row} labelClassName="max-w-[10px]" {...props} />
-      ))}
-    </div>
+    <UserCard 
+      data={cell.row.original}
+      onView={handleShowDialog}
+      hideView={hideView}
+    />
   )
 }
 
@@ -331,7 +398,8 @@ function DialogNavigation ({ info }) {
   const prevInfo = useMemo(() => getInfoByOffset(-1), [getInfoByOffset])
 
   const handleJump = (index) => {
-    showDialog(getInfoByIndex(index))
+    const info = getInfoByIndex(index)
+    showDialog(info.row.original.id)
   }
 
   return (
@@ -358,7 +426,7 @@ function DialogNavigation ({ info }) {
                 variant="link"
                 className="h-8 w-8 p-0"
                 size="sm"
-                onClick={() => showDialog(info)}
+                onClick={() => showDialog(info.row.original.id)}
                 disabled={!info}
             >
               <Icon className="h-4 w-4" />

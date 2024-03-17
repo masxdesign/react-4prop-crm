@@ -1,6 +1,6 @@
 import { fetchNegotiators } from '@/api/fourProp'
 import PendingComponent from '@/routes/dashboard/-ui/PendingComponent'
-import { init } from '@/hooks/use-tableState'
+import { init } from '@/hooks/use-TableModel'
 import { queryOptions } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
