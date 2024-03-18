@@ -64,10 +64,12 @@ export const init =  (search) => ({
 })
 
 const tableReducer = (state, action) => {
-    console.log(action);
     switch (action.type) {
         case "UPDATE_STATE_SEARCH":
-            return init(action.payload)
+            return {
+                ...init(action.payload),
+                selected: state.selected
+            }
         case "DESELECT_ALL":
             return {
                 ...state,
@@ -79,11 +81,10 @@ const tableReducer = (state, action) => {
                 selected: state.selected.filter((item) => item !== action.payload)
             }
         case "SELECT":
-            const state_ = tableReducer(state, deselectAction(action.payload))
             return {
-                ...state_,
+                ...state,
                 selected: [
-                    ...state_.selected,
+                    ...state.selected.filter((item) => item !== action.payload),
                     action.payload
                 ]
             }
@@ -205,13 +206,19 @@ const useTableModel = () => {
         makeStateUpdater('rowSelection', table)(newRowSelectionUpdater)
 
         for(const row of table.getRowModel().rows) {
-            if(newValue[row.index]) {
+            const isSelected = state.selected.includes(row.original.id)
+            const isSelectedRowSelection = newValue[row.index]
+
+            if(isSelected && isSelectedRowSelection) continue
+            if(!isSelected && !isSelectedRowSelection) continue
+
+            if(isSelectedRowSelection) {
                 select(row.original.id)
             } else {
                 deselect(row.original.id)
             }
         }
-    }, [])
+    }, [state.selected])
 
     const updateRowSelectionWithSelectedState = useCallback((table) => {
         table.setRowSelection(
@@ -300,8 +307,6 @@ useTableModel.use = {
             const items = flatten(Array.from(queryKeys.values().map(queryKey => {
 
                 const { data } = queryClient.getQueryState(queryKey)
-
-                console.log(queryKey, data);
     
                 const [__, rows] = data
                 
@@ -311,7 +316,7 @@ useTableModel.use = {
 
             return tableModel.state.selected.map((id) => find(items, { id }))
 
-        }, [table.options.data, tableModel.state.selected])
+        }, [tableModel.state.selected])
 
         return selection
     },

@@ -4,10 +4,10 @@ import { useMatch, useNavigate } from "@tanstack/react-router"
 import { useIsFirstRender } from "@uidotdev/usehooks"
 
 export default function useRouteSearchStateUpdater ({ 
+    initialState = {},
     state,
     routeStateMapFn,
-    onRouteSearchChange,
-    initialState = {}
+    onRouteSearchChange
 }) {
     const isFirstRender = useIsFirstRender()
     const reasonRef = useRef("AMBIGIOUS")
