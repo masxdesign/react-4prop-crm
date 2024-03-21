@@ -1,7 +1,6 @@
-import { createLazyFileRoute, defaultParseSearch, useNavigate, useSearch } from '@tanstack/react-router'
+import { createLazyFileRoute } from '@tanstack/react-router';
 import useTableModel from '@/hooks/use-TableModel';
-import useSheetState from '@/hooks/use-sheetState';
-import { Suspense, forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import ProgressCircle from '@/routes/dashboard/-ui/ProgressCircle';
 import AlertEmailClick from '@/routes/dashboard/-ui/AlertEmailClick';
@@ -10,9 +9,9 @@ import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNotes } from '@/api/fourProp';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
+import { CaretSortIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { PhoneCallIcon } from 'lucide-react';
-import { findLast, get, isEmpty, isEqual } from 'lodash';
+import { findLast, isEmpty } from 'lodash';
 import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import ColumnLastContactEach from './-ui/ColumnLastContactEach';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -22,12 +21,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';
-import useTableSS from '@/components/DataTableSS/use-TableSS';
 import DataTableDnd from '@/components/DataTableDnd';
 import DataTablePagination from '@/components/DataTablePagination';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import useDialogModel from '@/hooks/use-DialogModel';
 
 const Dd = forwardRef(({ bold, label, value, className, labelClassName = 'min-w-[90px] max-w-[120px]', collapsible, ...props }, ref) => (
   <div ref={ref} className={cn('flex flex-row items-center gap-4', className)} {...props}>
@@ -102,9 +99,7 @@ export const Route = createLazyFileRoute('/dashboard/data/each/list')({
 function ClientsListComponent() {
   const { tableName, queryOptions, columns, auth } = Route.useRouteContext()
 
-  const navigate = useNavigate({ from: '/dashboard/data/each/list' })
-
-  const [infoDialogId, dialog, showDialog] = useSheetState()
+  const dialogModel = useDialogModel()
 
   const tableModel = useTableModel()
 
@@ -114,59 +109,21 @@ function ClientsListComponent() {
       queryOptions, 
       columns, 
       meta: {
-        showDialog,
+        showDialog: dialogModel.showDialog,
         hoverCardComponent: TableHoverCard
       } 
     }, 
     tableModel
   )
 
-  const selection = useTableModel.use.selection(tableModel, table)
+  const tableSelectionModel = useTableModel.use.selection(tableModel, table)
+  const selectionControl = useSelectionControlPopover(tableSelectionModel)
 
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
-          <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 border-dashed">
-                  <CheckIcon className={cn("h-4 w-4")} />
-                  {selection.length > 0 && (
-                    <>
-                      <Separator orientation="vertical" className="mx-2 h-4" />
-                      <Badge
-                        variant="secondary"
-                        className="rounded-sm px-1 font-normal"
-                      >
-                        {selection.length}
-                      </Badge>
-                    </>
-                  )}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className={`w-80 overflow-y-auto max-h-96 p-0`} align="start">
-              {selection.map((item) => (
-                <UserCard 
-                  key={item.id} 
-                  data={item} 
-                  className="w-full p-3 hover:bg-muted/50 cursor-pointer"
-                  onView={() => {
-                    navigate({
-                      search: (prev) => {
-
-                        return {
-                          ...prev,
-                          open: true,
-                          info: item.id
-                        }
-                      }
-                    })
-                  }} 
-                  hideContact 
-                />
-              ))}
-            </PopoverContent>
-          </Popover>
+          <SelectionControlPopover {...selectionControl} />
           {[
             { columnId: "company", title: "Companies" },
             { columnId: "a", title: "Postcode" },
@@ -184,20 +141,23 @@ function ClientsListComponent() {
         </div>
         <DataTablePagination table={table} />
       </div>
-      {infoDialogId && (
+      {dialogModel.state.info && (
         <DialogEach 
-          id={infoDialogId} 
-          table={table}
+          id={dialogModel.state.info} 
           user={auth.user}
-          {...dialog} 
+          table={table}
+          open={dialogModel.state.open}
+          onOpenChange={dialogModel.onOpenChange}
         />
       )}
     </>
   )
 }
 
-function DialogEach ({ id, table, user, ...props }) {
+function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
   const info = useTableModel.use.findInfoById(id, table)
+
+  if (!info) return null
 
   const chatboxQueryOptions = {
     queryKey: ['chatboxEach', id],
@@ -205,7 +165,7 @@ function DialogEach ({ id, table, user, ...props }) {
   }
 
   return (
-    <Dialog {...props}>
+    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
       <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">                
           <ResizablePanelGroup
             direction="horizontal"
@@ -234,11 +194,11 @@ function DialogEach ({ id, table, user, ...props }) {
   )
 }
 
-const UserCard = ({ data, onView, hideView, hideContact, className }) => (
+const UserCard = ({ data, onView, hideView, hideContact, className, isSent }) => (
   <div className={cn('text-sm space-y-2', className)}>
     <div className='flex flex-row justify-between gap-4'>
       <div className='space-y-1 max-w-[180px]'>
-        <b>{data.first} {data.last}</b>
+        <b>{data.first} {data.last} {isSent && <Badge variant="outline">Sent</Badge>}</b>
         <div className='text-nowrap truncate text-muted-foreground'>{data.company}</div>
       </div>
       {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={() => onView(data)}>View</Button>}
@@ -505,3 +465,7 @@ function FacetedFilter ({ queryKey, table, title, columnId }) {
     />
   )
 }
+
+
+
+

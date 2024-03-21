@@ -54,7 +54,7 @@ const Chatbox = ({
           <div className='relative'>
             <Textarea 
               placeholder="Type your message here."
-              className="border-none bg-transparent resize-none"
+              className="focus-visible:ring-inset focus-visible:ring-offset-0 border-none bg-transparent resize-none"
               {...messageBoxProps}
             />
             {error && <small className='text-red-500 absolute right-2 top-2'>{error}</small>}

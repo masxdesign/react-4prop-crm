@@ -4,7 +4,7 @@ import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { defaultParseSearch, useMatch, useNavigate, useSearch } from "@tanstack/react-router"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import { useIsFirstRender, useMap, usePrevious, useSet } from "@uidotdev/usehooks"
-import { find, flatten, isEqual } from "lodash"
+import { find, flatten, isEqual, uniqBy } from "lodash"
 import useTableSS from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 
@@ -237,6 +237,7 @@ const useTableModel = () => {
         state,
         tableState,
         deselectAll,
+        deselect,
         onPaginationChange,
         onColumnFiltersChange,
         onSortingChange,
@@ -310,15 +311,32 @@ useTableModel.use = {
     
                 const [__, rows] = data
                 
-                return rows
+                return rows.map((row) => ({
+                    ...row,
+                    _queryKey: queryKey
+                }))
     
             })))
 
-            return tableModel.state.selected.map((id) => find(items, { id }))
+            return uniqBy(items, 'id').filter(({ id }) => tableModel.state.selected.includes(id))
 
         }, [tableModel.state.selected])
 
-        return selection
+        const onExcludedApply = (excluded) => {
+            excluded.forEach((item) => {
+                tableModel.deselect(item)
+            })
+            table.getRowModel().rows
+                .filter(({ original }) => excluded.includes(original.id))
+                .forEach((row) => {
+                    row.toggleSelected()
+                })
+        }
+
+        return { 
+            selection,
+            onExcludedApply
+        }
     },
     findInfoById (id, table) {
         const info = useMemo(() => {

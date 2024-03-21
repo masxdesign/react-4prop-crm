@@ -22,7 +22,10 @@ const action = {
     type: 'SHOW_DIALOG',
     payload: info
   }),
-  hideDialog: () => ({ type: 'HIDE_DIALOG' })
+  openChange: (open) => ({ 
+    type: 'OPEN_CHANGE', 
+    payload: open 
+  })
 }
 
 const dialogReducer = (state, action) => {
@@ -32,11 +35,11 @@ const dialogReducer = (state, action) => {
           ...state,
           ...init(action.payload)
         }
-      case 'HIDE_DIALOG':  
+      case 'OPEN_CHANGE':  
         return {
           ...state,
-          open: false,
-          info: null
+          open: action.payload,
+          info: action.payload ? state.info : null
         }
       case 'SHOW_DIALOG':
         return {
@@ -54,56 +57,29 @@ const useDialogModel = () => {
 
     const [state, dispatch] = useReducer(dialogReducer, search, init)
 
-    const { open, tab, info } = state
-
     const onOpenChange = useCallback((open) => {
-      if(open) {
-        dispatch({ type: 'OPENED' })
-      } else {
-        dispatch({ type: 'CLOSED' })
-      }
+      dispatch(action.openChange(open))
     }, [])
 
-    const onSelect = useCallback((tab) => {
-      dispatch({ type: 'TAB_CHANGED', payload: tab })
+    const showDialog = useCallback((info) => {
+      dispatch(action.showDialog(info))
     }, [])
-
-    const trigger = useCallback((info, tab) => {
-      dispatch({ type: 'TRIGGER', payload: info, meta: { tab: tab ?? search.tab } })
-    }, [])
-
-    const reset = useCallback(() => {
-      dispatch({ type: 'RESET', payload: null, meta: { defaultTab: search.tab } })
-    }, [])
-
-    const sheetProps = {
-      open,
-      onOpenChange,
-    }
-    
-    const tabProps = {
-      tab,
-      onSelect
-    }
 
     useRouteSearchStateUpdater({
       initialState: initialState,
       state,
       routeStateMapFn: (p, q) => p(
           q("open"),
-          q("tab"),
           q("info")
       ),
       onRouteSearchChange: (search) => dispatch(action.routeSearchUpdateState(search))
     })
 
-    return [
-      info,
-      sheetProps,
-      trigger,
-      reset,
-      tabProps
-    ]
+    return {
+      state,
+      onOpenChange,
+      showDialog
+    }
     
 }
 
