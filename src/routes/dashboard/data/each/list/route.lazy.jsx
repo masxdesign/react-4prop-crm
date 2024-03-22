@@ -25,72 +25,16 @@ import DataTableDnd from '@/components/DataTableDnd';
 import DataTablePagination from '@/components/DataTablePagination';
 import { Badge } from '@/components/ui/badge';
 import useDialogModel from '@/hooks/use-DialogModel';
-
-const Dd = forwardRef(({ bold, label, value, className, labelClassName = 'min-w-[90px] max-w-[120px]', collapsible, ...props }, ref) => (
-  <div ref={ref} className={cn('flex flex-row items-center gap-4', className)} {...props}>
-    <div className={cn('basis-1/5 text-muted-foreground', labelClassName)}>{label}</div>
-    <div className={cn('basis-4/5 truncate', { 'font-bold': bold, 'hover:underline cursor-pointer': collapsible })}>
-      {collapsible ? (
-        <div className='flex flex-row gap-4 items-center'>
-          {value}
-          <CaretSortIcon className="h-4 w-4" />
-        </div>
-      ) : (
-        <>
-          {value}
-        </>
-      )}
-    </div>
-  </div>
-))
-
-const DD = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, collapsible, ...props }, ref) => {
-  const value = row[name]
-
-  if(!alwaysShow && isEmpty(value)) return null
-
-  return (
-    <Dd 
-      ref={ref}
-      bold={bold}
-      label={label}
-      labelClassName={labelClassName}
-      collapsible={collapsible}
-      value={(
-        'email' === name ? (
-          <a href={`mailto: ${value}`} className='hover:underline'>
-            {value}
-          </a>
-        ) : 'phone' === name ? (
-          <a href={`tel: ${value}`} className='hover:underline'>
-            {value}
-          </a>
-        ) : 'website' === name ? (
-          <a href={`https://www.${value}`} target='__blank' className='hover:underline'>
-            {value}
-          </a>
-        ) : (
-          <>
-            {value}
-          </>
-        )
-      )}
-      {...props}
-    />
-  )
-})
-
-const DDl = ({ items, row }) => {
-  return items.map((props) => (
-    <DD key={props.name} row={row} {...props} />
-  ))
-}
-
-const Ddl = ({ items, row, ...props }) => {
-  return items.map((item) => (
-    <Dd key={item.label} {...item} {...props} />
-  ))
-}
+import Ddd from './-ui/Ddd';
+import Dd from './-ui/Dd';
+import Dddl from './-ui/Dddl';
+import Ddl from './-ui/Ddl';
+import SelectionControl from './-ui/SelectionControl';
+import useSelectionControl from './-ui/use-SelectionControl';
+import { useNavigate } from '@tanstack/react-router';
+import SendBizchatDialog from './-ui/SendBizchatDialog';
+import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
+import UserCard from './-ui/UserCard';
 
 export const Route = createLazyFileRoute('/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -98,11 +42,11 @@ export const Route = createLazyFileRoute('/dashboard/data/each/list')({
 
 function ClientsListComponent() {
   const { tableName, queryOptions, columns, auth } = Route.useRouteContext()
-
+  
   const dialogModel = useDialogModel()
-
+  
   const tableModel = useTableModel()
-
+  
   const table = useTableModel.use.tableSS(
     { 
       tableName, 
@@ -115,15 +59,28 @@ function ClientsListComponent() {
     }, 
     tableModel
   )
-
+    
+  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
   const tableSelectionModel = useTableModel.use.selection(tableModel, table)
-  const selectionControl = useSelectionControlPopover(tableSelectionModel)
+  
+  const selectionControl = useSelectionControl(tableSelectionModel, navigate)
+  const sendBizchatDialog = useSendBizchatDialog(selectionControl)
 
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
-          <SelectionControlPopover {...selectionControl} />
+          <SelectionControl {...selectionControl}>
+            <SelectionControl.HeaderAndContent />
+            <SelectionControl.Footer>
+              <SendBizchatDialog.Button 
+                variant="link" 
+                onOpenChange={sendBizchatDialog.onOpenChange} 
+                selected={selectionControl.selected} 
+              />
+            </SelectionControl.Footer>
+          </SelectionControl>
+          <SendBizchatDialog {...sendBizchatDialog} />
           {[
             { columnId: "company", title: "Companies" },
             { columnId: "a", title: "Postcode" },
@@ -194,24 +151,6 @@ function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
   )
 }
 
-const UserCard = ({ data, onView, hideView, hideContact, className, isSent }) => (
-  <div className={cn('text-sm space-y-2', className)}>
-    <div className='flex flex-row justify-between gap-4'>
-      <div className='space-y-1 max-w-[180px]'>
-        <b>{data.first} {data.last} {isSent && <Badge variant="outline">Sent</Badge>}</b>
-        <div className='text-nowrap truncate text-muted-foreground'>{data.company}</div>
-      </div>
-      {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={() => onView(data)}>View</Button>}
-    </div>
-    {!hideContact && [
-      { label: <EnvelopeClosedIcon className="w-4 h-4" />, name: "email" },
-      { label: <PhoneCallIcon className="w-4 h-4" /> , name: "phone" },
-    ].map((props) => (
-      <DD key={props.name} row={data} labelClassName="max-w-[10px]" {...props} />
-    ))}
-  </div>
-)
-
 function TableHoverCard ({ cell, hideView }) {
   const info = cell.table ? cell : cell.getContext()
 
@@ -232,7 +171,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, info }) {
 
   return (
     <div className='text-sm space-y-2'>
-      <DDl 
+      <Dddl  
         items={[
           { label: "Email", name: "email" },
           { label: "Phone", name: "phone" },
@@ -307,7 +246,7 @@ function DialogBizchatEach ({ chatboxQueryOptions, label }) {
   if(!bizMessage) return null
 
   return (
-    <DD row={bizMessage} label={label} name="link" />
+    <Ddd row={bizMessage} label={label} name="link" />
   )
 }
 
@@ -320,10 +259,10 @@ function DialogBranchEach ({ chatboxQueryOptions }) {
   return (
     <Collapsible className='space-y-2'>
       <CollapsibleTrigger asChild>
-        <DD row={branch} label="Branch" name="name" bold collapsible />
+        <Ddd row={branch} label="Branch" name="name" bold collapsible />
       </CollapsibleTrigger>
       <CollapsibleContent className='space-y-2'>
-        <DDl 
+        <Dddl  
           items={[
             { label: "Phone", name: "phone" },
             { label: "Address", name: "address" },

@@ -3,7 +3,7 @@ import { map } from 'lodash';
 
 const initialExcluded = []
 
-export default function useSelectionControlPopover ({ selection, onExcludedApply }) {
+export default function useSelectionControl ({ selection, onExcludedApply }, navigate) {
   const [open, setOpen] = useState(false)
   
   const [excluded, setExcluded] = useState(initialExcluded)
@@ -27,6 +27,13 @@ export default function useSelectionControlPopover ({ selection, onExcludedApply
     setExcluded(ids)
   }
 
+  const onDeselectAllAndApply = () => {
+    const ids = map(selection, 'id')
+    onExcludedApply(ids)
+    setExcluded([])
+    setOpen(false)
+  }
+
   const onOpenChange = (value) => {
     setOpen(value)
     if (!value) {
@@ -35,14 +42,28 @@ export default function useSelectionControlPopover ({ selection, onExcludedApply
     }
   }
 
+  const onItemView = (item) => {
+    const { id, _queryKey: [, , , { pageIndex }] } = item
+    navigate({
+      search: (prev) => ({
+          ...prev,
+          page: pageIndex + 1,
+          open: true,
+          info: id,
+      }),
+    })
+  }
+
   return {
     selected,
     selection,
     open,
     excluded,
     onItemCheckedChange,
+    onDeselectAllAndApply,
     onOpenChange,
     onSelectAll,
-    onDeselectAll
+    onDeselectAll,
+    onItemView
   }
 }
