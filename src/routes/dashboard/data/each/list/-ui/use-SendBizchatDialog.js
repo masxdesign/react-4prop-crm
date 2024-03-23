@@ -1,6 +1,6 @@
 import delay from "@/utils/delay"
 import { find, map } from "lodash"
-import { useEffect, useMemo, useReducer, useState } from "react"
+import { useEffect, useMemo, useReducer } from "react"
 import { v4 as uuidv4 } from 'uuid'
 
 const initialState = {
@@ -8,8 +8,11 @@ const initialState = {
     open: false,
     currItemId: null,
     message: "",
-    itemDataCollection: {}
+    itemDataCollection: {},
+    pause: false
 }
+
+const init = (storageKey) => JSON.parse(localStorage.getItem(storageKey)) || initialState
 
 const createItem = ({ recipients = [], body = "" }) => ({
     id: uuidv4(),
@@ -17,6 +20,7 @@ const createItem = ({ recipients = [], body = "" }) => ({
     recipients,
     sent: [],
     status: "pending",
+    pausing: false,
     created: new Date(),
     updated: null,
 })
@@ -24,6 +28,11 @@ const createItem = ({ recipients = [], body = "" }) => ({
 const itemAdded = (options) => ({
     type: "ITEM_ADDED",
     payload: createItem(options),
+})
+
+const reuseMessage = (body) => ({
+    type: "MESSAGE_REUSED",
+    payload: body,
 })
 
 const changeMessage = (body) => ({
@@ -41,49 +50,76 @@ const changeOpen = (open) => ({
     payload: open
 })
 
-const recipientMarkSent = (recipientId, itemId) => ({
+const pauseSentout = (pause, itemId) => ({
+    type: "SENDOUT_PAUSED",
+    payload: pause,
+    meta: { itemId }
+})
+
+const pauseRequest = (itemId) => ({
+    type: "PAUSE_REQUESTED",
+    meta: { itemId }
+})
+
+const recipientMarkSent = ({ recipientId, itemId }) => ({
     type: "RECIPIENT_MARK_SENT",
     payload: recipientId,
     meta: { itemId },
 })
 
-const itemHasCompleted = (itemId) => ({
-    type: "ITEM_COMPLETED",
-    meta: { itemId },
-})
-
 function itemsSlice(state, { type, meta, payload = null }) {
     switch (type) {
+        case "SENDOUT_PAUSED":
+            return state.map(
+                (message) => {
+                    if (message.id !== meta.itemId) return message
+
+                    return {
+                        ...message,
+                        pausing: false
+                    }
+                }
+            ) 
         case "ITEM_ADDED":
             return [
-                ...state, 
                 {
                     ...payload,
                     recipients: map(payload.recipients, 'id')
-                }
+                },
+                ...state
             ]
-        case "RECIPIENT_MARK_SENT":
-            return state.map((message) =>
-                message.id === meta.itemId
-                    ? {
+        case "PAUSE_REQUESTED":
+            return state.map(
+                (message) => {
+                    if (message.id !== meta.itemId) return message
+
+                    return {
                         ...message,
-                        sent: [
-                            ...message.sent, 
-                            payload
-                        ],
-                        updated: new Date(),
-                      }
-                    : message
+                        pausing: true
+                    }
+                }
             )
-        case "ITEM_COMPLETED":
-            return state.map((message) =>
-                message.id === meta.itemId
-                    ? {
+        case "RECIPIENT_MARK_SENT":
+            return state.map(
+                (message) => {
+
+                    if (message.id !== meta.itemId || message.sent.includes(payload)) return message
+
+                    const sent = [
+                        ...message.sent, 
+                        payload
+                    ]
+
+                    return {
                         ...message,
-                        status: "completed",
+                        sent,
+                        status: sent.length < message.recipients.length
+                            ? "pending"
+                            : "completed"
+                        ,
                         updated: new Date(),
-                      }
-                    : message
+                    }
+                }
             )
     }
 }
@@ -92,10 +128,23 @@ function sendBizchatDialogReducer (state, action) {
     const { type, payload = null } = action
 
     switch (type) {
+        case "MESSAGE_REUSED":
+            return {
+                ...state,
+                message: payload,
+                currItemId: null
+            }
+        case "SENDOUT_PAUSED":
+            return {
+                ...state,
+                items: itemsSlice(state.items, action),
+                pause: payload
+            }
         case "OPEN_DIALOG_CHANGED":
             return {
                 ...state,
-                open: payload
+                open: payload,
+                currItemId: find(state.items, { status: "pending" })?.id ?? initialState.currItemId
             }
         case "MESSAGE_CHANGED":
             return {
@@ -116,6 +165,7 @@ function sendBizchatDialogReducer (state, action) {
                     )
                 }
             }
+        case "PAUSE_REQUESTED":
         case "ITEM_COMPLETED":
         case "RECIPIENT_MARK_SENT":
             return {
@@ -131,10 +181,20 @@ function sendBizchatDialogReducer (state, action) {
 }
 
 export default function useSendBizchatDialog(selectionControl) {
-    const [state, dispatch] = useReducer(sendBizchatDialogReducer, initialState)
+    const storageKey = `SendBizchatDialog`
+    const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
     const { selected } = selectionControl
 
-    const { open, message, currItemId, items, itemDataCollection } = state
+    const { open, message, currItemId, items: items_, itemDataCollection, pause } = state
+
+    const items = useMemo(() => {
+
+        return items_.map((item) => ({
+            ...item,
+            progress: Math.ceil(100*(item.sent.length/item.recipients.length))
+        }))
+
+    }, [items_])
 
     const currItem = useMemo(
         () => find(items, { id: currItemId }),
@@ -155,32 +215,58 @@ export default function useSendBizchatDialog(selectionControl) {
     }), [selected])
 
     const lastItemPending = useMemo(() => items.find(({ status }) => status === "pending"), [items])
+    const nextRecipient = useMemo(() => {
 
-    const resume = async () => {
+        if(!lastItemPending) return null
 
-        if(!lastItemPending) return
+        const { id, recipients, sent } = lastItemPending
 
-        for(const recipient of lastItemPending.recipients) {
-            if (lastItemPending.sent.includes(recipient)) continue
-
-            await delay(600)
-            dispatch(recipientMarkSent(recipient, lastItemPending.id))
+        return {
+            recipientId: recipients.find((recipientId) => !sent.includes(recipientId)),
+            itemId: id
         }
 
-        dispatch(itemHasCompleted(lastItemPending.id))
+    }, [lastItemPending])
+
+    const sendNextRecipient = async () => {
+
+        await delay(5000)
+        
+        if (lastItemPending.pausing) {
+            dispatch(pauseSentout(true, lastItemPending.id))
+        }
+
+        dispatch(recipientMarkSent(nextRecipient))
+        console.log('sent!', nextRecipient);
 
     }
 
     useEffect(() => {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+    }, [state])
 
-        resume()
+    useEffect(() => {
 
-    }, [items.length])
+        nextRecipient && !state.pause && sendNextRecipient()
+
+    }, [nextRecipient, state.pause])
+
+    const onPause = () => {
+        lastItemPending && dispatch(pauseRequest(lastItemPending.id))
+    }
+
+    const onResume = () => {
+        dispatch(pauseSentout(false))
+    }
 
     const onAddItem = (body) => {
         if (lastItemPending) throw new Error("Please wait for last message to finish sending")
         dispatch(itemAdded({ recipients, body }))
         selectionControl.onDeselectAllAndApply()
+    }
+
+    const onReuseMessage = (body) => {
+        dispatch(reuseMessage(body))
     }
 
     const onMessageChange = (e) => {
@@ -196,14 +282,18 @@ export default function useSendBizchatDialog(selectionControl) {
     }
 
     return {
+        pause,
         open,
         items,
         message,
         currItem,
         recipients,
+        onPause,
+        onResume,
         itemDataCollection,
         lastItemPending,
         onAddItem,
+        onReuseMessage,
         onMessageChange,
         onItemSelect,
         onOpenChange

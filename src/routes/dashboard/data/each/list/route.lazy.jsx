@@ -9,7 +9,7 @@ import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNotes } from '@/api/fourProp';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CaretSortIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
+import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
 import { PhoneCallIcon } from 'lucide-react';
 import { findLast, isEmpty } from 'lodash';
 import ColumnNextContactEach from './-ui/ColumnNextContactEach';
@@ -35,6 +35,8 @@ import { useNavigate } from '@tanstack/react-router';
 import SendBizchatDialog from './-ui/SendBizchatDialog';
 import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
 import UserCard from './-ui/UserCard';
+import { Separator } from '@/components/ui/separator';
+import { PopoverTrigger } from '@/components/ui/popover';
 
 export const Route = createLazyFileRoute('/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -66,20 +68,47 @@ function ClientsListComponent() {
   const selectionControl = useSelectionControl(tableSelectionModel, navigate)
   const sendBizchatDialog = useSendBizchatDialog(selectionControl)
 
+  console.log(sendBizchatDialog);
+
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
-          <SelectionControl {...selectionControl}>
-            <SelectionControl.HeaderAndContent />
-            <SelectionControl.Footer>
-              <SendBizchatDialog.Button 
-                variant="link" 
-                onOpenChange={sendBizchatDialog.onOpenChange} 
-                selected={selectionControl.selected} 
-              />
-            </SelectionControl.Footer>
-          </SelectionControl>
+          {sendBizchatDialog.lastItemPending ? (
+            <SendBizchatDialog.ButtonSm 
+              variant="link" 
+              className="text-green-600 bg-green-100 animate-bounce"
+              lastItemPending={sendBizchatDialog.lastItemPending}
+              onOpenChange={sendBizchatDialog.onOpenChange}
+            />
+          ) : (
+            <SendBizchatDialog.ButtonSm 
+              variant="link"
+              onOpenChange={sendBizchatDialog.onOpenChange}
+            />
+          )}
+          {tableSelectionModel.selection.length > 0 && (
+            <SelectionControl {...selectionControl}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="secondary"
+                  className="h-8"
+                >
+                    {selectionControl.selected.length} selected
+                </Button>
+              </PopoverTrigger>
+              <SelectionControl.Content>
+                <SelectionControl.HeaderAndContent />
+                <SelectionControl.Footer>
+                  <SendBizchatDialog.Button 
+                    variant="link" 
+                    onOpenChange={sendBizchatDialog.onOpenChange} 
+                    selected={selectionControl.selected} 
+                  />
+                </SelectionControl.Footer>
+              </SelectionControl.Content>
+            </SelectionControl>
+          )}
           <SendBizchatDialog {...sendBizchatDialog} />
           {[
             { columnId: "company", title: "Companies" },

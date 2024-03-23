@@ -41,27 +41,36 @@ function SelectionControl({
             }}
         >
             <Popover open={open} onOpenChange={onOpenChange}>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 border-dashed">
-                        <CheckIcon className={cn("h-4 w-4")} />
-                        {selected.length > 0 && (
-                            <>
-                                <Separator orientation="vertical" className="mx-2 h-4" />
-                                <Badge
-                                    variant="secondary"
-                                    className="rounded-sm px-1 font-normal"
-                                >
-                                    {selected.length} selected
-                                </Badge>
-                            </>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className={`w-80 p-0`} align="start">
-                    {children}
-                </PopoverContent>
+                {children}
             </Popover>
         </SelectionControlContext.Provider>
+    )
+}
+
+SelectionControl.Content = ({ children }) => {
+    return (
+        <PopoverContent className={`w-80 p-0`} align="start">
+            {children}
+        </PopoverContent>
+    )
+}
+
+SelectionControl.Button = ({ selected, onOpenChange }) => {
+    return (
+        <Button variant="outline" size="sm" className="h-8 border-dashed" onClick={() => onOpenChange(true)}>
+            <CheckIcon className={cn("h-4 w-4")} />
+            {selected.length > 0 && (
+                <>
+                    <Separator orientation="vertical" className="mx-2 h-4" />
+                    <Badge
+                        variant="secondary"
+                        className="rounded-sm px-1 font-normal"
+                    >
+                        {selected.length} selected
+                    </Badge>
+                </>
+            )}
+        </Button>
     )
 }
 
