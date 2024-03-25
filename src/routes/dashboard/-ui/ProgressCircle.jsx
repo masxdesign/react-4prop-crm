@@ -16,7 +16,7 @@ const progressCircleVariants = cva(
     }
 )
 
-const ProgressCircle = ({ perc, className, size }) => {
+const ProgressCircle = ({ perc, className, size, circleClassName = "text-green-600" }) => {
     return (
         <div className={cn(progressCircleVariants({ size }), className)}>
             <svg className="w-full h-full" viewBox="0 0 100 100">
@@ -29,7 +29,7 @@ const ProgressCircle = ({ perc, className, size }) => {
                     fill="transparent"
                 />
                 <circle
-                    className="text-green-600  progress-ring__circle stroke-current"
+                    className={cn(circleClassName, "progress-ring__circle stroke-current")}
                     strokeWidth="10"
                     strokeLinecap="round"
                     cx="50"

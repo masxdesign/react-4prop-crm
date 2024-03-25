@@ -128,31 +128,42 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
+export const sendBizchat = async ({ message, from, recipient }) => {
+    if(!from) throw new Error('from is not defined')
+    if (isEmpty(message)) throw new Error('message is empty')
+
+    const chat_id = await sendBizchatMessage({ 
+        from, 
+        recipient, 
+        message 
+    })
+
+    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${recipient}`, {
+        nid: from,
+        chat_id,
+        teaser: truncate(message, { length: 30 })
+    })
+
+    return data
+}
+
 export const addNote = async (variables, { id, user }) => {
 
     const { message = '', _button } = variables
+
+    if (isEmpty(message)) throw new Error('message is empty')
 
     if(_button === "bizchat") {
 
         if(!user?.neg_id) throw new Error('user.neg_id is not defined')
 
-        const chat_id = await sendBizchatMessage({ 
-            from: user.neg_id, 
-            recipient: id, 
-            message 
+        return sendBizchat({
+            message,
+            from: user.neg_id,
+            recipient: id
         })
-
-        const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${id}`, {
-            nid: user.neg_id,
-            chat_id,
-            teaser: truncate(message, { length: 30 })
-        })
-
-        return data
 
     }
-
-    if (isEmpty(message)) throw new Error('message is empty')
 
     const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
         type: '0',

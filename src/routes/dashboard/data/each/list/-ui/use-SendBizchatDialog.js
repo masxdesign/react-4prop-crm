@@ -1,7 +1,16 @@
-import delay from "@/utils/delay"
-import { find, map } from "lodash"
 import { useEffect, useMemo, useReducer } from "react"
+import { sendBizchat } from "@/api/fourProp"
+import delay from "@/utils/delay"
+import { useMutation } from "@tanstack/react-query"
+import { find, map } from "lodash"
+import * as Yup from "yup"
+import { useForm } from "react-hook-form"
 import { v4 as uuidv4 } from 'uuid'
+import { yupResolver } from "@hookform/resolvers/yup"
+
+const messageSchema = Yup.object().shape({
+    message: Yup.string().required()
+})
 
 const initialState = {
     items: [],
@@ -9,7 +18,7 @@ const initialState = {
     currItemId: null,
     message: "",
     itemDataCollection: {},
-    pause: false
+    status: "running"
 }
 
 const init = (storageKey) => JSON.parse(localStorage.getItem(storageKey)) || initialState
@@ -20,7 +29,6 @@ const createItem = ({ recipients = [], body = "" }) => ({
     recipients,
     sent: [],
     status: "pending",
-    pausing: false,
     created: new Date(),
     updated: null,
 })
@@ -28,11 +36,6 @@ const createItem = ({ recipients = [], body = "" }) => ({
 const itemAdded = (options) => ({
     type: "ITEM_ADDED",
     payload: createItem(options),
-})
-
-const reuseMessage = (body) => ({
-    type: "MESSAGE_REUSED",
-    payload: body,
 })
 
 const changeMessage = (body) => ({
@@ -45,41 +48,61 @@ const selectItem = (itemId) => ({
     payload: itemId
 })
 
+const cancelItemRequest = (itemId) => ({
+    type: "CANCEL_ITEM_REQUESTED",
+    meta: { itemId }
+})
+
+const cancelItem = (itemId) => ({
+    type: "ITEM_CANCELLED",
+    meta: { itemId }
+})
+
 const changeOpen = (open) => ({
     type: "OPEN_DIALOG_CHANGED",
     payload: open
 })
 
-const pauseSentout = (pause, itemId) => ({
-    type: "SENDOUT_PAUSED",
-    payload: pause,
-    meta: { itemId }
+const resume = () => ({
+    type: "RESUME"
 })
 
-const pauseRequest = (itemId) => ({
-    type: "PAUSE_REQUESTED",
-    meta: { itemId }
+const pauseRequest = () => ({
+    type: "PAUSE_REQUESTED"
 })
 
 const recipientMarkSent = ({ recipientId, itemId }) => ({
     type: "RECIPIENT_MARK_SENT",
     payload: recipientId,
-    meta: { itemId },
+    meta: { itemId }
 })
 
 function itemsSlice(state, { type, meta, payload = null }) {
     switch (type) {
-        case "SENDOUT_PAUSED":
+        case "CANCEL_ITEM_REQUESTED":
             return state.map(
                 (message) => {
                     if (message.id !== meta.itemId) return message
 
                     return {
                         ...message,
-                        pausing: false
+                        status: "canceling",
+                        updated: new Date()
                     }
                 }
-            ) 
+            )
+        case "ITEM_CANCELLED":
+            return state.map(
+                (message) => {
+                    if (message.id !== meta.itemId) return message
+
+                    return {
+                        ...message,
+                        status: "cancelled",
+                        updated: new Date()
+                    }
+                }
+            )
         case "ITEM_ADDED":
             return [
                 {
@@ -88,17 +111,6 @@ function itemsSlice(state, { type, meta, payload = null }) {
                 },
                 ...state
             ]
-        case "PAUSE_REQUESTED":
-            return state.map(
-                (message) => {
-                    if (message.id !== meta.itemId) return message
-
-                    return {
-                        ...message,
-                        pausing: true
-                    }
-                }
-            )
         case "RECIPIENT_MARK_SENT":
             return state.map(
                 (message) => {
@@ -114,7 +126,7 @@ function itemsSlice(state, { type, meta, payload = null }) {
                         ...message,
                         sent,
                         status: sent.length < message.recipients.length
-                            ? "pending"
+                            ? message.status === "canceling" ? "cancelled": message.status
                             : "completed"
                         ,
                         updated: new Date(),
@@ -125,21 +137,9 @@ function itemsSlice(state, { type, meta, payload = null }) {
 }
 
 function sendBizchatDialogReducer (state, action) {
-    const { type, payload = null } = action
+    const { type, meta, payload = null } = action
 
     switch (type) {
-        case "MESSAGE_REUSED":
-            return {
-                ...state,
-                message: payload,
-                currItemId: null
-            }
-        case "SENDOUT_PAUSED":
-            return {
-                ...state,
-                items: itemsSlice(state.items, action),
-                pause: payload
-            }
         case "OPEN_DIALOG_CHANGED":
             return {
                 ...state,
@@ -163,14 +163,31 @@ function sendBizchatDialogReducer (state, action) {
                         action.payload.recipients
                             .map((recipient) => ([recipient.id, recipient]))
                     )
-                }
+                },
+                status: "running"
             }
         case "PAUSE_REQUESTED":
+            return {
+                ...state,
+                status: "pausing"
+            }
+        case "RESUME":
+            return {
+                ...state,
+                status: "running"
+            }
         case "ITEM_COMPLETED":
-        case "RECIPIENT_MARK_SENT":
+        case "ITEM_CANCELLED":
+        case "CANCEL_ITEM_REQUESTED":
             return {
                 ...state,
                 items: itemsSlice(state.items, action)
+            }
+        case "RECIPIENT_MARK_SENT":
+            return {
+                ...state,
+                items: itemsSlice(state.items, action),
+                status: state.status === "pausing" ? "paused" : "running"
             }
         case "ITEM_SELECTED":
             return {
@@ -180,12 +197,15 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-export default function useSendBizchatDialog(selectionControl) {
+export default function useSendBizchatDialog(selectionControl, auth) {
     const storageKey = `SendBizchatDialog`
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
     const { selected } = selectionControl
 
-    const { open, message, currItemId, items: items_, itemDataCollection, pause } = state
+    const { open, message, currItemId, items: items_, itemDataCollection, status } = state
+
+    const paused = status === "paused"
+    const isPausing = status === "pausing"
 
     const items = useMemo(() => {
 
@@ -228,12 +248,27 @@ export default function useSendBizchatDialog(selectionControl) {
 
     }, [lastItemPending])
 
+    const sendBizchatMutation = useMutation({
+        mutationFn: (variables) => sendBizchat(variables),
+        retry: 3,
+        retryDelay: 900
+    })
+
     const sendNextRecipient = async () => {
 
-        await delay(5000)
-        
-        if (lastItemPending.pausing) {
-            dispatch(pauseSentout(true, lastItemPending.id))
+        if (!nextRecipient) throw new Error('nextRecipient is undefined')
+        if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
+
+        await delay(1000)
+
+        if (import.meta.env.PROD) {
+
+            await sendBizchatMutation.mutateAsync({
+                message: lastItemPending.body,
+                from: auth.user?.neg_id,
+                recipient: nextRecipient.recipientId
+            })
+
         }
 
         dispatch(recipientMarkSent(nextRecipient))
@@ -247,30 +282,31 @@ export default function useSendBizchatDialog(selectionControl) {
 
     useEffect(() => {
 
-        nextRecipient && !state.pause && sendNextRecipient()
+        nextRecipient && !paused && sendNextRecipient()
 
-    }, [nextRecipient, state.pause])
+    }, [nextRecipient?.recipientId, paused])
 
     const onPause = () => {
-        lastItemPending && dispatch(pauseRequest(lastItemPending.id))
+        dispatch(pauseRequest())
     }
 
     const onResume = () => {
-        dispatch(pauseSentout(false))
+        dispatch(resume())
+    }
+
+    const onCancel = (itemId) => {
+        if (paused) return dispatch(cancelItem(itemId))
+        dispatch(cancelItemRequest(itemId))
     }
 
     const onAddItem = (body) => {
-        if (lastItemPending) throw new Error("Please wait for last message to finish sending")
+        if (lastItemPending && !paused) throw new Error("Please wait for last message to finish sending")
         dispatch(itemAdded({ recipients, body }))
         selectionControl.onDeselectAllAndApply()
     }
 
-    const onReuseMessage = (body) => {
-        dispatch(reuseMessage(body))
-    }
-
-    const onMessageChange = (e) => {
-        dispatch(changeMessage(e.target.value))
+    const onMessageChange = (value) => {
+        dispatch(changeMessage(value))
     }
 
     const onItemSelect = (id) => {
@@ -282,7 +318,8 @@ export default function useSendBizchatDialog(selectionControl) {
     }
 
     return {
-        pause,
+        paused,
+        isPausing,
         open,
         items,
         message,
@@ -293,8 +330,8 @@ export default function useSendBizchatDialog(selectionControl) {
         itemDataCollection,
         lastItemPending,
         onAddItem,
-        onReuseMessage,
         onMessageChange,
+        onCancel,
         onItemSelect,
         onOpenChange
     }

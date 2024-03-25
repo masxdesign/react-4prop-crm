@@ -66,9 +66,7 @@ function ClientsListComponent() {
   const tableSelectionModel = useTableModel.use.selection(tableModel, table)
   
   const selectionControl = useSelectionControl(tableSelectionModel, navigate)
-  const sendBizchatDialog = useSendBizchatDialog(selectionControl)
-
-  console.log(sendBizchatDialog);
+  const sendBizchatDialog = useSendBizchatDialog(selectionControl, auth)
 
   return (
     <>
@@ -77,7 +75,11 @@ function ClientsListComponent() {
           {sendBizchatDialog.lastItemPending ? (
             <SendBizchatDialog.ButtonSm 
               variant="link" 
-              className="text-green-600 bg-green-100 animate-bounce"
+              className={cn(
+                sendBizchatDialog.paused 
+                  ? "text-amber-600 bg-amber-100"
+                  : "text-green-600 bg-green-100 animate-bounce"
+              )}
               lastItemPending={sendBizchatDialog.lastItemPending}
               onOpenChange={sendBizchatDialog.onOpenChange}
             />
@@ -87,6 +89,7 @@ function ClientsListComponent() {
               onOpenChange={sendBizchatDialog.onOpenChange}
             />
           )}
+          <SendBizchatDialog {...sendBizchatDialog} />
           {tableSelectionModel.selection.length > 0 && (
             <SelectionControl {...selectionControl}>
               <PopoverTrigger asChild>
@@ -109,7 +112,6 @@ function ClientsListComponent() {
               </SelectionControl.Content>
             </SelectionControl>
           )}
-          <SendBizchatDialog {...sendBizchatDialog} />
           {[
             { columnId: "company", title: "Companies" },
             { columnId: "a", title: "Postcode" },
