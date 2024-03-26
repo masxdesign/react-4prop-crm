@@ -98,7 +98,7 @@ SelectionControl.HeaderAndContent = () => {
                 </Button>
             </div>
             <Separator />
-            <div className="overflow-y-auto max-h-96">
+            <div className="overflow-y-auto h-80">
                 {selection.map((item) => (
                     <div
                         className={cn("flex flex-row gap-1 items-baseline", {

@@ -19,7 +19,7 @@ export const Route = createFileRoute('/dashboard/data/each/list')({
       tableName,
       columns,
       queryOptions: queryOptions({ 
-        queryKey: [tableName, tableState.columnFilters, tableState.sorting, tableState.pagination], 
+        queryKey: [tableName, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
         queryFn: () => fetchNegotiators(tableState), 
         staleTime: 60_000
       })

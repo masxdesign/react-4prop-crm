@@ -49,7 +49,7 @@ export const authLogin = async ({ email, password }) => {
 
 export const authLogout = () => fourProp.post('api/account/logout')
 
-export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) => {
+export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }) => {
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
@@ -70,20 +70,35 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination }) =
 
     }
 
-    const [columnFilter_] = columnFilters
+    const column = []
+    const search = []
 
-    if(columnFilter_) {
+    for(const filter of columnFilters) {
+        const { id, value } = filter
+        let [toSearch] = value
+        
+        column.push(id)
 
-        const { id, value } = columnFilter_
-
-        params = {
-            ...params,
-            search: value,
-            column: id
+        if (['a', 'company'].includes(id)) {
+            toSearch = `=${toSearch}`
         }
 
+        search.push(toSearch)
     }
 
+    if (globalFilter?.column) {
+        column.push(globalFilter.column)
+        search.push(globalFilter.search)
+    }
+
+    if (column.length > 0) {
+        params = {
+            ...params,
+            search,
+            column
+        }
+    }
+    
     const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
 
     return data

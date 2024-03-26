@@ -259,16 +259,18 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         if (!nextRecipient) throw new Error('nextRecipient is undefined')
         if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
 
-        await delay(1000)
-
+        
         if (import.meta.env.PROD) {
-
+            await delay(1000)
+            
             await sendBizchatMutation.mutateAsync({
                 message: lastItemPending.body,
                 from: auth.user?.neg_id,
                 recipient: nextRecipient.recipientId
             })
-
+            
+        } else {
+            await delay(5000)
         }
 
         dispatch(recipientMarkSent(nextRecipient))
@@ -333,6 +335,7 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         onMessageChange,
         onCancel,
         onItemSelect,
-        onOpenChange
+        onOpenChange,
+        selectionControl
     }
 }

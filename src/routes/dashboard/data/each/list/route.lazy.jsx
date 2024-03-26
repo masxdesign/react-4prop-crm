@@ -37,6 +37,9 @@ import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
 import UserCard from './-ui/UserCard';
 import { Separator } from '@/components/ui/separator';
 import { PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { Controller, useForm } from 'react-hook-form';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export const Route = createLazyFileRoute('/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -68,27 +71,15 @@ function ClientsListComponent() {
   const selectionControl = useSelectionControl(tableSelectionModel, navigate)
   const sendBizchatDialog = useSendBizchatDialog(selectionControl, auth)
 
+  const globalfilterForm = useForm({
+    values: tableModel.state.globalFilter
+  })
+
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
-          {sendBizchatDialog.lastItemPending ? (
-            <SendBizchatDialog.ButtonSm 
-              variant="link" 
-              className={cn(
-                sendBizchatDialog.paused 
-                  ? "text-amber-600 bg-amber-100"
-                  : "text-green-600 bg-green-100 animate-bounce"
-              )}
-              lastItemPending={sendBizchatDialog.lastItemPending}
-              onOpenChange={sendBizchatDialog.onOpenChange}
-            />
-          ) : (
-            <SendBizchatDialog.ButtonSm 
-              variant="link"
-              onOpenChange={sendBizchatDialog.onOpenChange}
-            />
-          )}
+          <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
           <SendBizchatDialog {...sendBizchatDialog} />
           {tableSelectionModel.selection.length > 0 && (
             <SelectionControl {...selectionControl}>
@@ -103,17 +94,44 @@ function ClientsListComponent() {
               <SelectionControl.Content>
                 <SelectionControl.HeaderAndContent />
                 <SelectionControl.Footer>
-                  <SendBizchatDialog.Button 
-                    variant="link" 
-                    onOpenChange={sendBizchatDialog.onOpenChange} 
-                    selected={selectionControl.selected} 
-                  />
+                  <SendBizchatDialog.Button {...sendBizchatDialog} />
                 </SelectionControl.Footer>
               </SelectionControl.Content>
             </SelectionControl>
           )}
+          <form 
+            onSubmit={globalfilterForm.handleSubmit((data) => table.setGlobalFilter(data))} 
+            className='flex flex-row items-center gap-2'
+          >
+            <Controller 
+              name="column"
+              control={globalfilterForm.control}
+              render={({ field }) => {
+
+                return (
+                  <ToggleGroup 
+                    variant="custom" 
+                    size="xs" 
+                    type="single" 
+                    value={field.value}
+                    onValueChange={(value) => field.onChange(value)}
+                  >
+                    <ToggleGroupItem value="phone" aria-label="Toggle bold">
+                      <PhoneCallIcon className="h-4 w-4" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="email" aria-label="Toggle italic">
+                      <EnvelopeClosedIcon className="h-4 w-4" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                )
+              }} 
+            />
+            <Input type="search" placeholder={`Search by ${globalfilterForm.watch("column")}`} className="h-8 w-48" {...globalfilterForm.register('search')} />
+            <Button type="submit" size="xs" disabled={!globalfilterForm.formState.isDirty}>Go</Button>
+          </form>
           {[
             { columnId: "company", title: "Companies" },
+            { columnId: "city", title: "City" },
             { columnId: "a", title: "Postcode" },
           ].map((props) => (
             <FacetedFilter 

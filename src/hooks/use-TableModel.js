@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
 import routeSearchMapping from "@/utils/routeSearchMapping"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { defaultParseSearch, useMatch, useNavigate, useSearch } from "@tanstack/react-router"
@@ -7,6 +7,12 @@ import { useIsFirstRender, useMap, usePrevious, useSet } from "@uidotdev/usehook
 import { find, flatten, isEqual, uniqBy } from "lodash"
 import useTableSS from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
+
+const changeGloablFilterAction = (globalFilter, column) => ({
+    type: "CHANGE_GLOBAL_FILTER",
+    payload: globalFilter,
+    meta: { column }
+})
 
 const changeFiltersAction = (columnFilters) => ({
     type: "CHANGE_FILTERS",
@@ -47,7 +53,8 @@ export const initialState = {
     pagination: { pageIndex: 0, pageSize: 10 },
     sorting: [{ id: "created", desc: true }],
     columnFilters: [],
-    selected: []
+    selected: [],
+    globalFilter: { search: "", column: "email" }
 }
 
 export const init =  (search) => ({
@@ -60,7 +67,8 @@ export const init =  (search) => ({
         pageSize: search.perpage ?? initialState.pagination.pageSize,
     },
     sorting: search.sorting ?? initialState.sorting,
-    columnFilters: search.columnFilters ?? initialState.columnFilters
+    columnFilters: search.columnFilters ?? initialState.columnFilters,
+    globalFilter: search.globalFilter ?? initialState.globalFilter
 })
 
 const tableReducer = (state, action) => {
@@ -117,6 +125,16 @@ const tableReducer = (state, action) => {
                 },
                 selected: initialState.selected
             }
+        case "CHANGE_GLOBAL_FILTER":
+            return {
+                ...state,
+                globalFilter: action.payload,
+                pagination: {
+                    ...state.pagination,
+                    pageIndex: 0,
+                },
+                selected: initialState.selected
+            }
         case "CHANGE_FILTERS":
             return {
                 ...state,
@@ -150,6 +168,10 @@ const useTableReducer = ({ initialSearch }) => {
         dispatch(changePageAction(pageIndex, pageSize))
     }, [])
 
+    const onGlobalFilterChange = useCallback((newGlobalFilter) => {
+        dispatch(changeGloablFilterAction(newGlobalFilter))
+    }, [])
+
     const onColumnFiltersChange = useCallback((newFilters) => {
         dispatch(changeFiltersAction(newFilters))
     }, [])
@@ -172,6 +194,7 @@ const useTableReducer = ({ initialSearch }) => {
 
     return {
         onPaginationChange,
+        onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
         select,
@@ -187,6 +210,7 @@ const useTableModel = () => {
 
     const { 
         onPaginationChange,
+        onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
         select,
@@ -197,9 +221,9 @@ const useTableModel = () => {
     } = useTableReducer({ initialSearch: search })
 
     const tableState = useMemo(() => {
-        const { pagination, sorting, columnFilters } = state
-        return { pagination, sorting, columnFilters }
-    }, [state.pagination, state.sorting, state.columnFilters])
+        const { pagination, sorting, columnFilters, globalFilter } = state
+        return { pagination, sorting, columnFilters, globalFilter }
+    }, [state.pagination, state.sorting, state.columnFilters, state.globalFilter])
 
     const makeOnRowSelectionChange = useCallback((newRowSelectionUpdater, table) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
@@ -239,6 +263,7 @@ const useTableModel = () => {
         deselectAll,
         deselect,
         onPaginationChange,
+        onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
         makeOnRowSelectionChange,
@@ -258,7 +283,8 @@ useTableModel.use = {
                 q("pagination.pageIndex", "page"),
                 q("pagination.pageSize", "perpage"),
                 q("sorting"),
-                q("columnFilters")
+                q("columnFilters"),
+                q("globalFilter")
             ),
             onRouteSearchChange: (search) => tableModel.dispatch(routeSearchUpdateStateAction(search))
         })
@@ -271,6 +297,7 @@ useTableModel.use = {
             onSortingChange: tableModel.onSortingChange,
             onPaginationChange: tableModel.onPaginationChange,
             onColumnFiltersChange: tableModel.onColumnFiltersChange,
+            onGlobalFilterChange: tableModel.onGlobalFilterChange,
             meta: {
                 ...meta,
                 selected: tableModel.state.selected

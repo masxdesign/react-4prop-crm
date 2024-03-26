@@ -15,7 +15,8 @@ const useTableSS = ({
     meta,
     onSortingChange,
     onPaginationChange,
-    onColumnFiltersChange
+    onColumnFiltersChange,
+    onGlobalFilterChange
 }) => {
     const { data, pageCount } = useLoadData(queryOptions, state)
 
@@ -52,6 +53,7 @@ const useTableSS = ({
         manualFiltering: true,
         manualPagination: true,
         manualSorting: true,
+        onGlobalFilterChange: _o(state.globalFilter, onGlobalFilterChange),
         onPaginationChange: _o(state.pagination, onPaginationChange),
         onColumnFiltersChange: _o(state.columnFilters, onColumnFiltersChange),
         onSortingChange: _o(state.sorting, onSortingChange),
