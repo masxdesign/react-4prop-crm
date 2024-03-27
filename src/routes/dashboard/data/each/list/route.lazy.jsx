@@ -9,8 +9,8 @@ import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNotes } from '@/api/fourProp';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon, EnvelopeClosedIcon } from '@radix-ui/react-icons';
-import { PhoneCallIcon } from 'lucide-react';
+import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon, EnvelopeClosedIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { PhoneCallIcon, User } from 'lucide-react';
 import { findLast, isEmpty } from 'lodash';
 import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import ColumnLastContactEach from './-ui/ColumnLastContactEach';
@@ -40,6 +40,8 @@ import { PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Controller, useForm } from 'react-hook-form';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import numberWithCommas from '@/utils/numberWithCommas';
+import DataTableViewOptions from '@/components/DataTableViewOptions';
 
 export const Route = createLazyFileRoute('/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -71,76 +73,66 @@ function ClientsListComponent() {
   const selectionControl = useSelectionControl(tableSelectionModel, navigate)
   const sendBizchatDialog = useSendBizchatDialog(selectionControl, auth)
 
-  const globalfilterForm = useForm({
-    values: tableModel.state.globalFilter
-  })
-
   return (
     <>
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
-          <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
-          <SendBizchatDialog {...sendBizchatDialog} />
-          {tableSelectionModel.selection.length > 0 && (
-            <SelectionControl {...selectionControl}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="secondary"
-                  className="h-8"
-                >
-                    {selectionControl.selected.length} selected
-                </Button>
-              </PopoverTrigger>
-              <SelectionControl.Content>
-                <SelectionControl.HeaderAndContent />
-                <SelectionControl.Footer>
-                  <SendBizchatDialog.Button {...sendBizchatDialog} />
-                </SelectionControl.Footer>
-              </SelectionControl.Content>
-            </SelectionControl>
-          )}
-          <form 
-            onSubmit={globalfilterForm.handleSubmit((data) => table.setGlobalFilter(data))} 
-            className='flex flex-row items-center gap-2'
-          >
-            <Controller 
-              name="column"
-              control={globalfilterForm.control}
-              render={({ field }) => {
-
-                return (
-                  <ToggleGroup 
-                    variant="custom" 
-                    size="xs" 
-                    type="single" 
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
+          <div className='flex gap-4 w-64'>
+            <Badge variant="secondary">
+              {numberWithCommas(table.options.meta.count)}
+            </Badge>
+            <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
+            <SendBizchatDialog {...sendBizchatDialog} />
+            {tableSelectionModel.selection.length > 0 && (
+              <SelectionControl {...selectionControl}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    className="h-8"
                   >
-                    <ToggleGroupItem value="phone" aria-label="Toggle bold">
-                      <PhoneCallIcon className="h-4 w-4" />
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="email" aria-label="Toggle italic">
-                      <EnvelopeClosedIcon className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </ToggleGroup>
-                )
-              }} 
-            />
-            <Input type="search" placeholder={`Search by ${globalfilterForm.watch("column")}`} className="h-8 w-48" {...globalfilterForm.register('search')} />
-            <Button type="submit" size="xs" disabled={!globalfilterForm.formState.isDirty}>Go</Button>
-          </form>
-          {[
-            { columnId: "company", title: "Companies" },
-            { columnId: "city", title: "City" },
-            { columnId: "a", title: "Postcode" },
-          ].map((props) => (
-            <FacetedFilter 
-              key={props.columnId}
-              queryKey={[tableName, 'facet', props.columnId]}
+                      {selectionControl.selected.length} selected
+                  </Button>
+                </PopoverTrigger>
+                <SelectionControl.Content>
+                  <SelectionControl.HeaderAndContent />
+                  <SelectionControl.Footer>
+                    <SendBizchatDialog.Button {...sendBizchatDialog} />
+                  </SelectionControl.Footer>
+                </SelectionControl.Content>
+              </SelectionControl>
+            )}
+          </div>
+          <div className='flex flex-grow justify-center gap-4'>
+            <GlobalFilter 
+              globalFilter={tableModel.tableState.globalFilter}  
               table={table} 
-              {...props}
             />
-          ))}
+            {[
+              { columnId: "company", title: "Companies" },
+              { columnId: "city", title: "City" },
+              { columnId: "a", title: "Postcode" },
+            ].map((props) => (
+              <FacetedFilter 
+                key={props.columnId}
+                queryKey={[tableName, 'facet', props.columnId]}
+                disableFacets={tableModel.isDirtyFilters}
+                table={table} 
+                {...props}
+              />
+            ))}
+            {tableModel.isDirtyFilters && (
+              <Button 
+                variant="link"
+                className="p-0 h-8 w-8 flex items-center hover:scale-110 opacity-50 hover:opacity-100 transition-all"
+                onClick={tableModel.onClearAllFilters}
+              >
+                <Cross2Icon />
+              </Button>
+            )}
+          </div>
+          <div className='flex w-64 justify-end'>
+            <DataTableViewOptions table={table} />
+          </div>
         </div>
         <div className='rounded-md border'>
             <DataTableDnd table={table} />
@@ -157,6 +149,55 @@ function ClientsListComponent() {
         />
       )}
     </>
+  )
+}
+
+function GlobalFilter ({ table, globalFilter }) {
+  const form = useForm({
+    values: globalFilter
+  })
+
+  return (
+    <form 
+      onSubmit={form.handleSubmit((data) => table.setGlobalFilter(data))} 
+      className='flex flex-row items-center gap-2'
+    >
+      <Controller 
+        name="column"
+        control={form.control}
+        render={({ field }) => {
+
+          return (
+            <ToggleGroup 
+              variant="custom" 
+              size="xs" 
+              type="single" 
+              value={field.value}
+              onValueChange={(value) => field.onChange(value)}
+            >
+              <ToggleGroupItem value="fullname" aria-label="Toggle bold">
+                <User className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="phone" aria-label="Toggle bold">
+                <PhoneCallIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="email" aria-label="Toggle italic">
+                <EnvelopeClosedIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )
+        }} 
+      />
+      <Input 
+        type="search" 
+        placeholder={`Search by ${form.watch("column")}`} 
+        className="h-8 w-48" 
+        {...form.register('search')} 
+      />
+      <Button type="submit" size="xs" disabled={!form.formState.isDirty}>
+        <MagnifyingGlassIcon />
+      </Button>
+    </form>
   )
 }
 
@@ -424,7 +465,7 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
   )
 }
 
-function FacetedFilter ({ queryKey, table, title, columnId }) {
+function FacetedFilter ({ queryKey, table, title, columnId, disableFacets }) {
   const { data } = useSuspenseQuery({
     queryKey: queryKey,
     queryFn: () => fetchFacets({ column: columnId }),
@@ -450,6 +491,7 @@ function FacetedFilter ({ queryKey, table, title, columnId }) {
       column={table.getColumn(columnId)}
       title={title}
       data={data}
+      disableFacets={disableFacets}
     />
   )
 }

@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react"
-import routeSearchMapping from "@/utils/routeSearchMapping"
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { defaultParseSearch, useMatch, useNavigate, useSearch } from "@tanstack/react-router"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { useSearch } from "@tanstack/react-router"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
-import { useIsFirstRender, useMap, usePrevious, useSet } from "@uidotdev/usehooks"
-import { find, flatten, isEqual, uniqBy } from "lodash"
+import { useMap } from "@uidotdev/usehooks"
+import { flatten, uniqBy } from "lodash"
 import useTableSS from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 
-const changeGloablFilterAction = (globalFilter, column) => ({
+const clearAllFiltersAction = () => ({
+    type: "FILTERS_ALL_CLEARED"
+})
+
+const changeGlobalFilterAction = (globalFilter, column) => ({
     type: "CHANGE_GLOBAL_FILTER",
     payload: globalFilter,
     meta: { column }
@@ -50,51 +53,44 @@ const routeSearchUpdateStateAction = (search) => ({
 })
 
 export const initialState = {
-    pagination: { pageIndex: 0, pageSize: 10 },
-    sorting: [{ id: "created", desc: true }],
-    columnFilters: [],
+    tableState: {
+        pagination: { pageIndex: 0, pageSize: 10 },
+        sorting: [{ id: "created", desc: true }],
+        columnFilters: [],
+        globalFilter: { search: "", column: "email" }
+    },
     selected: [],
-    globalFilter: { search: "", column: "email" }
 }
 
-export const init =  (search) => ({
-    ...initialState,
-    pagination: {
-        ...initialState.pagination,
-        pageIndex: search.page
-            ? search.page - 1
-            : initialState.pagination.pageIndex,
-        pageSize: search.perpage ?? initialState.pagination.pageSize,
-    },
-    sorting: search.sorting ?? initialState.sorting,
-    columnFilters: search.columnFilters ?? initialState.columnFilters,
-    globalFilter: search.globalFilter ?? initialState.globalFilter
-})
+const tableStateSlice = (state, action) => {
+    const initialTableState = initialState.tableState
 
-const tableReducer = (state, action) => {
     switch (action.type) {
         case "UPDATE_STATE_SEARCH":
+            const search = action.payload
+
             return {
-                ...init(action.payload),
-                selected: state.selected
+                ...initialTableState,
+                pagination: {
+                    ...initialTableState.pagination,
+                    pageIndex: search.page
+                        ? search.page - 1
+                        : initialTableState.pagination.pageIndex,
+                    pageSize: search.perpage ?? initialTableState.pagination.pageSize,
+                },
+                sorting: search.sorting ?? initialTableState.sorting,
+                columnFilters: search.columnFilters ?? initialTableState.columnFilters,
+                globalFilter: search.globalFilter ?? initialTableState.globalFilter
             }
-        case "DESELECT_ALL":
+        case "FILTERS_ALL_CLEARED":
             return {
                 ...state,
-                selected: initialState.selected
-            }
-        case "DESELECT":
-            return {
-                ...state,
-                selected: state.selected.filter((item) => item !== action.payload)
-            }
-        case "SELECT":
-            return {
-                ...state,
-                selected: [
-                    ...state.selected.filter((item) => item !== action.payload),
-                    action.payload
-                ]
+                pagination: {
+                    ...state.pagination,
+                    pageIndex: 0,
+                },
+                columnFilters: initialTableState.columnFilters,
+                globalFilter: initialTableState.globalFilter
             }
         case "CHANGE_PERPAGE":
             return {
@@ -102,7 +98,7 @@ const tableReducer = (state, action) => {
                 pagination: {
                     ...state.pagination,
                     pageSize: action.payload,
-                },
+                }
             }
         case "CHANGE_PAGE":
             const pageSize = action.meta.pageSize ?? state.pagination.pageSize
@@ -122,8 +118,7 @@ const tableReducer = (state, action) => {
                 pagination: {
                     ...state.pagination,
                     pageIndex: 0,
-                },
-                selected: initialState.selected
+                }
             }
         case "CHANGE_GLOBAL_FILTER":
             return {
@@ -132,8 +127,7 @@ const tableReducer = (state, action) => {
                 pagination: {
                     ...state.pagination,
                     pageIndex: 0,
-                },
-                selected: initialState.selected
+                }
             }
         case "CHANGE_FILTERS":
             return {
@@ -142,8 +136,7 @@ const tableReducer = (state, action) => {
                 pagination: {
                     ...state.pagination,
                     pageIndex: 0,
-                },
-                selected: initialState.selected
+                }
             }
         case "CHANGE_SORTING":
             return {
@@ -152,8 +145,52 @@ const tableReducer = (state, action) => {
                 pagination: {
                     ...state.pagination,
                     pageIndex: 0,
-                },
+                }
+            }
+    }
+}
+
+export const init =  (search) => ({
+    ...initialState,
+    tableState: tableStateSlice(null, routeSearchUpdateStateAction(search))
+})
+
+const tableReducer = (state, action) => {
+    switch (action.type) {
+        case "UPDATE_STATE_SEARCH":
+        case "FILTERS_ALL_CLEARED":
+        case "CHANGE_PERPAGE":
+        case "CHANGE_PAGE":
+            return {
+                ...state,
+                tableState: tableStateSlice(state.tableState, action)
+            }
+        case "CHANGE_FILTERS":
+        case "CHANGE_GLOBAL_FILTER":
+        case "CHANGE_SORTING":
+        case "RESET_PAGE":
+            return {
+                ...state,
+                tableState: tableStateSlice(state.tableState, action),
                 selected: initialState.selected
+            }
+        case "DESELECT_ALL":
+            return {
+                ...state,
+                selected: initialState.selected
+            }
+        case "DESELECT":
+            return {
+                ...state,
+                selected: state.selected.filter((item) => item !== action.payload)
+            }
+        case "SELECT":
+            return {
+                ...state,
+                selected: [
+                    ...state.selected.filter((item) => item !== action.payload),
+                    action.payload
+                ]
             }
         default:
             throw new Error("invalid action")
@@ -168,8 +205,12 @@ const useTableReducer = ({ initialSearch }) => {
         dispatch(changePageAction(pageIndex, pageSize))
     }, [])
 
+    const onClearAllFilters = useCallback(() => {
+        dispatch(clearAllFiltersAction())
+    }, [])
+
     const onGlobalFilterChange = useCallback((newGlobalFilter) => {
-        dispatch(changeGloablFilterAction(newGlobalFilter))
+        dispatch(changeGlobalFilterAction(newGlobalFilter))
     }, [])
 
     const onColumnFiltersChange = useCallback((newFilters) => {
@@ -197,6 +238,7 @@ const useTableReducer = ({ initialSearch }) => {
         onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
+        onClearAllFilters,
         select,
         deselect,
         deselectAll,
@@ -213,17 +255,13 @@ const useTableModel = () => {
         onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
+        onClearAllFilters,
         select,
         deselect,
         deselectAll,
         state,
         dispatch
     } = useTableReducer({ initialSearch: search })
-
-    const tableState = useMemo(() => {
-        const { pagination, sorting, columnFilters, globalFilter } = state
-        return { pagination, sorting, columnFilters, globalFilter }
-    }, [state.pagination, state.sorting, state.columnFilters, state.globalFilter])
 
     const makeOnRowSelectionChange = useCallback((newRowSelectionUpdater, table) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
@@ -256,16 +294,23 @@ const useTableModel = () => {
         )
     }, [state.selected])
 
+    const isDirtyFilters = useMemo(() => (
+        state.tableState.columnFilters !== initialState.tableState.columnFilters
+            || state.tableState.globalFilter !== initialState.tableState.globalFilter
+    ), [state.tableState.columnFilters, state.tableState.globalFilter])
+
     const model = { 
         dispatch,
         state,
-        tableState,
+        tableState: state.tableState,
         deselectAll,
         deselect,
+        isDirtyFilters,
         onPaginationChange,
         onGlobalFilterChange,
         onColumnFiltersChange,
         onSortingChange,
+        onClearAllFilters,
         makeOnRowSelectionChange,
         updateRowSelectionWithSelectedState,
     }
@@ -277,7 +322,7 @@ const useTableModel = () => {
 useTableModel.use = {
     tableSS: ({ tableName, queryOptions, columns, meta }, tableModel) => {
         useRouteSearchStateUpdater({
-            initialState,
+            initialState: initialState.tableState,
             state: tableModel.tableState,
             routeStateMapFn: (p, q) => p(
                 q("pagination.pageIndex", "page"),

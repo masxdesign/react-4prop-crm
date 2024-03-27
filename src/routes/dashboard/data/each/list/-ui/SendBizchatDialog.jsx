@@ -211,7 +211,7 @@ function SendBizchatDialog({
                                     ? recipients.length
                                     : (
                                         <i className="text-red-500">
-                                            Recipients not selected yet
+                                            not selected yet
                                         </i>
                                     )
                             )} />
@@ -319,7 +319,7 @@ function Item ({ id, body, created, sent, recipients, progress, className, statu
             onClick={() => onItemSelect(id)}
             className={itemCva({ intent: `${paused ? "paused" : status}${active ? '_active': ''}`, className })}
         >
-            <span className="truncate">{body}</span>
+            <span className="truncate max-w-72">{body}</span>
             <span className="flex justify-end text-sm">
                 <span className="opacity-50">
                     {format(

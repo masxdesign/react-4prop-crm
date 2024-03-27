@@ -18,7 +18,7 @@ const useTableSS = ({
     onColumnFiltersChange,
     onGlobalFilterChange
 }) => {
-    const { data, pageCount } = useLoadData(queryOptions, state)
+    const { data, pageCount, count } = useLoadData(queryOptions, state)
 
     const defaultColumnOrder = useMemo(() => columns.map((c) => c.id), [columns])
     const defaultColumnSizing = {}
@@ -35,6 +35,7 @@ const useTableSS = ({
         data, 
         meta: {
             ...meta,
+            count,
             dataQueryKey: queryOptions.queryKey
         },
         state: {
@@ -94,11 +95,12 @@ function useLoadData (queryOptions, tableState) {
 
     const [{ count }, data_] = data
 
-    const pageCount = useMemo(() => Math.round(count / pageSize), [count, pageSize])
+    const pageCount = useMemo(() => Math.ceil(count / pageSize), [count, pageSize])
 
     return {
         data: data_,
-        pageCount
+        pageCount,
+        count
     }
 }
 

@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import numberWithCommas from "@/utils/numberWithCommas"
 
 const DataTablePagination = ({ table }) => (
     <div className="flex items-center justify-between">
@@ -41,9 +42,9 @@ const DataTablePagination = ({ table }) => (
                     </SelectContent>
                 </Select>
             </div>
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                Page {table.getState().pagination.pageIndex + 1} of{" "}
-                {table.getPageCount()}
+            <div className="flex w-[150px] items-center justify-center text-sm font-medium">
+                Page {numberWithCommas(table.getState().pagination.pageIndex + 1)} of{" "}
+                {numberWithCommas(table.getPageCount())}
             </div>
             <div className="flex items-center space-x-2">
                 <Button

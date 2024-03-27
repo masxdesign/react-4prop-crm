@@ -20,7 +20,7 @@ import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { useVirtualizer } from "@tanstack/react-virtual"
 
-const VList = ({ column, options, facets, selectedValues, multiple }) => {
+const VList = ({ column, options, facets, selectedValues, multiple, disableFacets }) => {
 
     const parentRef = useRef(null)
 
@@ -98,8 +98,8 @@ const VList = ({ column, options, facets, selectedValues, multiple }) => {
                       {option.icon && (
                           <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                       )}
-                      <span className="truncate">{option.label}</span>
-                      {facets?.get(option.value) && (
+                      <span className="truncate">{option.label === "" ? <i className="opacity-50">(empty)</i> : option.label}</span>
+                      {!disableFacets && facets?.get(option.value) && (
                           <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
                               {facets.get(option.value)}
                           </span>
@@ -112,7 +112,7 @@ const VList = ({ column, options, facets, selectedValues, multiple }) => {
     )
 }
 
-const VCommand = ({ title, column, facets, options, selectedValues, multiple }) => {
+const VCommand = ({ title, column, facets, options, selectedValues, multiple, disableFacets }) => {
 
     const [search, setSearch] = useState('')
 
@@ -145,6 +145,7 @@ const VCommand = ({ title, column, facets, options, selectedValues, multiple }) 
                 column={column}
                 options={filteredOptions} 
                 facets={facets} 
+                disableFacets={disableFacets}
                 selectedValues={selectedValues} 
                 multiple={multiple}
               />
@@ -171,7 +172,8 @@ const DataTableFacetedFilter = ({
     column,
     title,
     data,
-    multiple
+    multiple,
+    disableFacets
 }) => {
   const { facets, options } = data
   const selectedValues = new Set(column?.getFilterValue())
@@ -208,7 +210,7 @@ const DataTableFacetedFilter = ({
                         key={option.value}
                         className="rounded-sm px-1 font-normal"
                       >
-                        {option.label}
+                        {option.label === "" ? <i className="opacity-50">(empty)</i> : option.label}
                       </Badge>
                     ))
                 )}
@@ -225,6 +227,7 @@ const DataTableFacetedFilter = ({
           options={options}
           selectedValues={selectedValues}
           multiple={multiple}
+          disableFacets={disableFacets}
         />
       </PopoverContent>
     </Popover>

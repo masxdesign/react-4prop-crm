@@ -11,7 +11,7 @@ export const Route = createFileRoute('/dashboard/data/each/list')({
 
     const tableName = 'd.v1.each'
 
-    const tableState = init(search)
+    const { tableState } = init(search)
 
     const { columns } = await import('./-ui/columns-each')
 
