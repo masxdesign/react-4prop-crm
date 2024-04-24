@@ -3,21 +3,23 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as DashboardImport } from './routes/dashboard'
+import { Route as AdminImport } from './routes/_admin'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as DashboardDataClientsImport } from './routes/dashboard/data/clients'
-import { Route as DashboardDataEachListRouteImport } from './routes/dashboard/data/each/list/route'
-import { Route as DashboardDataClientsListRouteImport } from './routes/dashboard/data/clients/list/route'
-import { Route as DashboardDataClientsImportRouteImport } from './routes/dashboard/data/clients/import/route'
-import { Route as DashboardDataClientsAddRouteImport } from './routes/dashboard/data/clients/add/route'
+import { Route as AdminWithMenuImport } from './routes/_admin/_with-menu'
+import { Route as AdminDashboardFormRouteImport } from './routes/_admin/dashboard/form/route'
+import { Route as AdminWithMenuDashboardDataClientsImport } from './routes/_admin/_with-menu/dashboard/data/clients'
+import { Route as AdminWithMenuDashboardDataEachListRouteImport } from './routes/_admin/_with-menu/dashboard/data/each/list/route'
+import { Route as AdminWithMenuDashboardDataClientsListRouteImport } from './routes/_admin/_with-menu/dashboard/data/clients/list/route'
+import { Route as AdminWithMenuDashboardDataClientsImportRouteImport } from './routes/_admin/_with-menu/dashboard/data/clients/import/route'
+import { Route as AdminWithMenuDashboardDataClientsAddRouteImport } from './routes/_admin/_with-menu/dashboard/data/clients/add/route'
 
 // Create/Update Routes
 
-const DashboardRoute = DashboardImport.update({
-  path: '/dashboard',
+const AdminRoute = AdminImport.update({
+  id: '/_admin',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/dashboard.lazy').then((d) => d.Route))
+} as any)
 
 const LoginRouteRoute = LoginRouteImport.update({
   path: '/login',
@@ -29,50 +31,66 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
-const DashboardDataClientsRoute = DashboardDataClientsImport.update({
-  path: '/data/clients',
-  getParentRoute: () => DashboardRoute,
+const AdminWithMenuRoute = AdminWithMenuImport.update({
+  id: '/_with-menu',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const AdminDashboardFormRouteRoute = AdminDashboardFormRouteImport.update({
+  path: '/dashboard/form',
+  getParentRoute: () => AdminRoute,
 } as any).lazy(() =>
-  import('./routes/dashboard/data/clients.lazy').then((d) => d.Route),
+  import('./routes/_admin/dashboard/form/route.lazy').then((d) => d.Route),
 )
 
-const DashboardDataEachListRouteRoute = DashboardDataEachListRouteImport.update(
-  {
-    path: '/data/each/list',
-    getParentRoute: () => DashboardRoute,
-  } as any,
-).lazy(() =>
-  import('./routes/dashboard/data/each/list/route.lazy').then((d) => d.Route),
-)
+const AdminWithMenuDashboardDataClientsRoute =
+  AdminWithMenuDashboardDataClientsImport.update({
+    path: '/dashboard/data/clients',
+    getParentRoute: () => AdminWithMenuRoute,
+  } as any).lazy(() =>
+    import('./routes/_admin/_with-menu/dashboard/data/clients.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
-const DashboardDataClientsListRouteRoute =
-  DashboardDataClientsListRouteImport.update({
+const AdminWithMenuDashboardDataEachListRouteRoute =
+  AdminWithMenuDashboardDataEachListRouteImport.update({
+    path: '/dashboard/data/each/list',
+    getParentRoute: () => AdminWithMenuRoute,
+  } as any).lazy(() =>
+    import(
+      './routes/_admin/_with-menu/dashboard/data/each/list/route.lazy'
+    ).then((d) => d.Route),
+  )
+
+const AdminWithMenuDashboardDataClientsListRouteRoute =
+  AdminWithMenuDashboardDataClientsListRouteImport.update({
     path: '/list',
-    getParentRoute: () => DashboardDataClientsRoute,
+    getParentRoute: () => AdminWithMenuDashboardDataClientsRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/data/clients/list/route.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/_admin/_with-menu/dashboard/data/clients/list/route.lazy'
+    ).then((d) => d.Route),
   )
 
-const DashboardDataClientsImportRouteRoute =
-  DashboardDataClientsImportRouteImport.update({
+const AdminWithMenuDashboardDataClientsImportRouteRoute =
+  AdminWithMenuDashboardDataClientsImportRouteImport.update({
     path: '/import',
-    getParentRoute: () => DashboardDataClientsRoute,
+    getParentRoute: () => AdminWithMenuDashboardDataClientsRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/data/clients/import/route.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/_admin/_with-menu/dashboard/data/clients/import/route.lazy'
+    ).then((d) => d.Route),
   )
 
-const DashboardDataClientsAddRouteRoute =
-  DashboardDataClientsAddRouteImport.update({
+const AdminWithMenuDashboardDataClientsAddRouteRoute =
+  AdminWithMenuDashboardDataClientsAddRouteImport.update({
     path: '/add',
-    getParentRoute: () => DashboardDataClientsRoute,
+    getParentRoute: () => AdminWithMenuDashboardDataClientsRoute,
   } as any).lazy(() =>
-    import('./routes/dashboard/data/clients/add/route.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/_admin/_with-menu/dashboard/data/clients/add/route.lazy'
+    ).then((d) => d.Route),
   )
 
 // Populate the FileRoutesByPath interface
@@ -87,29 +105,37 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRoute
     }
-    '/dashboard': {
-      preLoaderRoute: typeof DashboardImport
+    '/_admin': {
+      preLoaderRoute: typeof AdminImport
       parentRoute: typeof rootRoute
     }
-    '/dashboard/data/clients': {
-      preLoaderRoute: typeof DashboardDataClientsImport
-      parentRoute: typeof DashboardImport
+    '/_admin/_with-menu': {
+      preLoaderRoute: typeof AdminWithMenuImport
+      parentRoute: typeof AdminImport
     }
-    '/dashboard/data/clients/add': {
-      preLoaderRoute: typeof DashboardDataClientsAddRouteImport
-      parentRoute: typeof DashboardDataClientsImport
+    '/_admin/dashboard/form': {
+      preLoaderRoute: typeof AdminDashboardFormRouteImport
+      parentRoute: typeof AdminImport
     }
-    '/dashboard/data/clients/import': {
-      preLoaderRoute: typeof DashboardDataClientsImportRouteImport
-      parentRoute: typeof DashboardDataClientsImport
+    '/_admin/_with-menu/dashboard/data/clients': {
+      preLoaderRoute: typeof AdminWithMenuDashboardDataClientsImport
+      parentRoute: typeof AdminWithMenuImport
     }
-    '/dashboard/data/clients/list': {
-      preLoaderRoute: typeof DashboardDataClientsListRouteImport
-      parentRoute: typeof DashboardDataClientsImport
+    '/_admin/_with-menu/dashboard/data/clients/add': {
+      preLoaderRoute: typeof AdminWithMenuDashboardDataClientsAddRouteImport
+      parentRoute: typeof AdminWithMenuDashboardDataClientsImport
     }
-    '/dashboard/data/each/list': {
-      preLoaderRoute: typeof DashboardDataEachListRouteImport
-      parentRoute: typeof DashboardImport
+    '/_admin/_with-menu/dashboard/data/clients/import': {
+      preLoaderRoute: typeof AdminWithMenuDashboardDataClientsImportRouteImport
+      parentRoute: typeof AdminWithMenuDashboardDataClientsImport
+    }
+    '/_admin/_with-menu/dashboard/data/clients/list': {
+      preLoaderRoute: typeof AdminWithMenuDashboardDataClientsListRouteImport
+      parentRoute: typeof AdminWithMenuDashboardDataClientsImport
+    }
+    '/_admin/_with-menu/dashboard/data/each/list': {
+      preLoaderRoute: typeof AdminWithMenuDashboardDataEachListRouteImport
+      parentRoute: typeof AdminWithMenuImport
     }
   }
 }
@@ -119,12 +145,15 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
   LoginRouteRoute,
-  DashboardRoute.addChildren([
-    DashboardDataClientsRoute.addChildren([
-      DashboardDataClientsAddRouteRoute,
-      DashboardDataClientsImportRouteRoute,
-      DashboardDataClientsListRouteRoute,
+  AdminRoute.addChildren([
+    AdminWithMenuRoute.addChildren([
+      AdminWithMenuDashboardDataClientsRoute.addChildren([
+        AdminWithMenuDashboardDataClientsAddRouteRoute,
+        AdminWithMenuDashboardDataClientsImportRouteRoute,
+        AdminWithMenuDashboardDataClientsListRouteRoute,
+      ]),
+      AdminWithMenuDashboardDataEachListRouteRoute,
     ]),
-    DashboardDataEachListRouteRoute,
+    AdminDashboardFormRouteRoute,
   ]),
 ])

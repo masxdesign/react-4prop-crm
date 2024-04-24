@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
-import { useQueryClient } from "@tanstack/react-query"
-import { useSearch } from "@tanstack/react-router"
+import { queryOptions, useQueryClient } from "@tanstack/react-query"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import { useMap } from "@uidotdev/usehooks"
 import { flatten, uniqBy } from "lodash"
@@ -47,9 +46,14 @@ const deselectAllAction = () => ({
     type: "DESELECT_ALL"
 })
 
-const routeSearchUpdateStateAction = (search) => ({
+export const routeSearchUpdateStateAction = (search) => ({
     type: "UPDATE_STATE_SEARCH",
     payload: search
+})
+
+export const tableStateReceived = (newTableState) => ({
+    type: "TABLE_STATE_RECEIVED",
+    payload: newTableState
 })
 
 export const initialState = {
@@ -62,7 +66,7 @@ export const initialState = {
     selected: [],
 }
 
-const tableStateSlice = (state, action) => {
+export const tableStateSlice = (state, action) => {
     const initialTableState = initialState.tableState
 
     switch (action.type) {
@@ -150,13 +154,13 @@ const tableStateSlice = (state, action) => {
     }
 }
 
-export const init =  (search) => ({
-    ...initialState,
-    tableState: tableStateSlice(null, routeSearchUpdateStateAction(search))
-})
-
 const tableReducer = (state, action) => {
     switch (action.type) {
+        case "TABLE_STATE_RECEIVED":
+            return {
+                ...state,
+                tableState: action.payload
+            }
         case "UPDATE_STATE_SEARCH":
         case "FILTERS_ALL_CLEARED":
         case "CHANGE_PERPAGE":
@@ -197,8 +201,15 @@ const tableReducer = (state, action) => {
     }
 }
 
-const useTableReducer = ({ initialSearch }) => {
-    const [state, dispatch] = useReducer(tableReducer, initialSearch, init)
+export const tableStateURLSearchParamsReceived = (search) => {
+    const newState = tableStateSlice(null, routeSearchUpdateStateAction(search))
+    return tableStateReceived(newState)
+}
+
+export const initializer =  (action) => tableReducer(initialState, action)
+
+const useTableReducer = ({ init }) => {
+    const [state, dispatch] = useReducer(tableReducer, init, initializer)
 
     const onPaginationChange = useCallback((newPagination) => {
         const { pageIndex, pageSize } = newPagination
@@ -247,9 +258,7 @@ const useTableReducer = ({ initialSearch }) => {
     }
 }
 
-const useTableModel = () => {
-    const search = useSearch({ strict: false })
-
+const useTableModel = ({ init }) => {
     const { 
         onPaginationChange,
         onGlobalFilterChange,
@@ -261,7 +270,7 @@ const useTableModel = () => {
         deselectAll,
         state,
         dispatch
-    } = useTableReducer({ initialSearch: search })
+    } = useTableReducer({ init })
 
     const makeOnRowSelectionChange = useCallback((newRowSelectionUpdater, table) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
@@ -319,8 +328,21 @@ const useTableModel = () => {
 }
 
 // dont lead upon your own misunderstanding
+
+const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableModel) => {
+    const { tableState } = tableModel
+
+    const queryOptions_ = useMemo(() => queryOptions({ 
+        queryKey: [tableName, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
+        queryFn: () => queryFn(tableState), 
+        staleTime
+    }), [tableName, tableState, queryFn, staleTime])
+
+    return queryOptions_
+}
+
 useTableModel.use = {
-    tableSS: ({ tableName, queryOptions, columns, meta }, tableModel) => {
+    tableSS ({ tableName, queryFn, staleTime, columns, meta }, tableModel) {
         useRouteSearchStateUpdater({
             initialState: initialState.tableState,
             state: tableModel.tableState,
@@ -333,6 +355,8 @@ useTableModel.use = {
             ),
             onRouteSearchChange: (search) => tableModel.dispatch(routeSearchUpdateStateAction(search))
         })
+
+        const queryOptions = useTableQueryOptions({ tableName, queryFn, staleTime }, tableModel)
 
         const table = useTableSS({ 
             tableName,
@@ -392,7 +416,7 @@ useTableModel.use = {
 
             return uniqBy(items, 'id').filter(({ id }) => tableModel.state.selected.includes(id))
 
-        }, [tableModel.state.selected])
+        }, [tableModel.state.selected, queryKeys.size])
 
         const onExcludedApply = (excluded) => {
             excluded.forEach((item) => {
