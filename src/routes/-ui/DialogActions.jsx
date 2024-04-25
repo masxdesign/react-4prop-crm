@@ -2,7 +2,7 @@ import { CaretSortIcon, ChatBubbleIcon } from '@radix-ui/react-icons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import CategoriesPrimitive from './CategoriesPrimitive';
-import LogChatboxContainer from '../data/clients/list/-ui/LogChatboxContainer';
+import LogChatboxContainer from '../_admin/_with-menu/dashboard/data/clients/list/-ui/LogChatboxContainer';
 import { Mail, MapPin, Phone } from 'lucide-react';
 
 const infoList = [

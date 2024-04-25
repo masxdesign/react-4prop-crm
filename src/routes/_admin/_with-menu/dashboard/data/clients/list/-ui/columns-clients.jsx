@@ -4,8 +4,8 @@ import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader'
 import { Checkbox } from '@/components/ui/checkbox';
 import { fuzzySort } from '@/utils/fuzzyFilterSortFn';
 import Linkable from './Linkable';
-import Categories from '../../../../-ui/Categories';
-import LogDialog from '../../../../-ui/LogDialog';
+import Categories from '../../../../../../../-ui/Categories';
+import LogDialog from '../../../../../../../-ui/LogDialog';
 import ColumnNextContactClients from '../../-ui/ColumnNextContactClients';
 import ColumnContactDateClients from '../../-ui/ColumnContactDateClients';
 

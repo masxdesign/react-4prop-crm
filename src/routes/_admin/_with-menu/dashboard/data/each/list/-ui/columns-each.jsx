@@ -1,10 +1,10 @@
 import { createColumnHelper } from '@tanstack/react-table'
 import DataTableColumnHeader from '@/components/DataTable/DataTableColumnHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import LogDialog from '@/routes/_admin/_with-menu/dashboard/-ui/LogDialog';
-import AlertOpened from '@/routes/_admin/_with-menu/dashboard/-ui/AlertOpened';
-import AlertEmailClick from '@/routes/_admin/_with-menu/dashboard/-ui/AlertEmailClick';
-import ProgressCircle from '@/routes/_admin/_with-menu/dashboard/-ui/ProgressCircle';
+import LogDialog from '@/routes/-ui/LogDialog';
+import AlertOpened from '@/routes/-ui/AlertOpened';
+import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
+import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import Linkable from './Linkable';
 import ColumnLastContactEach from './ColumnLastContactEach';
 import ColumnNextContactEach from './ColumnNextContactEach';

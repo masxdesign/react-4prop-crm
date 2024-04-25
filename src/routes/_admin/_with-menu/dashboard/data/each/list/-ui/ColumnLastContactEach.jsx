@@ -1,5 +1,5 @@
 import { addLastContact } from '@/api/fourProp';
-import ColumnLastContact from '@/routes/_admin/_with-menu/dashboard/-ui/ColumnLastContact';
+import ColumnLastContact from '@/routes/-ui/ColumnLastContact';
 import useContactDateEachMutationOptions from './use-ContactDateEachMutationOptions';
 
 const ColumnLastContactEach = ({ variant, name = "last_contact", info, onSuccess, message }) => {

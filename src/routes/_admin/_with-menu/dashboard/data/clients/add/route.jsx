@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import PendingComponent from '../../../-ui/PendingComponent'
+import PendingComponent from '@/routes/-ui/PendingComponent'
 
 export const Route = createFileRoute('/_admin/_with-menu/dashboard/data/clients/add')({
     pendingComponent: PendingComponent,

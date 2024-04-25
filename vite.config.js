@@ -12,7 +12,7 @@ export default defineConfig(({ command, mode }) => {
       basicSsl(),
       react(),
       jsconfigPaths(),
-      TanStackRouterVite()
+      // TanStackRouterVite()
     ]
   }
 

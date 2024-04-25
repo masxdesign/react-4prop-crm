@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import PendingComponent from '../../../-ui/PendingComponent'
 import { tableStateURLSearchParamsReceived } from '@/hooks/use-TableModel'
+import PendingComponent from '@/routes/-ui/PendingComponent'
 
 export const Route = createFileRoute('/_admin/_with-menu/dashboard/data/each/list')({
   // loader: ({ context }) => context.queryClient.ensureQueryData(context.queryOptions),

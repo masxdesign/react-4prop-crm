@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import PendingComponent from './_admin/_with-menu/dashboard/-ui/PendingComponent';
+import PendingComponent from './-ui/PendingComponent';
 
 export const Route = createFileRoute('/_admin')({
     beforeLoad: ({ context, location }) => {

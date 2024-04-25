@@ -2,8 +2,6 @@ import { Suspense, forwardRef, useCallback, useLayoutEffect, useMemo, useRef, us
 import { createLazyFileRoute } from '@tanstack/react-router';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import ProgressCircle from '@/routes/_admin/_with-menu/dashboard/-ui/ProgressCircle';
-import AlertEmailClick from '@/routes/_admin/_with-menu/dashboard/-ui/AlertEmailClick';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNegotiators, fetchNotes } from '@/api/fourProp';
@@ -41,6 +39,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import numberWithCommas from '@/utils/numberWithCommas';
 import DataTableViewOptions from '@/components/DataTableViewOptions';
+import ProgressCircle from '@/routes/-ui/ProgressCircle';
+import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
 
 export const Route = createLazyFileRoute('/_admin/_with-menu/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -494,7 +494,3 @@ function FacetedFilter ({ queryKey, table, title, columnId, disableFacets }) {
     />
   )
 }
-
-
-
-

@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { format } from "date-fns"
-import ChatboxSentdate from "@/routes/_admin/_with-menu/dashboard/-ui/ChatboxSentdate"
-import ChatboxBizchatMessage from "../../../../-ui/ChatboxBizchatMessage"
+import ChatboxSentdate from "@/routes/-ui/ChatboxSentdate"
+import ChatboxBizchatMessage from "../../../../../../../-ui/ChatboxBizchatMessage"
 
 const NEXT = "2",
     LAST = "1",

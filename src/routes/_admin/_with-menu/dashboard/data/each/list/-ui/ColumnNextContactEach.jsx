@@ -1,5 +1,5 @@
 import { addNextContact } from '@/api/fourProp';
-import ColumnNextContact from '@/routes/_admin/_with-menu/dashboard/-ui/ColumnNextContact';
+import ColumnNextContact from '@/routes/-ui/ColumnNextContact';
 import useContactDateMutationOptions from './use-ContactDateEachMutationOptions';
 
 const ColumnNextContactEach = ({ placeholder = "Pick a date", name = "next_contact", info, onSuccess, message }) => {

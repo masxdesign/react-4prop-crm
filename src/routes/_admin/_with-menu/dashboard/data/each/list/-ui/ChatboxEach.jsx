@@ -1,5 +1,5 @@
 import { deleteLog } from "@/api/api-fakeServer"
-import Chatbox from "@/routes/_admin/_with-menu/dashboard/-ui/Chatbox"
+import Chatbox from "@/routes/-ui/Chatbox"
 import { addNote } from "@/api/fourProp"
 import { useQueryClient } from "@tanstack/react-query"
 import { util_add_each, util_delete_each } from "@/utils/localStorageController"
