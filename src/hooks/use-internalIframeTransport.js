@@ -17,15 +17,19 @@ const useInternalIframeTransport = ({ dispatch }) => {
           window.removeEventListener('message', onMessage)
         }
     
-      }, [])
-    
-      useEffect(() => { 
+    }, [])
+  
+    useEffect(() => { 
 
-        postMessage({ type: "mount" })
+      postMessage({ type: "mount" })
 
-      }, [])
+      return () => {
+        postMessage({ type: "unmount" })
+      }
 
-      return { postMessage }
+    }, [])
+
+    return { postMessage }
 }
 
 export default useInternalIframeTransport

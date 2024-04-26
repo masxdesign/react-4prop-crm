@@ -47,6 +47,15 @@ export const authLogin = async ({ email, password }) => {
     return data
 }
 
+export const searchProperties = async (pids) => {
+    try {
+        const { data } = await fourProp.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
+        return data
+    } catch(e) {
+        console.error(e)
+    }
+}
+
 export const authLogout = () => fourProp.post('api/account/logout')
 
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }) => {
