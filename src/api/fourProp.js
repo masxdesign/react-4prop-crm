@@ -1,7 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { isEmpty, truncate } from "lodash";
+import { isEmpty, map, memoize, truncate, union } from "lodash";
 import { sendBizchatMessage } from "./bizchat";
+import queryClient from "@/queryClient";
+import lowerKeyObject from "@/utils/lowerKeyObject";
+import propertyParse from "@/utils/propertyParse";
+import propertySubtypesKeyValueCombiner from "./propertySubtypesKeyValueCombiner";
+import propertyTypesCombiner from "./propertyTypesCombiner";
 
 export const FOURPROP_BASEURL = window.config?.site_url ?? import.meta.env.VITE_FOURPROP_BASEURL
 
@@ -47,7 +52,7 @@ export const authLogin = async ({ email, password }) => {
     return data
 }
 
-export const searchProperties = async (pids) => {
+export const fetchSearchProperties = async (pids) => {
     try {
         const { data } = await fourProp.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
         return data
@@ -224,4 +229,101 @@ export const fetchFacets = async ({ column = 'company' }) => {
 
     return data
 
+}
+
+export const versionsJson = queryOptions({
+    queryKey: ["versionsJson"],
+    queryFn: () => fourProp.get(`new/variables/versions.json`, { withCredentials: false })
+})
+
+export const dataJson = name => queryOptions({
+    queryKey: ["dataJson", name],
+    queryFn: async () => {
+        const versions = await queryClient.ensureQueryData(versionsJson)
+        const { data } = await fourProp.get(`new/variables/${name}${versions.data[name]}.json`, { withCredentials: false })
+        return data
+    }
+})
+
+export const typesJson = dataJson("types")
+export const subtypesJson = dataJson("subtypes")
+export const areasJson = dataJson("locations")
+
+const propertySubtypesKeyValueCombinerMemo = memoize(propertySubtypesKeyValueCombiner)
+const propertyTypesCombinerMemo = memoize(propertyTypesCombiner)
+
+const propertyCombinerMemo = memoize((pid, original, types, subtypes, companies) => {
+    const subtypesKeyValue = propertySubtypesKeyValueCombinerMemo(subtypes)
+    const propertyTypes = propertyTypesCombinerMemo(types, subtypesKeyValue)
+    const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
+    // const size = propertyParse.size(original)
+    // const tenure = propertyParse.tenure(original)
+
+    return {
+        id: pid,
+        addressText: propertyParse.addressText({ showPostcode: true })(original),
+        pictures: propertyParse.pictures(original),
+        types: parseTypes.types,
+        subtypes: parseTypes.subtypes,
+        size,
+        tenure,
+        original
+    }
+
+})
+
+export const searchProperties = pids => queryOptions({
+    queryKey: ['searchProperties', pids],
+    queryFn: () => fetchSearchProperties(pids),
+    enabled: pids.length > 0
+})
+
+export const propertiesDetailsSearch = (pids) => queryOptions({
+    queryKey: ['searchPropertiesDetails', pids],
+    queryFn: async () => {
+        const [{ results, companies }, types, subtypes] = await Promise.all([
+            queryClient.ensureQueryData(searchProperties(pids)),
+            queryClient.ensureQueryData(typesJson),
+            queryClient.ensureQueryData(subtypesJson)
+        ])
+
+        const properties_ = results.map(property => lowerKeyObject(property))
+
+        return properties_.map(property => propertyCombinerMemo(property.pid, property, types, subtypes, companies))
+    },
+    enabled: pids.length > 0
+})
+
+export const propertiesDetails = memoize((results) => {
+    const { properties, companies } = results
+    const properties_ = properties.map(property => lowerKeyObject(property))
+
+    return queryOptions({
+        queryKey: ['propertiesDetails', map(properties_, 'pid')],
+        queryFn: async () => {
+            const [types, subtypes] = await Promise.all([
+                queryClient.ensureQueryData(typesJson),
+                queryClient.ensureQueryData(subtypesJson)
+            ])
+            return properties_.map(property => propertyCombinerMemo(property.pid, property, types, subtypes, companies))
+        },
+        enabled: properties.length > 0
+    })
+})
+
+export const propertiesDetailsGlobalSelectionQuery = (globalSelection) => {
+    const properties_ = globalSelection.properties.map(property => lowerKeyObject(property))
+
+    return queryOptions({
+        queryKey: ['propertiesDetailsGlobalSelection', map(properties_, 'pid'), globalSelection.missing],
+        queryFn: async () => {
+            const [current, missing] = await Promise.all([
+                queryClient.ensureQueryData(propertiesDetails(globalSelection)),
+                queryClient.ensureQueryData(propertiesDetailsSearch(globalSelection.missing))
+            ])
+
+            return union(current, missing)
+        },
+        enabled: properties_.length > 0
+    })
 }

@@ -1,10 +1,11 @@
-import { searchProperties } from '@/api/fourProp'
+import { useEffect, useMemo, useReducer } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { createLazyFileRoute } from '@tanstack/react-router'
+import { propertiesDetails, propertiesDetailsGlobalSelectionQuery, propertiesDetailsSearch } from '@/api/fourProp'
+import tableQueryOptions from '@/api/tableQueryOptions'
 import useInternalIframeTransport from '@/hooks/use-internalIframeTransport'
 import lowerKeyObject from '@/utils/lowerKeyObject'
 import propertyParse from '@/utils/propertyParse'
-import { useQuery } from '@tanstack/react-query'
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useReducer } from 'react'
 
 export const Route = createLazyFileRoute('/_admin/_remote/integrate/send-enquiry')({
   component: Component
@@ -48,11 +49,17 @@ function Component () {
   const [state, dispatch] = useReducer(pageReducer, initialPageState)
   const { postMessage } = useInternalIframeTransport({ dispatch })
 
-  const { data } = useQuery({
-    queryKey: ['sendEnquiryProperties', state.globalSelection.missing],
-    queryFn: () => searchProperties(state.globalSelection.missing),
-    enabled: state.globalSelection.missing?.length > 0
-  })
+  const properties = useQuery(propertiesDetailsGlobalSelectionQuery(state.globalSelection))
+
+  useEffect(() => {
+
+    console.log(properties.data);
+
+  }, [properties])
+
+  return null
+  
+  /*
 
   const properties = useMemo(() => {
     const list = state.globalSelection.properties.map((property) => lowerKeyObject(property))
@@ -67,11 +74,11 @@ function Component () {
 
   useEffect(() => {
 
-    if (data) {
-      dispatch({ type: "missingReceived", payload: data })
+    if (missingProperties.data) {
+      dispatch({ type: "missingReceived", payload: missingProperties.data })
     }
 
-  }, [data])
+  }, [missingProperties.data])
 
   return (
     <div>
@@ -85,4 +92,5 @@ function Component () {
       ))}
     </div>
   )
+  */
 }
