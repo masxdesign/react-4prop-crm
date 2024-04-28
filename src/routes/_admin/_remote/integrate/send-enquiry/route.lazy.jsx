@@ -12,33 +12,29 @@ export const Route = createLazyFileRoute('/_admin/_remote/integrate/send-enquiry
 })
 
 const initialPageState = {
-  globalSelection: {
-    companies: [],
-    properties: [],
-    missing: [],
-  }
+  companies: [],
+  properties: [],
+  missing: [],
 }
 
 function pageReducer (state, action) {
   switch (action.type) {
     case "globalSelection":
       return {
-        globalSelection: action.payload
+        ...action.payload
       }
     case "missingReceived":
       return {
-        globalSelection: {
-          ...state.globalSelection,
+        ...state,
           companies: [
-            ...state.globalSelection.companies,
-            ...action.payload.companies.filter((item) => !state.globalSelection.companies.some(({ c }) => item.c === c))
+            ...state.companies,
+            ...action.payload.companies.filter((item) => !state.companies.some(({ c }) => item.c === c))
           ],
           properties: [
-            ...state.globalSelection.properties,
-            ...action.payload.results.filter((item) => !state.globalSelection.properties.some(({ pid }) => item.PID === pid))
+            ...state.properties,
+            ...action.payload.results.filter((item) => !state.properties.some(({ pid }) => item.PID === pid))
           ],
-          missing: state.globalSelection.missing.filter(pid => !action.payload.results.some((item) => item.PID === pid)),
-        }
+          missing: state.missing.filter(pid => !action.payload.results.some((item) => item.PID === pid)),
       }
     default: 
       return state
@@ -49,7 +45,13 @@ function Component () {
   const [state, dispatch] = useReducer(pageReducer, initialPageState)
   const { postMessage } = useInternalIframeTransport({ dispatch })
 
-  const properties = useQuery(propertiesDetailsGlobalSelectionQuery(state.globalSelection))
+  const properties = useQuery(propertiesDetailsGlobalSelectionQuery(state))
+
+  useEffect(() => {
+
+    console.log(state);
+
+  }, [state])
 
   useEffect(() => {
 
@@ -62,7 +64,7 @@ function Component () {
   /*
 
   const properties = useMemo(() => {
-    const list = state.globalSelection.properties.map((property) => lowerKeyObject(property))
+    const list = state.properties.map((property) => lowerKeyObject(property))
 
     return list.map((info) => ({
       ...info,
@@ -70,7 +72,7 @@ function Component () {
       pictures: propertyParse.pictures(info),
     }))
 
-  }, [state.globalSelection.properties])
+  }, [state.properties])
 
   useEffect(() => {
 

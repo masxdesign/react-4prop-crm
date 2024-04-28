@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { isEmpty, map, memoize, truncate, union } from "lodash";
+import { isEmpty, map, memoize, result, truncate, union } from "lodash";
 import { sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
@@ -54,8 +54,13 @@ export const authLogin = async ({ email, password }) => {
 
 export const fetchSearchProperties = async (pids) => {
     try {
+
+        if (pids.length < 1) return { results: [], companies: [] }
+
         const { data } = await fourProp.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
+
         return data
+    
     } catch(e) {
         console.error(e)
     }
@@ -256,8 +261,8 @@ const propertyCombinerMemo = memoize((pid, original, types, subtypes, companies)
     const subtypesKeyValue = propertySubtypesKeyValueCombinerMemo(subtypes)
     const propertyTypes = propertyTypesCombinerMemo(types, subtypesKeyValue)
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
-    // const size = propertyParse.size(original)
-    // const tenure = propertyParse.tenure(original)
+    const size = propertyParse.size(original)
+    const tenure = propertyParse.tenure(original)
 
     return {
         id: pid,
@@ -272,17 +277,18 @@ const propertyCombinerMemo = memoize((pid, original, types, subtypes, companies)
 
 })
 
-export const searchProperties = pids => queryOptions({
+export const searchPropertiesQuery = pids => queryOptions({
     queryKey: ['searchProperties', pids],
-    queryFn: () => fetchSearchProperties(pids),
-    enabled: pids.length > 0
+    queryFn: () => fetchSearchProperties(pids)
 })
 
-export const propertiesDetailsSearch = (pids) => queryOptions({
+export const propertiesDetailsSearchQuery = pids => queryOptions({
     queryKey: ['searchPropertiesDetails', pids],
     queryFn: async () => {
+        if (pids.length < 1) return []
+
         const [{ results, companies }, types, subtypes] = await Promise.all([
-            queryClient.ensureQueryData(searchProperties(pids)),
+            queryClient.ensureQueryData(searchPropertiesQuery(pids)),
             queryClient.ensureQueryData(typesJson),
             queryClient.ensureQueryData(subtypesJson)
         ])
@@ -290,40 +296,49 @@ export const propertiesDetailsSearch = (pids) => queryOptions({
         const properties_ = results.map(property => lowerKeyObject(property))
 
         return properties_.map(property => propertyCombinerMemo(property.pid, property, types, subtypes, companies))
-    },
-    enabled: pids.length > 0
+    }
 })
 
-export const propertiesDetails = memoize((results) => {
+export const propertiesDetailsQuery = memoize(results => {
     const { properties, companies } = results
     const properties_ = properties.map(property => lowerKeyObject(property))
 
     return queryOptions({
         queryKey: ['propertiesDetails', map(properties_, 'pid')],
         queryFn: async () => {
+            if (properties_.length < 1) return []
+
             const [types, subtypes] = await Promise.all([
                 queryClient.ensureQueryData(typesJson),
                 queryClient.ensureQueryData(subtypesJson)
             ])
             return properties_.map(property => propertyCombinerMemo(property.pid, property, types, subtypes, companies))
-        },
-        enabled: properties.length > 0
+        }
     })
 })
 
-export const propertiesDetailsGlobalSelectionQuery = (globalSelection) => {
+export const propertiesDetailsGlobalSelectionQuery = globalSelection => {
     const properties_ = globalSelection.properties.map(property => lowerKeyObject(property))
 
     return queryOptions({
         queryKey: ['propertiesDetailsGlobalSelection', map(properties_, 'pid'), globalSelection.missing],
         queryFn: async () => {
-            const [current, missing] = await Promise.all([
-                queryClient.ensureQueryData(propertiesDetails(globalSelection)),
-                queryClient.ensureQueryData(propertiesDetailsSearch(globalSelection.missing))
-            ])
+            try {
 
-            return union(current, missing)
-        },
-        enabled: properties_.length > 0
+                if (properties_.length < 1 && globalSelection.missing.length < 1) return []
+
+                const [current, missing] = await Promise.all([
+                    queryClient.ensureQueryData(propertiesDetailsQuery(globalSelection)),
+                    queryClient.ensureQueryData(propertiesDetailsSearchQuery(globalSelection.missing))
+                ])
+    
+                const properties =  union(current, missing)
+    
+                return properties
+
+            } catch (e) {
+                console.log(e);
+            }
+        }
     })
 }

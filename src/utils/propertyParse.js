@@ -3,6 +3,7 @@ import { escapetext } from "./misc"
 import Size from "./Size"
 import displayMinMax from "./displayMinMax"
 import doDecimalSafeMath from "./doDecimalSafeMath"
+import number_format from "./number-format"
 
 const typesCollectionHelper = memoize((typesCollection) => {
     const typesEntries = typesCollection
