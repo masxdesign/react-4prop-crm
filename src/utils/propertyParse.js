@@ -1,9 +1,10 @@
-import { chain, isEmpty, isUndefined, map, memoize, trim } from "lodash"
-import { escapetext } from "./misc"
+import { chain, isEmpty, isUndefined, map, memoize, trim, uniqBy } from "lodash"
+import { escapetext, fallVals, strip_tags } from "./misc"
 import Size from "./Size"
 import displayMinMax from "./displayMinMax"
 import doDecimalSafeMath from "./doDecimalSafeMath"
 import number_format from "./number-format"
+import htmlEntities from "./htmlEntities"
 
 const typesCollectionHelper = memoize((typesCollection) => {
     const typesEntries = typesCollection
@@ -294,6 +295,22 @@ const propertyParse = {
             extended
         }
     },
+    content ({ description, locationdesc, amenities }) {
+        let teaser = fallVals(description, locationdesc, amenities)
+        teaser = strip_tags(escapetext(teaser || ''))
+    
+        return {
+            teaser: teaser.substr(0, 60),
+            description: htmlEntities(description || ''),
+            location: htmlEntities(locationdesc || ''),
+            amenities: htmlEntities(amenities || '')
+        }
+    },
+    companies: (companies) => ({ cids }) => uniqBy(companies, 'b').filter(({ cid }) => cids.includes(`,${cid},`)).map(({ logo, ...rest }) => ({
+        ...rest,
+        logo,
+        logoImageUrl: logo.preview
+    }))
 }
 
 export default propertyParse
