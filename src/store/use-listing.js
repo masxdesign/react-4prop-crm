@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query"
-import { compact, memoize } from "lodash"
+import { chain, compact, memoize } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
 import companyCombiner from "@/api/companyCombiner"
@@ -11,6 +11,32 @@ import propertyParse from "@/utils/propertyParse"
 import { createImmer } from "@/utils/zustand-extras"
 import displayTenure from "@/utils/displayTenure"
 import displaySize from "@/utils/displaySize"
+
+export const PROPERTY_STATUS_NAMES = {
+    0: "AVAILABLE",
+    1: "UNDER OFFER", 
+    2: "Withdrawn",
+    8: "LET", 
+    9: "SOLD",
+    7: "Unadvertised",
+    // obselete
+    5: "LET", 
+    40: "LET",
+    41: "SOLD"
+}
+
+export const PROPERTY_STATUS_COLORS = {
+    0: "green",
+    1: "amber", 
+    2: "amber",
+    8: "red", 
+    9: "red",
+    7: "sky",
+    // obselete
+    5: "amber", 
+    40: "amber",
+    41: "red"
+}
 
 const propertyCombinerMemo = memoize((pid, original, propertyTypes, content, companies_) => {
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
@@ -52,11 +78,13 @@ const propertyCombinerMemo = memoize((pid, original, propertyTypes, content, com
         landText,
         size,
         tenure,
+        statusText: PROPERTY_STATUS_NAMES[original.status],
+        statusColor: PROPERTY_STATUS_COLORS[original.status],
         content: content_,
         companies,
+        agents: chain(original.dealswith).trim(',').split(',').uniq().value(),
         original
     }
-
 })
 
 const propertiesSelector = (state) => state.properties
@@ -137,6 +165,11 @@ export const propertiesReceived = (properties) => ({
     payload: properties
 })
 
+export const selectedReceived = (selected) => ({
+    type: "SELECTED_RECEIVED", 
+    payload: selected
+})
+
 export const companiesReceived = (companies) => ({
     type: "COMPANIES_RECEIVED", 
     payload: companies
@@ -153,9 +186,7 @@ function reducer (state, action) {
             const { types, subtypes, properties, companies, selected, contents } = action.payload
             
             reducer(state, propertyTypesReceived(types, subtypes))
-
-            state.selected = selected
-
+            reducer(state, selectedReceived(selected))
             reducer(state, contentsReceived(contents))
             reducer(state, propertiesReceived(properties))
             reducer(state, companiesReceived(companies))

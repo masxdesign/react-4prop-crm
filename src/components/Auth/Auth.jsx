@@ -1,11 +1,16 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
 import { AuthContext } from "./Auth-context"
 import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/api/fourProp"
 
 const AuthProvider = ({ children }) => {
     const { data } = useSuspenseQuery(authWhoisonlineQueryOptions)
-    const [user, setUser] = useState(data)
+    const [user_, setUser] = useState(data)
+
+    const user = useMemo(() => ({
+        ...user_,
+        bz_uid: user_.neg_id ? user_.neg_id : `U${user_.id}`
+    }), [user_])
 
     const isAuthenticated = !!user
 

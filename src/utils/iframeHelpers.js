@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import useListing from "@/store/use-listing"
 
 const getWinHeight = () => {
@@ -28,27 +28,20 @@ export function onMessage (event) {
 
 export function useIframeHelper () {
     const ref = useRef()
+    const prevRef = useRef()
+
+    const frameHeightUpdate = useCallback(() => {
+      const height = getFrameHeight(ref.current)
+      if (prevRef.current === height) return
+      postMessage({ type: "FRAME_HEIGHT", payload: height })
+      prevRef.current = height
+    }, [])
 
     useEffect(() => {
-        postMessage({ type: "FRAME_HEIGHT", payload: getFrameHeight(ref.current) })
-    })
-
-    useEffect(() => {
-    
-        function onMessage (e) {
-          switch (e.data.type) {
-            case "INVOKE_FRAME_HEIGHT":
-              postMessage({ type: "FRAME_HEIGHT", payload: getFrameHeight(ref.current) })
-              break 
-          }
-        }
-    
-        window.addEventListener("message", onMessage)
-        
+        const intvId = setInterval(frameHeightUpdate, 150)
         return () => {
-          window.removeEventListener("message", onMessage)
+          clearInterval(intvId)
         }
-    
       }, [])
 
       return ref

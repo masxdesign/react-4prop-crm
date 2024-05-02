@@ -1,4 +1,5 @@
 import axios from "axios";
+import { uniq } from "lodash";
 
 const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
@@ -57,4 +58,81 @@ export const verifyShareApplicantUser = async (email, password) => {
         return { error: "Please contact administrator. Apologies for any inconvenience." }
 
     }
+}
+
+export const getEnquiryRoomAsync = async (userId, type, i) => {
+	const params = { createdBy: userId, type, i }
+	const { data } = await bizchatAxios.get(`/api/enquiry_room`, { params, withCredentials: true })
+	return data
+}
+
+export const addEnquiryRoomAsync = async (name, userId, type, i, tab) => {
+	const { data } = await bizchatAxios.post(`/api/enquiry_room`, { name, createdBy: userId, type, i, tab }, { withCredentials: true })
+	return data
+}
+
+export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
+	const { data } = await bizchatAxios.post(`/api/attachments`, formDataOrBody, { withCredentials: true, ...config })
+    return data
+}
+
+export const sendBizchatPropertyEnquiry = async ({ userId, form, attachments = [] }) => {
+    let enquiryRoom = await getEnquiryRoomAsync(userId, "P", form.property.id)
+
+    if (!enquiryRoom) {
+        enquiryRoom = await addEnquiryRoomAsync(form.property.title, userId, "P", form.property.id, 'E')
+    }
+
+    return uploadAttachmentsAsync({
+        message: createEnquiryPropertyMessageDataObject(userId, enquiryRoom, form, attachments),
+        context: createPropertyEnquiryContextObject(enquiryRoom, form.property)
+    })
+}
+
+function createPropertyEnquiryContextObject (enquiryRoom, property) {
+	const { id, sizeText, tenureText, title, content, thumbnail } = property
+
+	return { 
+		chatName: enquiryRoom.name, 
+		chatType: "P", 
+		broadcastSender: true, 
+		forceNotifyNewMessage: true,
+		enquiry: {
+			properties: [
+				{
+					pid: id,
+					title, 
+					teaser: content.teaser,
+					thumb: thumbnail?.replace(/^https:\/\/4prop.com/, ''),
+					sizeText, 
+					tenureText
+				}
+			]
+		}
+	}
+}
+
+function createEnquiryPropertyMessageDataObject (userId, enquiryRoom, form, attachments= []) {
+    const { viewing, pdf, message, property } = form
+    
+    if (property.agents.length < 1) throw new Error("property.agents empty")
+
+	let choices = 0
+
+	if(viewing) {
+		choices = choices | 1
+    }
+
+	if(pdf) {
+		choices = choices | 2
+    }
+
+	return { 
+		from: userId, 
+		body: message, 
+		recipients: `${property.agents}`,
+		chat_id: enquiryRoom.id,
+		choices,
+		type: attachments.length > 0 ? 'A': 'M'
+	}
 }
