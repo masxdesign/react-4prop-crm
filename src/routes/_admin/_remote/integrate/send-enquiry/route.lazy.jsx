@@ -81,7 +81,7 @@ function Component () {
 
   return (
     <FormProvider {...form}>
-      <form ref={ref} className="flex flex-col space-y-8 p-1" onSubmit={form.handleSubmit(onSubmit)}>
+      <form ref={ref} className="flex flex-col space-y-5 p-1" onSubmit={form.handleSubmit(onSubmit)}>
           <div className='space-y-1'>
             <label htmlFor="message" className='font-bold text-sm'>General message</label>
             <Textarea 
@@ -94,19 +94,19 @@ function Component () {
           </div>
           <div className='border shadow-lg space-y-0'>
             <div className='font-bold p-3 bg-gray-100'>{data?.length} properties</div>
-            <div className="overflow-y-auto max-h-[500px] space-y-3">
+            <div className="overflow-y-auto max-h-[400px] sm:max-h-[600px] space-y-3">
               {data?.map((item, index) => {
                 const { id, title, statusColor, statusText, sizeText, tenureText, thumbnail, content } = item
                 return (
                   <div key={id} className="space-y-3 hover:bg-sky-50 p-3">
                     <div className='flex gap-3'>
-                      <img src={thumbnail} className="object-contain w-20 h-20 bg-gray-200" />
-                      <div className="space-y-1 text-sm flex-grow">
+                      <img src={thumbnail} className="object-contain w-10 h-10 sm:w-20 sm:h-20 bg-gray-200" />
+                      <div className="space-y-3 sm:space-y-1 text-sm flex-grow">
                         <a href={`https://4prop.com/view-details/${id}`} target="_blank" className='font-bold hover:underline'>
                           {title}
                           <OpenInNewWindowIcon className='inline ml-1 opacity-50' />
                         </a>
-                        <div className='flex gap-3'>
+                        <div className='flex flex-col sm:flex-row gap-0 sm:gap-3'>
                           <div className={cx("font-bold", { 
                             "text-green-600": statusColor === "green",
                             "text-amber-600": statusColor === "amber",
@@ -116,7 +116,7 @@ function Component () {
                           <div>{sizeText}</div>
                           <div>{tenureText}</div>
                         </div>
-                        <div className="opacity-60">{content.teaser}</div>
+                        <div className="opacity-60 truncate max-w-[360px]">{content.teaser}</div>
                         {sent.includes(id) ? (
                           <i className='border rounded-lg px-1 shadow-sm inline-block text-slate-600'>Sent!</i>
                         ) : form.formState.isSubmitting ? (
@@ -163,10 +163,10 @@ function FormItems ({ index, item }) {
       open={isOpen}
       onOpenChange={setIsOpen}
     >
-      <div className='flex text-sm gap-5'>
+      <div className='flex flex-col sm:flex-row text-sm gap-2 sm:gap-5'>
         <FormItemsCheckbox index={index} name="pdf" label="PDF" />
         <FormItemsCheckbox index={index} name="viewing" label="Viewing" />
-        <CollapsibleTrigger className='text-sky-700 hover:underline'>
+        <CollapsibleTrigger className='text-sky-700 hover:underline self-start'>
           specific message
         </CollapsibleTrigger>
       </div>

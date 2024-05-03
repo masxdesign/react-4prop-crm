@@ -1,5 +1,5 @@
+import LinkGroup from '@/routes/-ui/LinkGroup'
 import { Outlet, createLazyFileRoute } from '@tanstack/react-router'
-import LinkGroup from '../-ui/LinkGroup'
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/clients')({
   component: () => {
