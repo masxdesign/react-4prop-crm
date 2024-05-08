@@ -11,7 +11,7 @@ import { FormField } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
 import { OpenInNewWindowIcon } from '@radix-ui/react-icons'
 import delay from '@/utils/delay'
-import { addEnquiryRoomAsync, getEnquiryRoomAsync, sendBizchatPropertyEnquiry, uploadAttachmentsAsync } from '@/api/bizchat'
+import { sendBizchatPropertyEnquiry } from '@/api/bizchat'
 import { isEmpty } from 'lodash'
 import { cx } from 'class-variance-authority'
 
