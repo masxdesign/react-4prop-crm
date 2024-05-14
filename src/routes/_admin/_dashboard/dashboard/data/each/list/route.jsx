@@ -9,8 +9,11 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/lis
     const { columns } = await import('./-ui/columns-each')
 
     return {
-      tableName:  'd.v1.each',
-      tableModelInit: tableStateURLSearchParamsReceived(search),
+      tableName:  'd.v1.0.3.each',
+      tableModelInit: tableStateURLSearchParamsReceived({ 
+        ...search,
+        sorting: [{ id: "next_contact", desc: true }]
+      }),
       columns,
     }
   }

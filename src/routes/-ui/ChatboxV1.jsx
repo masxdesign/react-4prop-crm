@@ -57,7 +57,7 @@ const Chatbox = ({
         <div className='bg-white border-t'>
           <div className='relative'>
             <Textarea 
-              placeholder="Type your message here."
+              placeholder="Type your message here..."
               className="border-none bg-transparent resize-none"
               {...messageBoxProps}
             />

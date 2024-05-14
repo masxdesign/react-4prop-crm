@@ -1,9 +1,10 @@
-import { forwardRef } from "react"
+import { forwardRef, useMemo } from "react"
 import Dd from "./Dd"
 import { isEmpty } from "lodash"
+import htmlEntities from "@/utils/htmlEntities"
 
 const Ddd = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, collapsible, ...props }, ref) => {
-    const value = row[name]
+    const value = useMemo(() => htmlEntities(row[name]), [row[name]])
   
     if(!alwaysShow && isEmpty(value)) return null
   
@@ -15,7 +16,9 @@ const Ddd = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, co
         labelClassName={labelClassName}
         collapsible={collapsible}
         value={(
-          'email' === name ? (
+          isEmpty(value) ? (
+            <i className="opacity-50">(empty)</i>
+          ) : 'email' === name ? (
             <a href={`mailto: ${value}`} className='hover:underline'>
               {value}
             </a>

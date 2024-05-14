@@ -80,7 +80,6 @@ function ClientsListComponent() {
             <Badge variant="secondary">
               {numberWithCommas(table.options.meta.count)}
             </Badge>
-            <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
             {tableSelectionModel.selection.length > 0 && (
               <SelectionControl {...selectionControl}>
                 <PopoverTrigger asChild>
@@ -99,6 +98,7 @@ function ClientsListComponent() {
                 </SelectionControl.Content>
               </SelectionControl>
             )}
+            <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
           </div>
           <div className='flex flex-grow justify-center gap-4'>
             <GlobalFilter 
@@ -265,9 +265,11 @@ function DialogMetricsEach ({ chatboxQueryOptions, info }) {
           { label: "Email", name: "email" },
           { label: "Phone", name: "phone" },
           { label: "Company", name: "company", bold: true },
+          { label: "Department", name: "department" },
+          { label: "Position", name: "position", alwaysShow: true },
           { label: "Website", name: "website" },
           { label: "City", name: "city" },
-          { label: "Postcode", name: "postcode" }
+          { label: "Postcode", name: "postcode" },
         ]}
         row={info.row.original}
       />

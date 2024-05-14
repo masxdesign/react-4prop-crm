@@ -17,12 +17,18 @@ import { Badge } from "@/components/ui/badge"
 import { ResumeIcon } from "@radix-ui/react-icons"
 import { useForm } from "react-hook-form"
 import { useEffect } from "react"
+import Nl2br from "@/components/Nl2br/Nl2br"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
+import { Input } from "@/components/ui/input"
+import { isEmpty } from "lodash"
 
 function SendBizchatDialog({
     open,
     paused,
     isPausing,
     items,
+    subjectLine,
     message,
     currItem,
     recipients,
@@ -30,6 +36,7 @@ function SendBizchatDialog({
     onResume,
     lastItemPending,
     onAddItem,
+    onSubjectLineChange,
     onMessageChange,
     onItemSelect,
     onOpenChange,
@@ -39,31 +46,43 @@ function SendBizchatDialog({
     const {
         register,
         watch,
-        setValue,
+        setValue,getValues,
         formState,
         ...form
     } = useForm({
-        defaultValues: { message }
+        defaultValues: { 
+            subjectLine,
+            message 
+        }
     })
     
     useEffect(() => {
-        const subscription = watch((value) => onMessageChange(value.message))
+        const subscription = watch((value) => {
+            onSubjectLineChange(value.subjectLine)
+            onMessageChange(value.message)
+        })
         return () => subscription.unsubscribe()
     }, [watch])
 
     const handleSubmit = form.handleSubmit((data) => {
+        setValue("subjectLine", "")
         setValue("message", "")
-        onAddItem(data.message)
+        onAddItem(data)
     })
 
-    const handleReuseMessage = (body) => {
+    const handleResetMessageText = () => {
+        setValue("message", "")
+    }
+
+    const handleReuseMessage = ({ body, subjectLine = "" }) => {
+        setValue("subjectLine", subjectLine)
         setValue("message", body)
         onItemSelect(null)
     }
     
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[900px]">
+            <DialogContent className="sm:max-w-[900px] overflow-y-scroll max-h-screen">
                 <DialogHeader>
                     <DialogTitle className="flex flex-row items-center gap-4">
                         <span>
@@ -173,8 +192,13 @@ function SendBizchatDialog({
                                     />
                                 )}
                             </div>
-                            <div className="p-3 rounded-sm border min-h-32">
-                                {currItem.body}
+                            <Dd label="Subject line" value={
+                                isEmpty(currItem.subjectLine) 
+                                    ? <i className="opacity-50">(empty)</i>
+                                    : currItem.subjectLine
+                            } />
+                            <div className="p-3 rounded-sm border text-sm min-h-32 max-h-96 overflow-y-auto">
+                                <Nl2br text={currItem.body} />
                             </div>
                             <div className="flex flex-row gap-3 justify-end">
                                 {!["completed", "canceling", "cancelled"].includes(currItem.status) && (
@@ -189,7 +213,7 @@ function SendBizchatDialog({
                                 {["completed", "cancelled"].includes(currItem.status) && (
                                     <Button 
                                         className="font-bold" 
-                                        onClick={() => handleReuseMessage(currItem.body)}
+                                        onClick={() => handleReuseMessage(currItem)}
                                         disabled={lastItemPending}
                                     >
                                         Reuse
@@ -203,30 +227,45 @@ function SendBizchatDialog({
                             className="flex flex-col gap-4 flex-auto max-w-[520px]"
                         >
                             <div>
-                                <h2 className="font-bold">Send a Mass Bizchat Message</h2>
-                                <p className="opacity-50">Please make a selection to send your message. Note: You can only make one send-out at a time</p>
+                                <h2 className="font-bold">Send a Mailshot via BizChat</h2>
+                                <p>
+                                    {recipients.length > 0  ? (
+                                        <span className="text-slate-400">
+                                            You have selected <span className="text-slate-800">{recipients.length} recipients</span> for your mailing list
+                                        </span>
+                                    ) : (
+                                        <span className="text-red-500">Please select some recipients for your mailing</span>
+                                    )}
+                                </p>
                             </div>
-                            <Dd label="Recipients" value={(
-                                recipients.length > 0 
-                                    ? recipients.length
-                                    : (
-                                        <i className="text-red-500">
-                                            not selected yet
-                                        </i>
-                                    )
-                            )} />
+                            <Input 
+                                placeholder="Type your subject line here.." 
+                                {...register("subjectLine", { required: true })} 
+                            />
                             <Textarea
-                                placeholder="Type your message here."
+                                placeholder="Type your message here..."
                                 className="focus-visible:ring-inset focus-visible:ring-offset-0"
+                                rows={18}
                                 {...register("message", { required: true })}
                             />
-                            <Button
-                                type="submit"
-                                disabled={recipients.length < 1 || !formState.isValid}
-                                className="place-self-end font-bold"
-                            >
-                                Send Bizchat
-                            </Button>
+                            <div className="space-x-3 text-right">
+                                {watch('message') !== "" && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={handleResetMessageText}
+                                        className="place-self-end font-bold"
+                                    >
+                                        Clear
+                                    </Button>
+                                )}
+                                <Button
+                                    type="submit"
+                                    disabled={recipients.length < 1 || !formState.isValid}
+                                    className="place-self-end font-bold"
+                                >
+                                    Send Bizchat
+                                </Button>
+                            </div>
                         </form>
                     )}
                 </div>
@@ -256,17 +295,24 @@ SendBizchatDialog.Button = ({ selectionControl, onOpenChange, lastItemPending, p
 )
 
 const ButtonSm = ({ onOpenChange, lastItemPending, className, icon: Icon, iconClassName, ...props }) => (
-    <Button
-        onClick={() => onOpenChange(true)}
-        className={cn("h-8 gap-2", className)}
-        {...props}
-    >
-        <Icon className={cn("h-4 w-4", iconClassName)} /> 
-        <span>Bizchat</span>
-        {lastItemPending && (
-            <span>{lastItemPending.progress}%</span>
-        )}
-    </Button>
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <Button
+                onClick={() => onOpenChange(true)}
+                className={cn("h-8 gap-2", className)}
+                {...props}
+            >
+                <Icon className={cn("h-4 w-4", iconClassName)} /> 
+                <span>Bizchat</span>
+                {lastItemPending && (
+                    <span>{lastItemPending.progress}%</span>
+                )}
+            </Button>
+        </TooltipTrigger>
+        <TooltipContentPrimary>
+            send a message via BizChat
+        </TooltipContentPrimary>
+    </Tooltip>
 )
 
 SendBizchatDialog.ButtonSm = ({ onOpenChange, lastItemPending, paused }) => (

@@ -17,15 +17,17 @@ const initialState = {
     open: false,
     currItemId: null,
     message: "",
+    subjectLine: "",
     itemDataCollection: {},
     status: "running"
 }
 
 const init = (storageKey) => JSON.parse(localStorage.getItem(storageKey)) || initialState
 
-const createItem = ({ recipients = [], body = "" }) => ({
+const createItem = ({ recipients = [], body = "", subjectLine = "" }) => ({
     id: uuidv4(),
     body,
+    subjectLine,
     recipients,
     sent: [],
     status: "pending",
@@ -41,6 +43,11 @@ const itemAdded = (options) => ({
 const changeMessage = (body) => ({
     type: "MESSAGE_CHANGED",
     payload: body
+})
+
+const changeSubjectLine = (subjectLine) => ({
+    type: "SUBJECTLINE_CHANGED",
+    payload: subjectLine
 })
 
 const selectItem = (itemId) => ({
@@ -146,6 +153,11 @@ function sendBizchatDialogReducer (state, action) {
                 open: payload,
                 currItemId: find(state.items, { status: "pending" })?.id ?? initialState.currItemId
             }
+        case "SUBJECTLINE_CHANGED":
+            return {
+                ...state,
+                subjectLine: payload
+            }
         case "MESSAGE_CHANGED":
             return {
                 ...state,
@@ -202,7 +214,7 @@ export default function useSendBizchatDialog(selectionControl, auth) {
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
     const { selected } = selectionControl
 
-    const { open, message, currItemId, items: items_, itemDataCollection, status } = state
+    const { open, message, subjectLine, currItemId, items: items_, itemDataCollection, status } = state
 
     const paused = status === "paused"
     const isPausing = status === "pausing"
@@ -255,23 +267,22 @@ export default function useSendBizchatDialog(selectionControl, auth) {
     })
 
     const sendNextRecipient = async () => {
+        // if (import.meta.env.PROD) {
+            if (!nextRecipient) throw new Error('nextRecipient is undefined')
+            if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
 
-        if (!nextRecipient) throw new Error('nextRecipient is undefined')
-        if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
-
-        
-        if (import.meta.env.PROD) {
             await delay(1000)
             
             await sendBizchatMutation.mutateAsync({
+                subjectLine: lastItemPending.subjectLine,
                 message: lastItemPending.body,
                 from: auth.user?.neg_id,
                 recipient: nextRecipient.recipientId
             })
             
-        } else {
-            await delay(5000)
-        }
+        // } else {
+        //     await delay(1000)
+        // }
 
         dispatch(recipientMarkSent(nextRecipient))
         console.log('sent!', nextRecipient);
@@ -301,10 +312,14 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         dispatch(cancelItemRequest(itemId))
     }
 
-    const onAddItem = (body) => {
+    const onAddItem = ({ message, subjectLine }) => {
         if (lastItemPending && !paused) throw new Error("Please wait for last message to finish sending")
-        dispatch(itemAdded({ recipients, body }))
+        dispatch(itemAdded({ recipients, body: message, subjectLine }))
         selectionControl.onDeselectAllAndApply()
+    }
+
+    const onSubjectLineChange = (value) => {
+        dispatch(changeSubjectLine(value))
     }
 
     const onMessageChange = (value) => {
@@ -325,6 +340,7 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         open,
         items,
         message,
+        subjectLine,
         currItem,
         recipients,
         onPause,
@@ -333,6 +349,7 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         lastItemPending,
         onAddItem,
         onMessageChange,
+        onSubjectLineChange,
         onCancel,
         onItemSelect,
         onOpenChange,

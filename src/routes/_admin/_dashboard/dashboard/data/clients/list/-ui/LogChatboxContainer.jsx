@@ -147,7 +147,7 @@ const LogChatboxContainer = ({ info }) => {
             />
           )}
           <div>
-            <Textarea placeholder="Type your message here." value={value} onFocus={handleFocus} onChange={handleChange} />
+            <Textarea placeholder="Type your message here..." value={value} onFocus={handleFocus} onChange={handleChange} />
             {error && <small className='text-red-500'>{error}</small>}
           </div>
           <div className="flex space-x-4 justify-start items-end">

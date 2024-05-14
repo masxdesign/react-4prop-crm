@@ -79,7 +79,7 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
-        include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website"
+        include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department"
     }
 
     const [sorting_] = sorting
@@ -169,26 +169,31 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
-export const sendBizchat = async ({ message, from, recipient }) => {
+export const sendBizchat = async ({ message, from, recipient, subjectLine }) => {
     if(!from) throw new Error('from is not defined')
     if (isEmpty(message)) throw new Error('message is empty')
 
     const chat_id = await sendBizchatMessage({ 
         from, 
         recipient, 
-        message 
+        message,
+        context: {
+            subjectLine: isEmpty(subjectLine) ? null: subjectLine
+        }
     })
 
     const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${recipient}`, {
         nid: from,
         chat_id,
-        teaser: truncate(message, { length: 30 })
+        teaser: truncate(message, { length: 200 })
     })
 
     return data
 }
 
 export const addNote = async (variables, { id, user }) => {
+
+    console.log({variables,id, user});
 
     const { message = '', _button } = variables
 

@@ -4,7 +4,7 @@ import { ResetIcon } from '@radix-ui/react-icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-const LastContact = ({ variant, value, onSelect, clear, onClear }) => (
+const LastContact = ({ variant = "outline", value, onSelect, clear, onClear }) => (
   <div className='flex items-center'>
     <div className='flex flex-col'>
       {value && isToday(value) ? (

@@ -41,14 +41,6 @@ export const columns = [
     cell: (info) => <LogDialog info={info} />,
     size: 60
   }),
-  columnHelper.accessor('last_contact', {
-    id: "last_contact",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Date contacted" />
-    ),
-    cell: (info) => <ColumnLastContactEach info={info} />,
-    meta: { label: 'Contact date' }
-  }),
   columnHelper.accessor('next_contact', {
     id: 'next_contact',
     header: ({ column }) => (
@@ -56,6 +48,14 @@ export const columns = [
     ),
     cell: (info) => <ColumnNextContactEach info={info} />,
     meta: { label: 'Contact next date' }
+  }),
+  columnHelper.accessor('last_contact', {
+    id: "last_contact",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Date contacted" />
+    ),
+    cell: (info) => <ColumnLastContactEach info={info} />,
+    meta: { label: 'Contact date' }
   }),
   columnHelper.accessor('company', {
     id: 'company',

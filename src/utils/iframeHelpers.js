@@ -20,6 +20,7 @@ export function postMessage (action) {
 }
 
 export function onMessage (event) {
+    if ([window.location.origin].includes(event.origin)) return
     switch (event.data.type) {
       default:
         useListing.getState().dispatch(event.data)

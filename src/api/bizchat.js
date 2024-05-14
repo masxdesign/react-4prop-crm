@@ -1,5 +1,4 @@
 import axios from "axios";
-import { uniq } from "lodash";
 
 const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
@@ -8,8 +7,8 @@ const bizchatAxios = axios.create({
     withCredentials: true
 })
 
-export const sendBizchatMessage = async ({ from, recipient, message }) => {
-    const { data } = await bizchatAxios.post('/api/crm_create_chat', { from, recipient, message })
+export const sendBizchatMessage = async ({ from, recipient, message, context }) => {
+    const { data } = await bizchatAxios.post('/api/crm_create_chat', { from, recipient, message, context })
     return data
 }
 
@@ -77,6 +76,8 @@ export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
 }
 
 export const sendBizchatPropertyEnquiry = async ({ userId, form, attachments = [] }) => {
+	if (import.meta.env.DEV) return 
+
     let enquiryRoom = await getEnquiryRoomAsync(userId, "P", form.property.id)
 
     if (!enquiryRoom) {

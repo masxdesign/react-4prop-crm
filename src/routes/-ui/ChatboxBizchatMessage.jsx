@@ -10,6 +10,9 @@ import ChatboxMessages from "./ChatboxMessages"
 import { ReloadIcon } from "@radix-ui/react-icons"
 import { PaperclipIcon } from "lucide-react"
 import { reverse } from "lodash"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from "remark-gfm"
+import { cn } from "@/lib/utils"
 
 const BizchatMessage = memo(
     ({ body, chatId, senderUserId, bz_hash, created }) => {
@@ -83,6 +86,10 @@ const ChatboxBizchatMessage = ({ message }) => {
     )
 }
 
+const LinkRender = ({ className, ...props }) => {
+    return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
+}
+
 function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
     const { data, refetch } = useSuspenseQuery({
         queryKey: ["bizchatMessagesLast5", senderUserId, chatId],
@@ -104,7 +111,15 @@ function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
                                     </span>
                                 ) 
                             }
-                            [type] ?? body
+                            [type] ?? (
+                                <ReactMarkdown 
+                                    components={{
+                                        a: LinkRender
+                                    }}
+                                    children={body} 
+                                    remarkPlugins={[remarkGfm]}                                     
+                                />
+                            )
                         )}
                         <ChatboxSentdate sentdate={sent} />
                     </>
