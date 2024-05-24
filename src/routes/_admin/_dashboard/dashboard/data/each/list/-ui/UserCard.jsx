@@ -12,7 +12,7 @@ const UserCard = ({ data, onView, hideView, hideContact, className, isSent }) =>
           <b>{data.first} {data.last} {isSent && <Badge variant="outline">Sent</Badge>}</b>
           <div className='text-nowrap truncate text-muted-foreground'>{data.company}</div>
         </div>
-        {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={() => onView(data)}>View</Button>}
+        {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={() => onView(data)}>open</Button>}
       </div>
       {!hideContact && [
         { label: <EnvelopeClosedIcon className="w-4 h-4" />, name: "email" },

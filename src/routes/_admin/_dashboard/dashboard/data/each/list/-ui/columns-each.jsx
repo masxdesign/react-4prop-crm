@@ -10,6 +10,8 @@ import ColumnLastContactEach from './ColumnLastContactEach';
 import ColumnNextContactEach from './ColumnNextContactEach';
 const columnHelper = createColumnHelper()
 
+export const version = "v1.0.4"
+
 export const columns = [
   columnHelper.display({
     id: 'select',
@@ -61,6 +63,20 @@ export const columns = [
     id: 'company',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Company" />
+    ),
+    cell: (info) => <Linkable info={info} className="w-full truncate font-medium" tab="person" />,
+  }),
+  columnHelper.accessor('department', {
+    id: 'department',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Department" />
+    ),
+    cell: (info) => <Linkable info={info} className="w-full truncate font-medium" tab="person" />,
+  }),
+  columnHelper.accessor('position', {
+    id: 'position',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Position" />
     ),
     cell: (info) => <Linkable info={info} className="w-full truncate font-medium" tab="person" />,
   }),

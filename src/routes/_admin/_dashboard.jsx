@@ -19,6 +19,7 @@ function dashboardComponent() {
       auth.setUser(null)
     })
     navigate({ to: '/crm/login' })
+    console.log({navigate});
   }
   
   return (

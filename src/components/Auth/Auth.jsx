@@ -5,28 +5,34 @@ import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/api/fourPr
 
 const AuthProvider = ({ children }) => {
     const { data } = useSuspenseQuery(authWhoisonlineQueryOptions)
-    const [user_, setUser] = useState(data)
-
-    const user = useMemo(() => ({
-        ...user_,
-        bz_uid: user_.neg_id ? user_.neg_id : `U${user_.id}`
-    }), [user_])
-
-    const isAuthenticated = !!user
+    const [userRawData, setUser] = useState(data)
 
     const login = useMutation({ mutationFn: authLogin })
     const logout = useMutation({ mutationFn: authLogout })
 
+    const context = useMemo(() => {
+
+        let user = null
+
+        if (userRawData) {
+            user = {
+                ...userRawData,
+                bz_uid: userRawData.neg_id ? userRawData.neg_id : `U${userRawData.id}`
+            }
+        }
+
+        return {
+            isAuthenticated: !!user,
+            user,
+            setUser,
+            login,
+            logout
+        }
+
+    }, [userRawData, setUser])
+
     return (
-        <AuthContext.Provider 
-            value={{ 
-                isAuthenticated, 
-                user, 
-                login, 
-                setUser, 
-                logout 
-            }}
-        >
+        <AuthContext.Provider value={context}>
             {children}
         </AuthContext.Provider>
     )

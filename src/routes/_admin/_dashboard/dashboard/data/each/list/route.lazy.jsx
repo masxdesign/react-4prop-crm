@@ -80,7 +80,7 @@ function ClientsListComponent() {
             <Badge variant="secondary">
               {numberWithCommas(table.options.meta.count)}
             </Badge>
-            {tableSelectionModel.selection.length > 0 && (
+            {tableSelectionModel.selectedIds.length > 0 && (
               <SelectionControl {...selectionControl}>
                 <PopoverTrigger asChild>
                   <Button
@@ -228,11 +228,13 @@ function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={60}>
-              <ChatboxEach 
-                queryOptions={chatboxQueryOptions} 
-                info={info} 
-                user={user}
-              />  
+              <Suspense fallback={<p>Loading...</p>}>
+                <ChatboxEach 
+                  queryOptions={chatboxQueryOptions} 
+                  info={info} 
+                  user={user}
+                />  
+              </Suspense>
             </ResizablePanel>
           </ResizablePanelGroup>                  
       </DialogContent>

@@ -387,36 +387,30 @@ useTableModel.use = {
         return table
     },
     selection (tableModel, table) {
-        const queryKeys = useMap()
-
-        const queryClient = useQueryClient()
+        const dataPool = useMap()
 
         useEffect(() => {
 
-            queryKeys.set(
-                tableModel.tableState.pagination.pageIndex, 
-                table.options.meta.dataQueryKey
-            )
+            table.options.data?.forEach(row => {
+
+                if (dataPool.has(row.id)) return
+                
+                dataPool.set(
+                    row.id,
+                    { 
+                        ...row, 
+                        _pageIndex: tableModel.tableState.pagination.pageIndex 
+                    }
+                )
+
+            })
         
         }, [table.options.data])
 
-        const selection = useMemo(() => {
-            const items = flatten(Array.from(queryKeys.values().map(queryKey => {
-
-                const { data } = queryClient.getQueryState(queryKey)
-    
-                const [__, rows] = data
-                
-                return rows.map((row) => ({
-                    ...row,
-                    _queryKey: queryKey
-                }))
-    
-            })))
-
-            return uniqBy(items, 'id').filter(({ id }) => tableModel.state.selected.includes(id))
-
-        }, [tableModel.state.selected, queryKeys.size])
+        const selection = useMemo(() => 
+            tableModel.state.selected.map(id => dataPool.get(id)), 
+            [tableModel.state.selected, dataPool.size]
+        )
 
         const onExcludedApply = (excluded) => {
             excluded.forEach((item) => {
@@ -431,6 +425,8 @@ useTableModel.use = {
 
         return { 
             selection,
+            dataPool,
+            selectedIds: tableModel.state.selected,
             onExcludedApply
         }
     },

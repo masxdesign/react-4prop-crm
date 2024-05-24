@@ -67,7 +67,7 @@ const DragAlongCell = ({ cell }) => {
 
     const context = cell.getContext()
 
-    const { hoverCardComponent: HoverCardComponent } = context.table.options.meta
+    const { hoverCardComponent: HoverCardComponent, disableHoverCardOnCols = [] } = context.table.options.meta
 
     const tableCell = (
         <TableCell  
@@ -91,13 +91,13 @@ const DragAlongCell = ({ cell }) => {
         </TableCell>
     )
 
-    if(!HoverCardComponent) return tableCell
+    if(!HoverCardComponent || disableHoverCardOnCols.includes(cell.column.id)) return tableCell
 
     return (
         <HoverCard>
             <HoverCardTrigger asChild>{tableCell}</HoverCardTrigger>
             <HoverCardPortal container={document.body}>
-                <HoverCardContent className="w-[300px]">
+                <HoverCardContent side="right" align="start" className="w-[300px]">
                     <HoverCardComponent cell={cell} />
                 </HoverCardContent>
             </HoverCardPortal>

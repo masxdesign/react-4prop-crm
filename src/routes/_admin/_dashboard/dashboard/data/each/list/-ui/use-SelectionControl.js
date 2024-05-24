@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { map } from 'lodash';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ selection, onExcludedApply }, navigate) {
+export default function useSelectionControl ({ selectedIds, dataPool, selection, onExcludedApply }, navigate) {
   const [open, setOpen] = useState(false)
   
   const [excluded, setExcluded] = useState(initialExcluded)
 
-  const selected = selection.filter(({ id }) => !excluded.includes(id))
+  const selected = selectedIds.filter((id) => !excluded.includes(id))
   
   const onItemCheckedChange = (value, checked) => {
     if (checked) {
@@ -23,13 +22,11 @@ export default function useSelectionControl ({ selection, onExcludedApply }, nav
   }
   
   const onDeselectAll = () => {
-    const ids = map(selection, 'id')
-    setExcluded(ids)
+    setExcluded(selectedIds)
   }
 
   const onDeselectAllAndApply = () => {
-    const ids = map(selection, 'id')
-    onExcludedApply(ids)
+    onExcludedApply(selectedIds)
     setExcluded([])
     setOpen(false)
   }
@@ -43,11 +40,11 @@ export default function useSelectionControl ({ selection, onExcludedApply }, nav
   }
 
   const onItemView = (item) => {
-    const { id, _queryKey: [, , , { pageIndex }] } = item
+    const { id, _pageIndex } = item
     navigate({
       search: (prev) => ({
           ...prev,
-          page: pageIndex + 1,
+          page: _pageIndex + 1,
           open: true,
           info: id,
       }),
@@ -56,6 +53,7 @@ export default function useSelectionControl ({ selection, onExcludedApply }, nav
 
   return {
     selected,
+    dataPool,
     selection,
     open,
     excluded,

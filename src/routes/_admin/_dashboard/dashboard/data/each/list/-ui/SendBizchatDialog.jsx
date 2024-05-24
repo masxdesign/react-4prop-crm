@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
 import { Input } from "@/components/ui/input"
 import { isEmpty } from "lodash"
+import { useToast } from "@/components/ui/use-toast"
 
 function SendBizchatDialog({
     open,
@@ -55,6 +56,8 @@ function SendBizchatDialog({
             message 
         }
     })
+
+    const { toast } = useToast()
     
     useEffect(() => {
         const subscription = watch((value) => {
@@ -68,6 +71,10 @@ function SendBizchatDialog({
         setValue("subjectLine", "")
         setValue("message", "")
         onAddItem(data)
+        toast({
+            title: "Completed",
+            description: "All message sent!",
+        })
     })
 
     const handleResetMessageText = () => {
@@ -84,12 +91,14 @@ function SendBizchatDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[900px] overflow-y-scroll max-h-screen">
                 <DialogHeader>
-                    <DialogTitle className="flex flex-row items-center gap-4">
-                        <span>
-                            Send Bizchat
-                        </span>                        
-                    </DialogTitle>
                 </DialogHeader>
+                {lastItemPending && !isPausing && !paused && (
+                    <div className="text-sm border-green-800 border text-green-800 px-3 py-2 shadow-md rounded">
+                        Your messages are now being sent. <br/>
+                        DO NOT CLOSE CRM TILL ALL MESSAGES ARE SENT<br/> 
+                        you can use CRM or another program as long as CRM is OPEN
+                    </div>
+                )}
                 <div className="flex gap-8">
                     <div className="flex flex-col justify-start gap-3 flex-grow-0 flex-shrink-1 basis-72">
                         {!lastItemPending && (
@@ -103,7 +112,7 @@ function SendBizchatDialog({
                                 )}
                                 onClick={() => onItemSelect(null)}
                             >
-                                New message
+                                Send a New message
                             </Button>
                         )}
                         <div className="flex flex-col gap-3 max-h-96">
@@ -116,22 +125,31 @@ function SendBizchatDialog({
                                             ) : (
                                                 <Loader2Icon className="animate-spin h-4 w-4 mr-2" />
                                             )}
-                                            <span>{lastItemPending.progress}</span><Percent className="h-3 w-3" />
+                                            {isPausing ? (
+                                                <span className="animate-pulse">Pausing...</span>
+                                            ) : (
+                                                <>
+                                                    <span>{lastItemPending.progress}</span>
+                                                    <Percent className="h-3 w-3" />
+                                                </>
+                                            )}
                                         </span>
-                                        {paused ? (
-                                            <div
-                                                className="flex space-x-1 bg-transparent text-slate-600 items-center text-sm cursor-pointer" 
-                                                onClick={onResume}
-                                            >
-                                                <ResumeIcon className="h-4 w-4" /><span>Resume</span>
-                                            </div>
-                                        ) : (
-                                            <div
-                                                className={cn("flex space-x-1 bg-transparent text-slate-600 items-center text-sm cursor-pointer", { "animate-pulse": isPausing })} 
-                                                onClick={onPause}
-                                            >
-                                                <Pause className="h-4 w-4" /><span>{isPausing ? "Pausing..." : "Pause"}</span>
-                                            </div>
+                                        {!isPausing && (
+                                            paused ? (
+                                                <div
+                                                    className="flex space-x-1 bg-transparent text-slate-600 items-center text-sm cursor-pointer" 
+                                                    onClick={onResume}
+                                                >
+                                                    <ResumeIcon className="h-4 w-4" /><span>Resume</span>
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    className="flex space-x-1 bg-transparent text-slate-600 items-center text-sm cursor-pointer"
+                                                    onClick={onPause}
+                                                >
+                                                    <Pause className="h-4 w-4" /><span>Pause</span>
+                                                </div>
+                                            )
                                         )}
                                     </div>
                                     <Item 
@@ -144,7 +162,7 @@ function SendBizchatDialog({
                                 </>
                             )}
                             <h4 className="space-x-2 opacity-50 text-sm flex items-center">
-                                <History className="w-4 h-4 inline-flex" /><span>{items.length} Bizchat messages</span>
+                                <History className="w-4 h-4 inline-flex" /><span>{items.length} previous messages</span>
                             </h4>
                             <div className="space-y-3 overflow-y-auto">
                                 {items.filter((item) => item !== lastItemPending).map(
@@ -192,7 +210,7 @@ function SendBizchatDialog({
                                     />
                                 )}
                             </div>
-                            <Dd label="Subject line" value={
+                            <Dd label="Subject line" disableTruncate value={
                                 isEmpty(currItem.subjectLine) 
                                     ? <i className="opacity-50">(empty)</i>
                                     : currItem.subjectLine
@@ -204,10 +222,10 @@ function SendBizchatDialog({
                                 {!["completed", "canceling", "cancelled"].includes(currItem.status) && (
                                     <Button 
                                         variant="link"
-                                        className="opacity-50" 
+                                        className="text-red-500" 
                                         onClick={() => onCancel(currItem.id)}
                                     >
-                                        Cancel
+                                        Cancel send-out
                                     </Button>
                                 )}
                                 {["completed", "cancelled"].includes(currItem.status) && (
@@ -230,18 +248,24 @@ function SendBizchatDialog({
                                 <h2 className="font-bold">Send a Mailshot via BizChat</h2>
                                 <p>
                                     {recipients.length > 0  ? (
-                                        <span className="text-slate-400">
-                                            You have selected <span className="text-slate-800">{recipients.length} recipients</span> for your mailing list
+                                        <span className="text-slate-500">
+                                            You have selected <span className="text-slate-900">{recipients.length} recipients</span> for your mailing list
                                         </span>
                                     ) : (
-                                        <span className="text-red-500">Please select some recipients for your mailing</span>
+                                        <span className="text-red-500">
+                                            close box to select recipients for mailing, your message is saved
+                                        </span>
                                     )}
                                 </p>
                             </div>
-                            <Input 
-                                placeholder="Type your subject line here.." 
-                                {...register("subjectLine", { required: true })} 
-                            />
+                            <div className="space-y-1">
+                                <Input 
+                                    placeholder="Type your subject line here.." 
+                                    maxLength={60}
+                                    {...register("subjectLine", { required: true })} 
+                                />
+                                <div className="opacity-50 text-xs text-right px-2">max. 60 characters</div>
+                            </div>
                             <Textarea
                                 placeholder="Type your message here..."
                                 className="focus-visible:ring-inset focus-visible:ring-offset-0"
@@ -303,7 +327,7 @@ const ButtonSm = ({ onOpenChange, lastItemPending, className, icon: Icon, iconCl
                 {...props}
             >
                 <Icon className={cn("h-4 w-4", iconClassName)} /> 
-                <span>Bizchat</span>
+                <span>mailshot</span>
                 {lastItemPending && (
                     <span>{lastItemPending.progress}%</span>
                 )}

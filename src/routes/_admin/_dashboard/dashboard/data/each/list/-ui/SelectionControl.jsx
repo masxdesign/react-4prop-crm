@@ -77,6 +77,8 @@ SelectionControl.Button = ({ selected, onOpenChange }) => {
 SelectionControl.HeaderAndContent = () => {
     const { selection, onItemCheckedChange, onItemView, onDeselectAll, onSelectAll, selected, excluded  } = useSelectionControlContext()
 
+    console.log({selected, selection});
+
     return (
         <>
             <div className="py-1.5 px-2 flex items-center justify-end gap-2">

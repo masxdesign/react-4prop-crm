@@ -3,14 +3,7 @@ import { sendBizchat } from "@/api/fourProp"
 import delay from "@/utils/delay"
 import { useMutation } from "@tanstack/react-query"
 import { find, map } from "lodash"
-import * as Yup from "yup"
-import { useForm } from "react-hook-form"
 import { v4 as uuidv4 } from 'uuid'
-import { yupResolver } from "@hookform/resolvers/yup"
-
-const messageSchema = Yup.object().shape({
-    message: Yup.string().required()
-})
 
 const initialState = {
     items: [],
@@ -212,7 +205,7 @@ function sendBizchatDialogReducer (state, action) {
 export default function useSendBizchatDialog(selectionControl, auth) {
     const storageKey = `SendBizchatDialog`
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
-    const { selected } = selectionControl
+    const { selected, dataPool } = selectionControl
 
     const { open, message, subjectLine, currItemId, items: items_, itemDataCollection, status } = state
 
@@ -233,18 +226,23 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         [items, currItemId]
     )
 
-    const recipients = useMemo(() => selected.map((item) => {
-        const { id, first, last, email, company, _queryKey: [, , , { pageIndex }] } = item
+    const recipients = useMemo(() => selected
+        .filter(id => dataPool.has(id))
+        .map(id => {
+            const item = dataPool.get(id)
+            const { first, last, email, company, _pageIndex } = item
 
-        return {
-            id, 
-            first, 
-            last,
-            email,
-            company,
-            _page: pageIndex + 1
-        }
-    }), [selected])
+            return {
+                id, 
+                first, 
+                last,
+                email,
+                company,
+                _page: _pageIndex + 1
+            }
+        }), 
+        [selected, dataPool.size]
+    )
 
     const lastItemPending = useMemo(() => items.find(({ status }) => status === "pending"), [items])
     const nextRecipient = useMemo(() => {
@@ -267,7 +265,7 @@ export default function useSendBizchatDialog(selectionControl, auth) {
     })
 
     const sendNextRecipient = async () => {
-        // if (import.meta.env.PROD) {
+        if (import.meta.env.PROD) {
             if (!nextRecipient) throw new Error('nextRecipient is undefined')
             if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
 
@@ -280,9 +278,10 @@ export default function useSendBizchatDialog(selectionControl, auth) {
                 recipient: nextRecipient.recipientId
             })
             
-        // } else {
-        //     await delay(1000)
-        // }
+        } else {
+            console.log('Sending in development mode!');
+            await delay(1000)
+        }
 
         dispatch(recipientMarkSent(nextRecipient))
         console.log('sent!', nextRecipient);

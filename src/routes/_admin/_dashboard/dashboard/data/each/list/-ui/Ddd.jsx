@@ -1,10 +1,11 @@
 import { forwardRef, useMemo } from "react"
 import Dd from "./Dd"
-import { isEmpty } from "lodash"
+import { isEmpty, isString } from "lodash"
 import htmlEntities from "@/utils/htmlEntities"
 
 const Ddd = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, collapsible, ...props }, ref) => {
-    const value = useMemo(() => htmlEntities(row[name]), [row[name]])
+    const valueRaw = row[name]
+    const value = useMemo(() => isString(valueRaw) ? htmlEntities(valueRaw): valueRaw, [valueRaw])
   
     if(!alwaysShow && isEmpty(value)) return null
   
