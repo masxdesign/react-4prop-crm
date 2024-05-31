@@ -93,6 +93,12 @@ function useLoadData (queryOptions, tableState) {
 
     const { data } = useSuspenseQuery(queryOptions_)
 
+    useEffect(() => {
+
+        console.log({queryOptions_, data});
+
+    }, [data])
+
     const [{ count }, data_] = data
 
     const pageCount = useMemo(() => Math.ceil(count / pageSize), [count, pageSize])

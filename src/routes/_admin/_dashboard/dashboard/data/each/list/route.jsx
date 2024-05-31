@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { tableStateURLSearchParamsReceived } from '@/hooks/use-TableModel'
+import { initiaTableModelState } from '@/hooks/use-TableModel'
 import PendingComponent from '@/routes/-ui/PendingComponent'
 
 export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
@@ -8,12 +8,18 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/lis
   beforeLoad: async ({ search }) => {
     const { columns, version } = await import('./-ui/columns-each')
 
+    const { open, info, ...search_ } = search
+
     return {
       tableName:  `d.${version}.each`,
-      tableModelInit: tableStateURLSearchParamsReceived({ 
-        ...search,
-        sorting: [{ id: "next_contact", desc: true }]
-      }),
+      initiaTableModelState: {
+        ...initiaTableModelState,
+        tableState: {
+          ...initiaTableModelState.tableState,
+          sorting: [{ id: "next_contact", desc: true }],
+          ...search_
+        }
+      },
       columns,
     }
   }

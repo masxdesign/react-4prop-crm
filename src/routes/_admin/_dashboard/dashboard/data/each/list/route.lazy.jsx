@@ -47,11 +47,14 @@ export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each
 })
 
 function ClientsListComponent() {
-  const { tableName, tableModelInit, columns, auth } = Route.useRouteContext()
+  const { tableName, initiaTableModelState, columns, auth } = Route.useRouteContext()
+
+  console.log(initiaTableModelState);
+  console.log(initiaTableModelState.tableState.sorting?.[0]);
   
   const dialogModel = useDialogModel()
   
-  const tableModel = useTableModel({ init: tableModelInit })
+  const tableModel = useTableModel({ initialState: initiaTableModelState })
   
   const table = useTableModel.use.tableSS(
     { 
@@ -61,7 +64,8 @@ function ClientsListComponent() {
       meta: {
         showDialog: dialogModel.showDialog,
         hoverCardComponent: TableHoverCard
-      } 
+      },
+      initiaTableModelState
     }, 
     tableModel
   )

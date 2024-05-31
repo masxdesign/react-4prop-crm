@@ -56,7 +56,148 @@ export const tableStateReceived = (newTableState) => ({
     payload: newTableState
 })
 
-export const initialState = {
+const useMakeTableReducer = ({ initialState }) => {
+    return useMemo(() => {
+        const tableStateSlice = (state, action) => {
+            const initialTableState = initialState.tableState
+        
+            switch (action.type) {
+                case "UPDATE_STATE_SEARCH":
+                    const search = action.payload
+        
+                    return {
+                        ...initialTableState,
+                        pagination: {
+                            ...initialTableState.pagination,
+                            pageIndex: search.page
+                                ? search.page - 1
+                                : initialTableState.pagination.pageIndex,
+                            pageSize: search.perpage ?? initialTableState.pagination.pageSize,
+                        },
+                        sorting: search.sorting ?? initialTableState.sorting,
+                        columnFilters: search.columnFilters ?? initialTableState.columnFilters,
+                        globalFilter: search.globalFilter ?? initialTableState.globalFilter
+                    }
+                case "FILTERS_ALL_CLEARED":
+                    return {
+                        ...state,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: 0,
+                        },
+                        columnFilters: initialTableState.columnFilters,
+                        globalFilter: initialTableState.globalFilter
+                    }
+                case "CHANGE_PERPAGE":
+                    return {
+                        ...state,
+                        pagination: {
+                            ...state.pagination,
+                            pageSize: action.payload,
+                        }
+                    }
+                case "CHANGE_PAGE":
+                    const pageSize = action.meta.pageSize ?? state.pagination.pageSize
+                    const pageSizeChanged = state.pagination.pageSize !== pageSize
+        
+                    return {
+                        ...state,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: pageSizeChanged ? 0 : action.payload,
+                            pageSize
+                        }
+                    }
+                case "RESET_PAGE":
+                    return {
+                        ...state,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: 0,
+                        }
+                    }
+                case "CHANGE_GLOBAL_FILTER":
+                    return {
+                        ...state,
+                        globalFilter: action.payload,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: 0,
+                        }
+                    }
+                case "CHANGE_FILTERS":
+                    return {
+                        ...state,
+                        columnFilters: action.payload,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: 0,
+                        }
+                    }
+                case "CHANGE_SORTING":
+                    return {
+                        ...state,
+                        sorting: action.payload,
+                        pagination: {
+                            ...state.pagination,
+                            pageIndex: 0,
+                        }
+                    }
+            }
+        }
+        
+        const mainReducer = (state, action) => {
+            switch (action.type) {
+                case "TABLE_STATE_RECEIVED":
+                    return {
+                        ...state,
+                        tableState: action.payload
+                    }
+                case "UPDATE_STATE_SEARCH":
+                case "FILTERS_ALL_CLEARED":
+                case "CHANGE_PERPAGE":
+                case "CHANGE_PAGE":
+                    return {
+                        ...state,
+                        tableState: tableStateSlice(state.tableState, action)
+                    }
+                case "CHANGE_FILTERS":
+                case "CHANGE_GLOBAL_FILTER":
+                case "CHANGE_SORTING":
+                case "RESET_PAGE":
+                    return {
+                        ...state,
+                        tableState: tableStateSlice(state.tableState, action),
+                        selected: initialState.selected
+                    }
+                case "DESELECT_ALL":
+                    return {
+                        ...state,
+                        selected: initialState.selected
+                    }
+                case "DESELECT":
+                    return {
+                        ...state,
+                        selected: state.selected.filter((item) => item !== action.payload)
+                    }
+                case "SELECT":
+                    return {
+                        ...state,
+                        selected: [
+                            ...state.selected.filter((item) => item !== action.payload),
+                            action.payload
+                        ]
+                    }
+                default:
+                    throw new Error("invalid action")
+            }
+        }
+
+        return mainReducer
+    })
+} 
+
+export const initiaTableModelState = {
     tableState: {
         pagination: { pageIndex: 0, pageSize: 10 },
         sorting: [{ id: "created", desc: true }],
@@ -66,150 +207,9 @@ export const initialState = {
     selected: [],
 }
 
-export const tableStateSlice = (state, action) => {
-    const initialTableState = initialState.tableState
-
-    switch (action.type) {
-        case "UPDATE_STATE_SEARCH":
-            const search = action.payload
-
-            return {
-                ...initialTableState,
-                pagination: {
-                    ...initialTableState.pagination,
-                    pageIndex: search.page
-                        ? search.page - 1
-                        : initialTableState.pagination.pageIndex,
-                    pageSize: search.perpage ?? initialTableState.pagination.pageSize,
-                },
-                sorting: search.sorting ?? initialTableState.sorting,
-                columnFilters: search.columnFilters ?? initialTableState.columnFilters,
-                globalFilter: search.globalFilter ?? initialTableState.globalFilter
-            }
-        case "FILTERS_ALL_CLEARED":
-            return {
-                ...state,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: 0,
-                },
-                columnFilters: initialTableState.columnFilters,
-                globalFilter: initialTableState.globalFilter
-            }
-        case "CHANGE_PERPAGE":
-            return {
-                ...state,
-                pagination: {
-                    ...state.pagination,
-                    pageSize: action.payload,
-                }
-            }
-        case "CHANGE_PAGE":
-            const pageSize = action.meta.pageSize ?? state.pagination.pageSize
-            const pageSizeChanged = state.pagination.pageSize !== pageSize
-
-            return {
-                ...state,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: pageSizeChanged ? 0 : action.payload,
-                    pageSize
-                }
-            }
-        case "RESET_PAGE":
-            return {
-                ...state,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: 0,
-                }
-            }
-        case "CHANGE_GLOBAL_FILTER":
-            return {
-                ...state,
-                globalFilter: action.payload,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: 0,
-                }
-            }
-        case "CHANGE_FILTERS":
-            return {
-                ...state,
-                columnFilters: action.payload,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: 0,
-                }
-            }
-        case "CHANGE_SORTING":
-            return {
-                ...state,
-                sorting: action.payload,
-                pagination: {
-                    ...state.pagination,
-                    pageIndex: 0,
-                }
-            }
-    }
-}
-
-const tableReducer = (state, action) => {
-    switch (action.type) {
-        case "TABLE_STATE_RECEIVED":
-            return {
-                ...state,
-                tableState: action.payload
-            }
-        case "UPDATE_STATE_SEARCH":
-        case "FILTERS_ALL_CLEARED":
-        case "CHANGE_PERPAGE":
-        case "CHANGE_PAGE":
-            return {
-                ...state,
-                tableState: tableStateSlice(state.tableState, action)
-            }
-        case "CHANGE_FILTERS":
-        case "CHANGE_GLOBAL_FILTER":
-        case "CHANGE_SORTING":
-        case "RESET_PAGE":
-            return {
-                ...state,
-                tableState: tableStateSlice(state.tableState, action),
-                selected: initialState.selected
-            }
-        case "DESELECT_ALL":
-            return {
-                ...state,
-                selected: initialState.selected
-            }
-        case "DESELECT":
-            return {
-                ...state,
-                selected: state.selected.filter((item) => item !== action.payload)
-            }
-        case "SELECT":
-            return {
-                ...state,
-                selected: [
-                    ...state.selected.filter((item) => item !== action.payload),
-                    action.payload
-                ]
-            }
-        default:
-            throw new Error("invalid action")
-    }
-}
-
-export const tableStateURLSearchParamsReceived = (search) => {
-    const newState = tableStateSlice(null, routeSearchUpdateStateAction(search))
-    return tableStateReceived(newState)
-}
-
-export const initializer =  (action) => tableReducer(initialState, action)
-
-const useTableReducer = ({ init }) => {
-    const [state, dispatch] = useReducer(tableReducer, init, initializer)
+const useTableReducer = ({ initialState }) => {
+    const tableReducer = useMakeTableReducer({ initialState })
+    const [state, dispatch] = useReducer(tableReducer, initialState)
 
     const onPaginationChange = useCallback((newPagination) => {
         const { pageIndex, pageSize } = newPagination
@@ -258,7 +258,7 @@ const useTableReducer = ({ init }) => {
     }
 }
 
-const useTableModel = ({ init }) => {
+const useTableModel = ({ initialState }) => {
     const { 
         onPaginationChange,
         onGlobalFilterChange,
@@ -270,7 +270,7 @@ const useTableModel = ({ init }) => {
         deselectAll,
         state,
         dispatch
-    } = useTableReducer({ init })
+    } = useTableReducer({ initialState })
 
     const makeOnRowSelectionChange = useCallback((newRowSelectionUpdater, table) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
@@ -342,9 +342,9 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 }
 
 useTableModel.use = {
-    tableSS ({ tableName, queryFn, staleTime, columns, meta }, tableModel) {
+    tableSS ({ tableName, queryFn, staleTime, columns, meta, initiaTableModelState }, tableModel) {
         useRouteSearchStateUpdater({
-            initialState: initialState.tableState,
+            initialState: initiaTableModelState.tableState,
             state: tableModel.tableState,
             routeStateMapFn: (p, q) => p(
                 q("pagination.pageIndex", "page"),
