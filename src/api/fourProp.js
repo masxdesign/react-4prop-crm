@@ -79,7 +79,7 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
-        include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department"
+        include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
     }
 
     const [sorting_] = sorting

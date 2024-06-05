@@ -1,4 +1,4 @@
-import { EnvelopeClosedIcon } from "@radix-ui/react-icons"
+import { EnvelopeClosedIcon, MobileIcon } from "@radix-ui/react-icons"
 import { PhoneCallIcon } from "lucide-react"
 import Ddd from "./Ddd"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ const UserCard = ({ data, onView, hideView, hideContact, className, isSent }) =>
       {!hideContact && [
         { label: <EnvelopeClosedIcon className="w-4 h-4" />, name: "email" },
         { label: <PhoneCallIcon className="w-4 h-4" /> , name: "phone" },
+        { label: <MobileIcon className="w-4 h-4" /> , name: "mobile" },
       ].map((props) => (
         <Ddd key={props.name} row={data} labelClassName="max-w-[10px]" {...props} />
       ))}

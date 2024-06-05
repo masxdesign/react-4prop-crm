@@ -263,19 +263,19 @@ function TableHoverCard ({ cell, hideView }) {
 }
 
 function DialogMetricsEach ({ chatboxQueryOptions, info }) {
+  console.log(info);
 
   return (
     <div className='text-sm space-y-2'>
       <Dddl  
         items={[
           { label: "Email", name: "email" },
-          { label: "Phone", name: "phone" },
           { label: "Company", name: "company", bold: true },
           { label: "Department", name: "department" },
           { label: "Position", name: "position", alwaysShow: true },
           { label: "Website", name: "website" },
-          { label: "City", name: "city" },
-          { label: "Postcode", name: "postcode" },
+          { label: "Phone", name: "phone" },
+          { label: "Mobile", name: "mobile" },
         ]}
         row={info.row.original}
       />
@@ -361,7 +361,6 @@ function DialogBranchEach ({ chatboxQueryOptions }) {
       <CollapsibleContent className='space-y-2'>
         <Dddl  
           items={[
-            { label: "Phone", name: "phone" },
             { label: "Address", name: "address" },
             { label: "County", name: "county" },
             { label: "City", name: "towncity" },

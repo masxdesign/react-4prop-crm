@@ -23,7 +23,7 @@ const Ddd = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, co
             <a href={`mailto: ${value}`} className='hover:underline'>
               {value}
             </a>
-          ) : 'phone' === name ? (
+          ) : ['phone', 'mobile'].includes(name) ? (
             <a href={`tel: ${value}`} className='hover:underline'>
               {value}
             </a>

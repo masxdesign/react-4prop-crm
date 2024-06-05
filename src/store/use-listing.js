@@ -191,6 +191,8 @@ function reducer (state, action) {
             reducer(state, propertiesReceived(properties))
             reducer(state, companiesReceived(companies))
 
+            console.log(action.payload);
+
             break
         case "PROPERTY_TYPES_RECEIVED":
             state.types = action.payload.types
