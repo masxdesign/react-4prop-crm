@@ -4,7 +4,7 @@ import { useMatch, useNavigate } from "@tanstack/react-router"
 import { useIsFirstRender } from "@uidotdev/usehooks"
 
 export default function useRouteSearchStateUpdater ({ 
-    initialState = {},
+    defaultState = {},
     state,
     routeStateMapFn,
     onRouteSearchChange
@@ -23,7 +23,9 @@ export default function useRouteSearchStateUpdater ({
             reasonRef.current = "STATE_CHANGE"
 
             navigate({
-                search: (prev) => routeSearchMapping(initialState, state, prev, routeStateMapFn)
+                search: (prev) => {
+                    return routeSearchMapping(defaultState, state, prev, routeStateMapFn)
+                }
             })
 
         }

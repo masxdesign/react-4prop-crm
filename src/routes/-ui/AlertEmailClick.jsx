@@ -22,7 +22,7 @@ const Dot = React.memo(({ value }) => {
 })
 
 const AlertEmailClick = ({ info, showDate }) => {
-    const { alertEmailDate, alertEmailClick } = info.row.original
+    const { alertEmailDate, alertEmailClick } = info
 
     if(!alertEmailClick) return null
 

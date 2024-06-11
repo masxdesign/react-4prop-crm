@@ -1,17 +1,33 @@
-import { addLastContact } from '@/api/fourProp';
-import ColumnLastContact from '@/routes/-ui/ColumnLastContact';
-import useContactDateEachMutationOptions from './use-ContactDateEachMutationOptions';
+import { addLastContact } from "@/api/fourProp"
+import ColumnLastContact from "@/routes/-ui/ColumnLastContact"
+import useContactDateEachMutationOptions from "./use-ContactDateEachMutationOptions"
 
-const ColumnLastContactEach = ({ variant, name = "last_contact", info, onSuccess, message }) => {
-   const mutationOptions = useContactDateEachMutationOptions({ info, mutationFn: addLastContact, onSuccess })
-  
+const ColumnLastContactEach = ({
+    variant,
+    id,
+    tableDataQueryKey,
+    name = "last_contact",
+    defaultValue,
+    table = null,
+    onSuccess,
+    message,
+}) => {
+    const mutationOptions = useContactDateEachMutationOptions({
+        id,
+        tableDataQueryKey,
+        mutationFn: addLastContact,
+        onSuccess,
+    })
+
     return (
-      <ColumnLastContact 
-        variant={variant}
-        name={name}
-        message={message}
-        info={info}
-        mutationOptions={mutationOptions}
+      <ColumnLastContact
+          variant={variant}
+          id={id}
+          name={name}
+          defaultValue={defaultValue}
+          message={message}
+          table={table}
+          mutationOptions={mutationOptions}
       />
     )
 }

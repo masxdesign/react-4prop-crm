@@ -75,11 +75,13 @@ export const fetchSearchProperties = async (pids) => {
 
 export const authLogout = () => fourProp.post('api/account/logout')
 
+const defaultNegotiatorInclude = "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
+
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }) => {
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
-        include: "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
+        include: defaultNegotiatorInclude
     }
 
     const [sorting_] = sorting
@@ -126,6 +128,16 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     }
     
     const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+
+    return data
+}
+
+export const fetchNegotiator = async (nid) => {
+    let params = {
+        include: defaultNegotiatorInclude
+    }
+
+    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/${nid}`, { params })
 
     return data
 }

@@ -48,7 +48,14 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Next contact" />
     ),
-    cell: (info) => <ColumnNextContactEach info={info} />,
+    cell: (info) => (
+      <ColumnNextContactEach 
+        id={info.row.original.id} 
+        defaultValue={info.row.original.next_contact}
+        table={info.table}
+        tableDataQueryKey={info.table.options.meta.dataQueryKey}
+      />
+    ),
     meta: { label: 'Contact next date' }
   }),
   columnHelper.accessor('last_contact', {
@@ -56,7 +63,14 @@ export const columns = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Date contacted" />
     ),
-    cell: (info) => <ColumnLastContactEach info={info} />,
+    cell: (info) => (
+      <ColumnLastContactEach 
+        id={info.row.original.id} 
+        defaultValue={info.row.original.last_contact}
+        table={info.table}
+        tableDataQueryKey={info.table.options.meta.dataQueryKey}
+      />
+    ),
     meta: { label: 'Contact date' }
   }),
   columnHelper.accessor('company', {

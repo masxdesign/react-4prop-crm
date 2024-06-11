@@ -183,6 +183,8 @@ export const contentsReceived = (contents) => ({
 function reducer (state, action) {
     switch (action.type) {
         case "READY":
+            if (!action.payload) return
+            
             const { types, subtypes, properties, companies, selected, contents } = action.payload
             
             reducer(state, propertyTypesReceived(types, subtypes))
@@ -190,8 +192,6 @@ function reducer (state, action) {
             reducer(state, contentsReceived(contents))
             reducer(state, propertiesReceived(properties))
             reducer(state, companiesReceived(companies))
-
-            console.log(action.payload);
 
             break
         case "PROPERTY_TYPES_RECEIVED":

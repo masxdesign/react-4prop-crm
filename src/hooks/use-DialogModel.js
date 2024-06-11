@@ -2,13 +2,13 @@ import { useSearch } from "@tanstack/react-router"
 import { useCallback, useReducer } from "react"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 
-const initialState = { info: null, open: false }
+const defaultState = { info: null, open: false }
 
 const init = ({ 
-  info = initialState.info, 
-  open = initialState.open
+  info = defaultState.info, 
+  open = defaultState.open
 }) => ({
-  ...initialState,
+  ...defaultState,
   info,
   open
 })
@@ -57,16 +57,8 @@ const useDialogModel = () => {
 
     const [state, dispatch] = useReducer(dialogReducer, search, init)
 
-    const onOpenChange = useCallback((open) => {
-      dispatch(action.openChange(open))
-    }, [])
-
-    const showDialog = useCallback((info) => {
-      dispatch(action.showDialog(info))
-    }, [])
-
     useRouteSearchStateUpdater({
-      initialState: initialState,
+      defaultState,
       state,
       routeStateMapFn: (p, q) => p(
           q("open"),
@@ -74,6 +66,14 @@ const useDialogModel = () => {
       ),
       onRouteSearchChange: (search) => dispatch(action.routeSearchUpdateState(search))
     })
+
+    const onOpenChange = useCallback((open) => {
+      dispatch(action.openChange(open))
+    }, [])
+
+    const showDialog = useCallback((info) => {
+      dispatch(action.showDialog(info))
+    }, [])
 
     return {
       state,

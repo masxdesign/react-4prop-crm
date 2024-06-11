@@ -2,7 +2,8 @@ import { useState } from 'react';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ selectedIds, dataPool, selection, onExcludedApply }, navigate) {
+export default function useSelectionControl ({ tableSelectionModel, navigate }) {
+  const { selectedIds, selection, onExcludedApply } = tableSelectionModel
   const [open, setOpen] = useState(false)
   
   const [excluded, setExcluded] = useState(initialExcluded)
@@ -53,7 +54,6 @@ export default function useSelectionControl ({ selectedIds, dataPool, selection,
 
   return {
     selected,
-    dataPool,
     selection,
     open,
     excluded,

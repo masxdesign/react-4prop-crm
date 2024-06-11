@@ -1,6 +1,6 @@
 import { compact, get, isEqual } from "lodash"
 
-const routeSearchMapping = (initialState, state, prev, cb) => {
+const routeSearchMapping = (defaultState, state, prev, cb) => {
     
   let prev_ = { ...prev }
 
@@ -14,7 +14,7 @@ const routeSearchMapping = (initialState, state, prev, cb) => {
     
     let s = get(state, t)
     
-    if(isEqual(get(initialState, t), s)) {
+    if(isEqual(get(defaultState, t), s)) {
       de(o)
       return null
     }

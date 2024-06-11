@@ -47,34 +47,40 @@ export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each
 })
 
 function ClientsListComponent() {
-  const { tableName, initiaTableModelState, columns, auth } = Route.useRouteContext()
-
-  console.log(initiaTableModelState);
-  console.log(initiaTableModelState.tableState.sorting?.[0]);
+  const { tableName, defaultTableModelState, columns, auth } = Route.useRouteContext()
   
   const dialogModel = useDialogModel()
   
-  const tableModel = useTableModel({ initialState: initiaTableModelState })
+  const tableModel = useTableModel({ defaultState: defaultTableModelState })
   
-  const table = useTableModel.use.tableSS(
-    { 
-      tableName, 
-      queryFn: fetchNegotiators, 
-      columns, 
-      meta: {
-        showDialog: dialogModel.showDialog,
-        hoverCardComponent: TableHoverCard
-      },
-      initiaTableModelState
-    }, 
+  const tableSSModal = useTableModel.use.tableSS({ 
+    tableName, 
+    queryFn: fetchNegotiators, 
+    columns, 
+    meta: {
+      showDialog: dialogModel.showDialog,
+      hoverCardComponent: TableHoverCard
+    },
     tableModel
-  )
+  })
     
-  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
-  const tableSelectionModel = useTableModel.use.selection(tableModel, table)
+  const tableSelectionModel = useTableModel.use.selection(tableSSModal)
   
-  const selectionControl = useSelectionControl(tableSelectionModel, navigate)
-  const sendBizchatDialog = useSendBizchatDialog(selectionControl, auth)
+  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
+
+  const selectionControl = useSelectionControl({ 
+    tableSelectionModel, 
+    navigate 
+  })
+
+  const sendBizchatDialog = useSendBizchatDialog({ 
+    dataPool: tableSSModal.dataPool,
+    selectionControlModel: selectionControl,
+    auth
+  })
+
+
+  const { table } = tableSSModal
 
   return (
     <>
@@ -205,9 +211,25 @@ function GlobalFilter ({ table, globalFilter }) {
 }
 
 function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
-  const info = useTableModel.use.findInfoById(id, table)
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
+      <DialogContent className="sm:max-w-[900px] min-h-[200px] p-0 overflow-hidden">
+        <Suspense fallback={<p>Loading...</p>}>
+          <DialogEachContent 
+            id={id}
+            table={table}
+            user={user}
+          />           
+        </Suspense>             
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-  if (!info) return null
+function DialogEachContent ({ id, table, user }) {
+  const { data } = useTableModel.use.fetchResultByIdSuspenseQuery({ id, table })
+
+  const { info, fromTable } = data
 
   const chatboxQueryOptions = {
     queryKey: ['chatboxEach', id],
@@ -215,34 +237,31 @@ function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden">                
-          <ResizablePanelGroup
-            direction="horizontal"
-            className="min-h-[200px]"
-          >
-            <ResizablePanel defaultSize={40} minSize={30} maxSize={50} className='p-4 space-y-4'>
-              <DialogHeader>
-                <DialogTitle className="flex flex-row justify-between items-center capitalize">
-                  <span>{info.row.getValue('fullName')}</span>
-                  <DialogNavigation info={info} />
-                </DialogTitle>
-              </DialogHeader>
-              <DialogMetricsEach chatboxQueryOptions={chatboxQueryOptions} info={info} />              
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={60}>
-              <Suspense fallback={<p>Loading...</p>}>
-                <ChatboxEach 
-                  queryOptions={chatboxQueryOptions} 
-                  info={info} 
-                  user={user}
-                />  
-              </Suspense>
-            </ResizablePanel>
-          </ResizablePanelGroup>                  
-      </DialogContent>
-    </Dialog>
+    <ResizablePanelGroup direction="horizontal">
+      <ResizablePanel defaultSize={40} minSize={30} maxSize={50} className='p-4 space-y-4'>
+        <DialogHeader>
+          <DialogTitle className="flex flex-row justify-between items-center capitalize">
+            <span>{`${info.first} ${info.last}`}</span>
+            {fromTable && <DialogNavigation info={fromTable} />}
+          </DialogTitle>
+        </DialogHeader>
+        <DialogMetricsEach 
+          chatboxQueryOptions={chatboxQueryOptions} 
+          info={info} 
+          table={table}
+        />              
+      </ResizablePanel>
+      <ResizableHandle withHandle />
+      <ResizablePanel defaultSize={60}>
+        <Suspense fallback={<p>Loading...</p>}>
+          <ChatboxEach 
+            queryOptions={chatboxQueryOptions} 
+            id={info.id} 
+            user={user}
+          />  
+        </Suspense>
+      </ResizablePanel>
+    </ResizablePanelGroup>
   )
 }
 
@@ -262,9 +281,8 @@ function TableHoverCard ({ cell, hideView }) {
   )
 }
 
-function DialogMetricsEach ({ chatboxQueryOptions, info }) {
-  console.log(info);
-
+function DialogMetricsEach ({ chatboxQueryOptions, info, table }) {
+  
   return (
     <div className='text-sm space-y-2'>
       <Dddl  
@@ -277,7 +295,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, info }) {
           { label: "Phone", name: "phone" },
           { label: "Mobile", name: "mobile" },
         ]}
-        row={info.row.original}
+        row={info}
       />
       <div className='h-3'/>
       <Suspense fallback={<p>Loading...</p>}>
@@ -286,8 +304,28 @@ function DialogMetricsEach ({ chatboxQueryOptions, info }) {
       <div className='h-3' />
       <Ddl 
         items={[
-          { label: "Next contact", value: <ColumnNextContactEach info={info} /> },
-          { label: "Last contact", value: <ColumnLastContactEach info={info} /> },
+          { 
+            label: "Next contact",
+            value: (
+              <ColumnNextContactEach 
+                id={info.id} 
+                defaultValue={info.next_contact}
+                table={table}
+                tableDataQueryKey={table.options.meta.dataQueryKey}
+              />
+            ) 
+          },
+          { 
+            label: "Last contact", 
+            value: (
+              <ColumnLastContactEach 
+                id={info.id} 
+                defaultValue={info.last_contact}
+                table={table}
+                tableDataQueryKey={table.options.meta.dataQueryKey}
+              />
+            )
+          },
         ]}
         labelClassName="min-w-[90px]"
       />
@@ -303,7 +341,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, info }) {
             { label: "Success", name: "alertPerc" }
           ].map(({ label, name }) => (
             <div key={name} className='flex flex-col items-center gap-1'>
-              <ProgressCircle size="lg" perc={info.row.original[name] ?? 0} />
+              <ProgressCircle size="lg" perc={info[name] ?? 0} />
               <span className='text-muted-foreground font-bold text-sm'>{label}</span>
             </div>
           ))}                 

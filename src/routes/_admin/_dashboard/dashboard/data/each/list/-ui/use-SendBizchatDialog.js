@@ -202,10 +202,11 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-export default function useSendBizchatDialog(selectionControl, auth) {
+export default function useSendBizchatDialog({ dataPool, selectionControlModel, auth }) {
+    const { selected } = selectionControlModel
+    
     const storageKey = `SendBizchatDialog`
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
-    const { selected, dataPool } = selectionControl
 
     const { open, message, subjectLine, currItemId, items: items_, itemDataCollection, status } = state
 
@@ -352,6 +353,6 @@ export default function useSendBizchatDialog(selectionControl, auth) {
         onCancel,
         onItemSelect,
         onOpenChange,
-        selectionControl
+        selectionControl: selectionControlModel
     }
 }

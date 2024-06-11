@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
-import { queryOptions, useQueryClient } from "@tanstack/react-query"
+import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import { useMap } from "@uidotdev/usehooks"
 import { flatten, uniqBy } from "lodash"
 import useTableSS from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
+import { useSearch } from "@tanstack/react-router"
+import { fetchNegotiator } from "@/api/fourProp"
 
 const clearAllFiltersAction = () => ({
     type: "FILTERS_ALL_CLEARED"
@@ -56,27 +58,27 @@ export const tableStateReceived = (newTableState) => ({
     payload: newTableState
 })
 
-const useMakeTableReducer = ({ initialState }) => {
-    return useMemo(() => {
+const useMakeTableReducer = ({ defaultState }) => {
+    const reducer = useMemo(() => {
         const tableStateSlice = (state, action) => {
-            const initialTableState = initialState.tableState
+            const defaultTableState = defaultState.tableState
         
             switch (action.type) {
                 case "UPDATE_STATE_SEARCH":
                     const search = action.payload
         
                     return {
-                        ...initialTableState,
+                        ...defaultTableState,
                         pagination: {
-                            ...initialTableState.pagination,
+                            ...defaultTableState.pagination,
                             pageIndex: search.page
                                 ? search.page - 1
-                                : initialTableState.pagination.pageIndex,
-                            pageSize: search.perpage ?? initialTableState.pagination.pageSize,
+                                : defaultTableState.pagination.pageIndex,
+                            pageSize: search.perpage ?? defaultTableState.pagination.pageSize,
                         },
-                        sorting: search.sorting ?? initialTableState.sorting,
-                        columnFilters: search.columnFilters ?? initialTableState.columnFilters,
-                        globalFilter: search.globalFilter ?? initialTableState.globalFilter
+                        sorting: search.sorting ?? defaultTableState.sorting,
+                        columnFilters: search.columnFilters ?? defaultTableState.columnFilters,
+                        globalFilter: search.globalFilter ?? defaultTableState.globalFilter
                     }
                 case "FILTERS_ALL_CLEARED":
                     return {
@@ -85,8 +87,8 @@ const useMakeTableReducer = ({ initialState }) => {
                             ...state.pagination,
                             pageIndex: 0,
                         },
-                        columnFilters: initialTableState.columnFilters,
-                        globalFilter: initialTableState.globalFilter
+                        columnFilters: defaultTableState.columnFilters,
+                        globalFilter: defaultTableState.globalFilter
                     }
                 case "CHANGE_PERPAGE":
                     return {
@@ -168,12 +170,12 @@ const useMakeTableReducer = ({ initialState }) => {
                     return {
                         ...state,
                         tableState: tableStateSlice(state.tableState, action),
-                        selected: initialState.selected
+                        selected: defaultState.selected
                     }
                 case "DESELECT_ALL":
                     return {
                         ...state,
-                        selected: initialState.selected
+                        selected: defaultState.selected
                     }
                 case "DESELECT":
                     return {
@@ -193,11 +195,18 @@ const useMakeTableReducer = ({ initialState }) => {
             }
         }
 
-        return mainReducer
+        const initializer = (search) => mainReducer(
+            defaultState, 
+            routeSearchUpdateStateAction(search)
+        )
+
+        return [mainReducer, initializer]
     })
+
+    return reducer
 } 
 
-export const initiaTableModelState = {
+export const defaultTableModelState = {
     tableState: {
         pagination: { pageIndex: 0, pageSize: 10 },
         sorting: [{ id: "created", desc: true }],
@@ -207,9 +216,23 @@ export const initiaTableModelState = {
     selected: [],
 }
 
-const useTableReducer = ({ initialState }) => {
-    const tableReducer = useMakeTableReducer({ initialState })
-    const [state, dispatch] = useReducer(tableReducer, initialState)
+const useTableReducer = ({ defaultState }) => {
+    const search = useSearch({ strict: false })
+    const [tableReducer, initializer] = useMakeTableReducer({ defaultState })
+    const [state, dispatch] = useReducer(tableReducer, search, initializer)
+
+    useRouteSearchStateUpdater({
+        defaultState: defaultState.tableState,
+        state: state.tableState,
+        routeStateMapFn: (p, q) => p(
+            q("pagination.pageIndex", "page"),
+            q("pagination.pageSize", "perpage"),
+            q("sorting"),
+            q("columnFilters"),
+            q("globalFilter")
+        ),
+        onRouteSearchChange: (search) => dispatch(routeSearchUpdateStateAction(search))
+    })
 
     const onPaginationChange = useCallback((newPagination) => {
         const { pageIndex, pageSize } = newPagination
@@ -258,7 +281,7 @@ const useTableReducer = ({ initialState }) => {
     }
 }
 
-const useTableModel = ({ initialState }) => {
+const useTableModel = ({ defaultState }) => {
     const { 
         onPaginationChange,
         onGlobalFilterChange,
@@ -270,7 +293,7 @@ const useTableModel = ({ initialState }) => {
         deselectAll,
         state,
         dispatch
-    } = useTableReducer({ initialState })
+    } = useTableReducer({ defaultState })
 
     const makeOnRowSelectionChange = useCallback((newRowSelectionUpdater, table) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
@@ -304,13 +327,14 @@ const useTableModel = ({ initialState }) => {
     }, [state.selected])
 
     const isDirtyFilters = useMemo(() => (
-        state.tableState.columnFilters !== initialState.tableState.columnFilters
-            || state.tableState.globalFilter !== initialState.tableState.globalFilter
+        state.tableState.columnFilters !== defaultState.tableState.columnFilters
+            || state.tableState.globalFilter !== defaultState.tableState.globalFilter
     ), [state.tableState.columnFilters, state.tableState.globalFilter])
 
     const model = { 
         dispatch,
         state,
+        defaultState,
         tableState: state.tableState,
         deselectAll,
         deselect,
@@ -342,21 +366,10 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 }
 
 useTableModel.use = {
-    tableSS ({ tableName, queryFn, staleTime, columns, meta, initiaTableModelState }, tableModel) {
-        useRouteSearchStateUpdater({
-            initialState: initiaTableModelState.tableState,
-            state: tableModel.tableState,
-            routeStateMapFn: (p, q) => p(
-                q("pagination.pageIndex", "page"),
-                q("pagination.pageSize", "perpage"),
-                q("sorting"),
-                q("columnFilters"),
-                q("globalFilter")
-            ),
-            onRouteSearchChange: (search) => tableModel.dispatch(routeSearchUpdateStateAction(search))
-        })
-
+    tableSS (options) {
+        const { tableName, queryFn, staleTime, columns, meta, tableModel } = options
         const queryOptions = useTableQueryOptions({ tableName, queryFn, staleTime }, tableModel)
+        const dataPool = useMap()
 
         const table = useTableSS({ 
             tableName,
@@ -373,22 +386,6 @@ useTableModel.use = {
             }
         })
 
-        table.setOptions((options) => ({
-            ...options,
-            onRowSelectionChange: (updater) => tableModel.makeOnRowSelectionChange(updater, table)
-        }))
-        
-        useLayoutEffect(() => {
-    
-            tableModel.updateRowSelectionWithSelectedState(table)
-    
-        }, [table.options.data])
-
-        return table
-    },
-    selection (tableModel, table) {
-        const dataPool = useMap()
-
         useEffect(() => {
 
             table.options.data?.forEach(row => {
@@ -404,9 +401,26 @@ useTableModel.use = {
                 )
 
             })
+
+            console.log(table.getRowModel().rows);
         
         }, [table.options.data])
 
+        table.setOptions((options) => ({
+            ...options,
+            onRowSelectionChange: (updater) => tableModel.makeOnRowSelectionChange(updater, table)
+        }))
+        
+        useLayoutEffect(() => {
+    
+            tableModel.updateRowSelectionWithSelectedState(table)
+    
+        }, [table.options.data])
+
+        return { table, dataPool, tableModel }
+    },
+    selection (tableSSModal) {
+        const { table, dataPool, tableModel } = tableSSModal
         const selection = useMemo(() => 
             tableModel.state.selected.map(id => dataPool.get(id)), 
             [tableModel.state.selected, dataPool.size]
@@ -425,23 +439,42 @@ useTableModel.use = {
 
         return { 
             selection,
-            dataPool,
             selectedIds: tableModel.state.selected,
             onExcludedApply
         }
     },
-    findInfoById (id, table) {
-        const info = useMemo(() => {
+    fetchResultByIdSuspenseQuery ({ id, table }) {
+        const findResultFromTableById = useCallback((id) => {
             const row = table.getRowModel().rows.find(({ original }) => `${id}` === `${original.id}`)
         
             if(!row) return
         
             const visibleCells = row.getVisibleCells()
-            return visibleCells?.[0]?.getContext()
+            const info = visibleCells?.[0]?.getContext()
+
+            return info
     
-        }, [id, table.options.data])
+        }, [table.options.data])
+
+        const queryQueryMemo = useMemo(
+            () => queryOptions({
+                queryKey: [id],
+                queryFn: async () => {
+
+                    let result = findResultFromTableById(id)
         
-        return info
+                    if (result) return { info: result.row.original, fromTable: result }
+        
+                    result = await fetchNegotiator(id)
+        
+                    return { info: result, fromTable: null }
+        
+                }
+            }), 
+            [id, findResultFromTableById]
+        )
+
+        return useSuspenseQuery(queryQueryMemo)
     }
 }
 

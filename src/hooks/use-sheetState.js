@@ -2,14 +2,14 @@ import { useSearch } from "@tanstack/react-router"
 import { useCallback, useReducer } from "react"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 
-const initialSheetState = { info: null, tab: null, open: false }
+const defaultState = { info: null, tab: null, open: false }
 
 const init = ({ 
-  tab = initialSheetState.tab, 
-  info = initialSheetState.info, 
-  open = initialSheetState.open
+  tab = defaultState.tab, 
+  info = defaultState.info, 
+  open = defaultState.open
 }) => ({
-  ...initialSheetState,
+  ...defaultState,
   tab,
   info,
   open
@@ -93,7 +93,7 @@ const useSheetState = () => {
     }
 
     useRouteSearchStateUpdater({
-      initialState: initialSheetState,
+      defaultState,
       state,
       routeStateMapFn: (p, q) => p(
           q("open"),

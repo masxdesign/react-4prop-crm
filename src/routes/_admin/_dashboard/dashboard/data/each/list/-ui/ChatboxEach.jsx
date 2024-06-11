@@ -5,9 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { util_add_each, util_delete_each } from "@/utils/localStorageController"
 import useChatboxEachFilterMessages from "./use-chatboxEachFilterMessages"
 
-const ChatboxEach = ({ queryOptions, info, user }) => {
-    const { id } = info.row.original
-
+const ChatboxEach = ({ queryOptions, id, user }) => {
     const queryClient = useQueryClient()
 
     const handleFilterMessages = useChatboxEachFilterMessages()
