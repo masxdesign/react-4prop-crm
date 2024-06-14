@@ -1,11 +1,11 @@
-import { Suspense, forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createLazyFileRoute } from '@tanstack/react-router';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNegotiators, fetchNotes } from '@/api/fourProp';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon, EnvelopeClosedIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { PhoneCallIcon, User } from 'lucide-react';
@@ -33,7 +33,7 @@ import { useNavigate } from '@tanstack/react-router';
 import SendBizchatDialog from './-ui/SendBizchatDialog';
 import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
 import UserCard from './-ui/UserCard';
-import { PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Controller, useForm } from 'react-hook-form';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -41,6 +41,7 @@ import numberWithCommas from '@/utils/numberWithCommas';
 import DataTableViewOptions from '@/components/DataTableViewOptions';
 import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
+import { cx } from 'class-variance-authority';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -63,13 +64,11 @@ function ClientsListComponent() {
     },
     tableModel
   })
-    
-  const tableSelectionModel = useTableModel.use.selection(tableSSModal)
   
   const navigate = useNavigate({ from: "/dashboard/data/each/list" })
 
   const selectionControl = useSelectionControl({ 
-    tableSelectionModel, 
+    tableSSModal, 
     navigate 
   })
 
@@ -78,7 +77,6 @@ function ClientsListComponent() {
     selectionControlModel: selectionControl,
     auth
   })
-
 
   const { table } = tableSSModal
 
@@ -90,23 +88,34 @@ function ClientsListComponent() {
             <Badge variant="secondary">
               {numberWithCommas(table.options.meta.count)}
             </Badge>
-            {tableSelectionModel.selectedIds.length > 0 && (
-              <SelectionControl {...selectionControl}>
+            {tableSSModal.selected.length > 0 && (
+              <Popover 
+                open={selectionControl.open} 
+                onOpenChange={selectionControl.onOpenChange}
+              >
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="secondary"
-                    className="h-8"
-                  >
+                  <Button variant="secondary" className="h-8">
                       {selectionControl.selected.length} selected
                   </Button>
                 </PopoverTrigger>
                 <SelectionControl.Content>
-                  <SelectionControl.HeaderAndContent />
+                  <Suspense 
+                    fallback={
+                      <p className='p-4 text-lg opacity-40 font-bold'>
+                        Loading...
+                      </p>
+                    }
+                  >
+                    <SelectionControl.HeaderAndContent 
+                      modal={selectionControl} 
+                      fetchSelectedDataQueryOptions={tableSSModal.fetchSelectedDataQueryOptions}
+                    />
+                  </Suspense>
                   <SelectionControl.Footer>
                     <SendBizchatDialog.Button {...sendBizchatDialog} />
                   </SelectionControl.Footer>
                 </SelectionControl.Content>
-              </SelectionControl>
+              </Popover>
             )}
             <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
           </div>
@@ -211,57 +220,97 @@ function GlobalFilter ({ table, globalFilter }) {
 }
 
 function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
+  const resultFromTable = useTableModel.use.findResultFromTableById({ id, table })
+
+  const chatboxQueryOptions = queryOptions({
+    queryKey: ['chatboxEach', id],
+    queryFn: () => fetchNotes({ id })
+  })
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="sm:max-w-[900px] min-h-[200px] p-0 overflow-hidden">
-        <Suspense fallback={<p>Loading...</p>}>
+      <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
+        {resultFromTable ? (
           <DialogEachContent 
-            id={id}
-            table={table}
-            user={user}
-          />           
-        </Suspense>             
+            info={resultFromTable.row.original} 
+            fromTable={resultFromTable}
+            user={user} 
+            chatboxQueryOptions={chatboxQueryOptions}
+          /> 
+        ) : (
+          <Suspense
+            fallback={
+              <p className='inset-0 absolute flex items-center justify-center text-lg opacity-40 font-bold'>
+                Loading...
+              </p>
+            }
+          >
+            <DialogEachContentFetch
+              id={id}
+              user={user} 
+              chatboxQueryOptions={chatboxQueryOptions} 
+            />   
+          </Suspense>
+        )}  
       </DialogContent>
     </Dialog>
   )
 }
 
-function DialogEachContent ({ id, table, user }) {
-  const { data } = useTableModel.use.fetchResultByIdSuspenseQuery({ id, table })
+function CSSOnMount ({ render }) {
+  const [isMount, setIsMount] = useState(false)
 
-  const { info, fromTable } = data
+  useEffect(() => {
+    setIsMount(true)
+  }, [])
 
-  const chatboxQueryOptions = {
-    queryKey: ['chatboxEach', id],
-    queryFn: () => fetchNotes({ id })
-  }
+  return render(isMount)
+}
+
+function DialogEachContent ({ info, fromTable, user, table = null, chatboxQueryOptions }) {
+  return (
+    <CSSOnMount
+      render={isMount =>
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          className={cx("transition-opacity ease-in duration-700", isMount ? "opacity-100": "opacity-0")}
+        >
+          <ResizablePanel defaultSize={40} minSize={30} maxSize={50} className='p-4 space-y-4'>
+            <DialogHeader>
+              <DialogTitle className="flex flex-row justify-between items-center capitalize">
+                <span>{`${info.first} ${info.last}`}</span>
+                {fromTable && <DialogNavigation info={fromTable} />}
+              </DialogTitle>
+            </DialogHeader>
+            <DialogMetricsEach 
+              chatboxQueryOptions={chatboxQueryOptions} 
+              info={info} 
+              table={table}
+            />              
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={60}>
+            <ChatboxEach 
+              queryOptions={chatboxQueryOptions} 
+              id={info.id} 
+              user={user}
+            /> 
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      }
+    />
+  )
+}
+
+function DialogEachContentFetch ({ id, user, chatboxQueryOptions }) {
+  const { data } = useSuspenseQuery(useTableModel.use.fetchResultByIdQueryOption(id))
 
   return (
-    <ResizablePanelGroup direction="horizontal">
-      <ResizablePanel defaultSize={40} minSize={30} maxSize={50} className='p-4 space-y-4'>
-        <DialogHeader>
-          <DialogTitle className="flex flex-row justify-between items-center capitalize">
-            <span>{`${info.first} ${info.last}`}</span>
-            {fromTable && <DialogNavigation info={fromTable} />}
-          </DialogTitle>
-        </DialogHeader>
-        <DialogMetricsEach 
-          chatboxQueryOptions={chatboxQueryOptions} 
-          info={info} 
-          table={table}
-        />              
-      </ResizablePanel>
-      <ResizableHandle withHandle />
-      <ResizablePanel defaultSize={60}>
-        <Suspense fallback={<p>Loading...</p>}>
-          <ChatboxEach 
-            queryOptions={chatboxQueryOptions} 
-            id={info.id} 
-            user={user}
-          />  
-        </Suspense>
-      </ResizablePanel>
-    </ResizablePanelGroup>
+    <DialogEachContent 
+      info={data} 
+      user={user} 
+      chatboxQueryOptions={chatboxQueryOptions} 
+    />
   )
 }
 
@@ -281,7 +330,7 @@ function TableHoverCard ({ cell, hideView }) {
   )
 }
 
-function DialogMetricsEach ({ chatboxQueryOptions, info, table }) {
+function DialogMetricsEach ({ chatboxQueryOptions, info, table = null }) {
   
   return (
     <div className='text-sm space-y-2'>
@@ -311,7 +360,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, info, table }) {
                 id={info.id} 
                 defaultValue={info.next_contact}
                 table={table}
-                tableDataQueryKey={table.options.meta.dataQueryKey}
+                tableDataQueryKey={table?.options.meta.dataQueryKey}
               />
             ) 
           },
@@ -322,7 +371,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, info, table }) {
                 id={info.id} 
                 defaultValue={info.last_contact}
                 table={table}
-                tableDataQueryKey={table.options.meta.dataQueryKey}
+                tableDataQueryKey={table?.options.meta.dataQueryKey}
               />
             )
           },
@@ -481,6 +530,10 @@ function DialogNavigation ({ info }) {
 function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }) {
   const ref = useRef()
 
+  const handleSelect = (e) => {
+    onSelect(e.target.dataset.id)
+  }
+
   useLayoutEffect(() => {
 
     if(open) {
@@ -497,9 +550,10 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
       {rows.map((row) => (
           <DropdownMenuItem 
             key={row.original.id} 
+            data-id={row.original.id}
             disabled={currentIndex === row.index} 
             className={cn("flex flex-col items-start", `item-${row.index}`)}
-            onSelect={() => onSelect(row.index)}
+            onSelect={handleSelect}
           >
             <span className='font-bold'>{row.getValue('fullName')}</span>
             <span className='text-muted-foreground'>{row.getValue('company')}</span>

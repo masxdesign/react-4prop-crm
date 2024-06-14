@@ -132,6 +132,17 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     return data
 }
 
+export const fetchNegotiatorByNids = async (nids) => {
+    let params = {
+        include: defaultNegotiatorInclude,
+        ids: `${nids}`
+    }
+
+    const { data } = await fourProp.get(`api/crud/CRM--EACH_db`, { params })
+
+    return data
+}
+
 export const fetchNegotiator = async (nid) => {
     let params = {
         include: defaultNegotiatorInclude

@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ tableSelectionModel, navigate }) {
-  const { selectedIds, selection, onExcludedApply } = tableSelectionModel
+export default function useSelectionControl ({ tableSSModal, navigate }) {
+  const { table, tableModel } = tableSSModal
+
   const [open, setOpen] = useState(false)
   
   const [excluded, setExcluded] = useState(initialExcluded)
 
-  const selected = selectedIds.filter((id) => !excluded.includes(id))
+  const selected = useMemo(() => 
+    tableSSModal.selected.filter((id) => !excluded.includes(id)), 
+    [tableSSModal.selected, excluded]
+  )
+
+  const onExcludedApply = (excluded) => {
+      excluded.forEach((item) => {
+          tableModel.deselect(item)
+      })
+      table.getRowModel().rows
+          .filter(({ original }) => excluded.includes(original.id))
+          .forEach((row) => {
+              row.toggleSelected()
+          })
+  }
   
   const onItemCheckedChange = (value, checked) => {
     if (checked) {
@@ -23,11 +38,11 @@ export default function useSelectionControl ({ tableSelectionModel, navigate }) 
   }
   
   const onDeselectAll = () => {
-    setExcluded(selectedIds)
+    setExcluded(tableSSModal.selected)
   }
 
   const onDeselectAllAndApply = () => {
-    onExcludedApply(selectedIds)
+    onExcludedApply(tableSSModal.selected)
     setExcluded([])
     setOpen(false)
   }
@@ -41,20 +56,17 @@ export default function useSelectionControl ({ tableSelectionModel, navigate }) 
   }
 
   const onItemView = (item) => {
-    const { id, _pageIndex } = item
     navigate({
       search: (prev) => ({
           ...prev,
-          page: _pageIndex + 1,
           open: true,
-          info: id,
+          info: item.id,
       }),
     })
   }
 
   return {
     selected,
-    selection,
     open,
     excluded,
     onItemCheckedChange,

@@ -231,15 +231,14 @@ export default function useSendBizchatDialog({ dataPool, selectionControlModel, 
         .filter(id => dataPool.has(id))
         .map(id => {
             const item = dataPool.get(id)
-            const { first, last, email, company, _pageIndex } = item
+            const { first, last, email, company } = item
 
             return {
                 id, 
                 first, 
                 last,
                 email,
-                company,
-                _page: _pageIndex + 1
+                company
             }
         }), 
         [selected, dataPool.size]

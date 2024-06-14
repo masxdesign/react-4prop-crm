@@ -1,5 +1,5 @@
 import { useSearch } from "@tanstack/react-router"
-import { useCallback, useReducer } from "react"
+import { useCallback, useEffect, useReducer } from "react"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 
 const defaultState = { info: null, open: false }

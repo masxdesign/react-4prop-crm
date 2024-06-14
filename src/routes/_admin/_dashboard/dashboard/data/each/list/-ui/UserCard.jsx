@@ -5,14 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-const UserCard = ({ data, onView, hideView, hideContact, className, isSent }) => {
+const UserCard = ({ data, onView, hideView, hideContact, clickable, className, isSent }) => {
   const handleOpen = () => {
-    console.log(data);
     onView(data)
   }
 
   return (
-      <div className={cn('text-sm space-y-2', className)}>
+      <div className={cn('text-sm space-y-2', { "hover:underline": clickable }, className)} onClick={clickable ? handleOpen: null}>
         <div className='flex flex-row justify-between gap-4'>
           <div className='space-y-1 max-w-[180px]'>
             <b>{data.first} {data.last} {isSent && <Badge variant="outline">Sent</Badge>}</b>

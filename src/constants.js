@@ -1,0 +1,1 @@
+export const LOCALSTOR_TABLEMODAL_SELECTED = "tableModalSelected"
