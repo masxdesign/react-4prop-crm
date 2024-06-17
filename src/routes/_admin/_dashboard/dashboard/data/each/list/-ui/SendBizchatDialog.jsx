@@ -24,25 +24,26 @@ import { Input } from "@/components/ui/input"
 import { isEmpty } from "lodash"
 import { useToast } from "@/components/ui/use-toast"
 
-function SendBizchatDialog({
-    open,
-    paused,
-    isPausing,
-    items,
-    subjectLine,
-    message,
-    currItem,
-    recipients,
-    onPause,
-    onResume,
-    lastItemPending,
-    onAddItem,
-    onSubjectLineChange,
-    onMessageChange,
-    onItemSelect,
-    onOpenChange,
-    onCancel
-}) {
+function SendBizchatDialog({ model }) {
+    const {
+        open,
+        paused,
+        isPausing,
+        items,
+        subjectLine,
+        message,
+        currItem,
+        recipients,
+        onPause,
+        onResume,
+        lastItemPending,
+        onAddItem,
+        onSubjectLineChange,
+        onMessageChange,
+        onItemSelect,
+        onOpenChange,
+        onCancel
+    } = model
 
     const {
         register,
@@ -339,28 +340,32 @@ const ButtonSm = ({ onOpenChange, lastItemPending, className, icon: Icon, iconCl
     </Tooltip>
 )
 
-SendBizchatDialog.ButtonSm = ({ onOpenChange, lastItemPending, paused }) => (
-    lastItemPending ? (
-        <ButtonSm 
-            variant="link" 
-            className={cn(
-                paused 
-                    ? "text-amber-600 bg-amber-100"
-                    : "text-green-600 bg-green-100"
-            )}
-            icon={paused ? Pause: Loader2Icon}
-            iconClassName={cn({ "animate-spin": !paused })}
-            lastItemPending={lastItemPending}
-            onOpenChange={onOpenChange}
-        />
-    ) : (
-        <ButtonSm 
-            variant="link"
-            icon={Send}
-            onOpenChange={onOpenChange}
-        />
+SendBizchatDialog.ButtonSm = ({ model }) => {
+    const { onOpenChange, lastItemPending, paused } = model
+
+    return (
+        lastItemPending ? (
+            <ButtonSm 
+                variant="link" 
+                className={cn(
+                    paused 
+                        ? "text-amber-600 bg-amber-100"
+                        : "text-green-600 bg-green-100"
+                )}
+                icon={paused ? Pause: Loader2Icon}
+                iconClassName={cn({ "animate-spin": !paused })}
+                lastItemPending={lastItemPending}
+                onOpenChange={onOpenChange}
+            />
+        ) : (
+            <ButtonSm 
+                variant="link"
+                icon={Send}
+                onOpenChange={onOpenChange}
+            />
+        )
     )
-)
+}
 
 const itemCva = cva(
     "flex flex-col gap-0 p-3 rounded-md cursor-pointer",

@@ -112,12 +112,12 @@ function ClientsListComponent() {
                     />
                   </Suspense>
                   <SelectionControl.Footer>
-                    <SendBizchatDialog.Button {...sendBizchatDialog} />
+                    <SendBizchatDialog.Button model={sendBizchatDialog} />
                   </SelectionControl.Footer>
                 </SelectionControl.Content>
               </Popover>
             )}
-            <SendBizchatDialog.ButtonSm {...sendBizchatDialog} />
+            <SendBizchatDialog.ButtonSm model={sendBizchatDialog} />
           </div>
           <div className='flex flex-grow justify-center gap-4'>
             <GlobalFilter 
@@ -156,7 +156,7 @@ function ClientsListComponent() {
         </div>
         <DataTablePagination table={table} />
       </div>
-      <SendBizchatDialog {...sendBizchatDialog} />
+      <SendBizchatDialog model={sendBizchatDialog}/>
       {dialogModel.state.info && (
         <DialogEach 
           id={dialogModel.state.info} 
