@@ -16,15 +16,18 @@ import ProgressCircle from "@/routes/-ui/ProgressCircle"
 import { Badge } from "@/components/ui/badge"
 import { ResumeIcon } from "@radix-ui/react-icons"
 import { useForm } from "react-hook-form"
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
 import { Input } from "@/components/ui/input"
 import { isEmpty } from "lodash"
 import { useToast } from "@/components/ui/use-toast"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query"
+import UserCard from "./UserCard"
 
-function SendBizchatDialog({ model }) {
+function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }) {
     const {
         open,
         paused,
@@ -33,7 +36,6 @@ function SendBizchatDialog({ model }) {
         subjectLine,
         message,
         currItem,
-        recipients,
         onPause,
         onResume,
         lastItemPending,
@@ -91,8 +93,7 @@ function SendBizchatDialog({ model }) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[900px] overflow-y-scroll max-h-screen">
-                <DialogHeader>
-                </DialogHeader>
+                <DialogHeader></DialogHeader>
                 {lastItemPending && !isPausing && !paused && (
                     <div className="text-sm border-green-800 border text-green-800 px-3 py-2 shadow-md rounded">
                         Your messages are now being sent. <br/>
@@ -186,9 +187,11 @@ function SendBizchatDialog({ model }) {
                                     <Dd label="Created" value={format(
                                         currItem.created,
                                         "HH:mm dd/MM/yy"
-                                    )} />
-                                    <Dd label="Sent" value={currItem.sent.length} />
-                                    <Dd label="Recipients" value={currItem.recipients.length} />
+                                    )} />                                    
+                                    <PopoverCurrItemList
+                                        currItem={currItem} 
+                                        makeQueryOptions={fetchNegotiatorsDataQueryOptions}
+                                    />
                                     <Dd label="Status" className="capitalize" value={lastItemPending === currItem ? (
                                         paused ? <Badge variant="secondary">Paused</Badge>
                                         : isPausing ? <Badge variant="secondary">Pausing...</Badge>
@@ -248,9 +251,9 @@ function SendBizchatDialog({ model }) {
                             <div>
                                 <h2 className="font-bold">Send a Mailshot via BizChat</h2>
                                 <p>
-                                    {recipients.length > 0  ? (
+                                    {selected.length > 0  ? (
                                         <span className="text-slate-500">
-                                            You have selected <span className="text-slate-900">{recipients.length} recipients</span> for your mailing list
+                                            You have selected <PopoverRecipientButton recipients={selected} makeQueryOptions={fetchNegotiatorsDataQueryOptions}>{selected.length} recipients</PopoverRecipientButton> for your mailing list
                                         </span>
                                     ) : (
                                         <span className="text-red-500">
@@ -285,7 +288,7 @@ function SendBizchatDialog({ model }) {
                                 )}
                                 <Button
                                     type="submit"
-                                    disabled={recipients.length < 1 || !formState.isValid}
+                                    disabled={selected.length < 1 || !formState.isValid}
                                     className="place-self-end font-bold"
                                 >
                                     Send Bizchat
@@ -296,6 +299,64 @@ function SendBizchatDialog({ model }) {
                 </div>
             </DialogContent>
         </Dialog>
+    )
+}
+
+function PopoverRecipientButton ({ children, recipients, renderItemIsSent, headerComponent, makeQueryOptions }) {
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="xs">
+                    {children}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="p-0">
+                {headerComponent && (
+                    <div className="px-3 py-2 text-xs font-bold bg-sky-50 text-sky-600">
+                        {headerComponent}
+                    </div>
+                )}
+                <Suspense fallback={<p>loading...</p>}>
+                    <RecipientList 
+                        recipients={recipients} 
+                        makeQueryOptions={makeQueryOptions} 
+                        renderItemIsSent={renderItemIsSent}
+                    />
+                </Suspense>
+            </PopoverContent>
+        </Popover>
+    )
+}
+
+function PopoverCurrItemList ({ currItem, makeQueryOptions }) {
+    return (
+        <Dd 
+            label="To" 
+            value={
+                <PopoverRecipientButton
+                    recipients={currItem.recipients}
+                    makeQueryOptions={makeQueryOptions} 
+                    renderItemIsSent={(item) => currItem.sent.includes(item.id)}
+                >
+                    {currItem.recipients.length} recipients <span className="ml-1 opacity-50">view</span>
+                </PopoverRecipientButton>
+            } 
+        />
+    )
+}
+
+function RecipientList ({ recipients, makeQueryOptions, renderItemIsSent }) {
+    const { data } = useSuspenseQuery(makeQueryOptions(recipients))
+
+    return data.map(item => 
+        <UserCard
+            key={item.id}
+            data={item}
+            className="w-full p-3 hover:bg-muted/50 cursor-pointer"
+            isSent={renderItemIsSent?.(item)}
+            hideView
+            hideContact
+        />
     )
 }
 

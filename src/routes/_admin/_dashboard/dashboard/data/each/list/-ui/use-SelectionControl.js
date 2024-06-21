@@ -1,10 +1,10 @@
-import { fetchNegotiatorByNids } from '@/api/fourProp';
+import { fetchNegotiatorByNids, fetchSelectedNegotiatorsDataQueryOptions } from '@/api/fourProp';
 import { queryOptions } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ tableSSModal, tableModel, dataPool, navigate }) {
+export default function useSelectionControl ({ tableSSModal, tableModel, fetchNegotiatorsDataQueryOptions, navigate }) {
   const { table } = tableSSModal
 
   const [open, setOpen] = useState(false)
@@ -16,27 +16,9 @@ export default function useSelectionControl ({ tableSSModal, tableModel, dataPoo
     [tableSSModal.selected, excluded]
   )
 
-  const fetchSelectedDataQueryOptions = useMemo(() =>
-      queryOptions({
-          queryKey: ['fetchSelectedData', tableSSModal.selected],
-          queryFn: async () => {
-
-              const nidsToFetch = tableSSModal.selected.filter(id => !dataPool.has(id))
-
-              if (nidsToFetch.length > 0) {
-
-                  const fetched = await fetchNegotiatorByNids(nidsToFetch)
-
-                  for(const item of fetched) {
-                      dataPool.set(item.id, item)
-                  }
-
-              }
-
-              return tableSSModal.selected.map(id => dataPool.get(id))
-          }
-      }), 
-      [tableSSModal.selected, dataPool.size]
+  const fetchSelectedDataQueryOptions = useMemo(
+    () => fetchNegotiatorsDataQueryOptions(tableSSModal.selected), 
+    [tableSSModal.selected]
   )
 
   const onExcludedApply = excluded => {

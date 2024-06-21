@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer } from "react"
-import { sendBizchat } from "@/api/fourProp"
+import { fetchSelectedNegotiatorsDataQueryOptions, sendBizchat } from "@/api/fourProp"
 import delay from "@/utils/delay"
 import { useMutation } from "@tanstack/react-query"
 import { find, map } from "lodash"
@@ -11,7 +11,6 @@ const initialState = {
     currItemId: null,
     message: "",
     subjectLine: "",
-    itemDataCollection: {},
     status: "running"
 }
 
@@ -105,10 +104,7 @@ function itemsSlice(state, { type, meta, payload = null }) {
             )
         case "ITEM_ADDED":
             return [
-                {
-                    ...payload,
-                    recipients: map(payload.recipients, 'id')
-                },
+                payload,
                 ...state
             ]
         case "RECIPIENT_MARK_SENT":
@@ -162,13 +158,6 @@ function sendBizchatDialogReducer (state, action) {
                 items: itemsSlice(state.items, action),
                 currItemId: action.payload.id,
                 message: initialState.message,
-                itemDataCollection: {
-                    ...state.itemDataCollection,
-                    ...Object.fromEntries(
-                        action.payload.recipients
-                            .map((recipient) => ([recipient.id, recipient]))
-                    )
-                },
                 status: "running"
             }
         case "PAUSE_REQUESTED":
@@ -271,10 +260,10 @@ const useAutoSend = ({ paused, auth, state, dispatch }) => {
 
 const storageKey = `SendBizchatDialog`
 
-export default function useSendBizchatDialog({ dataPool, selected, auth, onDeselectAllAndApply }) { 
+export default function useSendBizchatDialog({ selected, auth, onDeselectAllAndApply }) { 
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
 
-    const { open, message, subjectLine, currItemId, itemDataCollection, status } = state
+    const { open, message, subjectLine, currItemId, status } = state
 
     const paused = status === "paused"
     const isPausing = status === "pausing"
@@ -290,26 +279,9 @@ export default function useSendBizchatDialog({ dataPool, selected, auth, onDesel
         [items, currItemId]
     )
 
-    const recipients = useMemo(() => selected
-        .filter(id => dataPool.has(id))
-        .map(id => {
-            const item = dataPool.get(id)
-            const { first, last, email, company } = item
-
-            return {
-                id, 
-                first, 
-                last,
-                email,
-                company
-            }
-        }), 
-        [selected, dataPool.size]
-    )
-
     const onAddItem = ({ message, subjectLine }) => {
         if (lastItemPending && !paused) throw new Error("Please wait for last message to finish sending")
-        dispatch(itemAdded({ recipients, body: message, subjectLine }))
+        dispatch(itemAdded({ recipients: selected, body: message, subjectLine }))
         onDeselectAllAndApply()
     }
 
@@ -350,10 +322,8 @@ export default function useSendBizchatDialog({ dataPool, selected, auth, onDesel
         message,
         subjectLine,
         currItem,
-        recipients,
         onPause,
         onResume,
-        itemDataCollection,
         lastItemPending,
         onAddItem,
         onMessageChange,

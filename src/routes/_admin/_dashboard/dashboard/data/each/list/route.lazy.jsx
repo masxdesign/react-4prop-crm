@@ -43,6 +43,7 @@ import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
 import { cx } from 'class-variance-authority';
 import { useMap } from '@uidotdev/usehooks';
+import makeFetchNegotiatorsDataQueryOptions from './-ui/use-makeFetchNegotiatorsDataQueryOptions';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -52,6 +53,8 @@ function ClientsListComponent() {
   const { tableName, defaultTableModelState, columns, auth } = Route.useRouteContext()
   
   const dataPool = useMap()
+
+  const fetchNegotiatorsDataQueryOptions = makeFetchNegotiatorsDataQueryOptions({ dataPool })
 
   const dialogModel = useDialogModel()
   
@@ -72,15 +75,14 @@ function ClientsListComponent() {
   const navigate = useNavigate({ from: "/dashboard/data/each/list" })
 
   const selectionControl = useSelectionControl({ 
-    dataPool,
     tableSSModal, 
     tableModel,
+    fetchNegotiatorsDataQueryOptions,
     navigate 
   })
 
   const sendBizchatDialog = useSendBizchatDialog({ 
     auth,
-    dataPool,
     selected: selectionControl.selected,
     onDeselectAllAndApply: selectionControl.onDeselectAllAndApply
   })
@@ -161,7 +163,11 @@ function ClientsListComponent() {
         </div>
         <DataTablePagination table={table} />
       </div>
-      <SendBizchatDialog model={sendBizchatDialog}/>
+      <SendBizchatDialog 
+        model={sendBizchatDialog} 
+        selected={selectionControl.selected} 
+        fetchNegotiatorsDataQueryOptions={fetchNegotiatorsDataQueryOptions}
+      />
       <DialogEach model={dialogModel} user={auth.user} table={table} />
     </>
   )
