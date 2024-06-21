@@ -38,14 +38,15 @@ SelectionControl.Button = ({ selected, onOpenChange }) => {
     )
 }
 
-SelectionControl.HeaderAndContent = ({ modal, fetchSelectedDataQueryOptions }) => {
+SelectionControl.HeaderAndContent = ({ modal }) => {
     const { 
         onItemCheckedChange, 
         onItemView, 
         onDeselectAll, 
         onSelectAll, 
         selected, 
-        excluded 
+        excluded,
+        fetchSelectedDataQueryOptions
     } = modal
 
     const { data } = useSuspenseQuery(fetchSelectedDataQueryOptions)

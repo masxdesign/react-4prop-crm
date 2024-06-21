@@ -42,6 +42,7 @@ import DataTableViewOptions from '@/components/DataTableViewOptions';
 import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
 import { cx } from 'class-variance-authority';
+import { useMap } from '@uidotdev/usehooks';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -50,11 +51,14 @@ export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each
 function ClientsListComponent() {
   const { tableName, defaultTableModelState, columns, auth } = Route.useRouteContext()
   
+  const dataPool = useMap()
+
   const dialogModel = useDialogModel()
   
   const tableModel = useTableModel({ defaultState: defaultTableModelState })
   
   const tableSSModal = useTableModel.use.tableSS({ 
+    dataPool,
     tableName, 
     queryFn: fetchNegotiators, 
     columns, 
@@ -68,14 +72,17 @@ function ClientsListComponent() {
   const navigate = useNavigate({ from: "/dashboard/data/each/list" })
 
   const selectionControl = useSelectionControl({ 
+    dataPool,
     tableSSModal, 
+    tableModel,
     navigate 
   })
 
   const sendBizchatDialog = useSendBizchatDialog({ 
-    dataPool: tableSSModal.dataPool,
-    selectionControlModel: selectionControl,
-    auth
+    auth,
+    dataPool,
+    selected: selectionControl.selected,
+    onDeselectAllAndApply: selectionControl.onDeselectAllAndApply
   })
 
   const { table } = tableSSModal
@@ -85,9 +92,7 @@ function ClientsListComponent() {
       <div className='overflow-hidden p-4 space-y-4'>
         <div className='flex flex-row gap-3'>
           <div className='flex gap-4 w-64'>
-            <Badge variant="secondary">
-              {numberWithCommas(table.options.meta.count)}
-            </Badge>
+            <Badge variant="secondary">{tableSSModal.countFormatted}</Badge>
             {tableSSModal.selected.length > 0 && (
               <Popover 
                 open={selectionControl.open} 
@@ -106,13 +111,13 @@ function ClientsListComponent() {
                       </p>
                     }
                   >
-                    <SelectionControl.HeaderAndContent 
-                      modal={selectionControl} 
-                      fetchSelectedDataQueryOptions={tableSSModal.fetchSelectedDataQueryOptions}
-                    />
+                    <SelectionControl.HeaderAndContent modal={selectionControl} />
                   </Suspense>
                   <SelectionControl.Footer>
-                    <SendBizchatDialog.Button model={sendBizchatDialog} />
+                    <SendBizchatDialog.Button 
+                      selected={selectionControl.selected}
+                      model={sendBizchatDialog} 
+                    />
                   </SelectionControl.Footer>
                 </SelectionControl.Content>
               </Popover>
@@ -121,8 +126,8 @@ function ClientsListComponent() {
           </div>
           <div className='flex flex-grow justify-center gap-4'>
             <GlobalFilter 
-              globalFilter={tableModel.tableState.globalFilter}  
               table={table} 
+              globalFilter={tableModel.tableState.globalFilter}  
             />
             {[
               { columnId: "company", title: "Companies" },
@@ -157,15 +162,7 @@ function ClientsListComponent() {
         <DataTablePagination table={table} />
       </div>
       <SendBizchatDialog model={sendBizchatDialog}/>
-      {dialogModel.state.info && (
-        <DialogEach 
-          id={dialogModel.state.info} 
-          user={auth.user}
-          table={table}
-          open={dialogModel.state.open}
-          onOpenChange={dialogModel.onOpenChange}
-        />
-      )}
+      <DialogEach model={dialogModel} user={auth.user} table={table} />
     </>
   )
 }
@@ -219,7 +216,23 @@ function GlobalFilter ({ table, globalFilter }) {
   )
 }
 
-function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
+function DialogEach ({ model, table, user, ...props }) {
+  return (
+    <Dialog open={model.state.open} onOpenChange={model.onOpenChange} {...props}>
+      <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
+        {model.state.info ? (
+          <DialogEachContentRenderer model={model} table={table} user={user} />
+        ) : (
+          <p>Loading...</p>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DialogEachContentRenderer ({ model, table, user }) {
+  const { info: id } = model.state
+
   const resultFromTable = useTableModel.use.findResultFromTableById({ id, table })
 
   const chatboxQueryOptions = queryOptions({
@@ -227,33 +240,27 @@ function DialogEach ({ id, table, user, open, onOpenChange, ...props }) {
     queryFn: () => fetchNotes({ id })
   })
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange} {...props}>
-      <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
-        {resultFromTable ? (
-          <DialogEachContent 
-            info={resultFromTable.row.original} 
-            fromTable={resultFromTable}
-            user={user} 
-            chatboxQueryOptions={chatboxQueryOptions}
-          /> 
-        ) : (
-          <Suspense
-            fallback={
-              <p className='inset-0 absolute flex items-center justify-center text-lg opacity-40 font-bold'>
-                Loading...
-              </p>
-            }
-          >
-            <DialogEachContentFetch
-              id={id}
-              user={user} 
-              chatboxQueryOptions={chatboxQueryOptions} 
-            />   
-          </Suspense>
-        )}  
-      </DialogContent>
-    </Dialog>
+  return resultFromTable ? (
+    <DialogEachContent 
+      info={resultFromTable.row.original} 
+      fromTable={resultFromTable}
+      user={user} 
+      chatboxQueryOptions={chatboxQueryOptions}
+    /> 
+  ) : (
+    <Suspense
+      fallback={
+        <p className='inset-0 absolute flex items-center justify-center text-lg opacity-40 font-bold'>
+          Loading...
+        </p>
+      }
+    >
+      <DialogEachContentFetch
+        id={id}
+        user={user} 
+        chatboxQueryOptions={chatboxQueryOptions} 
+      />   
+    </Suspense>
   )
 }
 

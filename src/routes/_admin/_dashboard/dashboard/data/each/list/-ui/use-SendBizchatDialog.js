@@ -202,25 +202,88 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-export default function useSendBizchatDialog({ dataPool, selectionControlModel, auth }) {
-    const { selected } = selectionControlModel
-    
-    const storageKey = `SendBizchatDialog`
+const useAutoSend = ({ paused, auth, state, dispatch }) => {
+    const sendBizchatMutation = useMutation({
+        mutationFn: async (lastItemPending) => {
+            if (!auth.user?.neg_id) throw new Error('auth.user.neg_id is undefined')
+
+            const variables = {
+                subjectLine: lastItemPending.subjectLine,
+                message: lastItemPending.body,
+                from: auth.user.neg_id,
+                recipient: lastItemPending.nextRecipient.recipientId
+            }
+
+            if (import.meta.env.PROD) {
+
+                await delay(1000)
+                return sendBizchat(variables)
+                
+            } else {
+                console.log('Sending in development mode!', variables);
+                return delay(1000)
+            }
+        },
+        onSuccess (_, lastItemPending) {
+            dispatch(recipientMarkSent(lastItemPending.nextRecipient))
+            console.log('sent!', lastItemPending.nextRecipient);
+        },
+        retry: 3,
+        retryDelay: 900
+    })
+
+    const items = useMemo(() => {
+        return state.items.map((item) => ({
+            ...item,
+            progress: Math.ceil(100*(item.sent.length/item.recipients.length))
+        }))
+    }, [state.items])
+
+    const lastItemPending = useMemo(() => {
+        const last = items.find(({ status }) => status === "pending")
+
+        if (!last) return null
+
+        const nextRecipientId = last.recipients.find(recipientId => !last.sent.includes(recipientId))
+
+        return {
+            ...last,
+            nextRecipient: {
+                key: `${last.id}.${nextRecipientId}`,
+                itemId: last.id,
+                recipientId: nextRecipientId
+            }
+        }
+    }, [items])
+
+    useEffect(() => {
+
+        lastItemPending?.nextRecipient && !paused 
+            && sendBizchatMutation.mutateAsync(lastItemPending)
+
+    }, [lastItemPending?.nextRecipient.key, paused])
+
+    return {
+        lastItemPending,
+        items
+    }
+}
+
+const storageKey = `SendBizchatDialog`
+
+export default function useSendBizchatDialog({ dataPool, selected, auth, onDeselectAllAndApply }) { 
     const [state, dispatch] = useReducer(sendBizchatDialogReducer, storageKey, init)
 
-    const { open, message, subjectLine, currItemId, items: items_, itemDataCollection, status } = state
+    const { open, message, subjectLine, currItemId, itemDataCollection, status } = state
 
     const paused = status === "paused"
     const isPausing = status === "pausing"
 
-    const items = useMemo(() => {
+    const { items, lastItemPending } = useAutoSend({ paused, auth, state, dispatch })
 
-        return items_.map((item) => ({
-            ...item,
-            progress: Math.ceil(100*(item.sent.length/item.recipients.length))
-        }))
-
-    }, [items_])
+    useEffect(() => {
+        localStorage.setItem(storageKey, JSON.stringify(state));
+    }, [state])
 
     const currItem = useMemo(
         () => find(items, { id: currItemId }),
@@ -244,59 +307,11 @@ export default function useSendBizchatDialog({ dataPool, selectionControlModel, 
         [selected, dataPool.size]
     )
 
-    const lastItemPending = useMemo(() => items.find(({ status }) => status === "pending"), [items])
-    const nextRecipient = useMemo(() => {
-
-        if(!lastItemPending) return null
-
-        const { id, recipients, sent } = lastItemPending
-
-        return {
-            recipientId: recipients.find((recipientId) => !sent.includes(recipientId)),
-            itemId: id
-        }
-
-    }, [lastItemPending])
-
-    const sendBizchatMutation = useMutation({
-        mutationFn: (variables) => sendBizchat(variables),
-        retry: 3,
-        retryDelay: 900
-    })
-
-    const sendNextRecipient = async () => {
-        if (import.meta.env.PROD) {
-            if (!nextRecipient) throw new Error('nextRecipient is undefined')
-            if (!auth.user?.neg_id) throw new Error('auth.user?.neg_id is undefined')
-
-            await delay(1000)
-            
-            await sendBizchatMutation.mutateAsync({
-                subjectLine: lastItemPending.subjectLine,
-                message: lastItemPending.body,
-                from: auth.user?.neg_id,
-                recipient: nextRecipient.recipientId
-            })
-            
-        } else {
-            console.log('Sending in development mode!');
-            await delay(1000)
-        }
-
-        dispatch(recipientMarkSent(nextRecipient))
-        console.log('sent!', nextRecipient);
-
+    const onAddItem = ({ message, subjectLine }) => {
+        if (lastItemPending && !paused) throw new Error("Please wait for last message to finish sending")
+        dispatch(itemAdded({ recipients, body: message, subjectLine }))
+        onDeselectAllAndApply()
     }
-
-    useEffect(() => {
-        localStorage.setItem(storageKey, JSON.stringify(state));
-    }, [state])
-
-    useEffect(() => {
-
-        nextRecipient && !paused && sendNextRecipient()
-
-    }, [nextRecipient?.recipientId, paused])
 
     const onPause = () => {
         dispatch(pauseRequest())
@@ -309,12 +324,6 @@ export default function useSendBizchatDialog({ dataPool, selectionControlModel, 
     const onCancel = (itemId) => {
         if (paused) return dispatch(cancelItem(itemId))
         dispatch(cancelItemRequest(itemId))
-    }
-
-    const onAddItem = ({ message, subjectLine }) => {
-        if (lastItemPending && !paused) throw new Error("Please wait for last message to finish sending")
-        dispatch(itemAdded({ recipients, body: message, subjectLine }))
-        selectionControl.onDeselectAllAndApply()
     }
 
     const onSubjectLineChange = (value) => {
@@ -351,7 +360,6 @@ export default function useSendBizchatDialog({ dataPool, selectionControlModel, 
         onSubjectLineChange,
         onCancel,
         onItemSelect,
-        onOpenChange,
-        selectionControl: selectionControlModel
+        onOpenChange
     }
 }

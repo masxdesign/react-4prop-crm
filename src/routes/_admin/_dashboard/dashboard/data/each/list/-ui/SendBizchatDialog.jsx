@@ -299,25 +299,29 @@ function SendBizchatDialog({ model }) {
     )
 }
 
-SendBizchatDialog.Button = ({ selectionControl, onOpenChange, lastItemPending, paused }) => (
-    lastItemPending ? (
-        <span className="text-sm space-x-1 p-1">
-            <span className="opacity-50">
-                Please {paused ? 'resume' : 'wait'} / cancel last bizchat message to send another message. 
+SendBizchatDialog.Button = ({ selected, model }) => {
+    const { onOpenChange, lastItemPending, paused } = model
+    
+    return (
+        lastItemPending ? (
+            <span className="text-sm space-x-1 p-1">
+                <span className="opacity-50">
+                    Please {paused ? 'resume' : 'wait'} / cancel last bizchat message to send another message. 
+                </span>
+                <span className="cursor-pointer underline" onClick={() => onOpenChange(true)}>
+                    View message
+                </span>
             </span>
-            <span className="cursor-pointer underline" onClick={() => onOpenChange(true)}>
-                View message
-            </span>
-        </span>
-    ) : (
-        <Button
-            variant="link"
-            onClick={() => onOpenChange(true)}
-        >
-            Send Bizchat to {selectionControl.selected.length} agents
-        </Button>
+        ) : (
+            <Button
+                variant="link"
+                onClick={() => onOpenChange(true)}
+            >
+                Send Bizchat to {selected.length} agents
+            </Button>
+        )
     )
-)
+}
 
 const ButtonSm = ({ onOpenChange, lastItemPending, className, icon: Icon, iconClassName, ...props }) => (
     <Tooltip>

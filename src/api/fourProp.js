@@ -245,7 +245,7 @@ export const addNote = async (variables, { id, user }) => {
 
 export const fetchNotes = async ({ id }) => {
 
-    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/__notes/${id}`)
+    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/__notes/${id}`, { withCredentials: true })
 
     const [branch, [privateNotes, messages, users]] = data
 

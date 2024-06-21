@@ -1,16 +1,16 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import useLocalstorageState from '@/hooks/use-LocalstorageState'
-import useTableState from '@/hooks/use-TableModel'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { functionalUpdate } from '@tanstack/react-router'
 import { getCoreRowModel, makeStateUpdater, useReactTable } from '@tanstack/react-table'
 import { useIsFirstRender } from '@uidotdev/usehooks'
-import { get, isUndefined } from 'lodash'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { get } from 'lodash'
 
 const useTableSS = ({
     tableName,
-    queryOptions,
     columns,
+    data,
+    pageCount,
     state,
     meta,
     onSortingChange,
@@ -18,8 +18,6 @@ const useTableSS = ({
     onColumnFiltersChange,
     onGlobalFilterChange
 }) => {
-    const { data, pageCount, count } = useLoadData(queryOptions, state)
-
     const defaultColumnOrder = useMemo(() => columns.map((c) => c.id), [columns])
     const defaultColumnSizing = {}
     const defaultColumnVisibility = useMemo(() => Object.fromEntries(
@@ -33,11 +31,7 @@ const useTableSS = ({
     const table = useReactTable({
         columns, 
         data, 
-        meta: {
-            ...meta,
-            count,
-            dataQueryKey: queryOptions.queryKey
-        },
+        meta,
         state: {
             ...state,
             columnVisibility,
@@ -83,7 +77,7 @@ function _o (newValue, onChange) {
     return (fn) => onChange(functionalUpdate(fn, newValue))
 }
 
-function useLoadData (queryOptions, tableState) {
+export function useLoadData (queryOptions, tableState) {
     const { pageSize } = tableState.pagination
 
     const queryOptions_ = useMemo(() => 
