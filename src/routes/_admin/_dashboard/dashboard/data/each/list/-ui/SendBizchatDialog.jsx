@@ -252,8 +252,15 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
                                 <h2 className="font-bold">Send a Mailshot via BizChat</h2>
                                 <p>
                                     {selected.length > 0  ? (
-                                        <span className="text-slate-500">
-                                            You have selected <PopoverRecipientButton recipients={selected} makeQueryOptions={fetchNegotiatorsDataQueryOptions}>{selected.length} recipients</PopoverRecipientButton> for your mailing list
+                                        <span className="text-slate-500 space-x-2">
+                                            <span>You have selected</span>
+                                            <PopoverRecipientButton 
+                                                recipients={selected} 
+                                                makeQueryOptions={fetchNegotiatorsDataQueryOptions}
+                                            >
+                                                {selected.length} recipients
+                                            </PopoverRecipientButton>
+                                            <span>for your mailing list</span>
                                         </span>
                                     ) : (
                                         <span className="text-red-500">

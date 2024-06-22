@@ -191,7 +191,7 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-const useAutoSend = ({ paused, auth, state, dispatch }) => {
+const useSendBizchatMany = ({ paused, auth, state, dispatch }) => {
     const sendBizchatMutation = useMutation({
         mutationFn: async (lastItemPending) => {
             if (!auth.user?.neg_id) throw new Error('auth.user.neg_id is undefined')
@@ -268,7 +268,7 @@ export default function useSendBizchatDialog({ selected, auth, onDeselectAllAndA
     const paused = status === "paused"
     const isPausing = status === "pausing"
 
-    const { items, lastItemPending } = useAutoSend({ paused, auth, state, dispatch })
+    const { items, lastItemPending } = useSendBizchatMany({ paused, auth, state, dispatch })
 
     useEffect(() => {
         localStorage.setItem(storageKey, JSON.stringify(state));
