@@ -8,7 +8,7 @@ const bizchatAxios = axios.create({
 })
 
 export const sendBizchatMessage = async ({ from, recipient, message, context }) => {
-    const { data } = await bizchatAxios.post('/api/crm_create_chat', { from, recipient, message, context })
+    const { data } = await bizchatAxios.post('/api/crm/create_chat', { from, recipient, message, context })
     return data
 }
 
