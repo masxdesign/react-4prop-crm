@@ -83,8 +83,7 @@ function ClientsListComponent() {
 
   const sendBizchatDialog = useSendBizchatDialog({ 
     auth,
-    selected: selectionControl.selected,
-    onDeselectAllAndApply: selectionControl.onDeselectAllAndApply
+    selectionControlModal: selectionControl
   })
 
   const { table } = tableSSModal

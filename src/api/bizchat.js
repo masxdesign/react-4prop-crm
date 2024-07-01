@@ -7,6 +7,16 @@ const bizchatAxios = axios.create({
     withCredentials: true
 })
 
+export const sendMassBizchat = async ({ from, recipients, subjectLine, message }) => {
+    const { data } = await bizchatAxios.post('/api/crm/send_mass', { from, recipients, subjectLine, message })
+    return data
+}
+
+export const getMassBizchatList = async ({ from }) => {
+    const { data } = await bizchatAxios.get(`/api/crm/mass_list/${from}`)
+    return data
+}
+
 export const sendBizchatMessage = async ({ from, recipient, message, context }) => {
     const { data } = await bizchatAxios.post('/api/crm/create_chat', { from, recipient, message, context })
     return data

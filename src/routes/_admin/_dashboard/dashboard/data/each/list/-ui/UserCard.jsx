@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
-const UserCard = ({ data, onView, hideView, hideContact, clickable, className, isSent }) => {
+const UserCard = ({ data, onView, hideView, hideContact, clickable, className }) => {
   const handleOpen = () => {
     onView(data)
   }
@@ -14,7 +14,7 @@ const UserCard = ({ data, onView, hideView, hideContact, clickable, className, i
       <div className={cn('text-sm space-y-2', { "hover:underline": clickable }, className)} onClick={clickable ? handleOpen: null}>
         <div className='flex flex-row justify-between gap-4'>
           <div className='space-y-1 max-w-[180px]'>
-            <b>{data.first} {data.last} {isSent && <Badge variant="outline">Sent</Badge>}</b>
+            <b>{data.first} {data.last}</b>
             <div className='text-nowrap truncate text-muted-foreground'>{data.company}</div>
           </div>
           {!hideView && <Button variant="secondary" size="sm" className="shrink" onClick={handleOpen}>open</Button>}
