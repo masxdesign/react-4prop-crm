@@ -141,7 +141,7 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
                 <div className="space-y-2 w-64 max-h-[600px] overflow-auto">
                     {data.map(
                         (item) => (
-                            <Item 
+                            <Campaign 
                                 key={item.id} 
                                 onItemSelect={onItemSelect} 
                                 active={currItem?.id === item.id}
@@ -349,10 +349,10 @@ SendBizchatDialog.ButtonSm = ({ model }) => {
     )
 }
 
-function Item ({ id, stat, subjectLine, created, recipients, active, onItemSelect, className }) {
+function Campaign ({ id, stat, subjectLine, created, recipients, active, onItemSelect, className }) {
     
     return (
-        <p className={cx(className, "flex flex-col px-3 py-2 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
+        <div className={cx(className, "flex flex-col px-3 py-2 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
             <span className="truncate font-semibold text-sm">{subjectLine}</span>
             <span className="flex text-sm gap-3">
                 <span className="opacity-50 text-xs">
@@ -373,7 +373,7 @@ function Item ({ id, stat, subjectLine, created, recipients, active, onItemSelec
                     )}
                 </span>
             </span>
-        </p>
+        </div>
     )
 }
 
