@@ -17,6 +17,11 @@ export const getMassBizchatList = async ({ from }) => {
     return data
 }
 
+export const getMassBizchatStat = async ({ from }) => {
+    const { data } = await bizchatAxios.get(`/api/crm/mass_stat/${from}`)
+    return data
+}
+
 export const sendBizchatMessage = async ({ from, recipient, message, context }) => {
     const { data } = await bizchatAxios.post('/api/crm/create_chat', { from, recipient, message, context })
     return data

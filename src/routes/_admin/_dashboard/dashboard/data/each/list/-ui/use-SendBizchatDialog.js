@@ -1,7 +1,7 @@
 import { useMemo, useReducer } from "react"
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { find } from "lodash"
-import { getMassBizchatList, sendMassBizchat } from "@/api/bizchat"
+import _, { find, orderBy } from "lodash"
+import { getMassBizchatList, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
 
 const initialState = {
     open: false,
@@ -74,6 +74,33 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
         initialData: []
     })
 
+    const statQueryOptions = queryOptions({
+        queryKey: ['getMassBizchatStat', from],
+        queryFn: () => getMassBizchatStat({ from }),
+        initialData: {},
+        select (data) {
+            const stat = data.map(([crm_id, itemsString]) => {
+                const recipients = itemsString.map(itemString => {
+                    const [recipient, chat_id, unread_total] = itemString.split(',')
+
+                    return {
+                        chat_id,
+                        recipient, 
+                        unread_total: parseInt(unread_total)
+                    }
+                })
+
+                return {
+                    crm_id,
+                    recipients: _.orderBy(recipients, ['unread_total'], ['desc']),
+                    unread_total: _.sumBy(recipients, 'unread_total')
+                }
+            })
+
+            return stat
+        }
+    })
+
     const sendRequest = useMutation({
         mutationFn: sendMassBizchat,
         retry: 3,
@@ -113,6 +140,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
     return {
         listQueryOptions,
+        statQueryOptions,
         sendRequest,
         open,
         message,

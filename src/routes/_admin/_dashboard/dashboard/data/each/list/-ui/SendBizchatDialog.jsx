@@ -9,18 +9,20 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import Dd from "./Dd"
 import { cx } from "class-variance-authority"
-import { History, Send } from "lucide-react"
+import { History, Send, User2, UserIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { Suspense, useEffect, useMemo } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
 import { Input } from "@/components/ui/input"
-import { find, isEmpty } from "lodash"
+import _, { find, isEmpty } from "lodash"
 import { useToast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import UserCard from "./UserCard"
+import { getMassBizchatStat } from "@/api/bizchat"
+import { EnvelopeClosedIcon } from "@radix-ui/react-icons"
 
 function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
     const {
@@ -29,7 +31,7 @@ function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
     } = model
     
     return (
-        <Dialog open={true} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[1200px] overflow-y-scroll max-h-screen">
                 <DialogHeader></DialogHeader>
                 <DialogContentBody 
@@ -45,6 +47,7 @@ function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
 function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
     const {
         listQueryOptions,
+        statQueryOptions,
         sendRequest,
         message,
         subjectLine,
@@ -56,6 +59,7 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
     } = model
 
     const query = useQuery(listQueryOptions)
+    const statQuery = useQuery(statQueryOptions)
 
     const {
         register,
@@ -80,24 +84,39 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
         return () => subscription.unsubscribe()
     }, [watch])
 
+    const data = useMemo(() => {
+        return query.data.map(item => {
+            const stat = _.find(statQuery.data, { crm_id: item.id })
+
+            return {
+                ...item,
+                recipients: _.map(stat?.recipients, 'recipient'),
+                statOfRecipients: Object.fromEntries(stat?.recipients.map(item => ([item.recipient, item])) ?? []),
+                stat
+            }
+        })
+    }, [query.data, statQuery.data])
+
     const currItem = useMemo(
-        () => find(query.data, { id: currItemId }),
-        [query.data, currItemId]
+        () => find(data, { id: currItemId }),
+        [data, currItemId]
     )
 
-    const handleSubmit = form.handleSubmit((data) => {
+    const recipients = currItem?.recipients ?? selected
+
+    const handleResetMessageText = () => {
         setValue("subjectLine", "")
         setValue("message", "")
+    }
+
+    const handleSubmit = form.handleSubmit((data) => {
+        handleResetMessageText()
         onAddItem(data)
         toast({
             title: "Completed",
             description: "All message sent!",
         })
     })
-
-    const handleResetMessageText = () => {
-        setValue("message", "")
-    }
 
     const handleReuseMessage = ({ message, subjectLine = "" }) => {
         setValue("subjectLine", subjectLine)
@@ -107,136 +126,113 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
 
     return (
         <div className="flex gap-5">
-            <div className="flex flex-col justify-start gap-3 flex-grow-0 flex-shrink-1 basis-72">
-                <div className="flex flex-col gap-3">
-                    <h4 className="flex items-center gap-2">
-                        <span className="mr-auto">{query.data.length} campaigns</span>
-                        <Button
-                            variant="default"
-                            size="xs"
-                            onClick={() => onItemSelect(null)}
-                            disabled={sendRequest.isPending}
-                        >
-                            new
-                        </Button>
-                    </h4>
-                    
-                    <div className="space-y-3 max-h-[600px] overflow-auto">
-                        {query.data.map(
-                            (item) => (
-                                <Item 
-                                    key={item.id} 
-                                    onItemSelect={onItemSelect} 
-                                    active={currItem?.id === item.id}
-                                    {...item} 
-                                />
-                            )
-                        )}
-                    </div>
+            <div className="flex flex-col gap-3">
+                <h4 className="flex items-center gap-2">
+                    <span className="mr-auto">{data.length} campaigns</span>
+                    <Button
+                        variant="default"
+                        size="xs"
+                        onClick={() => onItemSelect(null)}
+                        disabled={sendRequest.isPending}
+                    >
+                        + new
+                    </Button>
+                </h4>
+                <div className="space-y-2 w-64 max-h-[600px] overflow-auto">
+                    {data.map(
+                        (item) => (
+                            <Item 
+                                key={item.id} 
+                                onItemSelect={onItemSelect} 
+                                active={currItem?.id === item.id}
+                                className="w-64"
+                                {...item} 
+                            />
+                        )
+                    )}
                 </div>
             </div>
             <div className="flex grow p-3 bg-slate-50 gap-5">
-                <div className="w-64 space-y-3">
-                    <b>Recipients</b>
-                    <div className="max-h-[600px] overflow-auto space-y-2">
-                        <Suspense fallback={<p>loading...</p>}>
-                            <RecipientList 
-                                recipients={currItem?.recipients ?? selected} 
-                                makeQueryOptions={makeFetchNegQueryOptions} 
-                            />
-                        </Suspense>
+                <div className="space-y-3">
+                    <b>Recipients {recipients.length}</b>
+                    <div className="w-64 max-h-[600px] overflow-auto space-y-2">
+                    {recipients.length > 0 ? (
+                            <Suspense fallback={<p>loading...</p>}>
+                                <RecipientList 
+                                    recipients={recipients} 
+                                    statOfRecipients={currItem?.statOfRecipients}
+                                    makeQueryOptions={makeFetchNegQueryOptions} 
+                                />
+                            </Suspense>
+                    ) : (
+                        <span className="text-red-500">
+                            close box to select recipients for mailing, your message is saved
+                        </span>
+                    )}
                     </div>
                 </div>
-                <div className="bg-white shadow-sm grow p-3">
+                <div className="bg-white h-[636px] shadow-sm grow">
                     {currItem ? (
-                        <div className="flex flex-col flex-auto gap-4">
-                            <h1 className="font-bold text-lg">{currItem.subjectLine}</h1>
-                            <p><Nl2br text={currItem.message} /></p>
-                            {/* <div className="flex flex-row justify-between">
-                                <div className="space-y-4">
-                                    <Dd label="Created" value={format(
-                                        currItem.created,
-                                        "HH:mm dd/MM/yy"
-                                    )} />                                    
-                                    <PopoverCurrItemList
-                                        currItem={currItem} 
-                                        makeQueryOptions={makeFetchNegQueryOptions}
-                                    />
-                                </div>
+                        <div className="flex flex-col h-[636px] overflow-hidden">
+                            <div className="flex p-3 shadow-sm items-center gap-3">
+                                <h1 className="font-bold text-xl">{currItem.subjectLine}</h1>
                             </div>
-                            <Dd label="Subject line" disableTruncate value={
-                                isEmpty(currItem.subjectLine) 
-                                    ? <i className="opacity-50">(empty)</i>
-                                    : currItem.subjectLine
-                            } />
-                            <div className="p-3 rounded-sm border text-sm min-h-32 max-h-96 overflow-y-auto">
+                            <article className="p-3 grow overflow-auto">
                                 <Nl2br text={currItem.message} />
-                            </div> */}
-                            <div className="flex flex-row gap-3 justify-end">
+                            </article>
+                            <div className="flex items-end justify-between p-3">
                                 <Button 
+                                    variant="secondary"
+                                    size="sm"
                                     className="font-bold" 
                                     onClick={() => handleReuseMessage(currItem)}
                                 >
                                     Reuse
                                 </Button>
+                                <small className="text-muted-foreground text-nowrap">                                    
+                                    {format(
+                                            currItem.created,
+                                            "d MMM yyyy HH:mm"
+                                        )}
+                                </small>
                             </div>
                         </div>
                     ) : (
                         <form 
                             onSubmit={handleSubmit} 
-                            className="flex flex-col gap-4 flex-auto max-w-[520px]"
+                            className="flex flex-col gap-2 flex-auto bg-white shadow-sm p-3"
                         >
-                            <div>
-                                <h2 className="font-bold">Send a Mailshot via BizChat</h2>
-                                <p>
-                                    {selected.length > 0  ? (
-                                        <span className="text-slate-500 space-x-2">
-                                            <span>You have selected</span>
-                                            <PopoverRecipientButton 
-                                                recipients={selected} 
-                                                makeQueryOptions={makeFetchNegQueryOptions}
-                                            >
-                                                {selected.length} recipients
-                                            </PopoverRecipientButton>
-                                            <span>for your mailing list</span>
-                                        </span>
-                                    ) : (
-                                        <span className="text-red-500">
-                                            close box to select recipients for mailing, your message is saved
-                                        </span>
-                                    )}
-                                </p>
-                            </div>
-                            <div className="space-y-1">
-                                <Input 
-                                    placeholder="Type your subject line here.." 
-                                    maxLength={60}
-                                    {...register("subjectLine", { required: true })} 
-                                />
-                                <div className="opacity-50 text-xs text-right px-2">max. 60 characters</div>
-                            </div>
+                            <h2 className="font-normal">Send a Mailshot via BizChat</h2>
+                            <Input 
+                                placeholder="Type your subject line here..." 
+                                className="text-base"
+                                maxLength={60}
+                                {...register("subjectLine", { required: true })} 
+                            />
                             <Textarea
                                 placeholder="Type your message here..."
-                                className="focus-visible:ring-inset focus-visible:ring-offset-0"
-                                rows={18}
+                                className="focus-visible:ring-inset focus-visible:ring-offset-0 text-base"
+                                rows={20}
                                 {...register("message", { required: true })}
                             />
                             <div className="space-x-3 text-right">
                                 {watch('message') !== "" && (
                                     <Button
-                                        variant="outline"
+                                        variant="link"
+                                        size="sm"
                                         onClick={handleResetMessageText}
-                                        className="place-self-end font-bold"
+                                        className="place-self-end"
                                     >
                                         Clear
                                     </Button>
                                 )}
                                 <Button
                                     type="submit"
+                                    size="sm"
                                     disabled={selected.length < 1 || !formState.isValid}
-                                    className="place-self-end font-bold"
+                                    className="place-self-end"
                                 >
-                                    Send Bizchat
+                                    Send
                                 </Button>
                             </div>
                         </form>
@@ -288,18 +284,26 @@ function PopoverCurrItemList ({ currItem, makeQueryOptions }) {
     )
 }
 
-function RecipientList ({ recipients, makeQueryOptions }) {
+function RecipientList ({ recipients, statOfRecipients, makeQueryOptions }) {
     const { data } = useSuspenseQuery(makeQueryOptions(recipients))
 
-    return data.map(item => 
-        <UserCard
-            key={item.id}
-            data={item}
-            className="w-full p-3 bg-white hover:bg-muted/50 cursor-pointer shadow-sm"
-            hideView
-            hideContact
-        />
-    )
+    return data.map(item => {
+        const unread_total = statOfRecipients?.[item.id]?.unread_total
+
+        return (
+            <div key={item.id} className='space-y-1 w-full p-3 bg-white hover:bg-muted/50 cursor-pointer shadow-sm text-sm'>
+                <b>{item.first} {item.last}</b>
+                <div className="flex items-center gap-1">
+                    <div className='text-nowrap truncate text-muted-foreground grow'>{item.company}</div>
+                    {unread_total > 0 && (
+                        <span className="flex items-center gap-1 text-white bg-green-500 px-1 rounded-sm shadow-sm text-xs">
+                            <span className="font-bold">{statOfRecipients?.[item.id]?.unread_total}</span>
+                        </span>
+                    )}
+                </div>
+            </div>
+        )
+    })
 }
 
 SendBizchatDialog.Button = ({ selected, model }) => {
@@ -345,18 +349,29 @@ SendBizchatDialog.ButtonSm = ({ model }) => {
     )
 }
 
-function Item ({ id, message, subjectLine, created, sent, recipients, progress, className, status, active, onItemSelect, paused }) {
+function Item ({ id, stat, subjectLine, created, recipients, active, onItemSelect, className }) {
     
     return (
-        <p className={cx("p-3 bg-slate-50 rounded-sm", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
-            <span className="truncate max-w-72 font-semibold text-sm">{subjectLine}</span>
-            <span className="flex justify-end text-sm">
+        <p className={cx(className, "flex flex-col px-3 py-2 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
+            <span className="truncate font-semibold text-sm">{subjectLine}</span>
+            <span className="flex text-sm gap-3">
                 <span className="opacity-50 text-xs">
                     {format(
                         created,
-                        "d MMM yyy"
+                        "d MMM yyyy HH:mm"
                         )}
                 </span>                
+                <span className="flex items-center text-xs gap-1">
+                    <UserIcon className="w-3 h-3"/> 
+                    <span className="font-thin">{recipients.length}</span>
+                </span>
+                <span className="flex items-center text-xs gap-4 ml-auto">
+                    {stat?.unread_total > 0 && (
+                        <span className="flex items-center gap-1 text-white bg-green-500 px-1 rounded-sm shadow-sm">
+                            <span className="font-bold">{stat?.unread_total}</span>
+                        </span>
+                    )}
+                </span>
             </span>
         </p>
     )
