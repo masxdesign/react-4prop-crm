@@ -1,46 +1,61 @@
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
+    DialogHeader
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import Ddd from "./Ddd"
 import Dd from "./Dd"
-import { cva, cx } from "class-variance-authority"
-import { CheckCircle2Icon, History, Loader2, Loader2Icon, LucideCheck, Pause, Percent, Send } from "lucide-react"
-import ProgressCircle from "@/routes/-ui/ProgressCircle"
-import { Badge } from "@/components/ui/badge"
-import { ResumeIcon } from "@radix-ui/react-icons"
+import { cx } from "class-variance-authority"
+import { History, Send } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useMemo } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
 import { Input } from "@/components/ui/input"
-import { isEmpty } from "lodash"
+import { find, isEmpty } from "lodash"
 import { useToast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import UserCard from "./UserCard"
 
-function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }) {
+function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
     const {
-        query,
-        sendRequest,
         open,
+        onOpenChange
+    } = model
+    
+    return (
+        <Dialog open={true} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-[1200px] overflow-y-scroll max-h-screen">
+                <DialogHeader></DialogHeader>
+                <DialogContentBody 
+                    model={model} 
+                    selected={selected} 
+                    makeFetchNegQueryOptions={makeFetchNegQueryOptions} 
+                />
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
+    const {
+        listQueryOptions,
+        sendRequest,
         message,
         subjectLine,
-        currItem,
+        currItemId,
         onAddItem,
         onMessageChange,
         onSubjectLineChange,
-        onItemSelect,
-        onOpenChange
+        onItemSelect
     } = model
+
+    const query = useQuery(listQueryOptions)
 
     const {
         register,
@@ -65,6 +80,11 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
         return () => subscription.unsubscribe()
     }, [watch])
 
+    const currItem = useMemo(
+        () => find(query.data, { id: currItemId }),
+        [query.data, currItemId]
+    )
+
     const handleSubmit = form.handleSubmit((data) => {
         setValue("subjectLine", "")
         setValue("message", "")
@@ -84,48 +104,55 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
         setValue("message", message)
         onItemSelect(null)
     }
-    
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[900px] overflow-y-scroll max-h-screen">
-                <DialogHeader></DialogHeader>
-                <div className="flex gap-8">
-                    <div className="flex flex-col justify-start gap-3 flex-grow-0 flex-shrink-1 basis-72">
-                        {!sendRequest.isPending && (
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                className={cn(
-                                    currItem 
-                                        ? "hover:ring-1 hover:ring-inset hover:ring-black"
-                                        : "ring-1 ring-inset ring-black"
-                                )}
-                                onClick={() => onItemSelect(null)}
-                            >
-                                Send a New message
-                            </Button>
+        <div className="flex gap-5">
+            <div className="flex flex-col justify-start gap-3 flex-grow-0 flex-shrink-1 basis-72">
+                <div className="flex flex-col gap-3">
+                    <h4 className="flex items-center gap-2">
+                        <span className="mr-auto">{query.data.length} campaigns</span>
+                        <Button
+                            variant="default"
+                            size="xs"
+                            onClick={() => onItemSelect(null)}
+                            disabled={sendRequest.isPending}
+                        >
+                            new
+                        </Button>
+                    </h4>
+                    
+                    <div className="space-y-3 max-h-[600px] overflow-auto">
+                        {query.data.map(
+                            (item) => (
+                                <Item 
+                                    key={item.id} 
+                                    onItemSelect={onItemSelect} 
+                                    active={currItem?.id === item.id}
+                                    {...item} 
+                                />
+                            )
                         )}
-                        <div className="flex flex-col gap-3 max-h-96">
-                            <h4 className="space-x-2 opacity-50 text-sm flex items-center">
-                                <History className="w-4 h-4 inline-flex" /><span>{query.data.length} sendouts</span>
-                            </h4>
-                            <div className="space-y-3 overflow-y-auto">
-                                {query.data.map(
-                                    (item) => (
-                                        <Item 
-                                            key={item.id} 
-                                            onItemSelect={onItemSelect} 
-                                            active={currItem?.id === item.id}
-                                            {...item} 
-                                        />
-                                    )
-                                )}
-                            </div>
-                        </div>
                     </div>
+                </div>
+            </div>
+            <div className="flex grow p-3 bg-slate-50 gap-5">
+                <div className="w-64 space-y-3">
+                    <b>Recipients</b>
+                    <div className="max-h-[600px] overflow-auto space-y-2">
+                        <Suspense fallback={<p>loading...</p>}>
+                            <RecipientList 
+                                recipients={currItem?.recipients ?? selected} 
+                                makeQueryOptions={makeFetchNegQueryOptions} 
+                            />
+                        </Suspense>
+                    </div>
+                </div>
+                <div className="bg-white shadow-sm grow p-3">
                     {currItem ? (
                         <div className="flex flex-col flex-auto gap-4">
-                            <div className="flex flex-row justify-between">
+                            <h1 className="font-bold text-lg">{currItem.subjectLine}</h1>
+                            <p><Nl2br text={currItem.message} /></p>
+                            {/* <div className="flex flex-row justify-between">
                                 <div className="space-y-4">
                                     <Dd label="Created" value={format(
                                         currItem.created,
@@ -133,7 +160,7 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
                                     )} />                                    
                                     <PopoverCurrItemList
                                         currItem={currItem} 
-                                        makeQueryOptions={fetchNegotiatorsDataQueryOptions}
+                                        makeQueryOptions={makeFetchNegQueryOptions}
                                     />
                                 </div>
                             </div>
@@ -144,7 +171,7 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
                             } />
                             <div className="p-3 rounded-sm border text-sm min-h-32 max-h-96 overflow-y-auto">
                                 <Nl2br text={currItem.message} />
-                            </div>
+                            </div> */}
                             <div className="flex flex-row gap-3 justify-end">
                                 <Button 
                                     className="font-bold" 
@@ -167,7 +194,7 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
                                             <span>You have selected</span>
                                             <PopoverRecipientButton 
                                                 recipients={selected} 
-                                                makeQueryOptions={fetchNegotiatorsDataQueryOptions}
+                                                makeQueryOptions={makeFetchNegQueryOptions}
                                             >
                                                 {selected.length} recipients
                                             </PopoverRecipientButton>
@@ -215,8 +242,8 @@ function SendBizchatDialog({ selected, model, fetchNegotiatorsDataQueryOptions }
                         </form>
                     )}
                 </div>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </div>
     )
 }
 
@@ -268,7 +295,7 @@ function RecipientList ({ recipients, makeQueryOptions }) {
         <UserCard
             key={item.id}
             data={item}
-            className="w-full p-3 hover:bg-muted/50 cursor-pointer"
+            className="w-full p-3 bg-white hover:bg-muted/50 cursor-pointer shadow-sm"
             hideView
             hideContact
         />

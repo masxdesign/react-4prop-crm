@@ -1,5 +1,5 @@
 import { useMemo, useReducer } from "react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { find } from "lodash"
 import { getMassBizchatList, sendMassBizchat } from "@/api/bizchat"
 
@@ -68,7 +68,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
     const queryClient = useQueryClient()
 
-    const query = useQuery({
+    const listQueryOptions = queryOptions({
         queryKey: ['getMassBizchatList', from],
         queryFn: () => getMassBizchatList({ from }),
         initialData: []
@@ -80,11 +80,6 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
         retryDelay: 900
     })
 
-    const currItem = useMemo(
-        () => find(query.data, { id: currItemId }),
-        [query.data, currItemId]
-    )
-
     const onAddItem = ({ message, subjectLine }) => {
         sendRequest.mutate({ 
             from,
@@ -93,8 +88,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
             message
         }, {
             onSuccess (data) {
-                console.log(data, query.data);
-                queryClient.setQueryData(['getMassBizchatList', from], (prev) => ([data, ...prev]))
+                queryClient.setQueryData(listQueryOptions.queryKey, (prev) => ([data, ...prev]))
                 dispatch(selectItem(data.id))
                 onDeselectAllAndApply()
             }
@@ -118,12 +112,12 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
     }
 
     return {
-        query,
+        listQueryOptions,
         sendRequest,
         open,
         message,
         subjectLine,
-        currItem,
+        currItemId,
         onAddItem,
         onMessageChange,
         onSubjectLineChange,

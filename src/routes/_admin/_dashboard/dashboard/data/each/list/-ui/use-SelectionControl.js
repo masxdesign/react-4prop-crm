@@ -1,10 +1,8 @@
-import { fetchNegotiatorByNids, fetchSelectedNegotiatorsDataQueryOptions } from '@/api/fourProp';
-import { queryOptions } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ tableSSModal, tableModel, fetchNegotiatorsDataQueryOptions, navigate }) {
+export default function useSelectionControl ({ tableSSModal, tableModel, makeFetchNegQueryOptions, navigate }) {
   const { table } = tableSSModal
 
   const [open, setOpen] = useState(false)
@@ -17,7 +15,7 @@ export default function useSelectionControl ({ tableSSModal, tableModel, fetchNe
   )
 
   const fetchSelectedDataQueryOptions = useMemo(
-    () => fetchNegotiatorsDataQueryOptions(tableSSModal.selected), 
+    () => makeFetchNegQueryOptions(tableSSModal.selected), 
     [tableSSModal.selected]
   )
 
