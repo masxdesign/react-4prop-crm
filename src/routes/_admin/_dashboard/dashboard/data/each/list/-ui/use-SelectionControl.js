@@ -2,9 +2,7 @@ import { useMemo, useState } from 'react';
 
 const initialExcluded = []
 
-export default function useSelectionControl ({ tableSSModal, tableModel, makeFetchNegQueryOptions, navigate }) {
-  const { table } = tableSSModal
-
+export default function useSelectionControl ({ tableSSModal, makeFetchNegQueryOptions, navigate }) {
   const [open, setOpen] = useState(false)
   
   const [excluded, setExcluded] = useState(initialExcluded)
@@ -19,16 +17,6 @@ export default function useSelectionControl ({ tableSSModal, tableModel, makeFet
     [tableSSModal.selected]
   )
 
-  const onExcludedApply = excluded => {
-    tableModel.deselectMany(excluded)
-
-    table.getRowModel().rows
-        .filter(({ original }) => excluded.includes(original.id))
-        .forEach((row) => {
-            row.toggleSelected()
-        })
-  }
-  
   const onItemCheckedChange = (value, checked) => {
     if (checked) {
       setExcluded(excluded.filter((item) => item !== value))
@@ -46,7 +34,7 @@ export default function useSelectionControl ({ tableSSModal, tableModel, makeFet
   }
 
   const onDeselectAllAndApply = () => {
-    onExcludedApply(tableSSModal.selected)
+    tableSSModal.deselectMany(tableSSModal.selected)
     setExcluded([])
     setOpen(false)
   }
@@ -54,7 +42,7 @@ export default function useSelectionControl ({ tableSSModal, tableModel, makeFet
   const onOpenChange = (value) => {
     setOpen(value)
     if (!value) {
-      onExcludedApply(excluded)
+      tableSSModal.deselectMany(excluded)
       setExcluded([])
     }
   }

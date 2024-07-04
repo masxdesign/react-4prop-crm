@@ -1,4 +1,4 @@
-import { useMemo, useReducer } from "react"
+import { useEffect, useMemo, useReducer } from "react"
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import _, { find, orderBy } from "lodash"
 import { getMassBizchatList, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
@@ -6,9 +6,14 @@ import { getMassBizchatList, getMassBizchatStat, sendMassBizchat } from "@/api/b
 const initialState = {
     open: false,
     currItemId: null,
+    justSent: null,
     message: "",
     subjectLine: ""
 }
+const justSentReceived = (itemId) => ({
+    type: "JUST_SENT",
+    payload: itemId
+})
 
 const changeMessage = (message) => ({
     type: "MESSAGE_CHANGED",
@@ -34,6 +39,11 @@ function sendBizchatDialogReducer (state, action) {
     const { type, meta, payload = null } = action
 
     switch (type) {
+        case "JUST_SENT":
+            return {
+                ...state,
+                justSent: payload
+            }
         case "OPEN_DIALOG_CHANGED":
             return {
                 ...state,
@@ -60,9 +70,26 @@ function sendBizchatDialogReducer (state, action) {
 export default function useSendBizchatDialog ({ auth, selectionControlModal }) { 
     const { selected, onDeselectAllAndApply } = selectionControlModal
 
-    const [state, dispatch] = useReducer(sendBizchatDialogReducer, initialState)
+    const initialStateFromStorage = useMemo(() => {
+        const dataStorageString = window.localStorage.getItem('SendBizchatDialog')
 
-    const { open, message, subjectLine, currItemId } = state
+        if (!dataStorageString) return initialState
+        
+        return {
+            ...initialState,
+            ...JSON.parse(dataStorageString)
+        }
+    }, [])
+
+    const [state, dispatch] = useReducer(sendBizchatDialogReducer, initialStateFromStorage)
+
+    const { open, message, subjectLine, currItemId, justSent } = state
+
+    useEffect(() => {
+
+        window.localStorage.setItem('SendBizchatDialog', JSON.stringify({ message, subjectLine, currItemId }))
+
+    }, [open, message, subjectLine, currItemId])
 
     const from = auth.user.neg_id
 
@@ -107,6 +134,10 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
         retryDelay: 900
     })
 
+    const onItemSelect = (id) => {
+        dispatch(selectItem(id))
+    }
+
     const onAddItem = ({ message, subjectLine }) => {
         sendRequest.mutate({ 
             from,
@@ -115,8 +146,9 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
             message
         }, {
             onSuccess (data) {
-                queryClient.setQueryData(listQueryOptions.queryKey, (prev) => ([data, ...prev]))
-                dispatch(selectItem(data.id))
+                queryClient.setQueryData(listQueryOptions.queryKey, prev => [data, ...prev])
+                onItemSelect(data.id)
+                dispatch(justSentReceived(data.id))
                 onDeselectAllAndApply()
             }
         })
@@ -128,10 +160,6 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
     const onMessageChange = (value) => {
         dispatch(changeMessage(value))
-    }
-
-    const onItemSelect = (id) => {
-        dispatch(selectItem(id))
     }
 
     const onOpenChange = (open) => {
@@ -146,10 +174,53 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
         message,
         subjectLine,
         currItemId,
+        justSent,
         onAddItem,
         onMessageChange,
         onSubjectLineChange,
         onItemSelect,
         onOpenChange
+    }
+}
+
+useSendBizchatDialog.use = {
+    query ({ model, selected }) {
+        const {
+            listQueryOptions,
+            statQueryOptions,
+            currItemId,
+            justSent
+        } = model
+
+        const query = useQuery(listQueryOptions)
+        const statQuery = useQuery(statQueryOptions)
+
+        const data = useMemo(() => {
+            return query.data.map(item => {
+                const stat = _.find(statQuery.data, { crm_id: item.id })
+    
+                return {
+                    ...item,
+                    recipients: stat?.recipients ? _.map(stat.recipients, 'recipient'): item.recipients,
+                    statOfRecipients: Object.fromEntries(stat?.recipients.map(item => ([item.recipient, item])) ?? []),
+                    stat,
+                    justSent: item.id === justSent
+                }
+            })
+        }, [query.data, statQuery.data, justSent])
+    
+        const currItem = useMemo(
+            () => find(data, { id: currItemId }),
+            [data, currItemId]
+        )
+    
+        const recipients = currItem?.recipients ?? selected
+
+        return {
+            query,
+            data,
+            currItem,
+            recipients
+        }
     }
 }

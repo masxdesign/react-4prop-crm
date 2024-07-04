@@ -21,10 +21,11 @@ import { useToast } from "@/components/ui/use-toast"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import UserCard from "./UserCard"
-import { getMassBizchatStat } from "@/api/bizchat"
+import { getMassBizchatNotEmailed, getMassBizchatStat } from "@/api/bizchat"
 import { EnvelopeClosedIcon } from "@radix-ui/react-icons"
+import useSendBizchatDialog from "./use-SendBizchatDialog"
 
-function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
+function SendBizchatDialog({ selected, model, tableSSModal, makeFetchNegQueryOptions }) {
     const {
         open,
         onOpenChange
@@ -36,6 +37,7 @@ function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
                 <DialogHeader></DialogHeader>
                 <DialogContentBody 
                     model={model} 
+                    tableSSModal={tableSSModal}
                     selected={selected} 
                     makeFetchNegQueryOptions={makeFetchNegQueryOptions} 
                 />
@@ -44,22 +46,23 @@ function SendBizchatDialog({ selected, model, makeFetchNegQueryOptions }) {
     )
 }
 
-function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
+function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOptions }) {
     const {
-        listQueryOptions,
-        statQueryOptions,
         sendRequest,
         message,
         subjectLine,
-        currItemId,
         onAddItem,
         onMessageChange,
         onSubjectLineChange,
         onItemSelect
     } = model
 
-    const query = useQuery(listQueryOptions)
-    const statQuery = useQuery(statQueryOptions)
+    const {
+        query,
+        data,
+        currItem,
+        recipients
+    } = useSendBizchatDialog.use.query({ model, selected })
 
     const {
         register,
@@ -84,26 +87,6 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
         return () => subscription.unsubscribe()
     }, [watch])
 
-    const data = useMemo(() => {
-        return query.data.map(item => {
-            const stat = _.find(statQuery.data, { crm_id: item.id })
-
-            return {
-                ...item,
-                recipients: _.map(stat?.recipients, 'recipient'),
-                statOfRecipients: Object.fromEntries(stat?.recipients.map(item => ([item.recipient, item])) ?? []),
-                stat
-            }
-        })
-    }, [query.data, statQuery.data])
-
-    const currItem = useMemo(
-        () => find(data, { id: currItemId }),
-        [data, currItemId]
-    )
-
-    const recipients = currItem?.recipients ?? selected
-
     const handleResetMessageText = () => {
         setValue("subjectLine", "")
         setValue("message", "")
@@ -114,13 +97,18 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
         onAddItem(data)
         toast({
             title: "Completed",
-            description: "All message sent!",
+            description: "Message sent!",
         })
     })
 
     const handleReuseMessage = ({ message, subjectLine = "" }) => {
         setValue("subjectLine", subjectLine)
         setValue("message", message)
+        onItemSelect(null)
+    }
+
+    const handleReuseRecipients = (recipients) => {
+        tableSSModal.selectMany(recipients)
         onItemSelect(null)
     }
 
@@ -152,22 +140,39 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
                     )}
                 </div>
             </div>
-            <div className="flex grow p-3 bg-slate-50 gap-5">
-                <div className="space-y-3">
-                    <b>Recipients {recipients.length}</b>
-                    <div className="w-64 max-h-[600px] overflow-auto space-y-2">
-                    {recipients.length > 0 ? (
-                            <Suspense fallback={<p>loading...</p>}>
-                                <RecipientList 
-                                    recipients={recipients} 
-                                    statOfRecipients={currItem?.statOfRecipients}
-                                    makeQueryOptions={makeFetchNegQueryOptions} 
-                                />
-                            </Suspense>
-                    ) : (
-                        <span className="text-red-500">
-                            close box to select recipients for mailing, your message is saved
+            <div className="flex grow p-3 bg-slate-50 gap-3">
+                <div className="space-y-2">
+                    <b className="space-x-3">
+                        <span>
+                            Recipients {recipients.length}
                         </span>
+                        {currItem && (
+                            <span 
+                                className="cursor-pointer hover:underline text-xs text-muted-foreground"
+                                onClick={() => handleReuseRecipients(recipients)}
+                            >
+                                Reuse
+                            </span>
+                        )}
+                    </b>
+                    {currItem ? (
+                        <p className="text-xs text-muted-foreground">Click recipient to reply</p>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">Close box to select recipients</p>
+                    )}
+                    <div className="w-64 max-h-[580px] overflow-auto space-y-1">
+                    {recipients.length > 0 ? (
+                        <Suspense fallback={<p>loading...</p>}>
+                            <RecipientList 
+                                recipients={recipients} 
+                                campaign={currItem}
+                                makeQueryOptions={makeFetchNegQueryOptions} 
+                            />
+                        </Suspense>
+                    ) : (
+                        <p className="text-red-500 text-sm">
+                            close box to select recipients for mailing, your message is saved
+                        </p>
                     )}
                     </div>
                 </div>
@@ -189,11 +194,16 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
                                 >
                                     Reuse
                                 </Button>
-                                <small className="text-muted-foreground text-nowrap">                                    
-                                    {format(
+                                <small className="text-muted-foreground text-nowrap space-x-2"> 
+                                    {currItem.justSent && (
+                                        <span className="text-green-600 font-bold">Just sent</span>
+                                    )} 
+                                    <span>
+                                        {format(
                                             currItem.created,
                                             "d MMM yyyy HH:mm"
                                         )}
+                                    </span>                                  
                                 </small>
                             </div>
                         </div>
@@ -243,61 +253,54 @@ function DialogContentBody ({ model, selected, makeFetchNegQueryOptions }) {
     )
 }
 
-function PopoverRecipientButton ({ children, recipients, headerComponent, makeQueryOptions }) {
-    return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <Button variant="outline" size="xs">
-                    {children}
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0">
-                {headerComponent && (
-                    <div className="px-3 py-2 text-xs font-bold bg-sky-50 text-sky-600">
-                        {headerComponent}
-                    </div>
-                )}
-                <Suspense fallback={<p>loading...</p>}>
-                    <RecipientList 
-                        recipients={recipients} 
-                        makeQueryOptions={makeQueryOptions} 
-                    />
-                </Suspense>
-            </PopoverContent>
-        </Popover>
-    )
-}
+function RecipientList ({ recipients, campaign, makeQueryOptions }) {
+    const { data } = useQuery({
+        queryKey: ['getMassBizchatNotEmailed', campaign?.id],
+        queryFn: () => campaign?.id ? getMassBizchatNotEmailed({ crm_id: campaign.id }): [],
+        initialData: []
+    })
 
-function PopoverCurrItemList ({ currItem, makeQueryOptions }) {
+    useEffect(() => {
+
+        console.log(data, campaign);
+
+    }, [data])
+
     return (
-        <Dd 
-            label="To" 
-            value={
-                <PopoverRecipientButton
-                    recipients={currItem.recipients}
-                    makeQueryOptions={makeQueryOptions}
-                >
-                    {currItem.recipients.length} recipients <span className="ml-1 opacity-50">view</span>
-                </PopoverRecipientButton>
-            } 
+        <RecipientListUsersLoaded 
+            recipients={recipients} 
+            campaign={campaign} 
+            makeQueryOptions={makeQueryOptions} 
         />
     )
 }
+function RecipientListUsersLoaded ({ recipients, campaign, makeQueryOptions }) {
+    const queryOptions = useMemo(() => makeQueryOptions(recipients), [recipients])
 
-function RecipientList ({ recipients, statOfRecipients, makeQueryOptions }) {
-    const { data } = useSuspenseQuery(makeQueryOptions(recipients))
+    const { data } = useSuspenseQuery(queryOptions)
 
     return data.map(item => {
-        const unread_total = statOfRecipients?.[item.id]?.unread_total
+        const stat = campaign?.statOfRecipients[item.id]
+        const unread_total = stat?.unread_total ?? 0
+        const chat_id = stat?.chat_id
+
+        const handleClick = () => {
+            if (!chat_id) return
+            window.open(`https://4prop.com/bizchat/rooms/${chat_id}?message=${campaign.id},crm`, "bizchat")
+        }
 
         return (
-            <div key={item.id} className='space-y-1 w-full p-3 bg-white hover:bg-muted/50 cursor-pointer shadow-sm text-sm'>
-                <b>{item.first} {item.last}</b>
+            <div 
+                key={item.id} 
+                onClick={handleClick}
+                className='space-y-1 w-full p-2 bg-white hover:shadow-md cursor-pointer shadow-sm text-xs'
+            >
+                <b className="font-semibold">{item.first} {item.last}</b>
                 <div className="flex items-center gap-1">
-                    <div className='text-nowrap truncate text-muted-foreground grow'>{item.company}</div>
+                    <div className='text-nowrap truncate text-muted-foreground grow font-thin'>{item.company}</div>
                     {unread_total > 0 && (
-                        <span className="flex items-center gap-1 text-white bg-green-500 px-1 rounded-sm shadow-sm text-xs">
-                            <span className="font-bold">{statOfRecipients?.[item.id]?.unread_total}</span>
+                        <span className="flex items-center gap-1 text-white bg-green-600 px-1 rounded-sm shadow-sm text-xs">
+                            <span className="font-bold">{unread_total}</span>
                         </span>
                     )}
                 </div>
@@ -349,17 +352,20 @@ SendBizchatDialog.ButtonSm = ({ model }) => {
     )
 }
 
-function Campaign ({ id, stat, subjectLine, created, recipients, active, onItemSelect, className }) {
+function Campaign ({ id, stat, subjectLine, created, recipients, active, justSent, onItemSelect, className }) {
     
     return (
-        <div className={cx(className, "flex flex-col px-3 py-2 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
+        <div className={cx(className, "flex flex-col p-3 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md gap-1", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
             <span className="truncate font-semibold text-sm">{subjectLine}</span>
             <span className="flex text-sm gap-3">
-                <span className="opacity-50 text-xs">
-                    {format(
-                        created,
-                        "d MMM yyyy HH:mm"
-                        )}
+                <span className="text-xs">
+                    {justSent ? (
+                        <span className="opacity-50">Just sent</span>
+                    ) : (
+                        <span className="opacity-50">
+                            {format(created, "d MMM yyyy HH:mm")}
+                        </span>
+                    )}
                 </span>                
                 <span className="flex items-center text-xs gap-1">
                     <UserIcon className="w-3 h-3"/> 
@@ -367,7 +373,7 @@ function Campaign ({ id, stat, subjectLine, created, recipients, active, onItemS
                 </span>
                 <span className="flex items-center text-xs gap-4 ml-auto">
                     {stat?.unread_total > 0 && (
-                        <span className="flex items-center gap-1 text-white bg-green-500 px-1 rounded-sm shadow-sm">
+                        <span className="flex items-center gap-1 text-white bg-green-600 px-1 rounded-sm shadow-sm">
                             <span className="font-bold">{stat?.unread_total}</span>
                         </span>
                     )}

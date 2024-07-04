@@ -76,7 +76,6 @@ function ClientsListComponent() {
 
   const selectionControl = useSelectionControl({ 
     tableSSModal, 
-    tableModel,
     makeFetchNegQueryOptions,
     navigate 
   })
@@ -164,6 +163,7 @@ function ClientsListComponent() {
       </div>
       <SendBizchatDialog 
         model={sendBizchatDialog} 
+        tableSSModal={tableSSModal}
         selected={selectionControl.selected} 
         makeFetchNegQueryOptions={makeFetchNegQueryOptions}
       />

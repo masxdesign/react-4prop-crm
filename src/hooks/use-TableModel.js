@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
-import { queryOptions, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
+import { queryOptions } from "@tanstack/react-query"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import useTableSS, { useLoadData } from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
@@ -58,6 +58,11 @@ const deselectAction = (id) => ({
 
 const deselectManyAction = (ids) => ({
     type: "DESELECT_MANY",
+    payload: ids
+})
+
+const selectManyAction = (ids) => ({
+    type: "SELECT_MANY",
     payload: ids
 })
 
@@ -212,6 +217,11 @@ const useMakeTableReducer = ({ defaultState, search }) => {
                             action.payload
                         ]
                     }
+                case "SELECT_MANY":
+                    return {
+                        ...state,
+                        selected: action.payload
+                    }
                 default:
                     throw new Error("invalid action")
             }
@@ -302,6 +312,10 @@ const useTableReducer = ({ defaultState }) => {
         dispatch(deselectManyAction(items))
     }, [])
 
+    const selectMany = useCallback((items) => {
+        dispatch(selectManyAction(items))
+    }, [])
+
     const deselectAll = useCallback(() => {
         dispatch(deselectAllAction())
     }, [])
@@ -315,6 +329,7 @@ const useTableReducer = ({ defaultState }) => {
         select,
         deselect,
         deselectMany,
+        selectMany,
         deselectAll,
         state,
         dispatch
@@ -331,6 +346,7 @@ const useTableModel = ({ defaultState }) => {
         select,
         deselect,
         deselectMany,
+        selectMany,
         deselectAll,
         state,
         dispatch
@@ -355,18 +371,6 @@ const useTableModel = ({ defaultState }) => {
         }
     }, [state.selected])
 
-    const updateRowSelectionWithSelectedState = useCallback((table) => {
-        table.setRowSelection(
-            Object.fromEntries(
-                table.getRowModel().rows
-                    .map((row) => ([
-                        row.index, 
-                        state.selected.includes(row.original.id)
-                    ]))
-            )
-        )
-    }, [state.selected])
-
     const isDirtyFilters = useMemo(() => (
         state.tableState.columnFilters !== defaultState.tableState.columnFilters
             || state.tableState.globalFilter !== defaultState.tableState.globalFilter
@@ -378,6 +382,7 @@ const useTableModel = ({ defaultState }) => {
         tableState: state.tableState,
         deselectAll,
         deselectMany,
+        selectMany,
         deselect,
         isDirtyFilters,
         onPaginationChange,
@@ -385,8 +390,7 @@ const useTableModel = ({ defaultState }) => {
         onColumnFiltersChange,
         onSortingChange,
         onClearAllFilters,
-        makeOnRowSelectionChange,
-        updateRowSelectionWithSelectedState,
+        makeOnRowSelectionChange
     }
 
     return model
@@ -435,7 +439,39 @@ useTableModel.use = {
             }
         })
 
+        table.setOptions((options) => ({
+            ...options,
+            onRowSelectionChange: (updater) => tableModel.makeOnRowSelectionChange(updater, table)
+        }))
+
+        const updateRowSelectionWithSelectedState = useCallback(selected => {
+            table.setRowSelection(
+                Object.fromEntries(
+                    table.getRowModel().rows
+                        .map((row) => ([
+                            row.index, 
+                            selected.includes(row.original.id)
+                        ]))
+                )
+            )
+        }, [table])
+
         const countFormatted = useMemo(() => numberWithCommas(count), [count])
+
+        const deselectMany = deselectIds => {
+            tableModel.deselectMany(deselectIds)
+        
+            table.getRowModel().rows
+                .filter(({ original }) => deselectIds.includes(original.id))
+                .forEach((row) => {
+                    row.toggleSelected()
+                })
+        }
+        
+        const selectMany = selectIds => {
+            tableModel.selectMany(selectIds)
+            updateRowSelectionWithSelectedState(selectIds)
+        }
 
         useEffect(() => {
 
@@ -448,19 +484,14 @@ useTableModel.use = {
             })
         
         }, [table.options.data])
-
-        table.setOptions((options) => ({
-            ...options,
-            onRowSelectionChange: (updater) => tableModel.makeOnRowSelectionChange(updater, table)
-        }))
         
         useLayoutEffect(() => {
     
-            tableModel.updateRowSelectionWithSelectedState(table)
+            updateRowSelectionWithSelectedState(tableModel.state.selected)
     
         }, [table.options.data])
 
-        return { table, selected, count, countFormatted }
+        return { table, selected, count, countFormatted, deselectMany, selectMany }
 
     },
     findResultFromTableById ({ id, table }) {
