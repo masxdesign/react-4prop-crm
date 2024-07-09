@@ -14,7 +14,7 @@ const useChatboxEachFilterMessages = () => {
             const [messages_] = data
 
             const messages = messages_.map((item) => {
-                const { id, resource_name, d, i, body, i2, created } = item
+                const { id, resource_name = '', d, i, body, i2, created, lastMessage } = item
 
                 let message
 
@@ -62,9 +62,25 @@ const useChatboxEachFilterMessages = () => {
                         )
                         break
                     }
+                    case !!lastMessage:
+                        message = (
+                            <ChatboxBizchatMessage 
+                                chatId={lastMessage.chat_id}
+                                created={lastMessage.sent}
+                                body={{ teaser: lastMessage.body }}
+                            />
+                        )
+                        
+                        break
                     case resource_name.includes(":bz"): {
 
-                        message = <ChatboxBizchatMessage message={item} />
+                        message = (
+                            <ChatboxBizchatMessage 
+                                chatId={item.i}
+                                created={item.created}
+                                body={item.body}
+                            />
+                        )
 
                         break
                     }

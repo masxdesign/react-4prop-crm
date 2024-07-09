@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { isEmpty, map, memoize, result, truncate, union, zipObject } from "lodash";
-import { sendBizchatMessage } from "./bizchat";
+import { isEmpty, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
+import { getBizchatLastMessage, sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
 import propertyParse from "@/utils/propertyParse";
@@ -9,6 +9,7 @@ import propertySubtypesKeyValueCombiner from "./propertySubtypesKeyValueCombiner
 import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
 import useListing from "@/store/use-listing";
+import { getTime, parseISO } from "date-fns";
 
 export const FOURPROP_BASEURL = window.config?.site_url ?? import.meta.env.VITE_FOURPROP_BASEURL
 
@@ -263,18 +264,40 @@ export const addNote = async (variables, { id, user }) => {
 
 }
 
-export const fetchNotes = async ({ id }) => {
+export const fetchNotes = async ({ from, recipient }) => {
+    const [notes, lastMessage] = await Promise.all([
+        fourProp.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
+        getBizchatLastMessage({ from, recipient })
+    ])
 
-    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/__notes/${id}`, { withCredentials: true })
 
-    const [branch, [privateNotes, messages, users]] = data
+    const [branch, [privateNotes, messages, users]] = notes.data
 
-    const messages_ = messages.map((message) => ({
+    let messages_ = messages.map((message) => ({
         ...message,
         author: users.find(({ id }) => id === message.uid)
     }))
 
-    return [messages_, branch, privateNotes]
+    if (lastMessage) {
+        messages_ = [
+            ...messages_.map(message => ({
+                ...message,
+                created_time: getTime(message.created)
+            })),
+            {
+                id: `bz:${lastMessage.id}`,
+                lastMessage,
+                created: lastMessage.sent,
+                created_time: getTime(lastMessage.sent.replace(/[Z,T]/g, ' ').trim())
+            }
+        ]
+    }
+
+    const orderedMessages = orderBy(messages_, ['created_time'], ['asc'])
+
+    console.log(orderedMessages);
+
+    return [orderedMessages, branch, privateNotes, lastMessage]
 
 }
 

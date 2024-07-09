@@ -23,6 +23,7 @@ export const getMassBizchatStat = async ({ from }) => {
 }
 
 export const getMassBizchatNotEmailed = async ({ crm_id }) => {
+    if (!crm_id) return null
     const { data } = await bizchatAxios.get(`/api/crm/mass_not_emailed/${crm_id}`)
     return data
 }
@@ -34,6 +35,11 @@ export const sendBizchatMessage = async ({ from, recipient, message, context }) 
 
 export const getBizchatMessagesLast5 = async ({ chatId, senderUserId }) => {
     const { data } = await bizchatAxios.get(`/api/messages_last_5/${chatId}/${senderUserId}`)
+    return data
+}
+
+export const getBizchatLastMessage = async ({ from, recipient }) => {
+    const { data } = await bizchatAxios.get(`/api/crm/last_message/${from}/${recipient}`)
     return data
 }
 

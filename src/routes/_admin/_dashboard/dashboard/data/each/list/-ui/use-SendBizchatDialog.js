@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useReducer } from "react"
+import { useCallback, useEffect, useMemo, useReducer } from "react"
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import _, { find, orderBy } from "lodash"
-import { getMassBizchatList, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
+import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
 
 const initialState = {
     open: false,
@@ -97,14 +97,12 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
     const listQueryOptions = queryOptions({
         queryKey: ['getMassBizchatList', from],
-        queryFn: () => getMassBizchatList({ from }),
-        initialData: []
+        queryFn: () => getMassBizchatList({ from })
     })
 
     const statQueryOptions = queryOptions({
         queryKey: ['getMassBizchatStat', from],
         queryFn: () => getMassBizchatStat({ from }),
-        initialData: {},
         select (data) {
             const stat = data.map(([crm_id, itemsString]) => {
                 const recipients = itemsString.map(itemString => {
@@ -125,8 +123,26 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
             })
 
             return stat
-        }
+        },
+        staleTime: 60_000
     })
+
+    const notEmailedQueryOptions = queryOptions({
+        queryKey: ['getMassBizchatNotEmailed', currItemId],
+        queryFn: () => getMassBizchatNotEmailed({ crm_id: currItemId }),
+        staleTime: 60_000
+    })
+
+    const onRefreshList = () => {
+
+        queryClient.invalidateQueries({ queryKey: statQueryOptions.queryKey })
+
+        if (currItemId) {
+            queryClient.invalidateQueries({ queryKey: notEmailedQueryOptions.queryKey })
+        }
+    
+    }
+
 
     const sendRequest = useMutation({
         mutationFn: sendMassBizchat,
@@ -169,6 +185,8 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
     return {
         listQueryOptions,
         statQueryOptions,
+        notEmailedQueryOptions,
+        onRefreshList,
         sendRequest,
         open,
         message,
@@ -192,7 +210,7 @@ useSendBizchatDialog.use = {
             justSent
         } = model
 
-        const query = useQuery(listQueryOptions)
+        const query = useQuery({ ...listQueryOptions, initialData: [] })
         const statQuery = useQuery(statQueryOptions)
 
         const data = useMemo(() => {
@@ -218,6 +236,7 @@ useSendBizchatDialog.use = {
 
         return {
             query,
+            statQuery,
             data,
             currItem,
             recipients

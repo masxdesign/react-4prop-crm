@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from "react"
 import ChatboxBubble from "./ChatboxBubble"
 import { cn } from "@/lib/utils"
 
-const ChatboxMessages = ({ data, onDelete, autoScroll, scrollBehavior, className, enableDelete }) => {
+const ChatboxMessages = ({ data, onDelete, autoScroll, scrollBehavior, className, enableDelete, ...props }) => {
     const containerRef = useRef(null)
   
     const scrollDown = useCallback(() => {
@@ -17,7 +17,7 @@ const ChatboxMessages = ({ data, onDelete, autoScroll, scrollBehavior, className
     }, [data, scrollDown])
   
     return (
-      <div ref={containerRef} className={cn('space-y-3 overflow-y-auto p-3', className)}>
+      <div ref={containerRef} className={cn('space-y-3 overflow-y-auto p-3', className)} {...props}>
         {data.map(({ id, message, variant, size }) => (
           <ChatboxBubble key={id} variant={variant} size={size} className='group/speech relative min-w-32'>
             {message}

@@ -54,7 +54,7 @@ const Chatbox = ({
   
     return (
       <div className='flex flex-col h-full relative'>
-        <div className="bg-slate-100 shadow-inner h-full min-h-[420px] max-h-[600px]">
+        <div className="bg-slate-100 shadow-inner grow min-h-[420px] max-h-[600px]">
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
             <FetchChatboxMessages 
               queryOptions={queryOptions}

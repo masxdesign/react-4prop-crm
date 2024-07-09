@@ -19,7 +19,7 @@ const BizchatMessage = memo(
         const ref = useRef()
 
         const [open, setOpen] = useState()
-        const { teaser } = JSON.parse(body)
+        const { teaser } = body.teaser ? body: JSON.parse(body)
         const link = `/bizchat/rooms/${chatId}?i=${bz_hash}`
 
         useEffect(() => {
@@ -72,13 +72,12 @@ const BizchatMessage = memo(
     }
 )
 
-const ChatboxBizchatMessage = ({ message }) => {
+const ChatboxBizchatMessage = ({ chatId, body, created }) => {
     const auth = useAuth()
-    const { id, resource_name, d, i, body, i2, created } = message
     return (
         <BizchatMessage
             body={body}
-            chatId={i}
+            chatId={chatId}
             senderUserId={auth.user.neg_id}
             bz_hash={auth.user.bz_hash}
             created={created}

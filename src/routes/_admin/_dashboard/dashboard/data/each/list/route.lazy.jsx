@@ -241,8 +241,8 @@ function DialogEachContentRenderer ({ model, table, user }) {
   const resultFromTable = useTableModel.use.findResultFromTableById({ id, table })
 
   const chatboxQueryOptions = queryOptions({
-    queryKey: ['chatboxEach', id],
-    queryFn: () => fetchNotes({ id })
+    queryKey: ['chatboxEach', user.neg_id, id],
+    queryFn: () => fetchNotes({ from: user.neg_id, recipient: id })
   })
 
   return resultFromTable ? (
@@ -416,18 +416,16 @@ function DialogBizchatEach ({ chatboxQueryOptions, label }) {
   const { user } = useAuth()
   const { data } = useSuspenseQuery(chatboxQueryOptions)
 
-  const [messages, branch] = data
+  const [_, __, ___, lastMessage] = data
 
   const bizMessage = useMemo(() => {
 
-    const message = findLast(messages, ({ resource_name }) => resource_name.includes(':bz'))
-
-    if(message) {
+    if (lastMessage) {
 
       return {
         link: (
           <a 
-            href={`/bizchat/rooms/${message.i}?i=${user.bz_hash}`}
+            href={`/bizchat/rooms/${lastMessage.chat_id}?i=${user.bz_hash}`}
             className='text-sky-700 hover:underline inline-flex bg-sky-50 items-center justify-center text-xs h-7 px-2.5 py-0.5 rounded-md'
             target='__blank'
           >
@@ -437,7 +435,7 @@ function DialogBizchatEach ({ chatboxQueryOptions, label }) {
       }
     }
 
-  }, [messages])
+  }, [lastMessage?.id])
 
   if(!bizMessage) return null
 
