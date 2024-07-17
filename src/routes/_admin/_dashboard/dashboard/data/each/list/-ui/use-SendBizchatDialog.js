@@ -162,6 +162,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
             message
         }, {
             onSuccess (data) {
+                queryClient.invalidateQueries({ queryKey: statQueryOptions.queryKey })
                 queryClient.setQueryData(listQueryOptions.queryKey, prev => [data, ...prev])
                 onItemSelect(data.id)
                 dispatch(justSentReceived(data.id))

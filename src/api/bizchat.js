@@ -1,3 +1,4 @@
+import delay from "@/utils/delay";
 import axios from "axios";
 
 const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
@@ -9,6 +10,7 @@ const bizchatAxios = axios.create({
 
 export const sendMassBizchat = async ({ from, recipients, subjectLine, message }) => {
     const { data } = await bizchatAxios.post('/api/crm/send_mass', { from, recipients, subjectLine, message })
+    await delay(1000)
     return data
 }
 

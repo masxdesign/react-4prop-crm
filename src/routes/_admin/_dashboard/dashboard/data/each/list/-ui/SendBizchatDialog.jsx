@@ -9,7 +9,7 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import Dd from "./Dd"
 import { cx } from "class-variance-authority"
-import { History, LucideTextSelection, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, User2, UserIcon } from "lucide-react"
+import { History, LucideTextSelection, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, SendHorizonalIcon, SendIcon, User2, UserIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { Suspense, useEffect, useMemo } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
@@ -47,8 +47,6 @@ function SendBizchatDialog({ selected, model, tableSSModal, makeFetchNegQueryOpt
 }
 
 function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOptions }) {
-    const queryClient = useQueryClient()
-
     const {
         sendRequest,
         message,
@@ -126,6 +124,22 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                     ) : (
                         <span className="mr-auto">No campaigns</span>
                     )}
+                    {currItem && (
+                        <Button
+                            size="xs"
+                            onClick={() => onItemSelect(null)}
+                            disabled={sendRequest.isPending}
+                            className="relative space-x-2"
+                        >
+                            <span>
+                                + new
+                            </span>
+                            <span className="flex items-center gap-0">
+                                <UserIcon className="w-3 h-3" />
+                                <span className="text-xs font-normal">{selected.length}</span>
+                            </span>
+                        </Button>
+                    )}
                     <Button 
                         variant="link" 
                         size="xs" 
@@ -133,13 +147,6 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                         disabled={statQuery.isFetching}
                     >
                         <RefreshCwIcon className="w-4 h-4" />
-                    </Button>
-                    <Button
-                        size="xs"
-                        onClick={() => onItemSelect(null)}
-                        disabled={sendRequest.isPending}
-                    >
-                        + new
                     </Button>
                 </h4>
                 <div className="space-y-2 w-64 max-h-[600px] overflow-auto pb-3">
@@ -164,7 +171,7 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                 <div className="space-y-2">
                     <span className="space-x-3">
                         <span>
-                            <UserIcon className="inline w-6 h-6"/>  {recipients.length}
+                            <span className="font-semibold">Recipients</span>  {recipients.length}
                         </span>
                         {currItem && (
                             <span 
@@ -238,9 +245,21 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                     ) : (
                         <form 
                             onSubmit={handleSubmit} 
-                            className="flex flex-col gap-2 flex-auto bg-white shadow-sm p-3"
+                            className="flex flex-col gap-2 flex-auto bg-white shadow-sm p-3 relative"
                         >
-                            <h2 className="font-normal">Send a Mailshot via BizChat</h2>
+                            {sendRequest.isPending && (
+                                <div className="absolute inset-0 p-3 bg-white/80 z-10 flex justify-center items-center">
+                                    <div className="flex flex-col items-center p-3 gap-4">
+                                        <div className="animate-bounce flex justify-center items-center bg-sky-100 rounded-full w-20 h-20 shadow-lg">
+                                            <SendIcon className="w-10 h-10 text-sky-800" />
+                                        </div>
+                                        <span className="text-lg text-center">
+                                            Hold tight your message is <br/>being sent to {recipients.length} recipients
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            <h2 className="font-bold text-lg">New message</h2>
                             <Input 
                                 placeholder="Type your subject line here..." 
                                 className="text-base"
@@ -398,7 +417,11 @@ SendBizchatDialog.ButtonSm = ({ model }) => {
 function Campaign ({ id, stat, subjectLine, created, recipients, active, justSent, onItemSelect, className }) {
     
     return (
-        <div className={cx(className, "flex flex-col p-3 bg-slate-50 rounded-sm cursor-pointer hover:shadow-md gap-1", { 'shadow-md': active })} onClick={() => onItemSelect(id)}>
+        <div className={cx(
+            className, 
+            "flex flex-col p-3 bg-slate-50 border border-transparent rounded-sm cursor-pointer hover:shadow-md gap-1", 
+            { 'border-slate-500 shadow-sm': active }
+        )} onClick={() => onItemSelect(id)}>
             <span className="truncate font-semibold text-sm">{subjectLine}</span>
             <span className="flex text-sm gap-3">
                 <span className="text-xs">

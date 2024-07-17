@@ -19,7 +19,7 @@ const ChatboxEach = ({ queryOptions, id, user }) => {
           queryClient.invalidateQueries({ queryKey: ['bizchatMessagesLast5', user.neg_id] })
         }
         
-        queryClient.setQueryData(queryOptions.queryKey, util_add_each(data, { resource_name: data.resource_name, uid: data.uid }))
+        queryClient.invalidateQueries({ queryKey: queryOptions.queryKey })
       }
     }
 
