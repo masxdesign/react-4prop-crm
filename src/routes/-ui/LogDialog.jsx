@@ -1,4 +1,4 @@
-import { ChatBubbleIcon } from '@radix-ui/react-icons';
+import { Button } from '@/components/ui/button';
 
 const LogDialog = ({ info }) => {
 
@@ -7,7 +7,9 @@ const LogDialog = ({ info }) => {
   }
 
   return (
-    <ChatBubbleIcon className='cursor-pointer' onClick={handleClick} />
+    <Button size="xs" variant="secondary" onClick={handleClick}>
+      view
+    </Button>
   )
 }
 

@@ -67,7 +67,8 @@ function ClientsListComponent() {
     columns, 
     meta: {
       showDialog: dialogModel.showDialog,
-      hoverCardComponent: TableHoverCard
+      hoverCardComponent: TableHoverCard,
+      auth
     },
     tableModel
   })
@@ -298,15 +299,24 @@ function DialogEachContent ({ info, fromTable, user, table = null, chatboxQueryO
               chatboxQueryOptions={chatboxQueryOptions} 
               info={info} 
               table={table}
+              user={user}
             />              
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60}>
-            <ChatboxEach 
-              queryOptions={chatboxQueryOptions} 
-              id={info.id} 
-              user={user}
-            /> 
+            {user.neg_id === info.id ? (
+              <div className='h-full bg-slate-100'>
+                <div className='uppercase opacity-50 font-bold text-sm text-slate-400 w-full h-full flex justify-center items-center'>
+                  You
+                </div>
+              </div>
+            ) : (
+              <ChatboxEach 
+                queryOptions={chatboxQueryOptions} 
+                id={info.id} 
+                user={user}
+              /> 
+            )}
           </ResizablePanel>
         </ResizablePanelGroup>
       }
@@ -342,7 +352,7 @@ function TableHoverCard ({ cell, hideView }) {
   )
 }
 
-function DialogMetricsEach ({ chatboxQueryOptions, info, table = null }) {
+function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
   
   return (
     <div className='text-sm space-y-2'>
@@ -362,34 +372,38 @@ function DialogMetricsEach ({ chatboxQueryOptions, info, table = null }) {
       <Suspense fallback={<p>Loading...</p>}>
         <DialogBranchEach chatboxQueryOptions={chatboxQueryOptions} />
       </Suspense>
-      <div className='h-3' />
-      <Ddl 
-        items={[
-          { 
-            label: "Next contact",
-            value: (
-              <ColumnNextContactEach 
-                id={info.id} 
-                defaultValue={info.next_contact}
-                table={table}
-                tableDataQueryKey={table?.options.meta.dataQueryKey}
-              />
-            ) 
-          },
-          { 
-            label: "Last contact", 
-            value: (
-              <ColumnLastContactEach 
-                id={info.id} 
-                defaultValue={info.last_contact}
-                table={table}
-                tableDataQueryKey={table?.options.meta.dataQueryKey}
-              />
-            )
-          },
-        ]}
-        labelClassName="min-w-[90px]"
-      />
+      {user.neg_id !== info.id && (
+        <>
+          <div className='h-3' />
+          <Ddl 
+            items={[
+              { 
+                label: "Next contact",
+                value: (
+                  <ColumnNextContactEach 
+                    id={info.id} 
+                    defaultValue={info.next_contact}
+                    table={table}
+                    tableDataQueryKey={table?.options.meta.dataQueryKey}
+                  />
+                ) 
+              },
+              { 
+                label: "Last contact", 
+                value: (
+                  <ColumnLastContactEach 
+                    id={info.id} 
+                    defaultValue={info.last_contact}
+                    table={table}
+                    tableDataQueryKey={table?.options.meta.dataQueryKey}
+                  />
+                )
+              },
+            ]}
+            labelClassName="min-w-[90px]"
+          />
+        </>
+      )}
       <Suspense fallback={<p>Loading...</p>}>
         <DialogBizchatEach chatboxQueryOptions={chatboxQueryOptions} label="Bizchat" />
       </Suspense>

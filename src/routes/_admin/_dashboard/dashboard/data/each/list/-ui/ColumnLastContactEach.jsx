@@ -1,6 +1,7 @@
 import { addLastContact } from "@/api/fourProp"
 import ColumnLastContact from "@/routes/-ui/ColumnLastContact"
 import useContactDateEachMutationOptions from "./use-ContactDateEachMutationOptions"
+import { useAuth } from "@/components/Auth/Auth-context"
 
 const ColumnLastContactEach = ({
     variant,
@@ -12,12 +13,15 @@ const ColumnLastContactEach = ({
     onSuccess,
     message,
 }) => {
+    const auth = useAuth()
     const mutationOptions = useContactDateEachMutationOptions({
         id,
         tableDataQueryKey,
         mutationFn: addLastContact,
         onSuccess,
     })
+
+    if (auth.user?.neg_id === id) return null
 
     return (
       <ColumnLastContact

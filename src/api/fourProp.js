@@ -44,6 +44,7 @@ export const authWhoisonlineQueryOptions = queryOptions({
     queryKey: ['whoisonline'],
     queryFn: async () => {
         const { data } = await fourProp.post('api/login')
+
         return data
     },
     staleTime: Infinity
@@ -246,6 +247,13 @@ export const addNote = async (variables, { id, user }) => {
     if(_button === "bizchat") {
 
         if(!user?.neg_id) throw new Error('user.neg_id is not defined')
+
+        console.log({
+            lastContact: {
+                uid: user.id,
+                recipient: id
+            }
+        });
 
         return sendBizchat({
             message,

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import useLocalstorageState from '@/hooks/use-LocalstorageState'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 import { HoverCardPortal } from '@radix-ui/react-hover-card'
+import { cx } from 'class-variance-authority'
 
 const ResizeHandler = ({ header }) => (
     <div
@@ -112,7 +113,9 @@ const DataTableBody = ({ table }) => (
                 <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className="flex items-center w-[fit-content]"
+                    className={cx("flex items-center w-[fit-content]", {
+                        "bg-sky-50/50 hover:bg-sky-50": table.options.meta.auth.user.neg_id === row.original.id
+                    })}
                 >
                     <SortableContext
                         items={table.getState().columnOrder}

@@ -26,12 +26,13 @@ export const columns = [
         className="translate-y-[2px]"
       />
     ),
-    cell: ({ row }) => (
+    cell: ({ row, table }) => (
       <Checkbox
         checked={row.getIsSelected()}
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
         className="translate-y-[2px]"
+        disabled={table.options.meta.auth.user.neg_id === row.original.id}
       />
     ),
     size: 60,
@@ -41,7 +42,7 @@ export const columns = [
   columnHelper.display({
     id: 'note',
     cell: (info) => <LogDialog info={info} />,
-    size: 60
+    size: 80
   }),
   columnHelper.accessor('next_contact', {
     id: 'next_contact',
