@@ -38,11 +38,11 @@ const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
       }
     })
     
-    const handleSubmit = (e) => {
+    const handleSubmit = (buttonName) => {
       try {
 
         messageSchema.validateSync({ message: value })
-        addMutation.mutate({ message: value, _button: e.target.name })
+        addMutation.mutate({ message: value, _button: buttonName })
         setError(null)
   
       } catch (e) {

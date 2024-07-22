@@ -81,8 +81,8 @@ const Chatbox = ({
                 {expand ? 'minimise': 'expand'}
               </span>
             </span>
-            <Button variant="default" size="xs" onClick={submit} name="note">Make note</Button>
-            <Button variant="secondary" size="xs" onClick={submit} name="bizchat">
+            <Button variant="default" size="xs" onClick={() => submit("note")}>Make note</Button>
+            <Button variant="secondary" size="xs" onClick={() => submit("bizchat")}>
               <Send className='w-3 h-3 mr-1' />
               message
             </Button>

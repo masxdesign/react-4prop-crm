@@ -24,6 +24,12 @@ export const getMassBizchatStat = async ({ from }) => {
     return data
 }
 
+export const getListUnreadTotal = async ({ from, recipients }) => {
+    const params = { recipients: `${recipients}` }
+    const { data } = await bizchatAxios.get(`/api/crm/list_unread_total/${from}`, { params })
+    return data
+}
+
 export const getMassBizchatNotEmailed = async ({ crm_id }) => {
     if (!crm_id) return null
     const { data } = await bizchatAxios.get(`/api/crm/mass_not_emailed/${crm_id}`)

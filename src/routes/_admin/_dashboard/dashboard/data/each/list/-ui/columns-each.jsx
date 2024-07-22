@@ -8,6 +8,7 @@ import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import Linkable from './Linkable';
 import ColumnLastContactEach from './ColumnLastContactEach';
 import ColumnNextContactEach from './ColumnNextContactEach';
+import LastContact from '@/routes/-ui/LastContact';
 const columnHelper = createColumnHelper()
 
 export const version = "v1.0.4"
@@ -62,17 +63,22 @@ export const columns = [
   columnHelper.accessor('last_contact', {
     id: "last_contact",
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Date contacted" />
+      <DataTableColumnHeader column={column} title="Last contact" />
     ),
     cell: (info) => (
-      <ColumnLastContactEach 
-        id={info.row.original.id} 
-        defaultValue={info.row.original.last_contact}
-        table={info.table}
-        tableDataQueryKey={info.table.options.meta.dataQueryKey}
+      // <ColumnLastContactEach 
+      //   id={info.row.original.id} 
+      //   defaultValue={info.row.original.last_contact}
+      //   table={info.table}
+      //   tableDataQueryKey={info.table.options.meta.dataQueryKey}
+      // />
+      <LastContact 
+        value={info.row.original.last_contact} 
+        unreadTotal={info.row.original.unread_total} 
       />
     ),
-    meta: { label: 'Contact date' }
+    meta: { label: 'Last contact' },
+    minSize: 180
   }),
   columnHelper.accessor('company', {
     id: 'company',

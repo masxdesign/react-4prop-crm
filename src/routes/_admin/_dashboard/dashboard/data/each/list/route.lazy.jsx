@@ -44,6 +44,7 @@ import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
 import { cx } from 'class-variance-authority';
 import { useMap } from '@uidotdev/usehooks';
 import useMakeFetchNegotiatorsDataQueryOptions from './-ui/use-makeFetchNegotiatorsDataQueryOptions';
+import LastContact from '@/routes/-ui/LastContact';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -63,7 +64,7 @@ function ClientsListComponent() {
   const tableSSModal = useTableModel.use.tableSS({ 
     dataPool,
     tableName, 
-    queryFn: fetchNegotiators, 
+    queryFn: (variables) => fetchNegotiators(variables, auth), 
     columns, 
     meta: {
       showDialog: dialogModel.showDialog,
@@ -391,13 +392,15 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
               { 
                 label: "Last contact", 
                 value: (
-                  <ColumnLastContactEach 
-                    id={info.id} 
-                    defaultValue={info.last_contact}
-                    table={table}
-                    tableDataQueryKey={table?.options.meta.dataQueryKey}
-                  />
-                )
+                  // <ColumnLastContactEach 
+                  //   id={info.id} 
+                  //   defaultValue={info.last_contact}
+                  //   table={table}
+                  //   tableDataQueryKey={table?.options.meta.dataQueryKey}
+                  // />
+                  <LastContact value={info.last_contact} />
+                ),
+                show: !isEmpty(info.last_contact)
               },
             ]}
             labelClassName="min-w-[90px]"

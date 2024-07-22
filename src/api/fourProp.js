@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { isEmpty, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
-import { getBizchatLastMessage, sendBizchatMessage } from "./bizchat";
+import { find, isEmpty, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
+import { getBizchatLastMessage, getListUnreadTotal, sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
 import propertyParse from "@/utils/propertyParse";
@@ -10,6 +10,7 @@ import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
 import useListing from "@/store/use-listing";
 import { getTime, parseISO } from "date-fns";
+import { useAuthStore } from "@/store";
 
 export const FOURPROP_BASEURL = window.config?.site_url ?? import.meta.env.VITE_FOURPROP_BASEURL
 
@@ -79,7 +80,7 @@ export const authLogout = () => fourProp.post('api/account/logout')
 
 const defaultNegotiatorInclude = "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
 
-export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }) => {
+export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }, auth) => {
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
@@ -130,6 +131,19 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     }
     
     const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+
+    if (auth.user.neg_id) {
+        const recipients = map(data[1], 'id')
+        const d2 = await getListUnreadTotal({ from: auth.user.neg_id, recipients })
+
+        const data2 = [data[0], data[1].map(item => ({
+            ...item,
+            unread_total: find(d2, { recipient: item.id })?.unread_total ?? 0
+        }))]
+
+        return data2
+    }
+
 
     return data
 }
