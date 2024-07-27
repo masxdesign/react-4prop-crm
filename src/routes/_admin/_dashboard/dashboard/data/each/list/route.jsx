@@ -14,7 +14,7 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/lis
         ...defaultTableModelState,
         tableState: {
           ...defaultTableModelState.tableState,
-          sorting: [{ id: "next_contact", desc: true }]
+          sorting: [{ id: "last_contact", desc: true }]
         }
       },
       columns,

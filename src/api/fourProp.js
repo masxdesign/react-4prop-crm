@@ -10,7 +10,6 @@ import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
 import useListing from "@/store/use-listing";
 import { getTime, parseISO } from "date-fns";
-import { useAuthStore } from "@/store";
 
 export const FOURPROP_BASEURL = window.config?.site_url ?? import.meta.env.VITE_FOURPROP_BASEURL
 
@@ -130,11 +129,15 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
         }
     }
     
-    const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+    let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
 
     if (auth.user.neg_id) {
-        const recipients = map(data[1], 'id')
-        const d2 = await getListUnreadTotal({ from: auth.user.neg_id, recipients })
+        let d2 = []
+        
+        if (data[1].length > 0) {
+            const recipients = map(data[1], 'id')
+            d2 = await getListUnreadTotal({ from: auth.user.neg_id, recipients })
+        }
 
         const data2 = [data[0], data[1].map(item => ({
             ...item,
@@ -251,9 +254,6 @@ export const sendBizchat = async ({ message, from, recipient, subjectLine }) => 
 }
 
 export const addNote = async (variables, { id, user }) => {
-
-    console.log({variables,id, user});
-
     const { message = '', _button } = variables
 
     if (isEmpty(message)) throw new Error('message is empty')
@@ -316,8 +316,6 @@ export const fetchNotes = async ({ from, recipient }) => {
     }
 
     const orderedMessages = orderBy(messages_, ['created_time'], ['asc'])
-
-    console.log(orderedMessages);
 
     return [orderedMessages, branch, privateNotes, lastMessage]
 

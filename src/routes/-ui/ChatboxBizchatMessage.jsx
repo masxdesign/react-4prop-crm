@@ -9,10 +9,16 @@ import { useAuth } from "@/components/Auth/Auth-context"
 import ChatboxMessages from "./ChatboxMessages"
 import { ReloadIcon } from "@radix-ui/react-icons"
 import { PaperclipIcon } from "lucide-react"
-import { reverse } from "lodash"
+import { reverse, truncate } from "lodash"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from "remark-gfm"
-import { cn } from "@/lib/utils"
+import { parseISO } from "date-fns"
+import { format, toZonedTime } from "date-fns-tz"
+import { enGB } from "date-fns/locale"
+
+const LinkRender = ({ className, ...props }) => {
+    return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
+}
 
 const BizchatMessage = memo(
     ({ body, chatId, senderUserId, bz_hash, created }) => {
@@ -20,7 +26,10 @@ const BizchatMessage = memo(
 
         const [open, setOpen] = useState()
         const { teaser } = body.teaser ? body: JSON.parse(body)
+
         const link = `/bizchat/rooms/${chatId}?i=${bz_hash}`
+
+        const teaser_200 = truncate(teaser, { length: 200 })
 
         useEffect(() => {
 
@@ -40,7 +49,17 @@ const BizchatMessage = memo(
                     <span className="text-muted-foreground text-xs">
                         Bizchat message
                     </span>
-                    {!open && <span className="font-bold min-w-[180px]">{teaser}</span>}
+                    {!open && (
+                        <span className="min-w-[180px]">
+                            <ReactMarkdown 
+                                components={{
+                                    a: LinkRender
+                                }}
+                                children={teaser_200} 
+                                remarkPlugins={[remarkGfm]}                                     
+                            />
+                        </span>
+                    )}
                     <Collapsible open={open} onOpenChange={setOpen}>
                         <CollapsibleContent>
                             <Suspense fallback={<p>Loading...</p>}>
@@ -85,10 +104,6 @@ const ChatboxBizchatMessage = ({ chatId, body, created }) => {
     )
 }
 
-const LinkRender = ({ className, ...props }) => {
-    return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
-}
-
 function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
     const { data, refetch } = useSuspenseQuery({
         queryKey: ["bizchatMessagesLast5", senderUserId, chatId],
@@ -97,11 +112,16 @@ function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
     })
 
     const messages = useMemo(() => {
-        return reverse(data.map(({ id, body, from, recipients, sent, type }) => {
+        return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id }) => {
+            const teaser = truncate(body, { length: 200 })
+            const handleClick = () => {
+                window.open(`https://4prop.com/bizchat/rooms/${chat_id}?message=${id}`, "bizchat")
+            }
+
             return {
                 id, 
                 message: (
-                    <>
+                    <div onClick={handleClick}>
                         {(
                             {
                                 'A': (
@@ -115,13 +135,20 @@ function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
                                     components={{
                                         a: LinkRender
                                     }}
-                                    children={body} 
+                                    children={teaser} 
                                     remarkPlugins={[remarkGfm]}                                     
                                 />
                             )
                         )}
+                        <div className="flex">
+                            {teaser.length !== body.length && (
+                                <Button size="xs" variant="secondary" className="my-4 mx-auto">
+                                    View full
+                                </Button>
+                            )}
+                        </div>
                         <ChatboxSentdate sentdate={sent} />
-                    </>
+                    </div>
                 ), 
                 variant: from === senderUserId ? 'sender' : 'recipient',
                 size: 'sm'

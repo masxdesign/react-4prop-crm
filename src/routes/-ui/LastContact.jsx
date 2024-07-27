@@ -9,34 +9,35 @@ const LastContact = ({ variant = "outline", value, unreadTotal, onSelect, clear,
   <div className='flex items-center'>
     <div className='flex flex-col'>
       {value ? (
-        <div 
-          className={cn(
-            "inline-flex items-center",
-            "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-            "text-xs h-7 px-2.5 py-0.5",
-            "rounded-sm text-left font-normal space-x-1"
-          )} 
-        >
+        <div className='flex flex-column gap-0 items-center'>
           {unreadTotal > 0 ? (
-            <span className='flex gap-1 text-xs bg-green-500 text-white px-1 rounded'>
+            <span className='flex gap-1 text-xs bg-green-500 text-white p-1 rounded'>
               <EnvelopeClosedIcon />
               {unreadTotal}
             </span>
           ) : (
-            <span className='flex gap-1 text-xs bg-slate-100 text-white px-1 rounded-full'>
+            <span className='flex gap-1 text-xs bg-slate-100 text-white p-2 rounded-full'>
               <SendIcon className='h-4 w-4 text-muted-foreground' />
             </span>
           )}
-          <span className='text-muted-foreground font-thin'>
-            {isToday(value) 
-              ? 'Today'
-              : isYesterday(value)
-              ? 'Yesterday'
-              : format(value, "d MMM yyy")}
-          </span>
-          <span>
-            {format(value, "hh:mm")}
-          </span>
+          <div 
+            className={cn(
+              "inline-flex items-center",
+              "text-xs h-7 px-2.5 py-0.5",
+              "rounded-sm text-left font-normal space-x-1"
+            )} 
+          >
+            <span className='text-muted-foreground font-thin'>
+              {isToday(value) 
+                ? 'Today'
+                : isYesterday(value)
+                ? 'Yesterday'
+                : format(value, "d MMM yyy")}
+            </span>
+            <span>
+              {format(value, "HH:mm")}
+            </span>
+          </div>
         </div>
       ) : onSelect ? (
         <Button variant={variant} size="xs" onClick={onSelect}>

@@ -11,7 +11,7 @@ import ColumnNextContactEach from './ColumnNextContactEach';
 import LastContact from '@/routes/-ui/LastContact';
 const columnHelper = createColumnHelper()
 
-export const version = "v1.0.4"
+export const version = "v1.1"
 
 export const columns = [
   columnHelper.display({
@@ -78,7 +78,7 @@ export const columns = [
       />
     ),
     meta: { label: 'Last contact' },
-    minSize: 180
+    minSize: 220
   }),
   columnHelper.accessor('company', {
     id: 'company',

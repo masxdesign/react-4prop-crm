@@ -475,6 +475,7 @@ function DialogBranchEach ({ chatboxQueryOptions }) {
       <CollapsibleContent className='space-y-2'>
         <Dddl  
           items={[
+            { label: "Phone", name: "phone" },
             { label: "Address", name: "address" },
             { label: "County", name: "county" },
             { label: "City", name: "towncity" },

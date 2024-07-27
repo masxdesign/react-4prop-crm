@@ -35,7 +35,7 @@ export default defineConfig(({ command, mode }) => {
         input: 'src/main.jsx'
       }
     },
-    plugins: [...shared.plugins]
+    plugins: [...shared.plugins],
   }
 
 })
