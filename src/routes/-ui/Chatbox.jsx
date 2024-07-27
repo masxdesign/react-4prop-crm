@@ -17,6 +17,7 @@ import { createSelector } from 'reselect';
 import { useToast } from '@/components/ui/use-toast';
 import { useIsFirstRender, usePrevious } from '@uidotdev/usehooks';
 import { PopoverContentWithoutPortal } from '@/components/ui-custom/popover';
+import ThumbnailGenerator from '@uppy/thumbnail-generator';
 
 const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props }) => {
   const query = useSuspenseQuery(queryOptions)
@@ -36,6 +37,11 @@ const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...pro
   )
 }
 
+const filesSelector = createSelector(
+  state => state.files,
+  (files) => Object.entries(files)
+)
+
 const Chatbox = ({ 
   queryOptions, 
   onFilterData, 
@@ -43,6 +49,16 @@ const Chatbox = ({
   addMutationOptions,
   enableDelete
 }) => {
+    const [uppy] = useState(() => new Uppy({
+      restrictions: {
+        maxNumberOfFiles: 3,
+        allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
+        maxFileSize: 25_000_000
+      }
+    }).use(ThumbnailGenerator, { thumbnailWidth: 320, thumbnailType: 'image/png', waitForThumbnailsBeforeUpload: true }))
+
+    const files = useUppyState(uppy, filesSelector)
+
     const [expand, setExpand] = useState(false)
 
     const {
@@ -50,7 +66,7 @@ const Chatbox = ({
       messageBoxProps,
       submit,
       error
-    } = useChatbox({ queryOptions, deleteMutationOptions, addMutationOptions })
+    } = useChatbox({ files, queryOptions, deleteMutationOptions, addMutationOptions })
 
     const handleExpand = () => {
       setExpand(true)
@@ -94,7 +110,13 @@ const Chatbox = ({
               </span>
             </span>
             <Button variant="default" size="xs" onClick={() => submit("note")}>Make note</Button>
-            <BizchatAttachmentsButton submit={submit} />
+            <div className='flex gap-1'>
+              <Button variant="secondary" size="xs" onClick={() => submit("bizchat")}>
+                <Send className='w-3 h-3 mr-1' />
+                message
+              </Button>
+              <BizchatAttachmentsButton uppy={uppy} />
+            </div>
           </div>
         </div>
         {expand && (
@@ -114,47 +136,10 @@ const Chatbox = ({
     )
 }
 
-const filesSelector = createSelector(
-  state => state.files,
-  (files) => Object.entries(files)
-)
-
-function BizchatAttachmentsButton ({ submit }) {
+function BizchatAttachmentsButton ({ uppy }) {
   const { toast } = useToast()
 
-  const [uppy] = useState(() => new Uppy({
-    restrictions: {
-      maxNumberOfFiles: 3,
-      allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
-      maxFileSize: 19_000_000
-    }
-  }))
-
-  const info = useUppyState(uppy, state => {
-    return state.info
-  })
-
   const files = useUppyState(uppy, filesSelector)
-
-  useEffect(() => {
-
-    if (info.length > 0) {
-
-      console.log(info);
-
-      for (const item of info) {
-
-        toast({
-          title: `Bizchat attachment`,
-          description: item.message,
-          variant: 'destructive'
-        })
-
-      }
-
-    }
-
-  }, [info])
 
   const isFirstRender = useIsFirstRender()
   const previousFilesLength = usePrevious(files.length)
@@ -183,40 +168,29 @@ function BizchatAttachmentsButton ({ submit }) {
 
   }, [files])
 
-  const [open, setOpen] = useState(false)
-
-  console.log(open);
-  
-
   return (
-    <div className='flex gap-1'>
-      <Button variant="secondary" size="xs" onClick={() => submit("bizchat")}>
-        <Send className='w-3 h-3 mr-1' />
-        message
-      </Button>
-      <Popover openDelay={0} closeDelay={150} open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="secondary" size="xs" className="relative">
-              <PaperclipIcon className='text-slate-500 w-4 h-4' />
-              {files.length > 0 && (
-                <span className='flex absolute -right-2 -top-2 text-[10px] items-center justify-center bg-sky-200 text-sky-500 w-5 h-5 rounded-full'>
-                  {files.length}
-                </span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContentWithoutPortal side="top" align="end" className="p-1 w-[300px]">
-            <Dashboard 
-              id="dashboard" 
-              uppy={uppy}
-              theme="light"
-              hideUploadButton
-              height={300}
-              width="100%"
-            />
-          </PopoverContentWithoutPortal>
-        </Popover>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="secondary" size="xs" className="relative">
+          <PaperclipIcon className='text-slate-500 w-4 h-4' />
+          {files.length > 0 && (
+            <span className='flex absolute -right-2 -top-2 text-[10px] items-center justify-center bg-sky-200 text-sky-500 w-5 h-5 rounded-full'>
+              {files.length}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContentWithoutPortal side="top" align="end" className="p-1 w-[300px]">
+        <Dashboard 
+          id="dashboard" 
+          uppy={uppy}
+          theme="light"
+          hideUploadButton
+          height={300}
+          width="100%"
+        />
+      </PopoverContentWithoutPortal>
+    </Popover>
   )
 
 }

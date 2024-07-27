@@ -231,11 +231,12 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
-export const sendBizchat = async ({ message, from, recipient, subjectLine }) => {
+export const sendBizchat = async ({ files, message, from, recipient, subjectLine }) => {
     if(!from) throw new Error('from is not defined')
     if (isEmpty(message)) throw new Error('message is empty')
 
     const chat_id = await sendBizchatMessage({ 
+        files,
         from, 
         recipient, 
         message,
@@ -254,7 +255,7 @@ export const sendBizchat = async ({ message, from, recipient, subjectLine }) => 
 }
 
 export const addNote = async (variables, { id, user }) => {
-    const { message = '', _button } = variables
+    const { message = '', files, _button } = variables
 
     if (isEmpty(message)) throw new Error('message is empty')
 
@@ -262,14 +263,8 @@ export const addNote = async (variables, { id, user }) => {
 
         if(!user?.neg_id) throw new Error('user.neg_id is not defined')
 
-        console.log({
-            lastContact: {
-                uid: user.id,
-                recipient: id
-            }
-        });
-
         return sendBizchat({
+            files,
             message,
             from: user.neg_id,
             recipient: id

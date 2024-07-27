@@ -1,5 +1,7 @@
 import delay from "@/utils/delay";
+import skaler from "@/utils/skaler";
 import axios from "axios";
+import { nanoid } from "nanoid";
 
 const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
@@ -36,9 +38,71 @@ export const getMassBizchatNotEmailed = async ({ crm_id }) => {
     return data
 }
 
-export const sendBizchatMessage = async ({ from, recipient, message, context }) => {
-    const { data } = await bizchatAxios.post('/api/crm/create_chat', { from, recipient, message, context })
-    return data
+export const fetchBlobFromObjectURLAsync = async (url, filename) => {
+    if (!url) return null
+    const res = await fetch(url)
+    const blob = await res.blob()
+    return new File([blob], filename, { type: blob.type })
+}
+
+const thumbnailWidth = 320
+
+const processAttachedFileAsync = async (file) => {
+    const [_, originalFilename] = file.name.match(/(.*)\.(jpeg|jpg|gif|png|pdf)$/i)
+    const renamedFilename = nanoid()
+    const message = [originalFilename, renamedFilename, file.extension]
+    const renamedName = `${renamedFilename}.${file.extension}`
+    const fileRenamed = new File([file.data], renamedName, { type: file.type })
+    
+    if (['jpeg', 'jpg', 'gif', 'png'].includes(file.extension.toLowerCase())) {
+        const fileThumbRenamed = await skaler(file.data, { width: thumbnailWidth, name: renamedName })
+
+        return [
+            message,
+            renamedName,
+            fileRenamed,
+            fileThumbRenamed
+        ]
+
+    }
+
+    return [
+        message,
+        renamedName,
+        fileRenamed
+    ]
+}
+
+export const sendBizchatMessage = async ({ files = [], from, recipient, message, context }) => {
+    try {
+        if (files.length > 0) {
+
+            const processedFiles = await Promise.all(files.map(([_, file]) => processAttachedFileAsync(file)))
+            
+            const form = new FormData
+            const messageBodyArray = [message]
+    
+            for (const [message, renamedName, fileRenamed, fileThumbRenamed] of processedFiles) {
+                form.append('attachments', fileRenamed, renamedName)
+                if (fileThumbRenamed) form.append('thumbs', fileThumbRenamed, renamedName)
+                messageBodyArray.push(message)
+            }
+    
+            form.append('message', JSON.stringify({ from, recipient, message: JSON.stringify(messageBodyArray), context }))
+            
+            const { data } = await bizchatAxios.post('/api/crm/create_chat_attachments', form, { withCredentials: true })
+
+            return data
+
+        }
+    
+        const { data } = await bizchatAxios.post('/api/crm/create_chat', { from, recipient, message, context })
+
+        return data
+    
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 export const getBizchatMessagesLast5 = async ({ chatId, senderUserId }) => {

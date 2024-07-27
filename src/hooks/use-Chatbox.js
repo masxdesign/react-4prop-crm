@@ -6,7 +6,7 @@ const messageSchema = Yup.object().shape({
     message: Yup.string().required()
 })
 
-const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
+const useChatbox = ({ files, deleteMutationOptions, addMutationOptions }) => {
     const [autoScroll, setAutoScroll] = useState(true)
     const [scrollBehavior, setScrollBehavior] = useState(undefined)
     const [value, setValue] = useState('')
@@ -38,12 +38,12 @@ const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
       }
     })
     
-    const handleSubmit = (buttonName) => {
+    const handleSubmit = async (buttonName) => {
       try {
 
         messageSchema.validateSync({ message: value })
-        addMutation.mutate({ message: value, _button: buttonName })
         setError(null)
+        addMutation.mutate({ message: value, files, _button: buttonName })
   
       } catch (e) {
         setError(e.message)
