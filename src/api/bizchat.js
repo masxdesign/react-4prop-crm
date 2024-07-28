@@ -88,9 +88,9 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
                 messageBodyArray.push(message)
             }
     
-            form.append('message', JSON.stringify({ from, recipient, message: JSON.stringify(messageBodyArray), context }))
+            form.append('message', JSON.stringify({ message: JSON.stringify(messageBodyArray), context }))
             
-            const { data } = await bizchatAxios.post('/api/crm/create_chat_attachments', form, { withCredentials: true })
+            const { data } = await bizchatAxios.post(`/api/crm/create_chat_attachments/${from}/${recipient}`, form, { withCredentials: true })
 
             return data
 

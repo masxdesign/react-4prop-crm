@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import useChatbox from '@/hooks/use-Chatbox';
+import useChatbox, { filesSelector } from '@/hooks/use-Chatbox';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import ChatboxMessages from './ChatboxMessages';
 import { ExpandIcon, FileUpIcon, Fullscreen, FullscreenIcon, PaperclipIcon, Send } from 'lucide-react';
@@ -37,10 +37,7 @@ const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...pro
   )
 }
 
-const filesSelector = createSelector(
-  state => state.files,
-  (files) => Object.entries(files)
-)
+
 
 const Chatbox = ({ 
   queryOptions, 
@@ -49,24 +46,15 @@ const Chatbox = ({
   addMutationOptions,
   enableDelete
 }) => {
-    const [uppy] = useState(() => new Uppy({
-      restrictions: {
-        maxNumberOfFiles: 3,
-        allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
-        maxFileSize: 25_000_000
-      }
-    }).use(ThumbnailGenerator, { thumbnailWidth: 320, thumbnailType: 'image/png', waitForThumbnailsBeforeUpload: true }))
-
-    const files = useUppyState(uppy, filesSelector)
-
     const [expand, setExpand] = useState(false)
 
     const {
+      uppy,
       chatBoxProps,
       messageBoxProps,
       submit,
       error
-    } = useChatbox({ files, queryOptions, deleteMutationOptions, addMutationOptions })
+    } = useChatbox({ queryOptions, deleteMutationOptions, addMutationOptions })
 
     const handleExpand = () => {
       setExpand(true)
@@ -187,7 +175,6 @@ function BizchatAttachmentsButton ({ uppy }) {
           theme="light"
           hideUploadButton
           height={300}
-          width="100%"
         />
       </PopoverContentWithoutPortal>
     </Popover>

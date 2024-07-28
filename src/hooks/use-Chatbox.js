@@ -1,12 +1,31 @@
 import { useState } from 'react';
 import * as Yup from "yup"
 import { useMutation } from '@tanstack/react-query';
+import { Uppy } from '@uppy/core';
+import ThumbnailGenerator from '@uppy/thumbnail-generator';
+import { useUppyState } from '@uppy/react';
+import { createSelector } from 'reselect';
 
 const messageSchema = Yup.object().shape({
     message: Yup.string().required()
 })
 
-const useChatbox = ({ files, deleteMutationOptions, addMutationOptions }) => {
+export const filesSelector = createSelector(
+  state => state.files,
+  (files) => Object.entries(files)
+)
+
+const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
+    const [uppy] = useState(() => new Uppy({
+      restrictions: {
+        maxNumberOfFiles: 3,
+        allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
+        maxFileSize: 15_000_000
+      }
+    }).use(ThumbnailGenerator, { thumbnailWidth: 320, thumbnailType: 'image/png', waitForThumbnailsBeforeUpload: true }))
+
+    const files = useUppyState(uppy, filesSelector)
+
     const [autoScroll, setAutoScroll] = useState(true)
     const [scrollBehavior, setScrollBehavior] = useState(undefined)
     const [value, setValue] = useState('')
@@ -26,6 +45,7 @@ const useChatbox = ({ files, deleteMutationOptions, addMutationOptions }) => {
       ...addMutationOptions,
       onSuccess: (...args) => {
         addMutationOptions.onSuccess?.(...args)
+        uppy.clear()
         ResetAll()
       }
     })
@@ -41,7 +61,10 @@ const useChatbox = ({ files, deleteMutationOptions, addMutationOptions }) => {
     const handleSubmit = async (buttonName) => {
       try {
 
-        messageSchema.validateSync({ message: value })
+        if (buttonName === "note" || files.length < 1) {
+          messageSchema.validateSync({ message: value })
+        }
+
         setError(null)
         addMutation.mutate({ message: value, files, _button: buttonName })
   
@@ -75,6 +98,8 @@ const useChatbox = ({ files, deleteMutationOptions, addMutationOptions }) => {
     }
 
     return {
+        uppy,
+        files,
         chatBoxProps,
         messageBoxProps,
         submit: handleSubmit,

@@ -231,39 +231,39 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
-export const sendBizchat = async ({ files, message, from, recipient, subjectLine }) => {
-    if(!from) throw new Error('from is not defined')
-    if (isEmpty(message)) throw new Error('message is empty')
+// export const sendBizchat = async ({ files, message, from, recipient, subjectLine }) => {
+//     if(!from) throw new Error('from is not defined')
+//     if (isEmpty(message)) throw new Error('message is empty')
 
-    const chat_id = await sendBizchatMessage({ 
-        files,
-        from, 
-        recipient, 
-        message,
-        context: {
-            subjectLine: isEmpty(subjectLine) ? null: subjectLine
-        }
-    })
+//     return sendBizchatMessage({ 
+//         files,
+//         from, 
+//         recipient, 
+//         message,
+//         context: {
+//             subjectLine: isEmpty(subjectLine) ? null: subjectLine
+//         }
+//     })
 
-    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${recipient}`, {
-        nid: from,
-        chat_id,
-        teaser: truncate(message, { length: 200 })
-    })
+//     const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createBizchatNote/${recipient}`, {
+//         nid: from,
+//         chat_id,
+//         teaser: truncate(message, { length: 200 })
+//     })
 
-    return data
-}
+//     return data
+// }
 
 export const addNote = async (variables, { id, user }) => {
     const { message = '', files, _button } = variables
 
-    if (isEmpty(message)) throw new Error('message is empty')
+    if (_button === "bizchat") {
 
-    if(_button === "bizchat") {
+        if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
 
         if(!user?.neg_id) throw new Error('user.neg_id is not defined')
 
-        return sendBizchat({
+        return sendBizchatMessage({ 
             files,
             message,
             from: user.neg_id,
@@ -271,6 +271,8 @@ export const addNote = async (variables, { id, user }) => {
         })
 
     }
+
+    if (isEmpty(message)) throw new Error('message is empty')
 
     const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
         type: '0',
