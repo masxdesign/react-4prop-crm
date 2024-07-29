@@ -4,25 +4,19 @@ import { Textarea } from '@/components/ui/textarea';
 import useChatbox, { filesSelector } from '@/hooks/use-Chatbox';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import ChatboxMessages from './ChatboxMessages';
-import { ExpandIcon, FileUpIcon, Fullscreen, FullscreenIcon, PaperclipIcon, Send } from 'lucide-react';
-import { Dashboard, FileInput, useUppyEvent, useUppyState } from '@uppy/react';
-import { Uppy } from '@uppy/core';
-
-import '@uppy/core/dist/style.min.css';
-import '@uppy/dashboard/dist/style.min.css';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { HoverCardPortal } from '@radix-ui/react-hover-card';
-import { createSelector } from 'reselect';
+import { ExpandIcon, PaperclipIcon, Send } from 'lucide-react';
+import { Dashboard, useUppyState } from '@uppy/react';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { useIsFirstRender, usePrevious } from '@uidotdev/usehooks';
 import { PopoverContentWithoutPortal } from '@/components/ui-custom/popover';
-import ThumbnailGenerator from '@uppy/thumbnail-generator';
+import '@uppy/core/dist/style.min.css';
+import '@uppy/dashboard/dist/style.min.css';
 
-const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...props }) => {
+const FetchChatboxMessages = ({ queryOptions, renderMessage, enableDelete, ...props }) => {
   const query = useSuspenseQuery(queryOptions)
 
-  const messages = useMemo(() => onFilterData(query.data), [query.data, onFilterData])
+  const messages = useMemo(() => renderMessage(query.data), [query.data, renderMessage])
 
   return messages.length > 0 ? (
     <ChatboxMessages 
@@ -41,7 +35,7 @@ const FetchChatboxMessages = ({ queryOptions, onFilterData, enableDelete, ...pro
 
 const Chatbox = ({ 
   queryOptions, 
-  onFilterData, 
+  renderMessage, 
   deleteMutationOptions, 
   addMutationOptions,
   enableDelete
@@ -74,7 +68,7 @@ const Chatbox = ({
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
             <FetchChatboxMessages 
               queryOptions={queryOptions}
-              onFilterData={onFilterData}
+              renderMessage={renderMessage}
               className="h-full"
               enableDelete={enableDelete}
               {...chatBoxProps}

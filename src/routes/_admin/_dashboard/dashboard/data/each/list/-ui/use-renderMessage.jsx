@@ -8,8 +8,8 @@ const NEXT = "2",
     NEXT_ONLY = "3",
     NO_NEXT = "4"
 
-const useChatboxEachFilterMessages = () => {
-    const handleFilterData = useCallback(
+const useRenderMessage = () => {
+    const renderMessage = useCallback(
         (data) => {
             const [messages_] = data
 
@@ -67,7 +67,9 @@ const useChatboxEachFilterMessages = () => {
                             <ChatboxBizchatMessage 
                                 chatId={lastMessage.chat_id}
                                 created={lastMessage.sent}
-                                body={{ teaser: lastMessage.body }}
+                                type={lastMessage.type}
+                                body={lastMessage.body}
+                                from={lastMessage.from}
                             />
                         )
                         
@@ -104,7 +106,7 @@ const useChatboxEachFilterMessages = () => {
         []
     )
 
-    return handleFilterData
+    return renderMessage
 }
 
-export default useChatboxEachFilterMessages
+export default useRenderMessage

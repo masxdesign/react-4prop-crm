@@ -7,29 +7,46 @@ import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import ChatboxSentdate from "@/routes/-ui/ChatboxSentdate"
 import { useAuth } from "@/components/Auth/Auth-context"
 import ChatboxMessages from "./ChatboxMessages"
-import { ReloadIcon } from "@radix-ui/react-icons"
+import { ImageIcon, ReloadIcon } from "@radix-ui/react-icons"
 import { PaperclipIcon } from "lucide-react"
-import { reverse, truncate } from "lodash"
+import { isString, reverse, truncate } from "lodash"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from "remark-gfm"
-import { parseISO } from "date-fns"
-import { format, toZonedTime } from "date-fns-tz"
-import { enGB } from "date-fns/locale"
+import { defaultStyles, FileIcon } from "react-file-icon"
 
 const LinkRender = ({ className, ...props }) => {
     return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
 }
 
 const BizchatMessage = memo(
-    ({ body, chatId, senderUserId, bz_hash, created }) => {
+    ({ type = 'M', body, chatId, senderUserId, bz_hash, created, from }) => {
         const ref = useRef()
 
         const [open, setOpen] = useState()
-        const { teaser } = body.teaser ? body: JSON.parse(body)
-
         const link = `/bizchat/rooms/${chatId}?i=${bz_hash}`
 
-        const teaser_200 = truncate(teaser, { length: 200 })
+        const messageData = useMemo(() => {
+            if (type === 'A') {
+                const data = JSON.parse(body)
+                const [messageStr, ...attachments] = data
+                return {
+                    teaser: truncate(messageStr, { length: 200 }),
+                    attachments: attachments.map(([filename, renamed, fileType]) => {
+                        return {
+                            filename,
+                            name: `${filename}.${fileType}`,
+                            url: `${from}_${chatId}_${renamed}.${fileType}`,
+                            fileType
+                        }
+                    })
+                }
+            }
+
+            return {
+                teaser: truncate(body, { length: 200 })
+            }
+
+        }, [type, body]) 
 
         useEffect(() => {
 
@@ -50,14 +67,37 @@ const BizchatMessage = memo(
                         Bizchat message
                     </span>
                     {!open && (
-                        <span className="min-w-[180px]">
+                        <span className="space-y-1 min-w-[180px]">
                             <ReactMarkdown 
                                 components={{
                                     a: LinkRender
                                 }}
-                                children={teaser_200} 
+                                children={messageData.teaser} 
                                 remarkPlugins={[remarkGfm]}                                     
                             />
+                            {messageData.attachments?.length > 0 && (
+                                messageData.attachments.map(({ name, url, fileType }) => {
+                                    return (
+                                        <a 
+                                            key={url} 
+                                            href={`https://localhost:8081/${url}`}
+                                            target="__blank"
+                                            className="flex gap-3 p-1 border rounded text-xs w-[250px]"
+                                        >
+                                            <div className="w-7 max-h-10 overflow-hidden">
+                                                {['jpg', 'jpeg', 'gif', 'png'].includes(fileType) ? (
+                                                    <img src={`https://localhost:8081/p_${url}`} className="max-w-full" />
+                                                ) : (
+                                                    <FileIcon extension={fileType} {...defaultStyles[fileType]} />
+                                                )}
+                                            </div>
+                                            <span className=" w-3/4 grow">
+                                                {name}
+                                            </span>
+                                        </a>
+                                    )
+                                })
+                            )}
                         </span>
                     )}
                     <Collapsible open={open} onOpenChange={setOpen}>
@@ -91,12 +131,15 @@ const BizchatMessage = memo(
     }
 )
 
-const ChatboxBizchatMessage = ({ chatId, body, created }) => {
+const ChatboxBizchatMessage = ({ type = 'A', chatId, body, created, recipients, from }) => {
     const auth = useAuth()
+
     return (
         <BizchatMessage
             body={body}
+            type={type}
             chatId={chatId}
+            from={from}
             senderUserId={auth.user.neg_id}
             bz_hash={auth.user.bz_hash}
             created={created}
@@ -104,7 +147,7 @@ const ChatboxBizchatMessage = ({ chatId, body, created }) => {
     )
 }
 
-function LoadBizchatMessagesLast5({ senderUserId, chatId }) {
+function LoadBizchatMessagesLast5 ({ senderUserId, chatId }) {
     const { data, refetch } = useSuspenseQuery({
         queryKey: ["bizchatMessagesLast5", senderUserId, chatId],
         queryFn: () => getBizchatMessagesLast5({ senderUserId, chatId }),

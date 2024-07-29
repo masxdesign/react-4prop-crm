@@ -3,12 +3,12 @@ import Chatbox from "@/routes/-ui/Chatbox"
 import { addNote } from "@/api/fourProp"
 import { useQueryClient } from "@tanstack/react-query"
 import { util_add_each, util_delete_each } from "@/utils/localStorageController"
-import useChatboxEachFilterMessages from "./use-ChatboxEachFilterMessages"
+import useRenderMessage from "./use-renderMessage"
 
 const ChatboxEach = ({ queryOptions, id, user }) => {
     const queryClient = useQueryClient()
 
-    const handleFilterMessages = useChatboxEachFilterMessages()
+    const renderMessage = useRenderMessage()
 
     const addMutationOptions =  {
       mutationFn: (variables) => addNote(variables, { id, user }),
@@ -34,7 +34,7 @@ const ChatboxEach = ({ queryOptions, id, user }) => {
     return (
       <Chatbox 
         queryOptions={queryOptions} 
-        onFilterData={handleFilterMessages}
+        renderMessage={renderMessage}
         addMutationOptions={addMutationOptions}
         deleteMutationOptions={deleteMutationOptions}
         enableDelete={false}
