@@ -64,14 +64,15 @@ function ClientsListComponent() {
   const tableSSModal = useTableModel.use.tableSS({ 
     dataPool,
     tableName, 
-    queryFn: (variables) => fetchNegotiators(variables, auth), 
+    queryFn: variables => fetchNegotiators(variables, auth), 
     columns, 
     meta: {
       showDialog: dialogModel.showDialog,
       hoverCardComponent: TableHoverCard,
       auth
     },
-    tableModel
+    tableModel,
+    enableRowSelection: row => auth.user.neg_id !== row.original.id
   })
   
   const navigate = useNavigate({ from: "/dashboard/data/each/list" })

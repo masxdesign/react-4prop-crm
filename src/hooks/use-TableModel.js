@@ -412,7 +412,7 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 
 useTableModel.use = {
     tableSS (options) {
-        const { tableName, queryFn, staleTime, columns, meta, tableModel, dataPool } = options
+        const { tableName, queryFn, staleTime, columns, meta, tableModel, dataPool, enableRowSelection } = options
 
         const selected = tableModel.state.selected
 
@@ -421,6 +421,7 @@ useTableModel.use = {
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
         const table = useTableSS({ 
+            enableRowSelection,
             tableName,
             queryOptions: tableQueryOptions, 
             columns,

@@ -38,7 +38,7 @@ export const columns = [
     ),
     size: 60,
     enableSorting: false,
-    enableHiding: false,
+    enableHiding: false
   }),
   columnHelper.display({
     id: 'note',

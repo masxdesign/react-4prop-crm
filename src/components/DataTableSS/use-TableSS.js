@@ -16,7 +16,8 @@ const useTableSS = ({
     onSortingChange,
     onPaginationChange,
     onColumnFiltersChange,
-    onGlobalFilterChange
+    onGlobalFilterChange,
+    enableRowSelection
 }) => {
     const defaultColumnOrder = useMemo(() => columns.map((c) => c.id), [columns])
     const defaultColumnSizing = {}
@@ -44,7 +45,7 @@ const useTableSS = ({
             maxSize: 800
         },
         autoResetPageIndex: false,
-        enableRowSelection: true,
+        enableRowSelection,
         manualFiltering: true,
         manualPagination: true,
         manualSorting: true,

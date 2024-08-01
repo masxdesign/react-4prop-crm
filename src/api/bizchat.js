@@ -85,6 +85,8 @@ export const formDataFilesMergeAsync = async ({ form, files = [], message, filen
 export const sendBizchatMessage = async ({ files = [], from, recipient, message, context }) => {
     try {
 
+        if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
+
         const form = new FormData
 
         await formDataFilesMergeAsync({ 
@@ -96,7 +98,7 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
 
         form.append('from', from)
         form.append('recipient', recipient)
-        
+
         if (context) form.append('context', JSON.stringify(context))
         
         const { data } = await bizchatAxios.post(`/api/crm/create_chat_attachments`, form)
@@ -110,6 +112,10 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
 
 export const sendMassBizchat = async ({ files = [], from, recipients, subjectLine, message }) => {
     try {
+        
+        const safe_recipients = `${recipients}`.split(',').filter(id => id !== from)
+
+        if (safe_recipients.length < 1) throw new Error('recipients is empty')
 
         const form = new FormData
 
@@ -121,7 +127,7 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
         })
     
         form.append('from', from)
-        form.append('recipients', recipients)
+        form.append('recipients', safe_recipients)
         form.append('subjectLine', subjectLine)
         
         const { data } = await bizchatAxios.post(`/api/crm/send_mass_attachments`, form)
