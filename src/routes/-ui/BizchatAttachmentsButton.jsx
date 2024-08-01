@@ -40,7 +40,7 @@ function BizchatAttachmentsButton ({ uppy, ...props }) {
   
       }
   
-    }, [files])
+    }, [files.length])
   
     return (
       <Popover>

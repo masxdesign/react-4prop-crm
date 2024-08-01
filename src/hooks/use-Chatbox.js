@@ -2,7 +2,6 @@ import { useState } from 'react';
 import * as Yup from "yup"
 import { useMutation } from '@tanstack/react-query';
 import { Uppy } from '@uppy/core';
-import ThumbnailGenerator from '@uppy/thumbnail-generator';
 import { useUppyState } from '@uppy/react';
 import { createSelector } from 'reselect';
 
