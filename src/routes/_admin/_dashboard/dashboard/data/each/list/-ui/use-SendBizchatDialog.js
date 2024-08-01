@@ -1,7 +1,11 @@
-import { useCallback, useEffect, useMemo, useReducer } from "react"
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react"
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import _, { find, orderBy } from "lodash"
 import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
+import { Uppy } from "@uppy/core"
+import { useUppyState } from "@uppy/react"
+import { filesSelector } from "@/hooks/use-Chatbox"
+import attachmentCombiner from "@/routes/-ui/attachmentCombiner"
 
 const initialState = {
     open: false,
@@ -67,7 +71,17 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-export default function useSendBizchatDialog ({ auth, selectionControlModal }) { 
+export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
+    const [uppy] = useState(() => new Uppy({
+        restrictions: {
+          maxNumberOfFiles: 3,
+          allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
+          maxFileSize: 15_000_000
+        }
+    }))
+
+    const files = useUppyState(uppy, filesSelector)
+
     const { selected, onDeselectAllAndApply } = selectionControlModal
 
     const initialStateFromStorage = useMemo(() => {
@@ -159,11 +173,13 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
             from,
             recipients: selected,
             subjectLine,
-            message
+            message,
+            files
         }, {
             onSuccess (data) {
+                uppy.clear()
                 queryClient.invalidateQueries({ queryKey: statQueryOptions.queryKey })
-                queryClient.setQueryData(listQueryOptions.queryKey, prev => [data, ...prev])
+                queryClient.invalidateQueries({ queryKey: listQueryOptions.queryKey })
                 onItemSelect(data.id)
                 dispatch(justSentReceived(data.id))
                 onDeselectAllAndApply()
@@ -195,6 +211,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
         currItemId,
         justSent,
         onAddItem,
+        uppy,
         onMessageChange,
         onSubjectLineChange,
         onItemSelect,
@@ -217,9 +234,21 @@ useSendBizchatDialog.use = {
         const data = useMemo(() => {
             return query.data.map(item => {
                 const stat = _.find(statQuery.data, { crm_id: item.id })
+
+                let message_text = item.message
+                let attachments = []
+
+                if (item.type === 'A') {
+                    const [a_message_text, ...files] = JSON.parse(message_text)
+
+                    message_text = a_message_text
+                    attachments = files.map(attachmentCombiner)
+                }
     
                 return {
                     ...item,
+                    message: message_text,
+                    attachments,
                     recipients: stat?.recipients ? _.map(stat.recipients, 'recipient'): item.recipients,
                     statOfRecipients: Object.fromEntries(stat?.recipients.map(item => ([item.recipient, item])) ?? []),
                     stat,

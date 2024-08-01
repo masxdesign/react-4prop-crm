@@ -22,7 +22,7 @@ const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
         allowedFileTypes: ['.jpg', '.jpeg', '.png', '.gif', '.pdf'],
         maxFileSize: 15_000_000
       }
-    }).use(ThumbnailGenerator, { thumbnailWidth: 320, thumbnailType: 'image/png', waitForThumbnailsBeforeUpload: true }))
+    }))
 
     const files = useUppyState(uppy, filesSelector)
 

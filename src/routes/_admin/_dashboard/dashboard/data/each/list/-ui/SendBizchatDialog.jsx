@@ -9,21 +9,78 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import Dd from "./Dd"
 import { cx } from "class-variance-authority"
-import { History, LucideTextSelection, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, SendHorizonalIcon, SendIcon, User2, UserIcon } from "lucide-react"
+import { History, LucideTextSelection, PaperclipIcon, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, SendHorizonalIcon, SendIcon, User2, UserIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
-import { Suspense, useEffect, useMemo } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import TooltipContentPrimary from "@/components/ui/TooltipContentPrimary"
 import { Input } from "@/components/ui/input"
-import _, { find, isEmpty } from "lodash"
+import _ from "lodash"
 import { useToast } from "@/components/ui/use-toast"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import UserCard from "./UserCard"
-import { getMassBizchatNotEmailed, getMassBizchatStat } from "@/api/bizchat"
-import { EnvelopeClosedIcon, ReloadIcon } from "@radix-ui/react-icons"
 import useSendBizchatDialog from "./use-SendBizchatDialog"
+import BizchatAttachmentsButton from "@/routes/-ui/BizchatAttachmentsButton"
+import Attachment from "@/routes/-ui/Attachment"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
+
+const NewMessageForm = ({ uppy, form, onSubmit, onResetMessageText, isPending, recipients, selected }) => {
+    return (
+        <form 
+            onSubmit={onSubmit} 
+            className="flex flex-col gap-2 flex-auto bg-white shadow-sm p-3 relative"
+        >
+            {isPending && (
+                <div className="absolute inset-0 p-3 bg-white/80 z-10 flex justify-center items-center">
+                    <div className="flex flex-col items-center p-3 gap-4">
+                        <div className="animate-bounce flex justify-center items-center bg-sky-100 rounded-full w-20 h-20 shadow-lg">
+                            <SendIcon className="w-10 h-10 text-sky-800" />
+                        </div>
+                        <span className="text-lg text-center">
+                            Hold tight your message is <br/>being sent to {recipients.length} recipients
+                        </span>
+                    </div>
+                </div>
+            )}
+            <h2 className="font-bold text-lg">New message</h2>
+            <div className="flex gap-2">
+                <Input 
+                    placeholder="Type your subject line here..." 
+                    className="text-base"
+                    maxLength={60}
+                    {...form.register("subjectLine", { required: true })} 
+                />
+                <BizchatAttachmentsButton uppy={uppy} size="sm" />
+            </div>
+            <Textarea
+                placeholder="Type your message here..."
+                className="focus-visible:ring-inset focus-visible:ring-offset-0 text-base"
+                rows={20}
+                {...form.register("message", { required: true })}
+            />
+            <div className="space-x-3 text-right">
+                {form.watch('message') !== "" && (
+                    <Button
+                        variant="link"
+                        size="sm"
+                        onClick={onResetMessageText}
+                        className="place-self-end"
+                    >
+                        Clear
+                    </Button>
+                )}
+                <Button
+                    type="submit"
+                    size="sm"
+                    disabled={selected.length < 1 || !form.formState.isValid}
+                    className="place-self-end"
+                >
+                    Send
+                </Button>
+            </div>
+        </form>
+    )
+}
 
 function SendBizchatDialog({ selected, model, tableSSModal, makeFetchNegQueryOptions }) {
     const {
@@ -52,6 +109,7 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
         message,
         subjectLine,
         onAddItem,
+        uppy,
         onMessageChange,
         onSubjectLineChange,
         onItemSelect,
@@ -67,13 +125,7 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
         recipients
     } = useSendBizchatDialog.use.query({ model, selected })
 
-    const {
-        register,
-        watch,
-        setValue,getValues,
-        formState,
-        ...form
-    } = useForm({
+    const form = useForm({
         defaultValues: { 
             subjectLine,
             message 
@@ -83,16 +135,16 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
     const { toast } = useToast()
     
     useEffect(() => {
-        const subscription = watch((value) => {
+        const subscription = form.watch((value) => {
             onSubjectLineChange(value.subjectLine)
             onMessageChange(value.message)
         })
         return () => subscription.unsubscribe()
-    }, [watch])
+    }, [form.watch])
 
     const handleResetMessageText = () => {
-        setValue("subjectLine", "")
-        setValue("message", "")
+        form.setValue("subjectLine", "")
+        form.setValue("message", "")
     }
 
     const handleSubmit = form.handleSubmit((data) => {
@@ -105,8 +157,8 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
     })
 
     const handleReuseMessage = ({ message, subjectLine = "" }) => {
-        setValue("subjectLine", subjectLine)
-        setValue("message", message)
+        form.setValue("subjectLine", subjectLine)
+        form.setValue("message", message)
         onItemSelect(null)
     }
 
@@ -213,86 +265,68 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                 </div>
                 <div className="bg-white h-[636px] shadow-sm grow">
                     {currItem ? (
-                        <div className="flex flex-col h-[636px] overflow-hidden">
-                            <div className="shadow-sm p-3 space-y-1">
-                                <div className="flex items-center justify-between">
-                                    <small className="text-muted-foreground text-nowrap space-x-2"> 
-                                        {currItem.justSent && (
-                                            <span className="text-green-600 font-bold">Just sent</span>
-                                        )} 
-                                        <span>
-                                            {format(
-                                                currItem.created,
-                                                "d MMM yyyy HH:mm"
-                                            )}
-                                        </span>                                  
-                                    </small>
-                                    <Button 
-                                        variant="secondary"
-                                        size="sm"
-                                        className="font-bold" 
-                                        onClick={() => handleReuseMessage(currItem)}
-                                    >
-                                        Reuse
-                                    </Button>
-                                </div>
-                                <h1 className="font-bold text-lg">{currItem.subjectLine}</h1>
-                            </div>
-                            <article className="p-3 grow overflow-auto">
+                        <div className="flex py-3 flex-col gap-2 h-[636px] overflow-hidden">
+                            <h1 className="px-3 font-bold text-lg">{currItem.subjectLine}</h1>
+                            <article className="px-3 grow overflow-auto">
                                 <Nl2br text={currItem.message} />
                             </article>
-                        </div>
-                    ) : (
-                        <form 
-                            onSubmit={handleSubmit} 
-                            className="flex flex-col gap-2 flex-auto bg-white shadow-sm p-3 relative"
-                        >
-                            {sendRequest.isPending && (
-                                <div className="absolute inset-0 p-3 bg-white/80 z-10 flex justify-center items-center">
-                                    <div className="flex flex-col items-center p-3 gap-4">
-                                        <div className="animate-bounce flex justify-center items-center bg-sky-100 rounded-full w-20 h-20 shadow-lg">
-                                            <SendIcon className="w-10 h-10 text-sky-800" />
-                                        </div>
-                                        <span className="text-lg text-center">
-                                            Hold tight your message is <br/>being sent to {recipients.length} recipients
-                                        </span>
-                                    </div>
-                                </div>
+                            {currItem.attachments.length > 0 && (
+                                <div className="px-3 flex justify-center">
+                                    <HoverCard openDelay={100} closeDelay={100}>
+                                        <HoverCardTrigger asChild>
+                                            <span className="inline-flex items-center flex-row gap-2 cursor-pointer py-2 px-3 bg-sky-50 text-sky-700 rounded hover:underline hover:bg-sky-100">
+                                                <PaperclipIcon className="w-4 h-4" />
+                                                <span className="text-sm">{currItem.attachments.length} attachment(s)</span>
+                                            </span>
+                                        </HoverCardTrigger>
+                                        <HoverCardContent side="top" align="center" className="space-y-2">
+                                            {currItem.attachments.map(({ name, url, fileType, fileSize }) => {
+                                                return (
+                                                    <Attachment 
+                                                        key={url}
+                                                        name={name}
+                                                        url={url}
+                                                        fileType={fileType}
+                                                        fileSize={fileSize}
+                                                    />
+                                                )
+                                            })}
+                                        </HoverCardContent>
+                                    </HoverCard>    
+                                </div>                            
                             )}
-                            <h2 className="font-bold text-lg">New message</h2>
-                            <Input 
-                                placeholder="Type your subject line here..." 
-                                className="text-base"
-                                maxLength={60}
-                                {...register("subjectLine", { required: true })} 
-                            />
-                            <Textarea
-                                placeholder="Type your message here..."
-                                className="focus-visible:ring-inset focus-visible:ring-offset-0 text-base"
-                                rows={20}
-                                {...register("message", { required: true })}
-                            />
-                            <div className="space-x-3 text-right">
-                                {watch('message') !== "" && (
-                                    <Button
-                                        variant="link"
-                                        size="sm"
-                                        onClick={handleResetMessageText}
-                                        className="place-self-end"
-                                    >
-                                        Clear
-                                    </Button>
-                                )}
-                                <Button
-                                    type="submit"
-                                    size="sm"
-                                    disabled={selected.length < 1 || !formState.isValid}
-                                    className="place-self-end"
+                            <div className="flex items-center justify-between px-3">
+                                <small className="text-nowrap space-x-2"> 
+                                    {currItem.justSent && (
+                                        <span className="text-slate-800">Just sent</span>
+                                    )} 
+                                    <span className="text-muted-foreground text-[11px]">
+                                        {format(
+                                            currItem.created,
+                                            "d MMM yyyy HH:mm"
+                                        )}
+                                    </span>                                  
+                                </small>
+                                <Button 
+                                    variant="secondary"
+                                    size="xs"
+                                    className="font-bold" 
+                                    onClick={() => handleReuseMessage(currItem)}
                                 >
-                                    Send
+                                    Reuse
                                 </Button>
                             </div>
-                        </form>
+                        </div>
+                    ) : (
+                        <NewMessageForm 
+                            uppy={uppy}
+                            recipients={recipients}
+                            form={form}
+                            isPending={sendRequest.isPending}
+                            onSubmit={handleSubmit}
+                            selected={selected}
+                            onResetMessageText={handleResetMessageText}
+                        />
                     )}
                 </div>
             </div>
@@ -419,8 +453,8 @@ function Campaign ({ id, stat, subjectLine, created, recipients, active, justSen
     return (
         <div className={cx(
             className, 
-            "flex flex-col p-3 bg-slate-50 border border-transparent rounded-sm cursor-pointer hover:shadow-md gap-1", 
-            { 'border-slate-500 shadow-sm': active }
+            "flex flex-col p-3  border rounded-sm cursor-pointer hover:shadow-md gap-1", 
+            active ? 'border-sky-400 bg-sky-50 shadow-sm': 'border-transparent bg-slate-50'
         )} onClick={() => onItemSelect(id)}>
             <span className="truncate font-semibold text-sm">{subjectLine}</span>
             <span className="flex text-sm gap-3">

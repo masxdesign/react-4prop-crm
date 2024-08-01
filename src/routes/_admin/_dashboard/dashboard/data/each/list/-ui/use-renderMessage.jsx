@@ -74,7 +74,7 @@ const useRenderMessage = () => {
                         )
                         
                         break
-                    case resource_name.includes(":bz"): {
+                    case resource_name.includes(":bz"): { // remove later
 
                         message = (
                             <ChatboxBizchatMessage 
