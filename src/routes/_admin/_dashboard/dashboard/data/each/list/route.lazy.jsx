@@ -45,6 +45,7 @@ import { cx } from 'class-variance-authority';
 import { useMap } from '@uidotdev/usehooks';
 import useMakeFetchNegotiatorsDataQueryOptions from './-ui/use-makeFetchNegotiatorsDataQueryOptions';
 import LastContact from '@/routes/-ui/LastContact';
+import { COMPANY_TYPE_NAMES } from '@/constants';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
     component: ClientsListComponent
@@ -133,7 +134,8 @@ function ClientsListComponent() {
               globalFilter={tableModel.tableState.globalFilter}  
             />
             {[
-              { columnId: "company", title: "Companies" },
+              { columnId: "type", title: "Company type", names: COMPANY_TYPE_NAMES },
+              { columnId: "company", title: "Company" },
               { columnId: "city", title: "City" },
               { columnId: "a", title: "Postcode" },
             ].map((props) => (
@@ -362,6 +364,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
         items={[
           { label: "Email", name: "email" },
           { label: "Company", name: "company", bold: true },
+          { label: "Co. type", name: "type", names: COMPANY_TYPE_NAMES },
           { label: "Department", name: "department" },
           { label: "Position", name: "position", alwaysShow: true },
           { label: "Website", name: "website" },
@@ -592,7 +595,7 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
   )
 }
 
-function FacetedFilter ({ queryKey, table, title, columnId, disableFacets }) {
+function FacetedFilter ({ queryKey, table, title, columnId, disableFacets, names }) {
   const { data } = useSuspenseQuery({
     queryKey: queryKey,
     queryFn: () => fetchFacets({ column: columnId }),
@@ -604,8 +607,9 @@ function FacetedFilter ({ queryKey, table, title, columnId, disableFacets }) {
       let facets = new Map
 
       for(const [label, count] of data_) {
-          options.push({ label, value: label })
-          facets.set(label, count)
+          const label_ = names?.[label] ?? label
+          options.push({ label: label_, value: label })
+          facets.set(label, count > 999 ? numberWithCommas(count): count)
       }
 
       return { options, facets }

@@ -12,10 +12,8 @@ import { ExternalLinkIcon, PaperclipIcon } from "lucide-react"
 import { isString, reverse, truncate } from "lodash"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from "remark-gfm"
-import { defaultStyles, FileIcon } from "react-file-icon"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { cx } from "class-variance-authority"
-import { formatBytes } from "@/utils/formatBytes"
 import attachmentCombiner from "./attachmentCombiner"
 import Attachment from "./Attachment"
 
@@ -23,14 +21,14 @@ const LinkRender = ({ className, ...props }) => {
     return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
 }
 
-const messagesCombiner = (type, body, from, chatId) => {
+const messageCombiner = (type, body, from, chatId) => {
     if (type === 'A') {
         const data = JSON.parse(body)
         const [messageStr, ...attachments] = data
         return {
             body: messageStr,
             teaser: truncate(messageStr, { length: 200 }),
-            attachments: attachments.map(attachmentCombiner)
+            attachments: attachments.map(file => attachmentCombiner(file, from, chatId))
         }
     }
 
@@ -41,7 +39,7 @@ const messagesCombiner = (type, body, from, chatId) => {
 }
 
 const BizchatMessagePreview = memo(({ type = 'M', body, chatId, from, className, itemClassName, showMessage }) => {
-    const messageData = messagesCombiner(type, body, from, chatId)
+    const messageData = messageCombiner(type, body, from, chatId)
 
     return (
         <span className={cx("space-y-1", className)}>
@@ -162,7 +160,7 @@ function LoadBizchatMessagesLast5 ({ senderUserId, chatId }) {
 
     const messages = useMemo(() => {
         return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id }) => {
-            const messageData = messagesCombiner(type, body, from, chat_id)
+            const messageData = messageCombiner(type, body, from, chat_id)
 
             const handleClick = () => {
                 window.open(`https://4prop.com/bizchat/rooms/${chat_id}?message=${id}`, "bizchat")

@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils"
+import React from "react"
 
-const Linkable = ({ info, className, tab, ...props }) => {
-
-    const value = info.getValue()
+const Linkable = React.memo(({ info, names, className, tab, ...props }) => {
+    const infoValue = info.getValue()
+    const value = names?.[infoValue] ?? infoValue
   
     const handleClick = () => {
       info.table.options.meta.showDialog(info.row.original.id, tab)
@@ -20,6 +21,6 @@ const Linkable = ({ info, className, tab, ...props }) => {
         {value?.length > 0 ? value : <i className='font-normal opacity-50'>(empty)</i>}
       </div>
     )
-}
+})
 
 export default Linkable

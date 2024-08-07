@@ -3,9 +3,15 @@ import Dd from "./Dd"
 import { isEmpty, isString } from "lodash"
 import htmlEntities from "@/utils/htmlEntities"
 
-const Ddd = forwardRef(({ label, row, name, bold, labelClassName, alwaysShow, collapsible, ...props }, ref) => {
+const Ddd = forwardRef(({ label, row, name, names, bold, labelClassName, alwaysShow, collapsible, ...props }, ref) => {
     const valueRaw = row[name]
-    const value = useMemo(() => isString(valueRaw) ? htmlEntities(valueRaw): valueRaw, [valueRaw])
+    const value = useMemo(() => {
+
+      if (names) return names[valueRaw]
+
+      return isString(valueRaw) ? htmlEntities(valueRaw): valueRaw
+    
+    }, [valueRaw, names])
   
     if(!alwaysShow && isEmpty(value)) return null
   

@@ -4,7 +4,7 @@ import skaler from "@/utils/skaler";
 import axios from "axios";
 import _, { isFunction } from "lodash";
 
-const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
+export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
 const bizchatAxios = axios.create({
 	baseURL: BIZCHAT_BASEURL,

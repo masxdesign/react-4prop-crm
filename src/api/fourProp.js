@@ -77,7 +77,7 @@ export const fetchSearchProperties = async (pids) => {
 
 export const authLogout = () => fourProp.post('api/account/logout')
 
-const defaultNegotiatorInclude = "id,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
+const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
 
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }, auth) => {
     let params = {

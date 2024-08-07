@@ -242,7 +242,7 @@ useSendBizchatDialog.use = {
                     const [a_message_text, ...files] = JSON.parse(message_text)
 
                     message_text = a_message_text
-                    attachments = files.map(attachmentCombiner)
+                    attachments = files.map(file => attachmentCombiner(file))
                 }
     
                 return {

@@ -13,21 +13,22 @@ const routeSearchMapping = (defaultState, state, prev, cb) => {
     const o = m ?? t ?? n
     
     let s = get(state, t)
-    
-    if(isEqual(get(defaultState, t), s)) {
+    let x = get(defaultState, t)
+
+    if (isEqual(x, s)) {
       de(o)
       return null
     }
 
     let p = get(prev, m)
 
-    if(m === 'page') {
+    if (m === 'page') {
       p = parseInt(p || 1) - 1
     }
 
-    if(isEqual(s, p)) return null
+    if (isEqual(s, p)) return null
     
-    if(m === 'page') {
+    if (m === 'page') {
       s = s + 1
     }
     

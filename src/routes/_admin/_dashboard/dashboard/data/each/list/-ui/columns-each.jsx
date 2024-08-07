@@ -6,12 +6,12 @@ import AlertOpened from '@/routes/-ui/AlertOpened';
 import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
 import ProgressCircle from '@/routes/-ui/ProgressCircle';
 import Linkable from './Linkable';
-import ColumnLastContactEach from './ColumnLastContactEach';
 import ColumnNextContactEach from './ColumnNextContactEach';
 import LastContact from '@/routes/-ui/LastContact';
+import { COMPANY_TYPE_NAMES } from '@/constants';
 const columnHelper = createColumnHelper()
 
-export const version = "v1.1"
+export const version = "v2.1"
 
 export const columns = [
   columnHelper.display({
@@ -79,6 +79,14 @@ export const columns = [
     ),
     meta: { label: 'Last contact' },
     minSize: 220
+  }),
+  columnHelper.accessor('type', {
+    id: 'type',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Type" />
+    ),
+    cell: (info) => <Linkable info={info} names={COMPANY_TYPE_NAMES} className="w-full truncate font-medium" tab="person" />,
+    minSize: 185
   }),
   columnHelper.accessor('company', {
     id: 'company',

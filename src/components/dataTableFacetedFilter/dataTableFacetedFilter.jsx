@@ -98,9 +98,9 @@ const VList = ({ column, options, facets, selectedValues, multiple, disableFacet
                       {option.icon && (
                           <option.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                       )}
-                      <span className="truncate">{option.label === "" ? <i className="opacity-50">(empty)</i> : option.label}</span>
+                      <span className="truncate w-36">{option.label === "" ? <i className="opacity-50">(empty)</i> : option.label}</span>
                       {!disableFacets && facets?.get(option.value) && (
-                          <span className="ml-auto flex h-4 w-4 items-center justify-center font-mono text-xs">
+                          <span className="flex h-4 w-4 items-center justify-end font-mono text-xs grow">
                               {facets.get(option.value)}
                           </span>
                       )}

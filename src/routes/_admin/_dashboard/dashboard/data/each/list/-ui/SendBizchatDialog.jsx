@@ -9,7 +9,7 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import Dd from "./Dd"
 import { cx } from "class-variance-authority"
-import { History, LucideTextSelection, PaperclipIcon, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, SendHorizonalIcon, SendIcon, User2, UserIcon } from "lucide-react"
+import { FilesIcon, History, LucideTextSelection, PaperclipIcon, RefreshCcwDot, RefreshCwIcon, RefreshCwOff, Send, SendHorizonalIcon, SendIcon, User2, UserIcon } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { Suspense, useEffect, useMemo, useState } from "react"
 import Nl2br from "@/components/Nl2br/Nl2br"
@@ -145,6 +145,7 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
     const handleResetMessageText = () => {
         form.setValue("subjectLine", "")
         form.setValue("message", "")
+        uppy.clear()
     }
 
     const handleSubmit = form.handleSubmit((data) => {
@@ -448,7 +449,7 @@ SendBizchatDialog.ButtonSm = ({ model }) => {
     )
 }
 
-function Campaign ({ id, stat, subjectLine, created, recipients, active, justSent, onItemSelect, className }) {
+function Campaign ({ id, stat, subjectLine, created, recipients, attachments, active, justSent, onItemSelect, className }) {
     
     return (
         <div className={cx(
@@ -471,6 +472,12 @@ function Campaign ({ id, stat, subjectLine, created, recipients, active, justSen
                     <UserIcon className="w-3 h-3"/> 
                     <span className="font-thin">{recipients.length}</span>
                 </span>
+                {attachments.length > 0 && (
+                    <span className="flex items-center text-xs gap-1">
+                        <PaperclipIcon className="w-3 h-3"/> 
+                        <span className="font-thin">{attachments.length}</span>
+                    </span>
+                )}
                 <span className="flex items-center text-xs gap-4 ml-auto">
                     {stat?.unread_total > 0 && (
                         <span className="flex items-center gap-1 text-white bg-green-600 px-1 rounded-sm shadow-sm">
