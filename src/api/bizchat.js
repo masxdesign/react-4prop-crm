@@ -150,6 +150,11 @@ export const getBizchatLastMessage = async ({ from, recipient }) => {
     return data
 }
 
+export const getAllMailShots = async (nid, uid) => {
+    const { data } = await bizchatAxios.post(`/api/crm/all_mail_shots`, { nid, uid })
+    return data
+}
+
 export const getCurrentApplicantUser = async () => {
     const { data } = await bizchatAxios.post('/api/applicant/current')
 

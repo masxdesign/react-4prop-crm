@@ -1,57 +1,51 @@
-import React, { Suspense, forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createLazyFileRoute } from '@tanstack/react-router';
+import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { isEmpty } from 'lodash';
+import { PhoneCallIcon, User } from 'lucide-react';
+import { Controller, useForm } from 'react-hook-form';
+import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon, EnvelopeClosedIcon, ExternalLinkIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { HoverCardPortal } from '@radix-ui/react-hover-card';
+import { cx } from 'class-variance-authority';
+import { useMap } from '@uidotdev/usehooks';
+import { useNavigate } from '@tanstack/react-router';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import ChatboxEach from './-ui/ChatboxEach';
 import { fetchFacets, fetchNegotiators, fetchNotes, FOURPROP_BASEURL } from '@/api/fourProp';
-import { queryOptions, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CaretSortIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon, EnvelopeClosedIcon, ExternalLinkIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { PhoneCallIcon, User } from 'lucide-react';
-import { findLast, isEmpty } from 'lodash';
-import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';
 import DataTableDnd from '@/components/DataTableDnd';
 import DataTablePagination from '@/components/DataTablePagination';
 import { Badge } from '@/components/ui/badge';
 import useDialogModel from '@/hooks/use-DialogModel';
+import { Popover, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import numberWithCommas from '@/utils/numberWithCommas';
+import DataTableViewOptions from '@/components/DataTableViewOptions';
+import ProgressCircle from '@/components/ProgressCircle';
+import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
+import LastContact from '@/routes/-ui/LastContact';
+import { COMPANY_TYPE_NAMES } from '@/constants';
+import ChatboxEach from './-ui/ChatboxEach';
+import ColumnNextContactEach from './-ui/ColumnNextContactEach';
 import Ddd from './-ui/Ddd';
 import Dd from './-ui/Dd';
 import Dddl from './-ui/Dddl';
 import Ddl from './-ui/Ddl';
 import SelectionControl from './-ui/SelectionControl';
 import useSelectionControl from './-ui/use-SelectionControl';
-import { useNavigate } from '@tanstack/react-router';
 import SendBizchatDialog from './-ui/SendBizchatDialog';
 import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
 import UserCard from './-ui/UserCard';
-import { Popover, PopoverTrigger } from '@/components/ui/popover';
-import { Input } from '@/components/ui/input';
-import { Controller, useForm } from 'react-hook-form';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import numberWithCommas from '@/utils/numberWithCommas';
-import DataTableViewOptions from '@/components/DataTableViewOptions';
-import ProgressCircle from '@/components/ProgressCircle';
-import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
-import { cx } from 'class-variance-authority';
-import { useMap } from '@uidotdev/usehooks';
 import useMakeFetchNegotiatorsDataQueryOptions from './-ui/use-makeFetchNegotiatorsDataQueryOptions';
-import LastContact from '@/routes/-ui/LastContact';
-import { COMPANY_TYPE_NAMES } from '@/constants';
 
-export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
-    component: ClientsListComponent
-})
-
-function ClientsListComponent() {
-  const { tableName, defaultTableModelState, columns, auth } = Route.useRouteContext()
+export default function CRMTable ({ tableName, defaultTableModelState, columns, auth }) {
   
   const dataPool = useMap()
 

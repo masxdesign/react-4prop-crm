@@ -12,7 +12,7 @@ import Ddd from "./Ddd"
 import Dd from "./Dd"
 import { cva } from "class-variance-authority"
 import { CheckCircle2Icon, History, Loader2, Loader2Icon, LucideCheck, Pause, Percent, Send } from "lucide-react"
-import ProgressCircle from "@/routes/-ui/ProgressCircle"
+import ProgressCircle from '@/components/ProgressCircle';
 import { Badge } from "@/components/ui/badge"
 import { ResumeIcon } from "@radix-ui/react-icons"
 import { useForm } from "react-hook-form"
@@ -400,7 +400,7 @@ const ButtonSm = ({ onOpenChange, lastItemPending, className, icon: Icon, iconCl
                 {...props}
             >
                 <Icon className={cn("h-4 w-4", iconClassName)} /> 
-                <span>mailshot</span>
+                <span>Mass bizchat</span>
                 {lastItemPending && (
                     <span>{lastItemPending.progress}%</span>
                 )}

@@ -4,14 +4,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import LogDialog from '@/routes/-ui/LogDialog';
 import AlertOpened from '@/routes/-ui/AlertOpened';
 import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
-import ProgressCircle from '@/routes/-ui/ProgressCircle';
+import ProgressCircle from '@/components/ProgressCircle';
 import Linkable from './Linkable';
 import ColumnNextContactEach from './ColumnNextContactEach';
 import LastContact from '@/routes/-ui/LastContact';
 import { COMPANY_TYPE_NAMES } from '@/constants';
+import LastMailShot from '@/routes/-ui/LastMailShot';
 const columnHelper = createColumnHelper()
 
-export const version = "v2.1"
+export const version = "v2.2"
 
 export const columns = [
   columnHelper.display({
@@ -66,15 +67,24 @@ export const columns = [
       <DataTableColumnHeader column={column} title="Last contact" />
     ),
     cell: (info) => (
-      // <ColumnLastContactEach 
-      //   id={info.row.original.id} 
-      //   defaultValue={info.row.original.last_contact}
-      //   table={info.table}
-      //   tableDataQueryKey={info.table.options.meta.dataQueryKey}
-      // />
       <LastContact 
         value={info.row.original.last_contact} 
         unreadTotal={info.row.original.unread_total} 
+      />
+    ),
+    meta: { label: 'Last contact' },
+    minSize: 220
+  }),
+  columnHelper.accessor('mail_list_max_date_sent', {
+    id: "mail_list_max_date_sent",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Last mailshot" />
+    ),
+    cell: (info) => (
+      <LastMailShot 
+        maxDateSent={info.row.original.mail_list_max_date_sent} 
+        templateName={info.row.original.mail_list_template_name} 
+        total={info.row.original.mail_list_total}
       />
     ),
     meta: { label: 'Last contact' },

@@ -1,7 +1,6 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import AlertIcon from "./AlertIcon"
-import { format } from "date-fns"
 import Date from "./Date"
 
 const Dot = React.memo(({ value }) => {

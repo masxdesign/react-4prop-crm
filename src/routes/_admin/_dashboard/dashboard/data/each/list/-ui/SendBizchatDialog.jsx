@@ -428,7 +428,7 @@ const ButtonSm = ({ onOpenChange, className, icon: Icon, iconClassName, ...props
                 {...props}
             >
                 <Icon className={cn("h-4 w-4", iconClassName)} /> 
-                <span>mailshot</span>
+                <span>Mass bizchat</span>
             </Button>
         </TooltipTrigger>
         <TooltipContentPrimary>

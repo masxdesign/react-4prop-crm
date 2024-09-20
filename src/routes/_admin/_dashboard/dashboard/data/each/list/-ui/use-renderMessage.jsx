@@ -2,6 +2,11 @@ import { useCallback } from "react"
 import { format } from "date-fns"
 import ChatboxSentdate from "@/routes/-ui/ChatboxSentdate"
 import ChatboxBizchatMessage from "../../../../../../../-ui/ChatboxBizchatMessage"
+import Dddl from "./Dddl"
+import { Button } from "@/components/ui/button"
+import { FOURPROP_BASEURL } from "@/api/fourProp"
+import { ExternalLinkIcon } from "lucide-react"
+import { EnvelopeClosedIcon, EnvelopeOpenIcon } from "@radix-ui/react-icons"
 
 const NEXT = "2",
     LAST = "1",
@@ -14,7 +19,7 @@ const useRenderMessage = () => {
             const [messages_] = data
 
             const messages = messages_.map((item) => {
-                const { id, resource_name = '', d, i, body, i2, created, lastMessage } = item
+                const { id, resource_name = '', d, i, body, i2, created, lastMessage, mailshot } = item
 
                 let message
 
@@ -86,6 +91,42 @@ const useRenderMessage = () => {
 
                         break
                     }
+                    case !!mailshot:
+                        message = (
+                            <div className="space-y-5 pb-4">
+                                <span className="flex gap-2 text-muted-foreground text-xs">
+                                    {mailshot.openedDate 
+                                        ? <EnvelopeOpenIcon className="text-green-500" />
+                                        : <EnvelopeClosedIcon />
+                                    }
+                                    Mailshot
+                                </span>   
+                                <div className='text-sm space-y-2'>
+                                    <Dddl  
+                                        items={[
+                                            { label: "Campaign", name: "campaign_name", bold: true, className: "text-orange-600" },
+                                            { label: "Mail list", name: "maillist_name" },
+                                            { label: "Template", name: "template_name", bold: true },
+                                            { label: "Subject", name: "template_subject" },
+                                            { label: "Opened", name: "openedDate", isDate: true },
+                                            { label: "Email", name: "email" },
+                                        ]}
+                                        row={mailshot}
+                                    />
+                                </div>   
+                                <div className="text-center">
+                                    <Button asChild>   
+                                        <a href={mailshot.link} className="space-x-2 bg-orange-600 hover:bg-orange-500" target="__blank">
+                                            <span>View campaign</span>
+                                            <ExternalLinkIcon className="w-3 h-3" />
+                                        </a>
+                                    </Button>
+                                </div>                          
+                                <ChatboxSentdate sentdate={mailshot.date_sent} />
+                            </div>
+                        )
+
+                        break
                     default:
                         message = (
                             <>

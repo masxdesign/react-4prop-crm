@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
 import { find, isEmpty, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
-import { getBizchatLastMessage, getListUnreadTotal, sendBizchatMessage } from "./bizchat";
+import { getAllMailShots, getBizchatLastMessage, getListUnreadTotal, sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
 import propertyParse from "@/utils/propertyParse";
@@ -77,7 +77,7 @@ export const fetchSearchProperties = async (pids) => {
 
 export const authLogout = () => fourProp.post('api/account/logout')
 
-const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile"
+const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile,mail_list_max_date_sent,mail_list_total,mail_list_template_name"
 
 export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }, auth) => {
     let params = {
@@ -283,39 +283,49 @@ export const addNote = async (variables, { id, user }) => {
 
 }
 
-export const fetchNotes = async ({ from, recipient }) => {
-    const [notes, lastMessage] = await Promise.all([
+export const fetchNotes = async ({ from, recipient }, auth) => {
+    let [notes, lastMessage, mailshots] = await Promise.all([
         fourProp.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
-        getBizchatLastMessage({ from, recipient })
+        getBizchatLastMessage({ from, recipient }),
+        getAllMailShots(recipient, auth.id)
     ])
-
 
     const [branch, [privateNotes, messages, users]] = notes.data
 
     let messages_ = messages.map((message) => ({
         ...message,
-        author: users.find(({ id }) => id === message.uid)
+        author: users.find(({ id }) => id === message.uid),
+        created_time: getTime(message.created)
     }))
 
     if (lastMessage) {
-        messages_ = [
-            ...messages_.map(message => ({
-                ...message,
-                created_time: getTime(message.created)
-            })),
-            {
-                id: `bz:${lastMessage.id}`,
-                lastMessage,
-                created: lastMessage.sent,
-                created_time: getTime(lastMessage.sent.replace(/[Z,T]/g, ' ').trim())
-            }
-        ]
+        messages_.push({
+            id: `bz:${lastMessage.id}`,
+            lastMessage,
+            created: lastMessage.sent,
+            created_time: getTime(lastMessage.sent.replace(/[Z,T]/g, ' ').trim())
+        })
+    }
+
+    if (mailshots.length > 0) {
+        mailshots = mailshots.map(item => ({
+            ...item,
+            link: `${FOURPROP_BASEURL}/marketing-campaigns/campaigns/${item.campaign_id}/update-mail-list/${item.campaign_emaillist_id}`,
+        }))
+
+        mailshots.forEach(item => {
+            messages_.push({
+                id: `ml:${item.id}`,
+                mailshot: item,
+                created: item.date_sent,
+                created_time: getTime(item.date_sent.replace(/[Z,T]/g, ' ').trim())
+            })
+        })
     }
 
     const orderedMessages = orderBy(messages_, ['created_time'], ['asc'])
 
-    return [orderedMessages, branch, privateNotes, lastMessage]
-
+    return [orderedMessages, branch, privateNotes, lastMessage, mailshots]
 }
 
 export const fetchFacets = async ({ column = 'company' }) => {
