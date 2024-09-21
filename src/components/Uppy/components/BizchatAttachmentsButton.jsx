@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { PaperclipIcon } from 'lucide-react';
+import { ExpandIcon, PaperclipIcon, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { filesSelector } from '@/hooks/use-Chatbox';
+import useChatbox, { filesSelector } from '@/hooks/use-Chatbox';
 import { Dashboard, useUppyState } from '@uppy/react';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';

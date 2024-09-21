@@ -162,7 +162,7 @@ export const fetchNegotiatorByNids = async (nids) => {
     return data
 }
 
-export const fetchSelectedNegotiatorsDataQueryOptions = ({ selected, dataPool }) => queryOptions({
+export const fetchSelectedNegotiatorsDataQueryOptions = (dataPool, selected) => queryOptions({
     queryKey: ['fetchSelectedNegotiatorsData', selected],
     queryFn: async () => {
 

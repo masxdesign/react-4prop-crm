@@ -1,18 +1,19 @@
 import React, { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { isEmpty } from 'lodash';
-import { PhoneCallIcon, User } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
 import { ChevronLeftIcon, ChevronRightIcon, Cross2Icon, DotsHorizontalIcon, EnvelopeClosedIcon, ExternalLinkIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { PhoneCallIcon, User } from 'lucide-react';
+import { Controller, useForm } from 'react-hook-form';
 import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import { cx } from 'class-variance-authority';
 import { useMap } from '@uidotdev/usehooks';
 import { useNavigate } from '@tanstack/react-router';
+import { isEmpty } from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { fetchFacets, fetchNegotiators, fetchNotes, FOURPROP_BASEURL } from '@/api/fourProp';
+import { fetchFacets, fetchNegotiators, fetchNotes, fetchSelectedNegotiatorsDataQueryOptions, FOURPROP_BASEURL } from '@/api/fourProp';
 import { cn } from '@/lib/utils';
+import numberWithCommas from '@/utils/numberWithCommas';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { Button } from '@/components/ui/button';
@@ -26,30 +27,18 @@ import useDialogModel from '@/hooks/use-DialogModel';
 import { Popover, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import numberWithCommas from '@/utils/numberWithCommas';
 import DataTableViewOptions from '@/components/DataTableViewOptions';
 import ProgressCircle from '@/components/ProgressCircle';
-import AlertEmailClick from '@/routes/-ui/AlertEmailClick';
-import LastContact from '@/routes/-ui/LastContact';
+import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'
+import { useSelectionControl, useSendBizchatDialog } from '@/components/CRMTable/hooks';
+import { SelectionControl, SendBizchatDialog, UserCard, AlertEmailClick, ChatboxEach, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
 import { COMPANY_TYPE_NAMES } from '@/constants';
-import ChatboxEach from './-ui/ChatboxEach';
-import ColumnNextContactEach from './-ui/ColumnNextContactEach';
-import Ddd from './-ui/Ddd';
-import Dd from './-ui/Dd';
-import Dddl from './-ui/Dddl';
-import Ddl from './-ui/Ddl';
-import SelectionControl from './-ui/SelectionControl';
-import useSelectionControl from './-ui/use-SelectionControl';
-import SendBizchatDialog from './-ui/SendBizchatDialog';
-import useSendBizchatDialog from './-ui/use-SendBizchatDialog';
-import UserCard from './-ui/UserCard';
-import useMakeFetchNegotiatorsDataQueryOptions from './-ui/use-makeFetchNegotiatorsDataQueryOptions';
 
 export default function CRMTable ({ tableName, defaultTableModelState, columns, auth }) {
   
   const dataPool = useMap()
 
-  const makeFetchNegQueryOptions = useMakeFetchNegotiatorsDataQueryOptions({ dataPool })
+  const makeFetchNegQueryOptions = useCallback((selected) => fetchSelectedNegotiatorsDataQueryOptions(dataPool, selected), [])
 
   const dialogModel = useDialogModel()
   

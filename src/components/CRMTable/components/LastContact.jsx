@@ -1,9 +1,9 @@
 import { format, isToday, isYesterday } from 'date-fns';
+import { EnvelopeClosedIcon, ResetIcon } from '@radix-ui/react-icons';
+import { SendIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { EnvelopeClosedIcon, EnvelopeOpenIcon, ResetIcon } from '@radix-ui/react-icons';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { SendIcon } from 'lucide-react';
 
 const LastContact = ({ variant = "outline", value, unreadTotal, onSelect, clear, onClear }) => (
   <div className='flex items-center'>

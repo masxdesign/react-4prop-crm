@@ -1,11 +1,10 @@
 import { useCallback } from "react"
 import { format } from "date-fns"
-import ChatboxSentdate from "@/routes/-ui/ChatboxSentdate"
-import ChatboxBizchatMessage from "../../../../../../../-ui/ChatboxBizchatMessage"
-import Dddl from "./Dddl"
-import { Button } from "@/components/ui/button"
 import { ExternalLinkIcon } from "lucide-react"
 import { EnvelopeClosedIcon, EnvelopeOpenIcon } from "@radix-ui/react-icons"
+import { ChatboxBizchatMessage, ChatboxSentdate } from "@/components/CRMTable/components"
+import { Dddl } from "@/components/DisplayData/components"
+import { Button } from "@/components/ui/button"
 
 const NEXT = "2",
     LAST = "1",

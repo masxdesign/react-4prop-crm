@@ -4,7 +4,7 @@ import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import useTableSS, { useLoadData } from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 import { useSearch } from "@tanstack/react-router"
-import { fetchNegotiator, fetchNegotiatorByNids } from "@/api/fourProp"
+import { fetchNegotiator } from "@/api/fourProp"
 import { LOCALSTOR_TABLEMODAL_SELECTED } from "@/constants"
 import numberWithCommas from "@/utils/numberWithCommas"
 
