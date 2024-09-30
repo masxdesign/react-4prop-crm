@@ -71,7 +71,14 @@ function sendBizchatDialogReducer (state, action) {
     }
 }
 
-export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
+export default function useSendBizchatDialog ({ 
+    from, 
+    onListRequest, 
+    onListStatRequest, 
+    onCurrItemNotEmailedListRequest, 
+    onSendMassBizchat, 
+    selectionControlModal 
+}) {
     const [uppy] = useState(() => new Uppy({
         restrictions: {
           maxNumberOfFiles: 3,
@@ -105,18 +112,16 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
     }, [open, message, subjectLine, currItemId])
 
-    const from = auth.user.neg_id
-
     const queryClient = useQueryClient()
 
     const listQueryOptions = queryOptions({
-        queryKey: ['getMassBizchatList', from],
-        queryFn: () => getMassBizchatList({ from })
+        queryKey: ['massBizchatList', from],
+        queryFn: () => onListRequest({ from })
     })
 
     const statQueryOptions = queryOptions({
-        queryKey: ['getMassBizchatStat', from],
-        queryFn: () => getMassBizchatStat({ from }),
+        queryKey: ['massBizchatStat', from],
+        queryFn: () => onListStatRequest({ from }),
         select (data) {
             const stat = data.map(([crm_id, itemsString]) => {
                 const recipients = itemsString.map(itemString => {
@@ -142,8 +147,8 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
     })
 
     const notEmailedQueryOptions = queryOptions({
-        queryKey: ['getMassBizchatNotEmailed', currItemId],
-        queryFn: () => getMassBizchatNotEmailed({ crm_id: currItemId }),
+        queryKey: ['massBizchatCurrItemNotEmailedList', currItemId],
+        queryFn: () => onCurrItemNotEmailedListRequest({ crm_id: currItemId }),
         staleTime: 60_000
     })
 
@@ -159,7 +164,7 @@ export default function useSendBizchatDialog ({ auth, selectionControlModal }) {
 
 
     const sendRequest = useMutation({
-        mutationFn: sendMassBizchat,
+        mutationFn: onSendMassBizchat,
         retry: 3,
         retryDelay: 900
     })

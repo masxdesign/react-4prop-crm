@@ -11,7 +11,7 @@ import { isEmpty } from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { fetchFacets, fetchNegotiators, fetchNotes, fetchSelectedNegotiatorsDataQueryOptions, FOURPROP_BASEURL } from '@/api/fourProp';
+import { fetchFacets, fetchNegotiatorByNids, fetchNegotiators, fetchNotes, fetchSelectedDataQueryOptions, fetchSelectedNegotiatorsDataQueryOptions, FOURPROP_BASEURL } from '@/api/fourProp';
 import { cn } from '@/lib/utils';
 import numberWithCommas from '@/utils/numberWithCommas';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -33,12 +33,16 @@ import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'
 import { useSelectionControl, useSendBizchatDialog } from '@/components/CRMTable/hooks';
 import { SelectionControl, SendBizchatDialog, UserCard, AlertEmailClick, ChatboxEach, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
 import { COMPANY_TYPE_NAMES } from '@/constants';
+import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat';
 
 export default function CRMTable ({ tableName, defaultTableModelState, columns, auth }) {
   
   const dataPool = useMap()
 
-  const makeFetchNegQueryOptions = useCallback((selected) => fetchSelectedNegotiatorsDataQueryOptions(dataPool, selected), [])
+  const makeFetchNegQueryOptions = useCallback(selected => 
+    fetchSelectedDataQueryOptions(dataPool, selected, fetchNegotiatorByNids),
+    []
+  )
 
   const dialogModel = useDialogModel()
   
@@ -67,7 +71,11 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
   })
 
   const sendBizchatDialog = useSendBizchatDialog({ 
-    auth,
+    from: auth.user.neg_id,
+    onListRequest: getMassBizchatList,
+    onListStatRequest: getMassBizchatStat,
+    onCurrItemNotEmailedListRequest: getMassBizchatNotEmailed,
+    onSendMassBizchat: sendMassBizchat,
     selectionControlModal: selectionControl
   })
 
@@ -123,8 +131,10 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
             ].map((props) => (
               <FacetedFilter 
                 key={props.columnId}
-                queryKey={[tableName, 'facet', props.columnId]}
+                tableName={tableName}
+                columnId={props.columnId}
                 disableFacets={tableModel.isDirtyFilters}
+                onFacetFilterRequest={fetchFacets}
                 table={table} 
                 {...props}
               />
@@ -584,10 +594,10 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
   )
 }
 
-function FacetedFilter ({ queryKey, table, title, columnId, disableFacets, names }) {
+function FacetedFilter ({ tableName, table, title, columnId, disableFacets, names, onFacetFilterRequest }) {
   const { data } = useSuspenseQuery({
-    queryKey: queryKey,
-    queryFn: () => fetchFacets({ column: columnId }),
+    queryKey: [tableName, 'facetFilter', columnId],
+    queryFn: () => onFacetFilterRequest({ column: columnId }),
     select: data => {
 
       let data_ = data.split('`').map((item) => item.split('^'))

@@ -182,6 +182,26 @@ export const fetchSelectedNegotiatorsDataQueryOptions = (dataPool, selected) => 
     }
 })
 
+export const fetchSelectedDataQueryOptions = (dataPool, selected, onFetch) => queryOptions({
+    queryKey: ['fetchedSelectedData', selected],
+    queryFn: async () => {
+
+        const idsToFetch = selected.filter(id => !dataPool.has(id))
+
+        if (idsToFetch.length > 0) {
+
+            const fetched = await onFetch(idsToFetch)
+
+            for(const item of fetched) {
+                dataPool.set(item.id, item)
+            }
+
+        }
+
+        return selected.map(id => dataPool.get(id))
+    }
+})
+
 export const fetchNegotiator = async (nid) => {
     let params = {
         include: defaultNegotiatorInclude
