@@ -114,7 +114,7 @@ const DataTableBody = ({ table }) => (
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
                     className={cx("flex items-center w-[fit-content]", {
-                        "bg-sky-50/50 hover:bg-sky-50": table.options.meta.auth.user.neg_id === row.original.id
+                        "bg-sky-50/50 hover:bg-sky-50": table.options.meta.authUserId === row.original.id
                     })}
                 >
                     <SortableContext

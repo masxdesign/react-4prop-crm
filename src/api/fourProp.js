@@ -79,7 +79,7 @@ export const authLogout = () => fourProp.post('api/account/logout')
 
 const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile,mail_list_max_date_sent,mail_list_total,mail_list_template_name"
 
-export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }, auth) => {
+export const fetchNegotiators = async ({ columnFilters, sorting, pagination, globalFilter }, authUserId) => {
     let params = {
         page: pagination.pageIndex + 1,
         perpage: pagination.pageSize,
@@ -131,12 +131,12 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     
     let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
 
-    if (auth.user.neg_id) {
+    if (authUserId) {
         let d2 = []
         
         if (data[1].length > 0) {
             const recipients = map(data[1], 'id')
-            d2 = await getListUnreadTotal({ from: auth.user.neg_id, recipients })
+            d2 = await getListUnreadTotal({ from: authUserId, recipients })
         }
 
         const data2 = [data[0], data[1].map(item => ({
@@ -303,10 +303,10 @@ export const addNote = async (variables, { id, user }) => {
 
 }
 
-export const fetchNotes = async ({ from, recipient }, auth) => {
+export const fetchNotes = async (recipient, auth) => {
     let [notes, lastMessage, mailshots] = await Promise.all([
         fourProp.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
-        getBizchatLastMessage({ from, recipient }),
+        getBizchatLastMessage({ from: auth.user.neg_id, recipient }),
         getAllMailShots(recipient, auth.id)
     ])
 

@@ -34,7 +34,7 @@ export const columns = [
         onCheckedChange={(value) => row.toggleSelected(!!value)}
         aria-label="Select row"
         className="translate-y-[2px]"
-        disabled={table.options.meta.auth.user.neg_id === row.original.id}
+        disabled={table.options.meta.authUserId === row.original.id}
       />
     ),
     size: 60,

@@ -14,7 +14,7 @@ function ClientsListComponent() {
       tableName={tableName}
       defaultTableModelState={defaultTableModelState}
       columns={columns}
-      auth={auth}
+      authUserId={auth.user.neg_id}
     />
   )
 }

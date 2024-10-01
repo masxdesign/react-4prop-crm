@@ -35,7 +35,7 @@ import { SelectionControl, SendBizchatDialog, UserCard, AlertEmailClick, Chatbox
 import { COMPANY_TYPE_NAMES } from '@/constants';
 import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat';
 
-export default function CRMTable ({ tableName, defaultTableModelState, columns, auth }) {
+export default function CRMTable ({ tableName, defaultTableModelState, columns, authUserId }) {
   
   const dataPool = useMap()
 
@@ -51,15 +51,15 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
   const tableSSModal = useTableModel.use.tableSS({ 
     dataPool,
     tableName, 
-    queryFn: variables => fetchNegotiators(variables, auth), 
+    queryFn: variables => fetchNegotiators(variables, authUserId), 
     columns, 
     meta: {
       showDialog: dialogModel.showDialog,
       hoverCardComponent: TableHoverCard,
-      auth
+      authUserId
     },
     tableModel,
-    enableRowSelection: row => auth.user.neg_id !== row.original.id
+    enableRowSelection: row => authUserId !== row.original.id
   })
   
   const navigate = useNavigate({ from: "/dashboard/data/each/list" })
@@ -71,7 +71,7 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
   })
 
   const sendBizchatDialog = useSendBizchatDialog({ 
-    from: auth.user.neg_id,
+    from: authUserId,
     onListRequest: getMassBizchatList,
     onListStatRequest: getMassBizchatStat,
     onCurrItemNotEmailedListRequest: getMassBizchatNotEmailed,
@@ -169,7 +169,7 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
         selected={selectionControl.selected} 
         makeFetchNegQueryOptions={makeFetchNegQueryOptions}
       />
-      <DialogEach model={dialogModel} user={auth.user} table={table} />
+      <DialogEach model={dialogModel} table={table} />
     </>
   )
 }
@@ -223,12 +223,12 @@ function GlobalFilter ({ table, globalFilter }) {
   )
 }
 
-function DialogEach ({ model, table, user, ...props }) {
+function DialogEach ({ model, table, ...props }) {
   return (
     <Dialog open={model.state.open} onOpenChange={model.onOpenChange} {...props}>
       <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
         {model.state.info ? (
-          <DialogEachContentRenderer model={model} table={table} user={user} />
+          <DialogEachContentRenderer model={model} table={table} />
         ) : (
           <p>Loading...</p>
         )}
@@ -237,21 +237,23 @@ function DialogEach ({ model, table, user, ...props }) {
   )
 }
 
-function DialogEachContentRenderer ({ model, table, user }) {
-  const { info: id } = model.state
+function DialogEachContentRenderer ({ model, table }) {
+  const auth = useAuth()
+  
+  const { info: currRecipient } = model.state
 
-  const resultFromTable = useTableModel.use.findResultFromTableById({ id, table })
+  const resultFromTable = useTableModel.use.findResultFromTableById({ id: currRecipient, table })
 
   const chatboxQueryOptions = queryOptions({
-    queryKey: ['chatboxEach', user.neg_id, id],
-    queryFn: () => fetchNotes({ from: user.neg_id, recipient: id }, user)
+    queryKey: ['dialogContent', auth.user.neg_id, currRecipient],
+    queryFn: () => fetchNotes(currRecipient, auth)
   })
 
   return resultFromTable ? (
     <DialogEachContent 
       info={resultFromTable.row.original} 
       fromTable={resultFromTable}
-      user={user} 
+      user={auth.user} 
       chatboxQueryOptions={chatboxQueryOptions}
     /> 
   ) : (
@@ -263,8 +265,8 @@ function DialogEachContentRenderer ({ model, table, user }) {
       }
     >
       <DialogEachContentFetch
-        id={id}
-        user={user} 
+        id={currRecipient}
+        user={auth.user} 
         chatboxQueryOptions={chatboxQueryOptions} 
       />   
     </Suspense>
