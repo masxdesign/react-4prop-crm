@@ -73,11 +73,14 @@ function sendBizchatDialogReducer (state, action) {
 
 export default function useSendBizchatDialog ({ 
     from, 
-    onListRequest, 
-    onListStatRequest, 
-    onCurrItemNotEmailedListRequest, 
-    onSendMassBizchat, 
-    selectionControlModal 
+    services: {
+        onListRequest, 
+        onListStatRequest, 
+        onCurrItemNotEmailedListRequest, 
+        onSendMassBizchat
+    },
+    selectionControlModal,
+    makeFetchNegQueryOptions
 }) {
     const [uppy] = useState(() => new Uppy({
         restrictions: {
@@ -208,6 +211,7 @@ export default function useSendBizchatDialog ({
         listQueryOptions,
         statQueryOptions,
         notEmailedQueryOptions,
+        makeFetchNegQueryOptions,
         onRefreshList,
         sendRequest,
         open,

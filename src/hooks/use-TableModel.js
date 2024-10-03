@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
-import { queryOptions } from "@tanstack/react-query"
+import { queryOptions, useQueryClient } from "@tanstack/react-query"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import useTableSS, { useLoadData } from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
@@ -7,6 +7,7 @@ import { useSearch } from "@tanstack/react-router"
 import { fetchNegotiator } from "@/api/fourProp"
 import { LOCALSTOR_TABLEMODAL_SELECTED } from "@/constants"
 import numberWithCommas from "@/utils/numberWithCommas"
+import isEqual from "lodash/isEqual"
 
 const defaultSelected = []
 
@@ -412,7 +413,7 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 
 useTableModel.use = {
     tableSS (options) {
-        const { tableName, queryFn, staleTime, columns, meta, tableModel, dataPool, enableRowSelection } = options
+        const { tableName, dialogModel, components, queryFn, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
 
         const selected = tableModel.state.selected
 
@@ -421,7 +422,7 @@ useTableModel.use = {
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
         const table = useTableSS({ 
-            enableRowSelection,
+            enableRowSelection: row => isEqual(row.original.id, authUserId),
             tableName,
             queryOptions: tableQueryOptions, 
             columns,
@@ -434,6 +435,9 @@ useTableModel.use = {
             onGlobalFilterChange: tableModel.onGlobalFilterChange,
             meta: {
                 ...meta,
+                dialogModel,
+                authUserId,
+                components,
                 count,
                 dataQueryKey: tableQueryOptions.queryKey,
                 selected: tableModel.state.selected
@@ -492,29 +496,90 @@ useTableModel.use = {
     
         }, [table.options.data])
 
-        return { table, selected, count, countFormatted, deselectMany, selectMany }
+        return { 
+            table, 
+            selected, 
+            count, 
+            countFormatted, 
+            deselectMany, 
+            selectMany 
+        }
 
     },
-    findResultFromTableById ({ id, table }) {
-        const result = useMemo(() => {
+    getResultFromTable ({ getResultFromTable, id }) {
+        return useMemo(() => getResultFromTable(id), [getResultFromTable, id])
+    },
+    tableDialog ({ 
+        tableSSModal, 
+        renderMessages,
+        services: {  getInfoById, noteList, addNote, deleteNote }
+    }) {
+        const queryClient = useQueryClient()
+
+        const { table } = tableSSModal
+        const { authUserId, dialogModel = null } = table.options.meta
+
+        const getResultFromTable = useCallback(id => {
+
+            if (!id) return null
+
             const row = table.getRowModel().rows.find(({ original }) => `${id}` === `${original.id}`)
         
-            if(!row) return
+            if (!row) return null
         
             const visibleCells = row.getVisibleCells()
             const info = visibleCells?.[0]?.getContext()
 
             return info
-    
-        }, [id, table.options.data])
 
-        return result
-    },
-    fetchResultByIdQueryOption (id) {
-        return queryOptions({
-            queryKey: ['fetchResultByIdQueryOption', id],
-            queryFn: () => fetchNegotiator(id)
+        }, [table.options.data])
+
+        const id = dialogModel?.state.info
+
+        const infoQueryOptions = queryOptions({
+            queryKey: ['infoById', id],
+            queryFn: () => getInfoById(id)
         })
+
+        const chatboxQueryOptions = queryOptions({
+            queryKey: ['dialogContent', authUserId, id],
+            queryFn: () => noteList(id)
+        })
+
+        const addMutationOptions =  {
+            mutationFn: (variables) => addNote(variables, { id, authUserId }),
+            onSuccess: (data, variables) => {
+                const { _button } = variables
+                
+                if(_button === 'bizchat') {
+                    queryClient.invalidateQueries({ queryKey: ['bizchatMessagesLast5', authUserId] })
+                }
+                
+                queryClient.invalidateQueries({ queryKey: chatboxQueryOptions.queryKey })
+            }
+        }
+
+        /** experimental */
+        const deleteMutationOptions = {
+            mutationFn: deleteNote,
+            onSuccess: (_, id) => {
+                queryClient.setQueryData(chatboxQueryOptions.queryKey, util_delete_each({ id }))
+            }
+        }
+
+        return {
+            id,
+            authUserId,
+            infoQueryOptions,
+            chatboxQueryOptions,
+            addMutationOptions,
+            deleteMutationOptions,
+            getResultFromTable,
+            renderMessages,
+            table: tableSSModal.table,
+            dialogModel: tableSSModal.table.options.meta.dialogModel,
+            tableSSModal
+        }
     }
 }
 

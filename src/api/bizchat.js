@@ -140,8 +140,8 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
     }
 }
 
-export const getBizchatMessagesLast5 = async ({ chatId, senderUserId }) => {
-    const { data } = await bizchatAxios.get(`/api/messages_last_5/${chatId}/${senderUserId}`)
+export const getBizchatMessagesLast5 = async ({ chatId, authUserId }) => {
+    const { data } = await bizchatAxios.get(`/api/messages_last_5/${chatId}/${authUserId}`)
     return data
 }
 

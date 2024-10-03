@@ -6,7 +6,7 @@ const Linkable = React.memo(({ info, names, className, tab, ...props }) => {
     const value = names?.[infoValue] ?? infoValue
   
     const handleClick = () => {
-      info.table.options.meta.showDialog(info.row.original.id, tab)
+      info.table.options.meta.dialogModel.showDialog(info.row.original.id, tab)
     }
   
     return (

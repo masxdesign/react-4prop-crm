@@ -5,11 +5,11 @@ import { useAuth } from "@/components/Auth/Auth-context"
 
 const ColumnNextContactEach = ({
     id, 
-    tableDataQueryKey = null,
     placeholder = "Pick a date",
     name = "next_contact",
     table = null,
     defaultValue = null,
+    tableDataQueryKey = null,
     onSuccess, 
     message,
 }) => {

@@ -76,7 +76,7 @@ const NewMessageForm = ({ uppy, form, onSubmit, onResetMessageText, isPending, r
     )
 }
 
-function SendBizchatDialog({ selected, model, tableSSModal, makeFetchNegQueryOptions }) {
+function SendBizchatDialog({ selected, model, tableSSModal }) {
     const {
         open,
         onOpenChange
@@ -89,15 +89,14 @@ function SendBizchatDialog({ selected, model, tableSSModal, makeFetchNegQueryOpt
                 <DialogContentBody 
                     model={model} 
                     tableSSModal={tableSSModal}
-                    selected={selected} 
-                    makeFetchNegQueryOptions={makeFetchNegQueryOptions} 
+                    selected={selected}
                 />
             </DialogContent>
         </Dialog>
     )
 }
 
-function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOptions }) {
+function DialogContentBody ({ model, tableSSModal, selected }) {
     const {
         sendRequest,
         message,
@@ -108,11 +107,11 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
         onSubjectLineChange,
         onItemSelect,
         notEmailedQueryOptions,
-        onRefreshList
+        onRefreshList,
+        makeFetchNegQueryOptions
     } = model
 
     const {
-        query,
         statQuery,
         data,
         currItem,
@@ -236,21 +235,12 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
                     )}
                     <div className="w-64 max-h-[580px] overflow-auto space-y-1 pb-3">
                     {recipients.length > 0 ? (
-                        <Suspense fallback={<p>loading...</p>}>
-                            {currItem ? (
-                                <RecipientList 
-                                    campaign={currItem}
-                                    recipients={recipients} 
-                                    makeQueryOptions={makeFetchNegQueryOptions} 
-                                    notEmailedQueryOptions={notEmailedQueryOptions}
-                                />
-                            ) : (
-                                <FetchRecipientListUsers 
-                                    recipients={recipients} 
-                                    makeQueryOptions={makeFetchNegQueryOptions} 
-                                />
-                            )}  
-                        </Suspense>
+                        <RecipientList 
+                            currItem={currItem}
+                            recipients={recipients}
+                            makeFetchNegQueryOptions={makeFetchNegQueryOptions}
+                            notEmailedQueryOptions={notEmailedQueryOptions}
+                        />
                     ) : (
                         <p className="text-red-500 text-sm">
                             No recipients
@@ -329,7 +319,30 @@ function DialogContentBody ({ model, tableSSModal, selected, makeFetchNegQueryOp
     )
 }
 
-function RecipientList ({ campaign, notEmailedQueryOptions, ...props }) {
+function RecipientList ({ currItem, recipients, makeFetchNegQueryOptions, notEmailedQueryOptions }) {
+    const fetchSelectedDataQueryOptions = useMemo(() =>
+        makeFetchNegQueryOptions(recipients),
+        [recipients]
+    )
+
+    return (
+        <Suspense fallback={<p>loading...</p>}>
+            {currItem ? (
+                <CurrCampaignRecipientList 
+                    campaign={currItem}
+                    fetchSelectedDataQueryOptions={fetchSelectedDataQueryOptions} 
+                    notEmailedQueryOptions={notEmailedQueryOptions}
+                />
+            ) : (
+                <FetchRecipientListUsers 
+                    fetchSelectedDataQueryOptions={fetchSelectedDataQueryOptions} 
+                />
+            )}  
+        </Suspense>
+    )
+}
+
+function CurrCampaignRecipientList ({ campaign, notEmailedQueryOptions, fetchSelectedDataQueryOptions }) {
     const { data } = useSuspenseQuery(notEmailedQueryOptions)
 
     return (
@@ -337,13 +350,13 @@ function RecipientList ({ campaign, notEmailedQueryOptions, ...props }) {
             <FetchRecipientListUsers 
                 campaign={campaign} 
                 notEmailed={data}
-                {...props}
+                fetchSelectedDataQueryOptions={fetchSelectedDataQueryOptions}
             />
         </Suspense>
     )
 }
-function FetchRecipientListUsers ({ recipients, makeQueryOptions, campaign = null, notEmailed = null }) {
-    const query = useSuspenseQuery(makeQueryOptions(recipients))
+function FetchRecipientListUsers ({ fetchSelectedDataQueryOptions, campaign = null, notEmailed = null }) {
+    const query = useSuspenseQuery(fetchSelectedDataQueryOptions)
 
     const data = useMemo(() => {
         return query.data.map(item => {

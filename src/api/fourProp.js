@@ -274,19 +274,19 @@ export const addLastContact = async (variables, { id }) => {
 //     return data
 // }
 
-export const addNote = async (variables, { id, user }) => {
+export const addNote = async (variables, { id, authUserId }) => {
     const { message = '', files, _button } = variables
 
     if (_button === "bizchat") {
 
         if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
 
-        if(!user?.neg_id) throw new Error('user.neg_id is not defined')
+        if(!authUserId) throw new Error('authUserId is not defined')
 
         return sendBizchatMessage({ 
             files,
             message,
-            from: user.neg_id,
+            from: authUserId,
             recipient: id
         })
 
@@ -348,7 +348,7 @@ export const fetchNotes = async (recipient, auth) => {
     return [orderedMessages, branch, privateNotes, lastMessage, mailshots]
 }
 
-export const fetchFacets = async ({ column = 'company' }) => {
+export const fetchFacets = async (column = 'company') => {
 
     const params = {
         group: true,

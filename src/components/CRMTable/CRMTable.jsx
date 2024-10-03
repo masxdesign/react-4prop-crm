@@ -7,7 +7,7 @@ import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import { cx } from 'class-variance-authority';
 import { useMap } from '@uidotdev/usehooks';
 import { useNavigate } from '@tanstack/react-router';
-import { isEmpty } from 'lodash';
+import _, { isEmpty } from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
@@ -31,16 +31,26 @@ import DataTableViewOptions from '@/components/DataTableViewOptions';
 import ProgressCircle from '@/components/ProgressCircle';
 import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'
 import { useSelectionControl, useSendBizchatDialog } from '@/components/CRMTable/hooks';
-import { SelectionControl, SendBizchatDialog, UserCard, AlertEmailClick, ChatboxEach, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
+import { SelectionControl, SendBizchatDialog, UserCard, AlertEmailClick, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
 import { COMPANY_TYPE_NAMES } from '@/constants';
-import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat';
+import Chatbox from './components/Chatbox';
 
-export default function CRMTable ({ tableName, defaultTableModelState, columns, authUserId }) {
+export default function CRMTable ({ 
+  tableName, 
+  tableDialogRenderMessages, 
+  facets, 
+  services, 
+  navigate, 
+  defaultTableModelState, 
+  columns, 
+  authUserId,
+  userCardComponent
+}) {
   
   const dataPool = useMap()
 
   const makeFetchNegQueryOptions = useCallback(selected => 
-    fetchSelectedDataQueryOptions(dataPool, selected, fetchNegotiatorByNids),
+    fetchSelectedDataQueryOptions(dataPool, selected, services.selectedDataPool),
     []
   )
 
@@ -49,34 +59,36 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
   const tableModel = useTableModel({ defaultState: defaultTableModelState })
   
   const tableSSModal = useTableModel.use.tableSS({ 
-    dataPool,
     tableName, 
-    queryFn: variables => fetchNegotiators(variables, authUserId), 
+    authUserId,
+    queryFn: services.tableSSList, 
     columns, 
-    meta: {
-      showDialog: dialogModel.showDialog,
-      hoverCardComponent: TableHoverCard,
-      authUserId
+    dataPool,
+    components: {
+      TableHoverCard,
+      UserCard: userCardComponent
     },
-    tableModel,
-    enableRowSelection: row => authUserId !== row.original.id
+    dialogModel,
+    tableModel
   })
-  
-  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
+
+  const tableDialogModal = useTableModel.use.tableDialog({
+    tableSSModal,
+    renderMessages: tableDialogRenderMessages,
+    services: services.tableDialog
+  })
 
   const selectionControl = useSelectionControl({ 
+    navigate,
     tableSSModal, 
-    makeFetchNegQueryOptions,
-    navigate 
+    makeFetchNegQueryOptions
   })
 
   const sendBizchatDialog = useSendBizchatDialog({ 
     from: authUserId,
-    onListRequest: getMassBizchatList,
-    onListStatRequest: getMassBizchatStat,
-    onCurrItemNotEmailedListRequest: getMassBizchatNotEmailed,
-    onSendMassBizchat: sendMassBizchat,
-    selectionControlModal: selectionControl
+    services: services.massBizchat,
+    selectionControlModal: selectionControl,
+    makeFetchNegQueryOptions
   })
 
   const { table } = tableSSModal
@@ -105,7 +117,9 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
                       </p>
                     }
                   >
-                    <SelectionControl.HeaderAndContent modal={selectionControl} />
+                    <SelectionControl.HeaderAndContent 
+                      modal={selectionControl} 
+                    />
                   </Suspense>
                   <SelectionControl.Footer>
                     <SendBizchatDialog.Button 
@@ -123,18 +137,13 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
               table={table} 
               globalFilter={tableModel.tableState.globalFilter}  
             />
-            {[
-              { columnId: "type", title: "Company type", names: COMPANY_TYPE_NAMES },
-              { columnId: "company", title: "Company" },
-              { columnId: "city", title: "City" },
-              { columnId: "a", title: "Postcode" },
-            ].map((props) => (
+            {facets.map(props => (
               <FacetedFilter 
                 key={props.columnId}
                 tableName={tableName}
                 columnId={props.columnId}
                 disableFacets={tableModel.isDirtyFilters}
-                onFacetFilterRequest={fetchFacets}
+                onFacetFilterRequest={services.facetList}
                 table={table} 
                 {...props}
               />
@@ -167,68 +176,18 @@ export default function CRMTable ({ tableName, defaultTableModelState, columns, 
         model={sendBizchatDialog} 
         tableSSModal={tableSSModal}
         selected={selectionControl.selected} 
-        makeFetchNegQueryOptions={makeFetchNegQueryOptions}
       />
-      <DialogEach model={dialogModel} table={table} />
+      <TableDialog model={tableDialogModal} />
     </>
   )
 }
 
-function GlobalFilter ({ table, globalFilter }) {
-  const form = useForm({
-    values: globalFilter
-  })
-
+function TableDialog ({ model, ...props }) {
   return (
-    <form 
-      onSubmit={form.handleSubmit((data) => table.setGlobalFilter(data))} 
-      className='flex flex-row items-center gap-2'
-    >
-      <Controller 
-        name="column"
-        control={form.control}
-        render={({ field }) => {
-
-          return (
-            <ToggleGroup 
-              variant="custom" 
-              size="xs" 
-              type="single" 
-              value={field.value}
-              onValueChange={(value) => field.onChange(value)}
-            >
-              <ToggleGroupItem value="fullname" aria-label="Toggle bold">
-                <User className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="phone" aria-label="Toggle bold">
-                <PhoneCallIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="email" aria-label="Toggle italic">
-                <EnvelopeClosedIcon className="h-4 w-4" />
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )
-        }} 
-      />
-      <Input 
-        type="search" 
-        placeholder={`Search by ${form.watch("column")}`} 
-        className="h-8 w-48" 
-        {...form.register('search')} 
-      />
-      <Button type="submit" size="xs" disabled={!form.formState.isDirty}>
-        <MagnifyingGlassIcon />
-      </Button>
-    </form>
-  )
-}
-
-function DialogEach ({ model, table, ...props }) {
-  return (
-    <Dialog open={model.state.open} onOpenChange={model.onOpenChange} {...props}>
+    <Dialog open={model.dialogModel.state.open} onOpenChange={model.dialogModel.onOpenChange} {...props}>
       <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
-        {model.state.info ? (
-          <DialogEachContentRenderer model={model} table={table} />
+        {model.id ? (
+          <TableDialogContentRenderer model={model} />
         ) : (
           <p>Loading...</p>
         )}
@@ -237,24 +196,14 @@ function DialogEach ({ model, table, ...props }) {
   )
 }
 
-function DialogEachContentRenderer ({ model, table }) {
-  const auth = useAuth()
-  
-  const { info: currRecipient } = model.state
-
-  const resultFromTable = useTableModel.use.findResultFromTableById({ id: currRecipient, table })
-
-  const chatboxQueryOptions = queryOptions({
-    queryKey: ['dialogContent', auth.user.neg_id, currRecipient],
-    queryFn: () => fetchNotes(currRecipient, auth)
-  })
+function TableDialogContentRenderer ({ model }) {
+  const resultFromTable = useTableModel.use.getResultFromTable(model)
 
   return resultFromTable ? (
-    <DialogEachContent 
+    <TableDialogContent 
       info={resultFromTable.row.original} 
       fromTable={resultFromTable}
-      user={auth.user} 
-      chatboxQueryOptions={chatboxQueryOptions}
+      model={model}
     /> 
   ) : (
     <Suspense
@@ -264,26 +213,31 @@ function DialogEachContentRenderer ({ model, table }) {
         </p>
       }
     >
-      <DialogEachContentFetch
-        id={currRecipient}
-        user={auth.user} 
-        chatboxQueryOptions={chatboxQueryOptions} 
-      />   
+      <TableDialogContentFetcher model={model} />   
     </Suspense>
   )
 }
 
-function CSSOnMount ({ render }) {
-  const [isMount, setIsMount] = useState(false)
+function TableDialogContentFetcher ({ model }) {
+  const { data } = useSuspenseQuery(model.infoQueryOptions)
 
-  useEffect(() => {
-    setIsMount(true)
-  }, [])
-
-  return render(isMount)
+  return (
+    <TableDialogContent 
+      info={data} 
+      model={model}
+    />
+  )
 }
 
-function DialogEachContent ({ info, fromTable, user, table = null, chatboxQueryOptions }) {
+function TableDialogContent ({ info, model, fromTable = null }) {
+  const { 
+    authUserId, 
+    chatboxQueryOptions, 
+    renderMessages, 
+    addMutationOptions, 
+    deleteMutationOptions 
+  } = model
+
   return (
     <CSSOnMount
       render={isMount =>
@@ -298,26 +252,26 @@ function DialogEachContent ({ info, fromTable, user, table = null, chatboxQueryO
                 {fromTable && <DialogNavigation info={fromTable} />}
               </DialogTitle>
             </DialogHeader>
-            <DialogMetricsEach 
-              chatboxQueryOptions={chatboxQueryOptions} 
+            <TableDialogMetrics 
               info={info} 
-              table={table}
-              user={user}
+              model={model}
             />              
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={60}>
-            {user.neg_id === info.id ? (
+            {authUserId === info.id ? (
               <div className='h-full bg-slate-100'>
                 <div className='uppercase opacity-50 font-bold text-sm text-slate-400 w-full h-full flex justify-center items-center'>
                   You
                 </div>
               </div>
             ) : (
-              <ChatboxEach 
-                queryOptions={chatboxQueryOptions} 
-                id={info.id} 
-                user={user}
+              <Chatbox 
+                chatboxQueryOptions={chatboxQueryOptions} 
+                addMutationOptions={addMutationOptions}
+                deleteMutationOptions={deleteMutationOptions}
+                renderMessages={renderMessages}
+                enableDelete={false}
               /> 
             )}
           </ResizablePanel>
@@ -327,27 +281,16 @@ function DialogEachContent ({ info, fromTable, user, table = null, chatboxQueryO
   )
 }
 
-function DialogEachContentFetch ({ id, user, chatboxQueryOptions }) {
-  const { data } = useSuspenseQuery(useTableModel.use.fetchResultByIdQueryOption(id))
-
-  return (
-    <DialogEachContent 
-      info={data} 
-      user={user} 
-      chatboxQueryOptions={chatboxQueryOptions} 
-    />
-  )
-}
-
 function TableHoverCard ({ cell, hideView }) {
   const info = cell.table ? cell : cell.getContext()
+  const { dialogModel, components } = info.table.options.meta
 
   const handleShowDialog = ({ id }) => {
-    info.table.options.meta.showDialog(id)
+    dialogModel.showDialog(id)
   }
 
   return (
-    <UserCard 
+    <components.UserCard 
       data={cell.row.original}
       onView={handleShowDialog}
       hideView={hideView}
@@ -355,7 +298,7 @@ function TableHoverCard ({ cell, hideView }) {
   )
 }
 
-function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
+function TableDialogMetrics ({ info, model }) {
   
   return (
     <div className='text-sm space-y-2'>
@@ -374,9 +317,9 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
       />
       <div className='h-3'/>
       <Suspense fallback={<p>Loading...</p>}>
-        <DialogBranchEach chatboxQueryOptions={chatboxQueryOptions} />
+        <DialogBranchEach chatboxQueryOptions={model.chatboxQueryOptions} />
       </Suspense>
-      {user.neg_id !== info.id && (
+      {model.authUserId !== info.id && (
         <>
           <div className='h-3' />
           <Ddl 
@@ -387,8 +330,6 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
                   <ColumnNextContactEach 
                     id={info.id} 
                     defaultValue={info.next_contact}
-                    table={table}
-                    tableDataQueryKey={table?.options.meta.dataQueryKey}
                   />
                 ) 
               },
@@ -405,7 +346,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
         </>
       )}
       <Suspense fallback={<p>Loading...</p>}>
-        <DialogBizchatEach chatboxQueryOptions={chatboxQueryOptions} label="Bizchat" />
+        <TableDialogChatLinks chatboxQueryOptions={model.chatboxQueryOptions} />
       </Suspense>
       <div className='h-12' />
       <div className='flex flex-col gap-4'>
@@ -426,7 +367,7 @@ function DialogMetricsEach ({ chatboxQueryOptions, user, info, table = null }) {
   )
 }
 
-function DialogBizchatEach ({ chatboxQueryOptions, label }) {
+function TableDialogChatLinks ({ chatboxQueryOptions }) {
   const { user } = useAuth()
   const { data } = useSuspenseQuery(chatboxQueryOptions)
 
@@ -496,7 +437,7 @@ function DialogBranchEach ({ chatboxQueryOptions }) {
 function DialogNavigation ({ info }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   
-  const { showDialog } = info.table.options.meta
+  const { dialogModel, components } = info.table.options.meta
   const { rows } = info.table.getRowModel()
 
   const getInfoByIndex = useCallback((index) => {
@@ -514,7 +455,7 @@ function DialogNavigation ({ info }) {
 
   const handleJump = (index) => {
     const info = getInfoByIndex(index)
-    showDialog(info.row.original.id)
+    dialogModel.showDialog(info.row.original.id)
   }
 
   return (
@@ -541,7 +482,7 @@ function DialogNavigation ({ info }) {
                 variant="link"
                 className="h-8 w-8 p-0"
                 size="sm"
-                onClick={() => showDialog(info.row.original.id)}
+                onClick={() => dialogModel.showDialog(info.row.original.id)}
                 disabled={!info}
             >
               <Icon className="h-4 w-4" />
@@ -550,7 +491,7 @@ function DialogNavigation ({ info }) {
           {info && (
             <HoverCardPortal container={document.body}>
                 <HoverCardContent className="w-[300px]">
-                  <TableHoverCard cell={info} hideView />
+                  <components.TableHoverCard cell={info} hideView />
                 </HoverCardContent>
             </HoverCardPortal>
           )}
@@ -599,7 +540,7 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
 function FacetedFilter ({ tableName, table, title, columnId, disableFacets, names, onFacetFilterRequest }) {
   const { data } = useSuspenseQuery({
     queryKey: [tableName, 'facetFilter', columnId],
-    queryFn: () => onFacetFilterRequest({ column: columnId }),
+    queryFn: () => onFacetFilterRequest(columnId),
     select: data => {
 
       let data_ = data.split('`').map((item) => item.split('^'))
@@ -626,4 +567,63 @@ function FacetedFilter ({ tableName, table, title, columnId, disableFacets, name
       disableFacets={disableFacets}
     />
   )
+}
+
+function GlobalFilter ({ table, globalFilter }) {
+  const form = useForm({
+    values: globalFilter
+  })
+
+  return (
+    <form 
+      onSubmit={form.handleSubmit((data) => table.setGlobalFilter(data))} 
+      className='flex flex-row items-center gap-2'
+    >
+      <Controller 
+        name="column"
+        control={form.control}
+        render={({ field }) => {
+
+          return (
+            <ToggleGroup 
+              variant="custom" 
+              size="xs" 
+              type="single" 
+              value={field.value}
+              onValueChange={(value) => field.onChange(value)}
+            >
+              <ToggleGroupItem value="fullname" aria-label="Toggle bold">
+                <User className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="phone" aria-label="Toggle bold">
+                <PhoneCallIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+              <ToggleGroupItem value="email" aria-label="Toggle italic">
+                <EnvelopeClosedIcon className="h-4 w-4" />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )
+        }} 
+      />
+      <Input 
+        type="search" 
+        placeholder={`Search by ${form.watch("column")}`} 
+        className="h-8 w-48" 
+        {...form.register('search')} 
+      />
+      <Button type="submit" size="xs" disabled={!form.formState.isDirty}>
+        <MagnifyingGlassIcon />
+      </Button>
+    </form>
+  )
+}
+
+function CSSOnMount ({ render }) {
+  const [isMount, setIsMount] = useState(false)
+
+  useEffect(() => {
+    setIsMount(true)
+  }, [])
+
+  return render(isMount)
 }

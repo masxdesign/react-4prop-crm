@@ -9,14 +9,15 @@ import ChatboxMessages from './ChatboxMessages';
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 
-const FetchChatboxMessages = ({ queryOptions, renderMessage, enableDelete, ...props }) => {
-  const query = useSuspenseQuery(queryOptions)
+const ChatboxMessagesFetcher = ({ chatboxQueryOptions, renderMessages, enableDelete, ...props }) => {
+  const { data } = useSuspenseQuery({
+    ...chatboxQueryOptions,
+    select: renderMessages
+  })
 
-  const messages = useMemo(() => renderMessage(query.data), [query.data, renderMessage])
-
-  return messages.length > 0 ? (
+  return data.length > 0 ? (
     <ChatboxMessages 
-      data={messages}
+      data={data}
       enableDelete={enableDelete}
       {...props}
     />
@@ -28,8 +29,8 @@ const FetchChatboxMessages = ({ queryOptions, renderMessage, enableDelete, ...pr
 }
 
 const Chatbox = ({ 
-  queryOptions, 
-  renderMessage, 
+  chatboxQueryOptions, 
+  renderMessages, 
   deleteMutationOptions, 
   addMutationOptions,
   enableDelete
@@ -42,7 +43,7 @@ const Chatbox = ({
       messageBoxProps,
       submit,
       error
-    } = useChatbox({ queryOptions, deleteMutationOptions, addMutationOptions })
+    } = useChatbox({ deleteMutationOptions, addMutationOptions })
 
     const handleExpand = () => {
       setExpand(true)
@@ -60,9 +61,9 @@ const Chatbox = ({
       <div className='flex flex-col h-full relative'>
         <div className="bg-slate-100 shadow-inner grow min-h-[420px] max-h-[600px]">
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
-            <FetchChatboxMessages 
-              queryOptions={queryOptions}
-              renderMessage={renderMessage}
+            <ChatboxMessagesFetcher 
+              chatboxQueryOptions={chatboxQueryOptions}
+              renderMessages={renderMessages}
               className="h-full"
               enableDelete={enableDelete}
               {...chatBoxProps}

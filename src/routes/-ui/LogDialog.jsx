@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 const LogDialog = ({ info }) => {
 
   const handleClick = () => {
-    info.table.options.meta.showDialog(info.row.original.id)
+    info.table.options.meta.dialogModel.showDialog(info.row.original.id)
   }
 
   return (

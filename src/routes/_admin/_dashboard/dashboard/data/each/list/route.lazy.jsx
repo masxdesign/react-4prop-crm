@@ -1,5 +1,5 @@
 import React from 'react';
-import { createLazyFileRoute } from '@tanstack/react-router';
+import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import CRMTable from '@/components/CRMTable/CRMTable';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
@@ -7,14 +7,30 @@ export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/each
 })
 
 function ClientsListComponent() {
-  const { tableName, defaultTableModelState, columns, auth } = Route.useRouteContext()
+  const { 
+    tableName, 
+    defaultTableModelState,
+    tableDialogRenderMessages, 
+    columns, 
+    facets, 
+    services, 
+    authUserId,
+    userCardComponent
+  } = Route.useRouteContext()
+
+  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
 
   return (
     <CRMTable  
       tableName={tableName}
-      defaultTableModelState={defaultTableModelState}
+      tableDialogRenderMessages={tableDialogRenderMessages}
+      services={services}
+      authUserId={authUserId}
       columns={columns}
-      authUserId={auth.user.neg_id}
+      facets={facets}
+      navigate={navigate}
+      userCardComponent={userCardComponent}
+      defaultTableModelState={defaultTableModelState}
     />
   )
 }

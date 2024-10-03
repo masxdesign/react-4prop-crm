@@ -70,7 +70,7 @@ const BizchatMessagePreview = memo(({ type = 'M', body, chatId, from, className,
     )
 })
 
-const BizchatMessage = ({ type = 'M', body, chatId, senderUserId, bz_hash, created, from }) => {
+const BizchatMessage = ({ type = 'M', body, chatId, authUserId, bz_hash, created, from }) => {
     const ref = useRef()
 
     const [open, setOpen] = useState(false)
@@ -109,7 +109,7 @@ const BizchatMessage = ({ type = 'M', body, chatId, senderUserId, bz_hash, creat
                     <CollapsibleContent>
                         <Suspense fallback={<p>Loading...</p>}>
                             <LoadBizchatMessagesLast5
-                                senderUserId={senderUserId}
+                                authUserId={authUserId}
                                 chatId={chatId}
                             />
                         </Suspense>
@@ -139,22 +139,22 @@ const ChatboxBizchatMessage = ({ type = 'A', chatId, body, created, from }) => {
     const auth = useAuth()
 
     return (
-        <BizchatMessage
+        <BizchatMessage 
             body={body}
             type={type}
             chatId={chatId}
             from={from}
-            senderUserId={auth.user.neg_id}
+            authUserId={auth.user.neg_id}
             bz_hash={auth.user.bz_hash}
             created={created}
         />
     )
 }
 
-function LoadBizchatMessagesLast5 ({ senderUserId, chatId }) {
+function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
     const { data, refetch } = useSuspenseQuery({
-        queryKey: ["bizchatMessagesLast5", senderUserId, chatId],
-        queryFn: () => getBizchatMessagesLast5({ senderUserId, chatId }),
+        queryKey: ["bizchatMessagesLast5", authUserId, chatId],
+        queryFn: () => getBizchatMessagesLast5({ authUserId, chatId }),
         staleTime: Infinity,
     })
 
@@ -166,7 +166,7 @@ function LoadBizchatMessagesLast5 ({ senderUserId, chatId }) {
                 window.open(`https://4prop.com/bizchat/rooms/${chat_id}?message=${id}`, "bizchat")
             }
 
-            const sideAlignOptions = from === senderUserId 
+            const sideAlignOptions = from === authUserId 
                 ? { side: "left", align: "center" }
                 : { side: "right", align: "center" }
 
@@ -212,7 +212,7 @@ function LoadBizchatMessagesLast5 ({ senderUserId, chatId }) {
                         <ChatboxSentdate sentdate={sent} className="text-[10px]" />
                     </>
                 ), 
-                variant: from === senderUserId ? 'sender' : 'recipient',
+                variant: from === authUserId ? 'sender' : 'recipient',
                 size: 'sm'
             }
         }))
