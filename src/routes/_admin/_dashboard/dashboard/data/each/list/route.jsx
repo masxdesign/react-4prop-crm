@@ -7,6 +7,7 @@ import { deleteLog } from '@/api/api-fakeServer'
 import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
 import messagesCombiner from '@/components/CRMTable/combiners/messagesCombiner'
 import { UserCard } from '@/components/CRMTable/components'
+import ChatBoxEachSingleMessage from '@/components/CRMTable/components/ChatBoxEachSingleMessage'
 
 export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/list')({
   // loader: ({ context }) => context.queryClient.ensureQueryData(context.queryOptions),
@@ -27,10 +28,10 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/lis
         deleteNote: deleteLog
       },
       massBizchat: {
-        onListRequest: getMassBizchatList,
-        onListStatRequest: getMassBizchatStat,
-        onCurrItemNotEmailedListRequest: getMassBizchatNotEmailed,
-        onSendMassBizchat: sendMassBizchat
+        getList: getMassBizchatList,
+        getStat: getMassBizchatStat,
+        getNotEmailedList: getMassBizchatNotEmailed,
+        sendMassBizchat
       }
     }
 
@@ -54,9 +55,15 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/data/each/lis
         }
       },
       columns,
-      tableDialogRenderMessages: messagesCombiner,
+      tableDialogRenderMessages: ([messages]) => messages.map(item => {
+        return {
+          id: item.id,
+          message: <ChatBoxEachSingleMessage {...item} />
+        }
+      }),
+      authUserId,
       userCardComponent: UserCard,
-      authUserId
+      enableHoverCard: true
     }
   }
 })

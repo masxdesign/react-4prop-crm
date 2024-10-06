@@ -11,6 +11,7 @@ import useLocalstorageState from '@/hooks/use-LocalstorageState'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '../ui/hover-card'
 import { HoverCardPortal } from '@radix-ui/react-hover-card'
 import { cx } from 'class-variance-authority'
+import TableHoverCard from '../CRMTable/components/TableHoverCard'
 
 const ResizeHandler = ({ header }) => (
     <div
@@ -68,7 +69,7 @@ const DragAlongCell = ({ cell }) => {
 
     const context = cell.getContext()
 
-    const { components = {}, disableHoverCardOnCols = [] } = context.table.options.meta
+    const { enableHoverCard = true, components = {}, disableHoverCardOnCols = [] } = context.table.options.meta
 
     const tableCell = (
         <TableCell  
@@ -92,14 +93,16 @@ const DragAlongCell = ({ cell }) => {
         </TableCell>
     )
 
-    if(!components.TableHoverCard || disableHoverCardOnCols.includes(cell.column.id)) return tableCell
+    if(!enableHoverCard || !components.UserCard || disableHoverCardOnCols.includes(cell.column.id)){
+        return tableCell
+    }
 
     return (
         <HoverCard>
             <HoverCardTrigger asChild>{tableCell}</HoverCardTrigger>
             <HoverCardPortal container={document.body}>
                 <HoverCardContent side="right" align="start" className="w-[300px]">
-                    <components.TableHoverCard cell={cell} />
+                    <TableHoverCard cell={cell} />
                 </HoverCardContent>
             </HoverCardPortal>
         </HoverCard>

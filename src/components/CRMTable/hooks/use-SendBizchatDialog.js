@@ -74,10 +74,12 @@ function sendBizchatDialogReducer (state, action) {
 export default function useSendBizchatDialog ({ 
     from, 
     services: {
-        onListRequest, 
-        onListStatRequest, 
-        onCurrItemNotEmailedListRequest, 
-        onSendMassBizchat
+        massBizchat: {
+            getList, 
+            getStat, 
+            getNotEmailedList, 
+            sendMassBizchat
+        }
     },
     selectionControlModal,
     makeFetchNegQueryOptions
@@ -119,12 +121,12 @@ export default function useSendBizchatDialog ({
 
     const listQueryOptions = queryOptions({
         queryKey: ['massBizchatList', from],
-        queryFn: () => onListRequest({ from })
+        queryFn: () => getList({ from })
     })
 
     const statQueryOptions = queryOptions({
         queryKey: ['massBizchatStat', from],
-        queryFn: () => onListStatRequest({ from }),
+        queryFn: () => getStat({ from }),
         select (data) {
             const stat = data.map(([crm_id, itemsString]) => {
                 const recipients = itemsString.map(itemString => {
@@ -151,7 +153,7 @@ export default function useSendBizchatDialog ({
 
     const notEmailedQueryOptions = queryOptions({
         queryKey: ['massBizchatCurrItemNotEmailedList', currItemId],
-        queryFn: () => onCurrItemNotEmailedListRequest({ crm_id: currItemId }),
+        queryFn: () => getNotEmailedList({ crm_id: currItemId }),
         staleTime: 60_000
     })
 
@@ -167,7 +169,7 @@ export default function useSendBizchatDialog ({
 
 
     const sendRequest = useMutation({
-        mutationFn: onSendMassBizchat,
+        mutationFn: sendMassBizchat,
         retry: 3,
         retryDelay: 900
     })

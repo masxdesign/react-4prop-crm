@@ -413,11 +413,11 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 
 useTableModel.use = {
     tableSS (options) {
-        const { tableName, dialogModel, components, queryFn, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
+        const { tableName, dialogModel, components, services, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
 
         const selected = tableModel.state.selected
 
-        const tableQueryOptions = useTableQueryOptions({ tableName, queryFn, staleTime }, tableModel)
+        const tableQueryOptions = useTableQueryOptions({ tableName, queryFn: services.tableSSList, staleTime }, tableModel)
 
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
@@ -512,7 +512,14 @@ useTableModel.use = {
     tableDialog ({ 
         tableSSModal, 
         renderMessages,
-        services: {  getInfoById, noteList, addNote, deleteNote }
+        services: {  
+            tableDialog: { 
+                getInfoById, 
+                noteList, 
+                addNote, 
+                deleteNote 
+            } 
+        }
     }) {
         const queryClient = useQueryClient()
 
