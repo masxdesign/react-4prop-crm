@@ -4,13 +4,14 @@ import { EnvelopeClosedIcon, EnvelopeOpenIcon } from "@radix-ui/react-icons"
 import { ChatboxBizchatMessage, ChatboxSentdate } from "@/components/CRMTable/components"
 import { Dddl } from "@/components/DisplayData/components"
 import { Button } from "@/components/ui/button"
+import React from "react"
 
 const NEXT = "2"
 const LAST = "1"
 const NEXT_ONLY = "3"
 const NO_NEXT = "4"
 
-export default React.memo(function ChatBoxEachSingleMessage ({ resource_name = '', d, body, i2, created, lastMessage, mailshot }) {
+const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, created, lastMessage, mailshot }) => {
     switch (true) {
         case resource_name.includes(":c"): {
             return (
@@ -116,3 +117,5 @@ export default React.memo(function ChatBoxEachSingleMessage ({ resource_name = '
             )
     }
 })
+
+export default ChatBoxEachSingleMessage

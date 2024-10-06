@@ -5,7 +5,6 @@ import { COMPANY_TYPE_NAMES } from '@/constants'
 import { addNote, fetchFacets, fetchNegotiator, fetchNegotiatorByNids, fetchNegotiators, fetchNotes } from '@/api/fourProp'
 import { deleteLog } from '@/api/api-fakeServer'
 import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
-import messagesCombiner from '@/components/CRMTable/combiners/messagesCombiner'
 import { UserCard } from '@/components/CRMTable/components'
 import ChatBoxEachSingleMessage from '@/components/CRMTable/components/ChatBoxEachSingleMessage'
 

@@ -14,6 +14,7 @@ import { AlertEmailClick, ColumnNextContactEach, LastContact } from '@/component
 import { COMPANY_TYPE_NAMES } from '@/constants';
 import Chatbox from './Chatbox';
 import CSSOnMount from './CSSOnMount';
+import DialogNavigation from '@/components/DialogNavigation';
 
 function TableDialog({ model, ...props }) {
     return (

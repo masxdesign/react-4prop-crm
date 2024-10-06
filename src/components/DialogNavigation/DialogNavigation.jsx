@@ -28,23 +28,28 @@ function DialogNavigation ({ info }) {
     const prevInfo = useMemo(() => getInfoByOffset(-1), [getInfoByOffset])
   
     const handleJump = (index) => {
-      const info = getInfoByIndex(index)
-      dialogModel.showDialog(info.row.original.id)
+        const info = getInfoByIndex(index)
+        dialogModel.showDialog(info.row.original.id)
     }
   
     return (
       <div className='space-x-1'>
         <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-                variant="link"
-                className="h-8 w-8 p-0"
-                size="sm"
-            >
-              <DotsHorizontalIcon className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DialogNavigationDropdownContent open={dropdownOpen} currentIndex={info.row.index} rows={rows} onSelect={handleJump} />
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="link"
+                    className="h-8 w-8 p-0"
+                    size="sm"
+                >
+                <DotsHorizontalIcon className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DialogNavigationDropdownContent 
+                open={dropdownOpen} 
+                currentIndex={info.row.index} 
+                rows={rows} 
+                onSelect={handleJump} 
+            />
         </DropdownMenu>
         {[
           { id: 'prev', info: prevInfo, icon: ChevronLeftIcon },
@@ -79,7 +84,8 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
     const ref = useRef()
   
     const handleSelect = (e) => {
-      onSelect(e.target.dataset.id)
+        const { dataset } = e.target
+        onSelect(dataset.index, dataset.id)
     }
   
     useLayoutEffect(() => {
@@ -99,6 +105,7 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
             <DropdownMenuItem 
               key={row.original.id} 
               data-id={row.original.id}
+              data-index={row.index}
               disabled={currentIndex === row.index} 
               className={cn("flex flex-col items-start", `item-${row.index}`)}
               onSelect={handleSelect}
