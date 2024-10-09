@@ -29,11 +29,14 @@ function dashboardComponent() {
             CRM
           </h1>
           <div className='flex items-center gap-6 text-sm'>
-            <Link to="data/each/list" className="[&.active]:font-bold hover:underline">
+            <Link to="dashboard/each" className="[&.active]:font-bold hover:underline">
                 EACH
             </Link>
-            <Link to="data/clients/list" className="[&.active]:font-bold hover:underline">
-                Clients
+            <Link to="dashboard/my-list" className="[&.active]:font-bold hover:underline">
+                My list
+            </Link>
+            <Link to="dashboard/import" className="[&.active]:font-bold hover:underline">
+                Import
             </Link>
             <div
               variant="link"

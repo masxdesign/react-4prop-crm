@@ -24,7 +24,6 @@ import TableDialog from './components/TableDialog';
 
 export default function CRMTable ({ 
   tableName, 
-  tableDialogRenderMessages, 
   facets, 
   services, 
   navigate, 
@@ -32,7 +31,8 @@ export default function CRMTable ({
   columns, 
   authUserId,
   userCardComponent,
-  enableHoverCard
+  enableHoverCard,
+  tableDialogRenderMessages
 }) {
   
   const dataPool = useMap()

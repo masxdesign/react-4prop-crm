@@ -1,1 +1,1 @@
-export { default } from './dataTableToolbar'
+export { default } from './DataTableToolbar'

@@ -197,6 +197,139 @@ export const verifyShareApplicantUser = async (email, password) => {
     }
 }
 
+export const crmImport = async ({ list, ownerUid }) => {
+    try {
+
+        const { data } = await bizchatAxios.post('/api/crm/import', { list, ownerUid })
+        return data
+
+    } catch (e) {
+
+        return { error: "Please contact administrator. Apologies for any inconvenience." }
+
+    }
+}
+
+export const crmFacetList = async (column, authUserId) => {
+    try {
+
+        const { data } = await bizchatAxios.get(`/api/crm/facet/${column}/${authUserId}`)
+
+        return data
+
+    } catch (e) {
+
+        return { error: "Please contact administrator. Apologies for any inconvenience." }
+
+    }
+}
+
+const defaultCrmInclude = 'ownerUid,bz_id,first,last,email,company,phone,created'
+
+export const crmList = async ({ columnFilters, sorting, pagination, globalFilter }, authUserId) => {
+    try {
+        const defaultInclude = defaultCrmInclude
+
+        let params = {
+            page: pagination.pageIndex + 1,
+            perpage: pagination.pageSize,
+            include: defaultInclude
+        }
+
+        const [sorting_] = sorting
+
+        if(sorting_) {
+
+            const { id, desc } = sorting_
+
+            params = {
+                ...params,
+                orderBy: id,
+                direction: desc ? 'desc' : 'asc'
+            }
+
+        }
+
+        const column = []
+        const search = []
+
+        for(const filter of columnFilters) {
+            const { id, value } = filter
+            let [toSearch] = value
+            
+            column.push(id)
+
+            if (['a', 'company'].includes(id)) {
+                toSearch = `=${toSearch}`
+            }
+
+            search.push(toSearch)
+        }
+
+        if (globalFilter?.column) {
+            column.push(globalFilter.column)
+            search.push(globalFilter.search)
+        }
+
+        if (column.length > 0) {
+            params = {
+                ...params,
+                search,
+                column
+            }
+        }
+
+        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list`, { params })
+        
+        // let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+
+        // if (authUserId) {
+        //     let d2 = []
+            
+        //     if (data[1].length > 0) {
+        //         const recipients = map(data[1], 'id')
+        //         d2 = await getListUnreadTotal({ from: authUserId, recipients })
+        //     }
+
+        //     const data2 = [data[0], data[1].map(item => ({
+        //         ...item,
+        //         unread_total: find(d2, { recipient: item.id })?.unread_total ?? 0
+        //     }))]
+
+        //     return data2
+        // }
+
+        return data
+
+    } catch (e) {
+
+        console.log(e);
+        
+
+        return { error: "Please contact administrator. Apologies for any inconvenience." }
+
+    }
+}
+
+export async function crmListByIds (ids, authUserId) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids: ids } })
+    return data
+}
+
+export async function crmListById (id, authUserId) {
+    const rows = await crmListByIds([id], authUserId)
+    return rows[0]
+}
+
+export async function crmFetchNotes (id, authUserId) {
+
+    return [[], {}, null, null, []]
+
+    const { data } = await bizchatAxios.get(`/api/crm/notes/${authUserId}`, { params: { id } })
+
+    return data
+}
+
 export const getEnquiryRoomAsync = async (userId, type, i) => {
 	const params = { createdBy: userId, type, i }
 	const { data } = await bizchatAxios.get(`/api/enquiry_room`, { params, withCredentials: true })

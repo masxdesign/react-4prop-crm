@@ -1,7 +1,7 @@
 import {  useState } from 'react'
 import { getCoreRowModel, getFacetedRowModel, getFacetedUniqueValues, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable } from '@tanstack/react-table'
 import DataTablePagination from '../DataTablePagination'
-import DataTableToolbar from '../dataTableToolbar'
+import DataTableToolbar from '../DataTableToolbar'
 import { fuzzyFilter } from '@/utils/fuzzyFilterSortFn'
 import { useListStore } from '@/store'
 import DataTableDnd from '../DataTableDnd'

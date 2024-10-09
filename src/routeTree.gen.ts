@@ -17,11 +17,9 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AdminRemoteImport } from './routes/_admin/_remote'
 import { Route as AdminDashboardImport } from './routes/_admin/_dashboard'
 import { Route as AdminRemoteIntegrateSendEnquiryRouteImport } from './routes/_admin/_remote/integrate/send-enquiry/route'
-import { Route as AdminDashboardDashboardDataClientsImport } from './routes/_admin/_dashboard/dashboard/data/clients'
-import { Route as AdminDashboardDashboardDataEachListRouteImport } from './routes/_admin/_dashboard/dashboard/data/each/list/route'
-import { Route as AdminDashboardDashboardDataClientsListRouteImport } from './routes/_admin/_dashboard/dashboard/data/clients/list/route'
-import { Route as AdminDashboardDashboardDataClientsImportRouteImport } from './routes/_admin/_dashboard/dashboard/data/clients/import/route'
-import { Route as AdminDashboardDashboardDataClientsAddRouteImport } from './routes/_admin/_dashboard/dashboard/data/clients/add/route'
+import { Route as AdminDashboardDashboardMyListRouteImport } from './routes/_admin/_dashboard/dashboard/my-list/route'
+import { Route as AdminDashboardDashboardImportRouteImport } from './routes/_admin/_dashboard/dashboard/import/route'
+import { Route as AdminDashboardDashboardEachRouteImport } from './routes/_admin/_dashboard/dashboard/each/route'
 
 // Create/Update Routes
 
@@ -60,54 +58,34 @@ const AdminRemoteIntegrateSendEnquiryRouteRoute =
     ),
   )
 
-const AdminDashboardDashboardDataClientsRoute =
-  AdminDashboardDashboardDataClientsImport.update({
-    path: '/dashboard/data/clients',
+const AdminDashboardDashboardMyListRouteRoute =
+  AdminDashboardDashboardMyListRouteImport.update({
+    path: '/dashboard/my-list',
     getParentRoute: () => AdminDashboardRoute,
   } as any).lazy(() =>
-    import('./routes/_admin/_dashboard/dashboard/data/clients.lazy').then(
+    import('./routes/_admin/_dashboard/dashboard/my-list/route.lazy').then(
       (d) => d.Route,
     ),
   )
 
-const AdminDashboardDashboardDataEachListRouteRoute =
-  AdminDashboardDashboardDataEachListRouteImport.update({
-    path: '/dashboard/data/each/list',
+const AdminDashboardDashboardImportRouteRoute =
+  AdminDashboardDashboardImportRouteImport.update({
+    path: '/dashboard/import',
     getParentRoute: () => AdminDashboardRoute,
   } as any).lazy(() =>
-    import(
-      './routes/_admin/_dashboard/dashboard/data/each/list/route.lazy'
-    ).then((d) => d.Route),
+    import('./routes/_admin/_dashboard/dashboard/import/route.lazy').then(
+      (d) => d.Route,
+    ),
   )
 
-const AdminDashboardDashboardDataClientsListRouteRoute =
-  AdminDashboardDashboardDataClientsListRouteImport.update({
-    path: '/list',
-    getParentRoute: () => AdminDashboardDashboardDataClientsRoute,
+const AdminDashboardDashboardEachRouteRoute =
+  AdminDashboardDashboardEachRouteImport.update({
+    path: '/dashboard/each',
+    getParentRoute: () => AdminDashboardRoute,
   } as any).lazy(() =>
-    import(
-      './routes/_admin/_dashboard/dashboard/data/clients/list/route.lazy'
-    ).then((d) => d.Route),
-  )
-
-const AdminDashboardDashboardDataClientsImportRouteRoute =
-  AdminDashboardDashboardDataClientsImportRouteImport.update({
-    path: '/import',
-    getParentRoute: () => AdminDashboardDashboardDataClientsRoute,
-  } as any).lazy(() =>
-    import(
-      './routes/_admin/_dashboard/dashboard/data/clients/import/route.lazy'
-    ).then((d) => d.Route),
-  )
-
-const AdminDashboardDashboardDataClientsAddRouteRoute =
-  AdminDashboardDashboardDataClientsAddRouteImport.update({
-    path: '/add',
-    getParentRoute: () => AdminDashboardDashboardDataClientsRoute,
-  } as any).lazy(() =>
-    import(
-      './routes/_admin/_dashboard/dashboard/data/clients/add/route.lazy'
-    ).then((d) => d.Route),
+    import('./routes/_admin/_dashboard/dashboard/each/route.lazy').then(
+      (d) => d.Route,
+    ),
   )
 
 // Populate the FileRoutesByPath interface
@@ -134,29 +112,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRemoteImport
       parentRoute: typeof AdminImport
     }
+    '/_admin/_dashboard/dashboard/each': {
+      preLoaderRoute: typeof AdminDashboardDashboardEachRouteImport
+      parentRoute: typeof AdminDashboardImport
+    }
+    '/_admin/_dashboard/dashboard/import': {
+      preLoaderRoute: typeof AdminDashboardDashboardImportRouteImport
+      parentRoute: typeof AdminDashboardImport
+    }
+    '/_admin/_dashboard/dashboard/my-list': {
+      preLoaderRoute: typeof AdminDashboardDashboardMyListRouteImport
+      parentRoute: typeof AdminDashboardImport
+    }
     '/_admin/_remote/integrate/send-enquiry': {
       preLoaderRoute: typeof AdminRemoteIntegrateSendEnquiryRouteImport
       parentRoute: typeof AdminRemoteImport
-    }
-    '/_admin/_dashboard/dashboard/data/clients': {
-      preLoaderRoute: typeof AdminDashboardDashboardDataClientsImport
-      parentRoute: typeof AdminDashboardImport
-    }
-    '/_admin/_dashboard/dashboard/data/clients/add': {
-      preLoaderRoute: typeof AdminDashboardDashboardDataClientsAddRouteImport
-      parentRoute: typeof AdminDashboardDashboardDataClientsImport
-    }
-    '/_admin/_dashboard/dashboard/data/clients/import': {
-      preLoaderRoute: typeof AdminDashboardDashboardDataClientsImportRouteImport
-      parentRoute: typeof AdminDashboardDashboardDataClientsImport
-    }
-    '/_admin/_dashboard/dashboard/data/clients/list': {
-      preLoaderRoute: typeof AdminDashboardDashboardDataClientsListRouteImport
-      parentRoute: typeof AdminDashboardDashboardDataClientsImport
-    }
-    '/_admin/_dashboard/dashboard/data/each/list': {
-      preLoaderRoute: typeof AdminDashboardDashboardDataEachListRouteImport
-      parentRoute: typeof AdminDashboardImport
     }
   }
 }
@@ -168,12 +138,9 @@ export const routeTree = rootRoute.addChildren([
   LoginRouteRoute,
   AdminRoute.addChildren([
     AdminDashboardRoute.addChildren([
-      AdminDashboardDashboardDataClientsRoute.addChildren([
-        AdminDashboardDashboardDataClientsAddRouteRoute,
-        AdminDashboardDashboardDataClientsImportRouteRoute,
-        AdminDashboardDashboardDataClientsListRouteRoute,
-      ]),
-      AdminDashboardDashboardDataEachListRouteRoute,
+      AdminDashboardDashboardEachRouteRoute,
+      AdminDashboardDashboardImportRouteRoute,
+      AdminDashboardDashboardMyListRouteRoute,
     ]),
     AdminRemoteRoute.addChildren([AdminRemoteIntegrateSendEnquiryRouteRoute]),
   ]),

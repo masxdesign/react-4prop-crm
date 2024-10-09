@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import LogChatboxContainer from '@/routes/_admin/_dashboard/dashboard/data/clients/list/-ui/LogChatboxContainer';
+import LogChatboxContainer from '@/routes/_admin/_dashboard/dashboard/-data/clients/list/-ui/LogChatboxContainer';
 import ClientFormEdit from '../-ui/ClientFormEdit';
 import CategoriesPrimitive from '@/routes/-ui/CategoriesPrimitive';
 

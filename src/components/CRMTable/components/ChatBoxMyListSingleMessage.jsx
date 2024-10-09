@@ -11,7 +11,7 @@ const LAST = "1"
 const NEXT_ONLY = "3"
 const NO_NEXT = "4"
 
-const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, created, lastMessage, mailshot }) => {
+const ChatBoxMyListSingleMessage = React.memo(({ resource_name = '', d, body, i2, created, lastMessage, mailshot }) => {
     switch (true) {
         case resource_name.includes(":c"): {
             return (
@@ -118,4 +118,4 @@ const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, 
     }
 })
 
-export default ChatBoxEachSingleMessage
+export default ChatBoxMyListSingleMessage

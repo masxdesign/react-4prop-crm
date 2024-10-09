@@ -3,40 +3,32 @@ import { createLazyFileRoute, useNavigate, useRouteContext, useRouter } from '@t
 import { Importer, ImporterField } from 'react-csv-importer';
 import { useToast } from '@/components/ui/use-toast';
 import { useMutation } from '@tanstack/react-query';
-import { CSV_FIELDS } from '@/api/data/fake-clients';
-import { bulkInsertClient } from '@/api/api-fakeServer';
-import { useListStore } from '@/store';
+import { crmImport } from '@/api/bizchat';
 
-export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/data/clients/import')({
-  component: AddComponent,
+export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/import')({
+  component: ImportComponent
 })
 
-function AddComponent() {
-  const { queryClient } = useRouteContext()
-
-  const router = useRouter()
-
-  const sortByCreatedDesc = useListStore.use.sortByCreatedDesc()
+function ImportComponent () {
+  const { auth } = Route.useRouteContext()
 
   const { toast } = useToast()
+
   const navigate = useNavigate({ from: '/crm/dashboard/import' })
 
   const mutation = useMutation({
-    mutationFn: bulkInsertClient
+    mutationFn: crmImport
   })
 
-  const dataHandler = (rows, { startIndex }) => {
-    mutation.mutate(rows)
-    router.invalidate()
-    queryClient.invalidateQueries({ queryKey: ['clients'] })
+  const dataHandler = (list) => {
+    mutation.mutate({ list, ownerUid: `U${auth.user.id}` })
   }
   
   const handleClose = () => {
-    navigate({ to: '/crm/dashboard/' })
+    navigate({ to: '/crm/dashboard/my-list' })
   }
   
   const handleComplete = () => {
-    sortByCreatedDesc()
     toast({
       description: 'Successfully imported'
     })
@@ -51,8 +43,19 @@ function AddComponent() {
         defaultNoHeader={false} 
         restartable 
       >
-        {CSV_FIELDS.map(([name, optional]) => (
-          <ImporterField key={name} name={name} label={name} optional={optional} />
+        {[
+          ['first', false],
+          ['last', false],
+          ['email', false],
+          ['phone'],
+          ['company'],
+        ].map(([name, optional = true]) => (
+          <ImporterField 
+            key={name} 
+            name={name} 
+            label={name} 
+            optional={optional} 
+          />
         ))}
       </Importer>
     </>

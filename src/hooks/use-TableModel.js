@@ -422,7 +422,7 @@ useTableModel.use = {
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
         const table = useTableSS({ 
-            enableRowSelection: row => isEqual(row.original.id, authUserId),
+            enableRowSelection: row => !isEqual(row.original.id, authUserId),
             tableName,
             queryOptions: tableQueryOptions, 
             columns,
