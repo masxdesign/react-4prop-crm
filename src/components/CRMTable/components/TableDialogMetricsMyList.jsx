@@ -4,23 +4,20 @@ import _, { isEmpty } from 'lodash';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { Ddd, Dddl, Ddl } from '@/components/DisplayData/components'
 import ColumnNextContactMyList from './ColumnNextContactMyList';
-import { crmListUpdateDetails } from '@/api/bizchat';
 
 function TableDialogMetricsMyList({ info, model }) {
-    const updateMutationOptions = {
-        mutationFn: (variables) => crmListUpdateDetails(model.authUserId, info.id, variables.name, variables.newValue)
-    }
-
     return (
         <div className="text-sm space-y-2">
             <Dddl
                 items={[
-                    { label: "Email", name: "email", editable: true, alwaysShow: true },
                     { label: "Company", name: "company", bold: true, editable: true, alwaysShow: true },
+                    { label: "First", name: "first", editable: true, alwaysShow: true },
+                    { label: "Surname", name: "last", editable: true, alwaysShow: true },
+                    { label: "Email", name: "email", editable: true, alwaysShow: true },
                     { label: "Phone", name: "phone", editable: true, alwaysShow: true },
                 ]}
                 row={info}
-                updateMutationOptions={updateMutationOptions}
+                updateMutationOptions={model.updateMutationOptions}
             />
             <div className="h-3" />
             {model.authUserId !== info.id && (

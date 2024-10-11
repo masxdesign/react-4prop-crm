@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { defaultTableModelState } from '@/hooks/use-TableModel'
 import PendingComponent from '@/routes/-ui/PendingComponent'
 import { deleteLog } from '@/api/api-fakeServer'
-import { crmAddNote, crmFacetList, crmFetchNotes, crmList, crmListById, crmListByIds, getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
+import { crmAddNote, crmFacetList, crmFetchNotes, crmList, crmListById, crmListByIds, crmListUpdateDetails, getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
 import { UserCard } from '@/components/CRMTable/components'
 import ChatBoxMyListSingleMessage from '@/components/CRMTable/components/ChatBoxMyListSingleMessage'
 
@@ -21,7 +21,8 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/list')({
         getInfoById: import_id => crmListById(import_id, authUserId),
         noteList: import_id => crmFetchNotes(import_id, authUserId),
         addNote: (variables, import_id) => crmAddNote(variables, import_id, authUserId),
-        deleteNote: deleteLog
+        deleteNote: deleteLog,
+        listUpdateDetails: crmListUpdateDetails
       },
       massBizchat: {
         getList: getMassBizchatList,

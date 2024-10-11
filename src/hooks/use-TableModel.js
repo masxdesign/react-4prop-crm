@@ -8,6 +8,7 @@ import { fetchNegotiator } from "@/api/fourProp"
 import { LOCALSTOR_TABLEMODAL_SELECTED } from "@/constants"
 import numberWithCommas from "@/utils/numberWithCommas"
 import isEqual from "lodash/isEqual"
+import { util_pagin_update } from "@/utils/localStorageController"
 
 const defaultSelected = []
 
@@ -399,25 +400,22 @@ const useTableModel = ({ defaultState }) => {
 
 // dont lead upon your own misunderstanding
 
-const useTableQueryOptions = ({ tableName, tableVersion = '1', queryFn, staleTime = 60_000 }, tableModel) => {
-    const { tableState } = tableModel
-
-    const queryOptions_ = useMemo(() => queryOptions({ 
-        queryKey: [tableName, tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
-        queryFn: () => queryFn(tableState), 
-        staleTime
-    }), [tableName, tableState, queryFn, staleTime])
-
-    return queryOptions_
-}
-
 useTableModel.use = {
+    tableQueryOptions ({ tableName, tableVersion = '1', services, staleTime = 60_000, tableModel}) {
+        const { tableState } = tableModel
+    
+        const queryOptions_ = useMemo(() => queryOptions({ 
+            queryKey: [tableName, tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
+            queryFn: () => services.tableSSList(tableState), 
+            staleTime
+        }), [tableName, tableState, staleTime])
+    
+        return queryOptions_
+    },
     tableSS (options) {
-        const { tableName, tableVersion, dialogModel, components, services, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
+        const { tableName, tableVersion, dialogModel, components, columns, meta, tableModel, dataPool, authUserId, tableQueryOptions } = options
 
         const selected = tableModel.state.selected
-
-        const tableQueryOptions = useTableQueryOptions({ tableName, tableVersion, queryFn: services.tableSSList, staleTime }, tableModel)
 
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
@@ -514,12 +512,14 @@ useTableModel.use = {
         tableSSModal, 
         renderMessages,
         metricsComponent,
+        tableQueryOptions,
         services: {  
             tableDialog: { 
                 getInfoById, 
                 noteList, 
                 addNote, 
-                deleteNote 
+                deleteNote,
+                listUpdateDetails
             } 
         }
     }) {
@@ -557,7 +557,7 @@ useTableModel.use = {
 
         const addMutationOptions =  {
             mutationFn: (variables) => addNote(variables, id),
-            onSuccess: (data, variables) => {
+            onSuccess: (_, variables) => {
                 const { _button } = variables
                 
                 if(_button === 'bizchat') {
@@ -565,6 +565,26 @@ useTableModel.use = {
                 }
                 
                 queryClient.invalidateQueries({ queryKey: chatboxQueryOptions.queryKey })
+            }
+        }
+
+        const updateMutationOptions = {
+            mutationFn: (variables) => listUpdateDetails(authUserId, id, variables.name, variables.newValue),
+            onSuccess (_, variables) {
+                try {
+
+                    queryClient.setQueryData(
+                        tableQueryOptions.queryKey, 
+                        util_pagin_update(
+                            { id }, 
+                            { [variables.name]: variables.newValue }
+                        )
+                    )
+
+                } catch (e) {
+                    console.log(e);
+                    
+                }
             }
         }
 
@@ -583,6 +603,7 @@ useTableModel.use = {
             chatboxQueryOptions,
             addMutationOptions,
             deleteMutationOptions,
+            updateMutationOptions,
             getResultFromTable,
             renderMessages,
             metricsComponent,

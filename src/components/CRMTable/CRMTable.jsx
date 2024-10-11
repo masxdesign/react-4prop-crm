@@ -48,12 +48,20 @@ export default function CRMTable ({
   const dialogModel = useDialogModel()
   
   const tableModel = useTableModel({ defaultState: defaultTableModelState })
+
+  const tableQueryOptions = useTableModel.use.tableQueryOptions({ 
+    tableName, 
+    tableVersion, 
+    services, 
+    staleTime: 60_000,
+    tableModel
+  })
   
   const tableSSModal = useTableModel.use.tableSS({ 
     tableName, 
     tableVersion,
     authUserId,
-    services, 
+    tableQueryOptions, 
     columns, 
     dataPool,
     components: {
@@ -68,6 +76,7 @@ export default function CRMTable ({
     tableSSModal,
     renderMessages: tableDialogRenderMessages,
     metricsComponent: tableDialogMetricsComponent,
+    tableQueryOptions,
     services
   })
 
