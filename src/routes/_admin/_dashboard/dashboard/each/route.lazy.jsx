@@ -1,6 +1,7 @@
 import React from 'react';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import CRMTable from '@/components/CRMTable/CRMTable';
+import TableDialogMetricsEach from '@/components/CRMTable/components/TableDialogMetricsEach';
 
 export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/each')({
     component: ClientsListComponent
@@ -31,6 +32,8 @@ function ClientsListComponent() {
       navigate={navigate}
       userCardComponent={userCardComponent}
       defaultTableModelState={defaultTableModelState}
+      tableDialogMetricsComponent={TableDialogMetricsEach}
+      eachEmailCompaignsLink
     />
   )
 }

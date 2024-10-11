@@ -1,14 +1,16 @@
 import React from 'react';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import CRMTable from '@/components/CRMTable/CRMTable';
+import TableDialogMetricsMyList from '@/components/CRMTable/components/TableDialogMetricsMyList';
 
-export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/my-list')({
+export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/list')({
     component: ListComponent
 })
 
 function ListComponent() {
   const { 
     tableName, 
+    tableVersion,
     defaultTableModelState,
     tableDialogRenderMessages, 
     columns, 
@@ -18,11 +20,12 @@ function ListComponent() {
     userCardComponent
   } = Route.useRouteContext()
 
-  const navigate = useNavigate({ from: "/dashboard/my-list" })
+  const navigate = useNavigate({ from: "/dashboard/list" })
 
   return (
     <CRMTable  
       tableName={tableName}
+      tableVersion={tableVersion}
       services={services}
       authUserId={authUserId}
       columns={columns}
@@ -31,6 +34,7 @@ function ListComponent() {
       userCardComponent={userCardComponent}
       defaultTableModelState={defaultTableModelState}
       tableDialogRenderMessages={tableDialogRenderMessages}
+      tableDialogMetricsComponent={TableDialogMetricsMyList}
     />
   )
 }

@@ -10,6 +10,7 @@ export const Route = createLazyFileRoute('/_admin/_dashboard/dashboard/import')(
 })
 
 function ImportComponent () {
+  const { queryClient } = useRouteContext()
   const { auth } = Route.useRouteContext()
 
   const { toast } = useToast()
@@ -22,10 +23,11 @@ function ImportComponent () {
 
   const dataHandler = (list) => {
     mutation.mutate({ list, ownerUid: `U${auth.user.id}` })
+    queryClient.invalidateQueries({ queryKey: ['list'] })
   }
   
   const handleClose = () => {
-    navigate({ to: '/crm/dashboard/my-list' })
+    navigate({ to: '/crm/dashboard/list' })
   }
   
   const handleComplete = () => {

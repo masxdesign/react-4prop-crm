@@ -18,7 +18,7 @@ function ClientsListComponent() {
     userCardComponent
   } = Route.useRouteContext()
 
-  const navigate = useNavigate({ from: "/dashboard/data/each/list" })
+  const navigate = useNavigate({ from: "/dashboard/list" })
 
   return (
     <CRMTable  

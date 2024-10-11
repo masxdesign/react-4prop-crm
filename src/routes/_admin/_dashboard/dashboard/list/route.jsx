@@ -1,14 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { defaultTableModelState } from '@/hooks/use-TableModel'
 import PendingComponent from '@/routes/-ui/PendingComponent'
-import { addNote } from '@/api/fourProp'
 import { deleteLog } from '@/api/api-fakeServer'
-import { crmFacetList, crmFetchNotes, crmList, crmListById, crmListByIds, getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
+import { crmAddNote, crmFacetList, crmFetchNotes, crmList, crmListById, crmListByIds, getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/api/bizchat'
 import { UserCard } from '@/components/CRMTable/components'
-import ChatBoxEachSingleMessage from '@/components/CRMTable/components/ChatBoxEachSingleMessage'
 import ChatBoxMyListSingleMessage from '@/components/CRMTable/components/ChatBoxMyListSingleMessage'
 
-export const Route = createFileRoute('/_admin/_dashboard/dashboard/my-list')({
+export const Route = createFileRoute('/_admin/_dashboard/dashboard/list')({
   pendingComponent: PendingComponent,
   beforeLoad: async ({ context: { auth } }) => {
     const { columns, version } = await import('./-columns')
@@ -20,9 +18,9 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/my-list')({
       selectedDataPool: ids => crmListByIds(ids, authUserId),
       facetList: column => crmFacetList(column, authUserId),
       tableDialog: {
-        getInfoById: id => crmListById(id, authUserId),
-        noteList: id => crmFetchNotes(id, authUserId),
-        addNote,
+        getInfoById: import_id => crmListById(import_id, authUserId),
+        noteList: import_id => crmFetchNotes(import_id, authUserId),
+        addNote: (variables, import_id) => crmAddNote(variables, import_id, authUserId),
         deleteNote: deleteLog
       },
       massBizchat: {
@@ -38,7 +36,8 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/my-list')({
     ]
 
     return {
-      tableName:  `generic.${version}`,
+      tableName:  `list`,
+      tableVersion: version,
       facets,
       services,
       defaultTableModelState: {
@@ -46,7 +45,7 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/my-list')({
         tableState: {
           ...defaultTableModelState.tableState,
           columnFilters: [],
-          sorting: [{ id: "email", desc: true }]
+          sorting: [{ id: "created", desc: true }]
         }
       },
       columns,

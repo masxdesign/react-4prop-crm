@@ -33,7 +33,7 @@ const ChatboxMessages = ({ data, onDelete, autoScroll, scrollBehavior, className
     useEffect(() => {
       scrollDown()
     }, [data, scrollDown])
-  
+    
     return (
       <div ref={containerRef} className={cn('space-y-3 overflow-y-auto p-3', className)} {...props}>
         {data.map(({ id, message, variant, size }) => (

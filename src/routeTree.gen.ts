@@ -17,7 +17,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AdminRemoteImport } from './routes/_admin/_remote'
 import { Route as AdminDashboardImport } from './routes/_admin/_dashboard'
 import { Route as AdminRemoteIntegrateSendEnquiryRouteImport } from './routes/_admin/_remote/integrate/send-enquiry/route'
-import { Route as AdminDashboardDashboardMyListRouteImport } from './routes/_admin/_dashboard/dashboard/my-list/route'
+import { Route as AdminDashboardDashboardListRouteImport } from './routes/_admin/_dashboard/dashboard/list/route'
 import { Route as AdminDashboardDashboardImportRouteImport } from './routes/_admin/_dashboard/dashboard/import/route'
 import { Route as AdminDashboardDashboardEachRouteImport } from './routes/_admin/_dashboard/dashboard/each/route'
 
@@ -58,12 +58,12 @@ const AdminRemoteIntegrateSendEnquiryRouteRoute =
     ),
   )
 
-const AdminDashboardDashboardMyListRouteRoute =
-  AdminDashboardDashboardMyListRouteImport.update({
-    path: '/dashboard/my-list',
+const AdminDashboardDashboardListRouteRoute =
+  AdminDashboardDashboardListRouteImport.update({
+    path: '/dashboard/list',
     getParentRoute: () => AdminDashboardRoute,
   } as any).lazy(() =>
-    import('./routes/_admin/_dashboard/dashboard/my-list/route.lazy').then(
+    import('./routes/_admin/_dashboard/dashboard/list/route.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -120,8 +120,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDashboardDashboardImportRouteImport
       parentRoute: typeof AdminDashboardImport
     }
-    '/_admin/_dashboard/dashboard/my-list': {
-      preLoaderRoute: typeof AdminDashboardDashboardMyListRouteImport
+    '/_admin/_dashboard/dashboard/list': {
+      preLoaderRoute: typeof AdminDashboardDashboardListRouteImport
       parentRoute: typeof AdminDashboardImport
     }
     '/_admin/_remote/integrate/send-enquiry': {
@@ -140,7 +140,7 @@ export const routeTree = rootRoute.addChildren([
     AdminDashboardRoute.addChildren([
       AdminDashboardDashboardEachRouteRoute,
       AdminDashboardDashboardImportRouteRoute,
-      AdminDashboardDashboardMyListRouteRoute,
+      AdminDashboardDashboardListRouteRoute,
     ]),
     AdminRemoteRoute.addChildren([AdminRemoteIntegrateSendEnquiryRouteRoute]),
   ]),

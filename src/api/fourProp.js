@@ -274,7 +274,7 @@ export const addLastContact = async (variables, { id }) => {
 //     return data
 // }
 
-export const addNote = async (variables, { id, authUserId }) => {
+export const addNote = async (variables, id, authUserId) => {
     const { message = '', files, _button } = variables
 
     if (_button === "bizchat") {

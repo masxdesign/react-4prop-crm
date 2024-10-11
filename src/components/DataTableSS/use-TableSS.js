@@ -8,6 +8,7 @@ import { get } from 'lodash'
 
 const useTableSS = ({
     tableName,
+    tableVersion,
     columns,
     data,
     pageCount,
@@ -25,9 +26,9 @@ const useTableSS = ({
         columns.map(({ id, ...rest }) => ([id, get(rest, 'meta.defaultVisibilty', true)]))
     ))
 
-    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, 'order'], defaultColumnOrder)
-    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, 'sizing'], defaultColumnSizing)
-    const [columnVisibility, setColumnVisibility] = useLocalstorageState([tableName, 'visibility'], defaultColumnVisibility)
+    const [columnOrder, setColumnOrder] = useLocalstorageState([tableName, tableVersion, 'order'], defaultColumnOrder)
+    const [columnSizing, setColumnSizing] = useLocalstorageState([tableName, tableVersion, 'sizing'], defaultColumnSizing)
+    const [columnVisibility, setColumnVisibility] = useLocalstorageState([tableName, tableVersion, 'visibility'], defaultColumnVisibility)
 
     const table = useReactTable({
         columns, 

@@ -3,6 +3,8 @@ import DataTableColumnHeader from "@/components/DataTable/DataTableColumnHeader"
 import ColumnLinkable from "@/components/CRMTable/components/ColumnLinkable"
 import ColumnViewButton from "@/components/CRMTable/components/ColumnViewButton"
 import { Checkbox } from "@/components/ui/checkbox"
+import { ColumnNextContactEach } from "@/components/CRMTable/components"
+import ColumnNextContactMyList from "@/components/CRMTable/components/ColumnNextContactMyList"
 
 const columnHelper = createColumnHelper()
 
@@ -39,6 +41,35 @@ export const columns = [
         id: "note",
         cell: (info) => <ColumnViewButton info={info} />,
         size: 80,
+    }),
+    columnHelper.accessor('next_contact', {
+        id: 'next_contact',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title="Next contact" />
+        ),
+        cell: (info) => (
+          <ColumnNextContactMyList 
+            importId={info.row.original.id} 
+            authUserId={info.table.options.meta.authUserId}
+            defaultValue={info.row.original.next_contact}
+            table={info.table}
+            tableDataQueryKey={info.table.options.meta.dataQueryKey}
+          />
+        ),
+        meta: { label: 'Next contact' }
+    }),
+    columnHelper.accessor("created", {
+        id: "created",
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Date added" />
+        ),
+        cell: (info) => (
+            <ColumnLinkable
+                info={info}
+                dateFormat
+                className="w-full truncate font-medium"
+            />
+        ),
     }),
     columnHelper.accessor("company", {
         id: "company",

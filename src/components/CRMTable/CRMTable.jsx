@@ -24,6 +24,7 @@ import TableDialog from './components/TableDialog';
 
 export default function CRMTable ({ 
   tableName, 
+  tableVersion,
   facets, 
   services, 
   navigate, 
@@ -32,7 +33,9 @@ export default function CRMTable ({
   authUserId,
   userCardComponent,
   enableHoverCard,
-  tableDialogRenderMessages
+  tableDialogRenderMessages,
+  tableDialogMetricsComponent,
+  eachEmailCompaignsLink
 }) {
   
   const dataPool = useMap()
@@ -48,6 +51,7 @@ export default function CRMTable ({
   
   const tableSSModal = useTableModel.use.tableSS({ 
     tableName, 
+    tableVersion,
     authUserId,
     services, 
     columns, 
@@ -63,6 +67,7 @@ export default function CRMTable ({
   const tableDialogModal = useTableModel.use.tableDialog({
     tableSSModal,
     renderMessages: tableDialogRenderMessages,
+    metricsComponent: tableDialogMetricsComponent,
     services
   })
 
@@ -145,11 +150,13 @@ export default function CRMTable ({
                 <Cross2Icon />
               </Button>
             )}
-            <Button size="xs" variant="ghost" asChild>
-              <a href={`${FOURPROP_BASEURL}/marketing-campaigns/campaigns`} target='__blank' className='space-x-2'>
-                <span>Mailshot</span> <ExternalLinkIcon className='w-3' />
-              </a>
-            </Button>
+            {eachEmailCompaignsLink && (
+              <Button size="xs" variant="ghost" asChild>
+                <a href={`${FOURPROP_BASEURL}/marketing-campaigns/campaigns`} target='__blank' className='space-x-2'>
+                  <span>Mailshot</span> <ExternalLinkIcon className='w-3' />
+                </a>
+              </Button>
+            )}
           </div>
           <div className='flex w-64 justify-end'>
             <DataTableViewOptions table={table} />

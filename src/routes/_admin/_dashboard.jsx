@@ -32,7 +32,7 @@ function dashboardComponent() {
             <Link to="dashboard/each" className="[&.active]:font-bold hover:underline">
                 EACH
             </Link>
-            <Link to="dashboard/my-list" className="[&.active]:font-bold hover:underline">
+            <Link to="dashboard/list" className="[&.active]:font-bold hover:underline">
                 My list
             </Link>
             <Link to="dashboard/import" className="[&.active]:font-bold hover:underline">

@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_admin/_dashboard/dashboard/each')({
       tableDialog: {
         getInfoById: id => fetchNegotiator(id),
         noteList: id => fetchNotes(id, auth),
-        addNote,
+        addNote: (variables, id) => addNote(variables, id, authUserId),
         deleteNote: deleteLog
       },
       massBizchat: {

@@ -399,11 +399,11 @@ const useTableModel = ({ defaultState }) => {
 
 // dont lead upon your own misunderstanding
 
-const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableModel) => {
+const useTableQueryOptions = ({ tableName, tableVersion = '1', queryFn, staleTime = 60_000 }, tableModel) => {
     const { tableState } = tableModel
 
     const queryOptions_ = useMemo(() => queryOptions({ 
-        queryKey: [tableName, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
+        queryKey: [tableName, tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
         queryFn: () => queryFn(tableState), 
         staleTime
     }), [tableName, tableState, queryFn, staleTime])
@@ -413,17 +413,18 @@ const useTableQueryOptions = ({ tableName, queryFn, staleTime = 60_000 }, tableM
 
 useTableModel.use = {
     tableSS (options) {
-        const { tableName, dialogModel, components, services, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
+        const { tableName, tableVersion, dialogModel, components, services, staleTime, columns, meta, tableModel, dataPool, authUserId } = options
 
         const selected = tableModel.state.selected
 
-        const tableQueryOptions = useTableQueryOptions({ tableName, queryFn: services.tableSSList, staleTime }, tableModel)
+        const tableQueryOptions = useTableQueryOptions({ tableName, tableVersion, queryFn: services.tableSSList, staleTime }, tableModel)
 
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
         const table = useTableSS({ 
             enableRowSelection: row => !isEqual(row.original.id, authUserId),
             tableName,
+            tableVersion,
             queryOptions: tableQueryOptions, 
             columns,
             data,
@@ -512,6 +513,7 @@ useTableModel.use = {
     tableDialog ({ 
         tableSSModal, 
         renderMessages,
+        metricsComponent,
         services: {  
             tableDialog: { 
                 getInfoById, 
@@ -549,12 +551,12 @@ useTableModel.use = {
         })
 
         const chatboxQueryOptions = queryOptions({
-            queryKey: ['dialogContent', authUserId, id],
+            queryKey: ['chatboxNoteList', authUserId, id],
             queryFn: () => noteList(id)
         })
 
         const addMutationOptions =  {
-            mutationFn: (variables) => addNote(variables, { id, authUserId }),
+            mutationFn: (variables) => addNote(variables, id),
             onSuccess: (data, variables) => {
                 const { _button } = variables
                 
@@ -583,6 +585,7 @@ useTableModel.use = {
             deleteMutationOptions,
             getResultFromTable,
             renderMessages,
+            metricsComponent,
             table: tableSSModal.table,
             dialogModel: tableSSModal.table.options.meta.dialogModel,
             tableSSModal

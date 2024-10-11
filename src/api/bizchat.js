@@ -6,6 +6,8 @@ import _, { isFunction } from "lodash";
 
 export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
+const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created'
+
 const bizchatAxios = axios.create({
 	baseURL: BIZCHAT_BASEURL,
     withCredentials: true
@@ -213,7 +215,7 @@ export const crmImport = async ({ list, ownerUid }) => {
 export const crmFacetList = async (column, authUserId) => {
     try {
 
-        const { data } = await bizchatAxios.get(`/api/crm/facet/${column}/${authUserId}`)
+        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/facet/${column}`)
 
         return data
 
@@ -223,8 +225,6 @@ export const crmFacetList = async (column, authUserId) => {
 
     }
 }
-
-const defaultCrmInclude = 'ownerUid,bz_id,first,last,email,company,phone,created'
 
 export const crmList = async ({ columnFilters, sorting, pagination, globalFilter }, authUserId) => {
     try {
@@ -316,18 +316,104 @@ export async function crmListByIds (ids, authUserId) {
     return data
 }
 
+export async function crmListUpdateDetails (ownerUid, import_id, name, newValue) {
+    const { data } = await bizchatAxios.patch(`/api/crm/${ownerUid}/list/${import_id}`, { name, newValue })
+    return data
+}
+
 export async function crmListById (id, authUserId) {
     const rows = await crmListByIds([id], authUserId)
     return rows[0]
 }
 
-export async function crmFetchNotes (id, authUserId) {
+export async function crmFetchNotes (import_id, authUserId) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/${import_id}/notes`)
 
-    return [[], {}, null, null, []]
+    return [data, {}, null, null, []]
+}
 
-    const { data } = await bizchatAxios.get(`/api/crm/notes/${authUserId}`, { params: { id } })
+export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
+    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/note`, {
+        type,
+        body,
+        import_id,
+        dt
+    })
 
     return data
+}
+
+export async function crmAddNote (variables, import_id, authUserId) {
+    const { message = '', files, _button } = variables
+
+    if (_button === "bizchat") {
+
+        if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
+
+        if(!authUserId) throw new Error('authUserId is not defined')
+
+        alert('bizchat coming soon')
+
+        return null
+
+        // return sendBizchatMessage({ 
+        //     files,
+        //     message,
+        //     from: authUserId,
+        //     recipient: id
+        // })
+
+    }
+
+    if (_.isEmpty(message)) throw new Error('message is empty')
+
+    return addNoteAsync(authUserId, import_id, {
+        type: 0,
+        body: message,
+        dt: null
+    })
+}
+
+export const crmAddNextContact = async (variables, import_id, authUserId) => {
+    try {
+        const { next_contact, message = '' } = variables
+    
+        let type = 4
+        let dt = null
+    
+        if (next_contact) {
+            type = _.isEmpty(message) ? 3 : 2
+            dt = next_contact
+        }
+
+        return addNoteAsync(authUserId, import_id, {
+            type,
+            body: message,
+            dt
+        })
+
+    } catch (e) {
+        console.log(e);
+        
+    }
+}
+
+export const crmAddLastContact = async (variables, import_id, authUserId) => {
+    try {
+        const { last_contact, message = '' } = variables
+
+        if (isEmpty(last_contact)) throw new Error('last_contact is empty')
+
+        return addNoteAsync(authUserId, import_id, {
+            type: 1,
+            body: message,
+            dt: last_contact
+        })
+
+    } catch (e) {
+        console.log(e);
+        
+    }
 }
 
 export const getEnquiryRoomAsync = async (userId, type, i) => {
