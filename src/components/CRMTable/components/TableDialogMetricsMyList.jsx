@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import _, { isEmpty } from 'lodash';
+import _ from 'lodash';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { Ddd, Dddl, Ddl } from '@/components/DisplayData/components'
 import ColumnNextContactMyList from './ColumnNextContactMyList';

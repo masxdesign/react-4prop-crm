@@ -5,9 +5,37 @@ import myDateTimeFormat from "@/utils/myDateTimeFormat"
 import Dd from "./Dd"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Copy, Pencil, RefreshCcw, SaveIcon } from "lucide-react"
+import { ArrowRight, ArrowRightCircleIcon, ArrowRightIcon, CheckIcon, Copy, Pencil, RefreshCcw, SaveIcon } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useMutation } from "@tanstack/react-query"
+import delay from "@/utils/delay"
+
+const CopyButton = ({ value, onCopied }) => {
+    const [success, setSuccess] = useState(false)
+    
+    const handleCopyText = async () => {
+        navigator.clipboard.writeText(value)
+        setSuccess(true)
+        onCopied()
+        await delay(500)
+        setSuccess(false)
+    }
+
+    return (
+        <Button
+            variant="link"
+            size="xs"
+            className="opacity-0 group-hover:opacity-40 group-hover:hover:opacity-100"
+            onClick={handleCopyText}
+        >
+            {success ? (
+                <CheckIcon className="text-green-500 w-3 h-3" />
+            ) : (
+                <Copy className="w-3 h-3" />
+            )}
+        </Button>
+    )
+}
 
 const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, label }) => {
     const { toast } = useToast()
@@ -59,7 +87,7 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
     }, [value])
 
     return (
-        <div className="flex gap-3 items-center">
+        <div className="flex items-center">
             <Input
                 ref={inputRef}
                 value={value}
@@ -72,7 +100,7 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
                 className="opacity-50 hover:opacity-100"
                 onClick={handleSave}
             >
-                <SaveIcon className="w-3 h-3" />
+                <ArrowRightIcon className="w-3 h-3" />
             </Button>
         </div>
     )
@@ -91,8 +119,7 @@ const Editable = ({ display, value, name, label, updateMutationOptions, editable
         setEditmode(false)
     }
 
-    const handleCopyText = () => {
-        navigator.clipboard.writeText(value)
+    const handleCopied = () => {
         toast({
             title: "Copied!",
             description: `${value}`,
@@ -115,14 +142,6 @@ const Editable = ({ display, value, name, label, updateMutationOptions, editable
                 {display}
             </div>            
             <div className="flex shrink basis-1/3">
-                <Button
-                    variant="link"
-                    size="xs"
-                    className="opacity-0 group-hover:opacity-40 group-hover:hover:opacity-100"
-                    onClick={handleCopyText}
-                >
-                    <Copy className="w-3 h-3" />
-                </Button>
                 {yesEnableEditmode && (
                   <Button
                       variant="link"
@@ -133,6 +152,7 @@ const Editable = ({ display, value, name, label, updateMutationOptions, editable
                       <Pencil className="w-3 h-3" />
                   </Button>
                 )}
+                <CopyButton value={value} onCopied={handleCopied} />
             </div>
         </div>
     )

@@ -1,12 +1,12 @@
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Input } from "../ui/input"
 
-const UIFormFieldLabel = ({ form, name, label, inputType, placeholder, description }) => (
+const UIFormFieldLabel = ({ form, name, label, inputType, placeholder, description, ...props }) => (
     <FormField
         control={form.control}
         name={name}
         render={({ field }) => (
-            <FormItem>
+            <FormItem {...props}>
                 <FormLabel className="sr-only">{label}</FormLabel>
                 <FormControl>
                     <Input type={inputType} placeholder={placeholder} {...field} />

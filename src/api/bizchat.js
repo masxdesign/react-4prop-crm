@@ -199,17 +199,12 @@ export const verifyShareApplicantUser = async (email, password) => {
     }
 }
 
-export const crmImport = async ({ list, ownerUid }) => {
-    try {
+export const crmImport = async (list, authUserId) => {
+    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/import`, list)
 
-        const { data } = await bizchatAxios.post('/api/crm/import', { list, ownerUid })
-        return data
+    if (!data) throw new Error(list.length > 1 ? 'All emails already exist!': 'Email already exist!')
 
-    } catch (e) {
-
-        return { error: "Please contact administrator. Apologies for any inconvenience." }
-
-    }
+    return data
 }
 
 export const crmFacetList = async (column, authUserId) => {
