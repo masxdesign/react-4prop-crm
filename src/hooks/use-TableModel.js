@@ -505,11 +505,45 @@ useTableModel.use = {
         }
 
     },
+    facets ({ tableName, tableSSModal, services, facets }) {
+        return {
+            filters: facets.map(({ title, columnId, disableFacets, names = null }) => {
+                return {
+                    columnId,
+                    names,
+                    title,
+                    disableFacets,
+                    column: tableSSModal.table.getColumn(columnId),
+                    facetQueryOptions: {
+                        queryKey: [tableName, 'facet', columnId],
+                        queryFn: () => services.facetList(columnId),
+                        select: data => {
+                    
+                        let data_ = data.split('`').map((item) => item.split('^'))
+                    
+                        let options = []
+                        let facets = new Map
+                    
+                        for(const [label, count] of data_) {
+                            const label_ = names?.[label] ?? label
+                            options.push({ label: label_, value: label })
+                            facets.set(label, count > 999 ? numberWithCommas(count): count)
+                        }
+                    
+                        return { options, facets }
+                    
+                        }
+                    }
+                }
+            })
+        }
+    },
     getResultFromTable ({ getResultFromTable, id }) {
         return useMemo(() => getResultFromTable(id), [getResultFromTable, id])
     },
     tableDialog ({ 
-        tableSSModal, 
+        tableSSModal,
+        facetsModal, 
         renderMessages,
         metricsComponent,
         tableQueryOptions,
@@ -572,6 +606,16 @@ useTableModel.use = {
             mutationFn: (variables) => listUpdateDetails(authUserId, id, variables.name, variables.newValue),
             onSuccess (_, variables) {
                 try {
+
+                    if (variables.name) {
+                        const { queryKey } = facetsModal.filters
+                            .find((b) => b.columnId === variables.name)
+                            ?.facetQueryOptions
+
+                        if (queryKey) {
+                            queryClient.invalidateQueries({ queryKey })
+                        }
+                    }
 
                     queryClient.setQueryData(
                         tableQueryOptions.queryKey, 

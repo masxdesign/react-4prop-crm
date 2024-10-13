@@ -38,19 +38,16 @@ function ImportComponent () {
 
   return (
     <div className='p-5'>
-      <Tabs defaultValue="single" className='max-w-[800px] mx-auto'>
+      <Tabs defaultValue="manually" className='max-w-[800px] mx-auto'>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="single">Single</TabsTrigger>
-          <TabsTrigger value="bulk">Import a CSV</TabsTrigger>
+          <TabsTrigger value="manually">Manually</TabsTrigger>
+          <TabsTrigger value="csv">Import a CSV</TabsTrigger>
         </TabsList>
-        <TabsContent value="single">
-          <AddSingleForm 
-            navigate={navigate} 
-            importMutation={importMutation}
-          />
+        <TabsContent value="manually">
+          <ManuallyMethod importMutation={importMutation} />
         </TabsContent>
-        <TabsContent value="bulk">
-            <ImportPane 
+        <TabsContent value="csv">
+            <CSVMethod 
               navigate={navigate} 
               importMutation={importMutation}
             />
@@ -65,7 +62,7 @@ const schema = yup.object({
   email: yup.string().required(),
 })
 
-function AddSingleForm ({ navigate, importMutation }) {
+function ManuallyMethod ({ importMutation }) {
   const [lastEntry, setLastEntry] = useState(null)
   
   const { toast } = useToast()
@@ -109,8 +106,7 @@ function AddSingleForm ({ navigate, importMutation }) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-[400px] mx-auto">
         <div className='h-10' />
-        <h2 className='text-lg font-bold text-center'>Add a Single Client</h2>
-        <div className='h-5' />
+        <h2 className='text-lg font-bold'>Add new contact</h2>
         <div className='flex gap-3'>
           {[
             ['first', 'First*'],
@@ -139,14 +135,17 @@ function AddSingleForm ({ navigate, importMutation }) {
             placeholder={label}
           />
         ))}
-        <div className='h-4' />
+        <div className='h-8' />
         <Button type="submit" className="mx-auto block">
-          Save
+          Add
         </Button>
         {lastEntry && (
-            <Link to='/crm/dashboard/list' search={{ open: true, info: `${lastEntry.id}` }} className='flex items-center'>
-              <span>View <u>{lastEntry.first}</u></span><ArrowRightIcon className='ml-2 w-3 h-3' /> 
+          <p className='text-center mt-5 text-sm text-muted-foreground'>
+            Contact successfully added!<br/>
+            <Link to='/crm/dashboard/list' search={{ open: true, info: `${lastEntry.id}` }} className='hover:underline'>
+              <span>View <b>{lastEntry.first}</b></span><ArrowRightIcon className='ml-2 w-3 h-3 inline' /> 
             </Link>
+          </p>
           )}
       </form>
     </Form>
@@ -155,7 +154,7 @@ function AddSingleForm ({ navigate, importMutation }) {
 
 const initialResult = { saved: 0, skipped: 0 }
 
-function ImportPane ({ navigate, importMutation }) {
+function CSVMethod ({ navigate, importMutation }) {
   const [result, setResult] = useState(initialResult)
   
   const { toast } = useToast()

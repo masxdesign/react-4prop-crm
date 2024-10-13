@@ -1,11 +1,11 @@
-import { forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { isEmpty, isString } from "lodash"
 import htmlEntities from "@/utils/htmlEntities"
 import myDateTimeFormat from "@/utils/myDateTimeFormat"
 import Dd from "./Dd"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ArrowRightCircleIcon, ArrowRightIcon, CheckIcon, Copy, Pencil, RefreshCcw, SaveIcon } from "lucide-react"
+import { ArrowRight, ArrowRightCircleIcon, ArrowRightIcon, CheckIcon, Copy, Loader2, LoaderIcon, Pencil, RefreshCcw, SaveIcon } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useMutation } from "@tanstack/react-query"
 import delay from "@/utils/delay"
@@ -49,16 +49,20 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
       setValue(e.target.value)
     }
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
       try {
+        
+        if (updateMutation.isPending) return
 
         if (defaultValue !== value) {
 
-          await updateMutation.mutateAsync({ name, newValue: value })
+            const newValue = value.trim()
 
-          toast({
-            title: `${label} has been updated!`,
-          })
+            await updateMutation.mutateAsync({ name, newValue })
+
+            toast({
+                title: `${label} has been updated!`,
+            })
 
         }
 
@@ -72,6 +76,12 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
       } finally {
         onReadmode()
       }
+    }, [value, updateMutation])
+
+    const handleKeyPress = (e) => {
+        if (e.key === "Enter") {
+            handleSave()
+        }
     }
 
     useLayoutEffect(() => {
@@ -84,23 +94,30 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
         return () => {
             inputRef.current.removeEventListener("blur", handleSave)
         }
-    }, [value])
+    }, [handleSave])
 
     return (
         <div className="flex items-center">
             <Input
                 ref={inputRef}
                 value={value}
+                onKeyPress={handleKeyPress}
                 onChange={handleChange}
+                disabled={updateMutation.isPending}
                 className="border-l-0 border-r-0 border-t-0 rounded-none h-3 px-0 focus-visible:ring-0"
             />
             <Button
                 variant="link"
                 size="xs"
                 className="opacity-50 hover:opacity-100"
+                disabled={updateMutation.isPending}
                 onClick={handleSave}
             >
-                <ArrowRightIcon className="w-3 h-3" />
+                {updateMutation.isPending ? (
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                    <ArrowRightIcon className="w-3 h-3" />
+                )}
             </Button>
         </div>
     )

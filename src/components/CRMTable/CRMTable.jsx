@@ -72,8 +72,16 @@ export default function CRMTable ({
     tableModel
   })
 
+  const facetsModal = useTableModel.use.facets({
+    tableName, 
+    facets,
+    services,
+    tableSSModal
+  })
+
   const tableDialogModal = useTableModel.use.tableDialog({
     tableSSModal,
+    facetsModal,
     renderMessages: tableDialogRenderMessages,
     metricsComponent: tableDialogMetricsComponent,
     tableQueryOptions,
@@ -139,17 +147,7 @@ export default function CRMTable ({
               table={table} 
               globalFilter={tableModel.tableState.globalFilter}  
             />
-            {facets.map(props => (
-              <FacetedFilter 
-                key={props.columnId}
-                tableName={tableName}
-                columnId={props.columnId}
-                disableFacets={tableModel.isDirtyFilters}
-                services={services}
-                table={table} 
-                {...props}
-              />
-            ))}
+            <FacetFilters modal={facetsModal} />
             {tableModel.isDirtyFilters && (
               <Button 
                 variant="link"
@@ -186,32 +184,30 @@ export default function CRMTable ({
   )
 }
 
-function FacetedFilter ({ tableName, table, title, columnId, disableFacets, names, services }) {
-  const { data } = useSuspenseQuery({
-    queryKey: [tableName, 'facetFilter', columnId],
-    queryFn: () => services.facetList(columnId),
-    select: data => {
+function FacetFilters ({ modal }) {
+  return (
+    <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
+      {modal.filters.map(({ column, title, disableFacets, facetQueryOptions }) => {
+        return (
+          <FacetFilter
+            title={title}
+            column={column}
+            disableFacets={disableFacets}
+            facetQueryOptions={facetQueryOptions}
+          />
+        )
+      })}
+    </Suspense>
+  )
+}
 
-      let data_ = data.split('`').map((item) => item.split('^'))
-
-      let options = []
-      let facets = new Map
-
-      for(const [label, count] of data_) {
-          const label_ = names?.[label] ?? label
-          options.push({ label: label_, value: label })
-          facets.set(label, count > 999 ? numberWithCommas(count): count)
-      }
-
-      return { options, facets }
-
-    }
-  })
+function FacetFilter ({ title, column, disableFacets, facetQueryOptions }) {
+  const { data } = useSuspenseQuery(facetQueryOptions)
 
   return (
     <DataTableFacetedFilter
-      column={table.getColumn(columnId)}
       title={title}
+      column={column}
       data={data}
       disableFacets={disableFacets}
     />

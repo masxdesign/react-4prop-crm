@@ -202,6 +202,8 @@ export const verifyShareApplicantUser = async (email, password) => {
 export const crmImport = async (list, authUserId) => {
     const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/import`, list)
 
+    await delay(600)
+
     if (!data) throw new Error(list.length > 1 ? 'All emails already exist!': 'Email already exist!')
 
     return data

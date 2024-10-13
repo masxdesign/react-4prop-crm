@@ -10,11 +10,12 @@ function TableDialogMetricsMyList({ info, model }) {
         <div className="text-sm space-y-2">
             <Dddl
                 items={[
-                    { label: "Company", name: "company", bold: true, editable: true, alwaysShow: true },
                     { label: "First", name: "first", editable: true, alwaysShow: true },
                     { label: "Surname", name: "last", editable: true, alwaysShow: true },
                     { label: "Email", name: "email", editable: true, alwaysShow: true },
+                    { label: "Company", name: "company", bold: true, editable: true, alwaysShow: true },
                     { label: "Phone", name: "phone", editable: true, alwaysShow: true },
+                    { label: "Created", name: "created", alwaysShow: true, isDate: true },
                 ]}
                 row={info}
                 updateMutationOptions={model.updateMutationOptions}
