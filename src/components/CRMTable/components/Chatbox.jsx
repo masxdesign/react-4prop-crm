@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { ExpandIcon, Send } from 'lucide-react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { BizchatAttachmentsButton } from '@/components/Uppy/components';
 import ChatboxMessages from './ChatboxMessages';
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
+import { SizeIcon } from '@radix-ui/react-icons';
 
 const ChatboxMessagesFetcher = ({ chatboxQueryOptions, renderMessages, enableDelete, ...props }) => {
   const { data } = useSuspenseQuery({
@@ -28,12 +29,14 @@ const ChatboxMessagesFetcher = ({ chatboxQueryOptions, renderMessages, enableDel
   )
 }
 
-const Chatbox = ({ 
+const Chatbox = ({
+  info, 
   chatboxQueryOptions, 
   renderMessages, 
   deleteMutationOptions, 
   addMutationOptions,
-  enableDelete
+  enableDelete,
+  enableBizchat
 }) => {
     const [expand, setExpand] = useState(false)
 
@@ -45,10 +48,6 @@ const Chatbox = ({
       error
     } = useChatbox({ deleteMutationOptions, addMutationOptions })
 
-    const handleExpand = () => {
-      setExpand(true)
-    }
-
     const handleMinimise = () => {
       setExpand(false)
     }
@@ -56,6 +55,12 @@ const Chatbox = ({
     const handleToggle = () => {
       setExpand(prev => !prev)
     }
+
+    useEffect(() => {
+
+      handleMinimise()
+
+    }, [info.id])
   
     return (
       <div className='flex flex-col h-full relative'>
@@ -81,19 +86,21 @@ const Chatbox = ({
           </div>
           <div className="flex flex-row gap-4 justify-end items-center py-2 px-3">
             <span className='flex items-center mr-auto opacity-50 hover:opacity-100 hover:scale-105 transition-all cursor-pointer' onClick={handleToggle}>
-              <ExpandIcon className='w-3 h-3 mr-2' />
+              <SizeIcon className='w-3 h-3 mr-1' />
               <span className='text-xs'>
-                {expand ? 'minimise': 'expand'}
+                {expand ? 'make textarea smaller': 'make textarea bigger'}
               </span>
             </span>
             <Button variant="default" size="xs" onClick={() => submit("note")}>Make note</Button>
-            <div className='flex gap-1'>
-              <Button variant="secondary" size="xs" onClick={() => submit("bizchat")}>
-                <Send className='w-3 h-3 mr-1' />
-                message
-              </Button>
-              <BizchatAttachmentsButton uppy={uppy} />
-            </div>
+            {enableBizchat && (
+              <div className='flex gap-1'>
+                <Button variant="secondary" size="xs" onClick={() => submit("bizchat")}>
+                  <Send className='w-3 h-3 mr-1' />
+                  message
+                </Button>
+                <BizchatAttachmentsButton uppy={uppy} />
+              </div>
+            )}
           </div>
         </div>
         {expand && (

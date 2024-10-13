@@ -34,6 +34,8 @@ function ClientsListComponent() {
       defaultTableModelState={defaultTableModelState}
       tableDialogMetricsComponent={TableDialogMetricsEach}
       eachEmailCompaignsLink
+      enableMassBizchat
+      enableTableDialogBizchat
     />
   )
 }

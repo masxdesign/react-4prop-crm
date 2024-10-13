@@ -519,18 +519,18 @@ useTableModel.use = {
                         queryFn: () => services.facetList(columnId),
                         select: data => {
                     
-                        let data_ = data.split('`').map((item) => item.split('^'))
-                    
-                        let options = []
-                        let facets = new Map
-                    
-                        for(const [label, count] of data_) {
-                            const label_ = names?.[label] ?? label
-                            options.push({ label: label_, value: label })
-                            facets.set(label, count > 999 ? numberWithCommas(count): count)
-                        }
-                    
-                        return { options, facets }
+                            let data_ = data.split('`').map((item) => item.split('^'))
+                        
+                            let options = []
+                            let facets = new Map
+                        
+                            for(const [label, count] of data_) {
+                                const label_ = names?.[label] ?? label
+                                options.push({ label: label_, value: label })
+                                facets.set(label, count > 999 ? numberWithCommas(count): count)
+                            }
+                        
+                            return { options, facets }
                     
                         }
                     }
@@ -547,6 +547,7 @@ useTableModel.use = {
         renderMessages,
         metricsComponent,
         tableQueryOptions,
+        enableBizchat,
         services: {  
             tableDialog: { 
                 getInfoById, 
@@ -608,9 +609,9 @@ useTableModel.use = {
                 try {
 
                     if (variables.name) {
-                        const { queryKey } = facetsModal.filters
+                        const queryKey = facetsModal.filters
                             .find((b) => b.columnId === variables.name)
-                            ?.facetQueryOptions
+                            ?.facetQueryOptions.queryKey
 
                         if (queryKey) {
                             queryClient.invalidateQueries({ queryKey })
@@ -642,6 +643,7 @@ useTableModel.use = {
 
         return {
             id,
+            enableBizchat,
             authUserId,
             infoQueryOptions,
             chatboxQueryOptions,

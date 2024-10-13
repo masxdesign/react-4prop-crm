@@ -35,7 +35,9 @@ export default function CRMTable ({
   enableHoverCard,
   tableDialogRenderMessages,
   tableDialogMetricsComponent,
-  eachEmailCompaignsLink
+  eachEmailCompaignsLink,
+  enableMassBizchat,
+  enableTableDialogBizchat
 }) {
   
   const dataPool = useMap()
@@ -85,7 +87,8 @@ export default function CRMTable ({
     renderMessages: tableDialogRenderMessages,
     metricsComponent: tableDialogMetricsComponent,
     tableQueryOptions,
-    services
+    services,
+    enableBizchat: enableTableDialogBizchat
   })
 
   const selectionControl = useSelectionControl({ 
@@ -132,15 +135,17 @@ export default function CRMTable ({
                     />
                   </Suspense>
                   <SelectionControl.Footer>
-                    <SendBizchatDialog.Button 
-                      selected={selectionControl.selected}
-                      model={sendBizchatDialog} 
-                    />
+                    {enableMassBizchat && (
+                      <SendBizchatDialog.Button 
+                        selected={selectionControl.selected}
+                        model={sendBizchatDialog} 
+                      />
+                    )}
                   </SelectionControl.Footer>
                 </SelectionControl.Content>
               </Popover>
             )}
-            <SendBizchatDialog.ButtonSm model={sendBizchatDialog} />
+            {enableMassBizchat && <SendBizchatDialog.ButtonSm model={sendBizchatDialog} />}
           </div>
           <div className='flex flex-grow items-center justify-center gap-4'>
             <GlobalFilter 
@@ -174,12 +179,14 @@ export default function CRMTable ({
         </div>
         <DataTablePagination table={table} />
       </div>
-      <SendBizchatDialog 
-        model={sendBizchatDialog} 
-        tableSSModal={tableSSModal}
-        selected={selectionControl.selected} 
-      />
       <TableDialog model={tableDialogModal} />
+      {enableMassBizchat && (
+        <SendBizchatDialog 
+          model={sendBizchatDialog} 
+          tableSSModal={tableSSModal}
+          selected={selectionControl.selected} 
+        />
+      )}
     </>
   )
 }
@@ -187,9 +194,10 @@ export default function CRMTable ({
 function FacetFilters ({ modal }) {
   return (
     <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
-      {modal.filters.map(({ column, title, disableFacets, facetQueryOptions }) => {
+      {modal.filters.map(({ columnId, column, title, disableFacets, facetQueryOptions }) => {
         return (
           <FacetFilter
+            key={columnId}
             title={title}
             column={column}
             disableFacets={disableFacets}

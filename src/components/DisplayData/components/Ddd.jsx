@@ -50,32 +50,31 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
     }
 
     const handleSave = useCallback(async () => {
-      try {
-        
-        if (updateMutation.isPending) return
+        try {
+    
+            if (defaultValue !== value) {
 
-        if (defaultValue !== value) {
+                const newValue = value.trim()
 
-            const newValue = value.trim()
+                await updateMutation.mutateAsync({ name, newValue })
 
-            await updateMutation.mutateAsync({ name, newValue })
+                toast({
+                    title: `${label} has been updated!`,
+                })
+
+            }
+
+        } catch (e) {
 
             toast({
-                title: `${label} has been updated!`,
+                title: `Something went wrong when updating ${label}`,
+                description: e.message
             })
-
+            
+        } finally {
+            onReadmode()
         }
 
-      } catch (e) {
-
-        toast({
-          title: `Something went wrong when updating ${label}`,
-          description: e.message
-        })
-        
-      } finally {
-        onReadmode()
-      }
     }, [value, updateMutation])
 
     const handleKeyPress = (e) => {
@@ -88,19 +87,12 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
         inputRef.current.focus()
     }, [])
 
-    useLayoutEffect(() => {
-        inputRef.current.addEventListener("blur", handleSave)
-
-        return () => {
-            inputRef.current.removeEventListener("blur", handleSave)
-        }
-    }, [handleSave])
-
     return (
         <div className="flex items-center">
             <Input
                 ref={inputRef}
                 value={value}
+                onBlur={handleSave}
                 onKeyPress={handleKeyPress}
                 onChange={handleChange}
                 disabled={updateMutation.isPending}
@@ -213,7 +205,7 @@ const Ddd = forwardRef(
                     isDate ? (
                         <>{myDateTimeFormat(value)}</>
                     ) : isEmpty(value) ? (
-                      <Editable
+                        <Editable
                             display={
                               <i className="opacity-50">(empty)</i>
                             }

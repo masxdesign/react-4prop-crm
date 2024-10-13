@@ -11,7 +11,6 @@ const ColumnLinkable = React.memo(({ info, names, className, dateFormat, ...prop
     }
 
     if (dateFormat) {
-      console.log(value);
       
       return (
         <div 

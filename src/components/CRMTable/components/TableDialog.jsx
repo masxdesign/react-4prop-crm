@@ -5,16 +5,13 @@ import _, { isEmpty } from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useAuth } from '@/components/Auth/Auth-context';
-import { Button } from '@/components/ui/button';
-import ProgressCircle from '@/components/ProgressCircle';
-import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'
-import { AlertEmailClick, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
-import { COMPANY_TYPE_NAMES } from '@/constants';
 import Chatbox from './Chatbox';
 import CSSOnMount from './CSSOnMount';
 import DialogNavigation from '@/components/DialogNavigation';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { Trash2Icon } from 'lucide-react';
 
 function TableDialog({ model, ...props }) {
     return (
@@ -69,7 +66,8 @@ function TableDialogContent({ info, model, fromTable = null }) {
         renderMessages,
         addMutationOptions,
         deleteMutationOptions,
-        metricsComponent: MetricsComponent
+        metricsComponent: MetricsComponent,
+        enableBizchat
     } = model
 
     return (
@@ -89,11 +87,30 @@ function TableDialogContent({ info, model, fromTable = null }) {
                         className="p-4 space-y-4"
                     >
                         <DialogHeader>
-                            <DialogTitle className="flex flex-row justify-between items-center capitalize">
-                                <span>{`${info.first} ${info.last}`}</span>
+                            <DialogTitle className="flex gap-4 items-center capitalize">
+                                <span className='mr-auto'>{`${info.first} ${info.last}`}</span>
                                 {fromTable && (
                                     <DialogNavigation info={fromTable} />
                                 )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className="h-8 w-8 p-0"
+                                            size="sm"
+                                        >
+                                            <DotsHorizontalIcon className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem className="group cursor-pointer focus:hover:bg-red-100">
+                                            <Trash2Icon className="h-4 w-4 mr-2 group-hover:text-red-500" /> 
+                                            <span className='text-muted-foreground group-hover:text-red-500'>
+                                                Move to bin
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </DialogTitle>
                         </DialogHeader>
                         <MetricsComponent info={info} model={model} />
@@ -108,11 +125,13 @@ function TableDialogContent({ info, model, fromTable = null }) {
                             </div>
                         ) : (
                             <Chatbox
+                                info={info}
                                 chatboxQueryOptions={chatboxQueryOptions}
                                 addMutationOptions={addMutationOptions}
                                 deleteMutationOptions={deleteMutationOptions}
                                 renderMessages={renderMessages}
                                 enableDelete={false}
+                                enableBizchat={enableBizchat}
                             />
                         )}
                     </ResizablePanel>

@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import TableHoverCard from '../CRMTable/components/TableHoverCard';
+import { SearchCheckIcon, SearchCodeIcon, SearchSlashIcon, Table2Icon, TablePropertiesIcon } from 'lucide-react';
 
-function DialogNavigation ({ info }) {
+function DialogNavigation ({ info, ...props }) {
     const [dropdownOpen, setDropdownOpen] = useState(false)
     
     const { dialogModel } = info.table.options.meta
@@ -33,24 +34,7 @@ function DialogNavigation ({ info }) {
     }
   
     return (
-      <div className='space-x-1'>
-        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    variant="link"
-                    className="h-8 w-8 p-0"
-                    size="sm"
-                >
-                <DotsHorizontalIcon className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DialogNavigationDropdownContent 
-                open={dropdownOpen} 
-                currentIndex={info.row.index} 
-                rows={rows} 
-                onSelect={handleJump} 
-            />
-        </DropdownMenu>
+      <div className='flex flex-nowrap' {...props}>
         {[
           { id: 'prev', info: prevInfo, icon: ChevronLeftIcon },
           { id: 'next', info: nextInfo, icon: ChevronRightIcon }
@@ -76,6 +60,23 @@ function DialogNavigation ({ info }) {
             )}
           </HoverCard>
         ))}
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="link"
+                    className="h-8 w-8 p-0"
+                    size="sm"
+                >
+                  <Table2Icon className="h-4 w-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DialogNavigationDropdownContent 
+                open={dropdownOpen} 
+                currentIndex={info.row.index} 
+                rows={rows} 
+                onSelect={handleJump} 
+            />
+        </DropdownMenu>
       </div>
     )
 }
@@ -101,19 +102,25 @@ function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }
   
     return (
       <DropdownMenuContent ref={ref} align="start" className="overflow-auto h-64">
-        {rows.map((row) => (
-            <DropdownMenuItem 
-              key={row.original.id} 
-              data-id={row.original.id}
-              data-index={row.index}
-              disabled={currentIndex === row.index} 
-              className={cn("flex flex-col items-start", `item-${row.index}`)}
-              onSelect={handleSelect}
-            >
-              <span className='font-bold'>{row.getValue('fullName')}</span>
-              <span className='text-muted-foreground'>{row.getValue('company')}</span>
-            </DropdownMenuItem>
-        ))}
+        {rows.map((row) => {
+          let companyText = row.getValue('company')
+
+          if (_.isEmpty(companyText)) companyText = <i className='opacity-50'>No company</i>
+
+          return (
+              <DropdownMenuItem 
+                key={row.original.id} 
+                data-id={row.original.id}
+                data-index={row.index}
+                disabled={currentIndex === row.index} 
+                className={cn("flex flex-col items-start w-[180px]", `item-${row.index}`)}
+                onSelect={handleSelect}
+              >
+                <span className='font-bold'>{row.getValue('fullName')}</span>
+                <span className='text-muted-foreground'>{companyText}</span>
+              </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     )
 }

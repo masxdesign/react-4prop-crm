@@ -43,11 +43,13 @@ function TableDialogMetricsMyList({ info, model }) {
                     />
                 </>
             )}
-            <Suspense fallback={<p>Loading...</p>}>
-                <TableDialogChatLinks
-                    chatboxQueryOptions={model.chatboxQueryOptions}
-                />
-            </Suspense>
+            {model.enableBizchat && (
+                <Suspense fallback={<p>Loading...</p>}>
+                    <TableDialogChatLinks
+                        chatboxQueryOptions={model.chatboxQueryOptions}
+                    />
+                </Suspense>
+            )}
         </div>
     )
 }
