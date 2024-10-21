@@ -15,7 +15,7 @@ function TableDialogMetricsMyList({ info, model }) {
                     { label: "Email", name: "email", editable: true, alwaysShow: true },
                     { label: "Company", name: "company", bold: true, editable: true, alwaysShow: true },
                     { label: "Phone", name: "phone", editable: true, alwaysShow: true },
-                    { label: "Created", name: "created", alwaysShow: true, isDate: true },
+                    { label: "Created", name: "created", editable: false, alwaysShow: true, isDate: true },
                 ]}
                 row={info}
                 updateMutationOptions={model.updateMutationOptions}

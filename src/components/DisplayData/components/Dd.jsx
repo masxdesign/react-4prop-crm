@@ -12,7 +12,7 @@ const Dd = forwardRef(({
   collapsible, 
   ...props 
 }, ref) => (
-    <div ref={ref} className={cn('flex flex-row items-start gap-4', className)} {...props}>
+    <div ref={ref} className={cn('flex flex-row items-center gap-4', className)} {...props}>
       <div className={cn('basis-1/5 text-muted-foreground', labelClassName)}>{label}</div>
       <div className={cn('basis-4/5', { 'truncate': !disableTruncate }, { 'font-bold': bold, 'hover:underline cursor-pointer': collapsible })}>
         {collapsible ? (

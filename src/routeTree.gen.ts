@@ -11,20 +11,19 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AdminImport } from './routes/_admin'
+import { Route as AuthImport } from './routes/_auth'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as AdminRemoteImport } from './routes/_admin/_remote'
-import { Route as AdminDashboardImport } from './routes/_admin/_dashboard'
-import { Route as AdminRemoteIntegrateSendEnquiryRouteImport } from './routes/_admin/_remote/integrate/send-enquiry/route'
-import { Route as AdminDashboardDashboardListRouteImport } from './routes/_admin/_dashboard/dashboard/list/route'
-import { Route as AdminDashboardDashboardImportRouteImport } from './routes/_admin/_dashboard/dashboard/import/route'
-import { Route as AdminDashboardDashboardEachRouteImport } from './routes/_admin/_dashboard/dashboard/each/route'
+import { Route as AuthDashboardImport } from './routes/_auth/_dashboard'
+import { Route as AuthIntegrateSendEnquiryRouteImport } from './routes/_auth/integrate.send-enquiry/route'
+import { Route as AuthDashboardListRouteImport } from './routes/_auth/_dashboard/list/route'
+import { Route as AuthDashboardImportRouteImport } from './routes/_auth/_dashboard/import/route'
+import { Route as AuthDashboardEachRouteImport } from './routes/_auth/_dashboard/each/route'
 
 // Create/Update Routes
 
-const AdminRoute = AdminImport.update({
-  id: '/_admin',
+const AuthRoute = AuthImport.update({
+  id: '/_auth',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -38,55 +37,41 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
 
-const AdminRemoteRoute = AdminRemoteImport.update({
-  id: '/_remote',
-  getParentRoute: () => AdminRoute,
-} as any)
-
-const AdminDashboardRoute = AdminDashboardImport.update({
+const AuthDashboardRoute = AuthDashboardImport.update({
   id: '/_dashboard',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => AuthRoute,
 } as any)
 
-const AdminRemoteIntegrateSendEnquiryRouteRoute =
-  AdminRemoteIntegrateSendEnquiryRouteImport.update({
+const AuthIntegrateSendEnquiryRouteRoute =
+  AuthIntegrateSendEnquiryRouteImport.update({
     path: '/integrate/send-enquiry',
-    getParentRoute: () => AdminRemoteRoute,
+    getParentRoute: () => AuthRoute,
   } as any).lazy(() =>
-    import('./routes/_admin/_remote/integrate/send-enquiry/route.lazy').then(
+    import('./routes/_auth/integrate.send-enquiry/route.lazy').then(
       (d) => d.Route,
     ),
   )
 
-const AdminDashboardDashboardListRouteRoute =
-  AdminDashboardDashboardListRouteImport.update({
-    path: '/dashboard/list',
-    getParentRoute: () => AdminDashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/_admin/_dashboard/dashboard/list/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+const AuthDashboardListRouteRoute = AuthDashboardListRouteImport.update({
+  path: '/list',
+  getParentRoute: () => AuthDashboardRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/_dashboard/list/route.lazy').then((d) => d.Route),
+)
 
-const AdminDashboardDashboardImportRouteRoute =
-  AdminDashboardDashboardImportRouteImport.update({
-    path: '/dashboard/import',
-    getParentRoute: () => AdminDashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/_admin/_dashboard/dashboard/import/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+const AuthDashboardImportRouteRoute = AuthDashboardImportRouteImport.update({
+  path: '/import',
+  getParentRoute: () => AuthDashboardRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/_dashboard/import/route.lazy').then((d) => d.Route),
+)
 
-const AdminDashboardDashboardEachRouteRoute =
-  AdminDashboardDashboardEachRouteImport.update({
-    path: '/dashboard/each',
-    getParentRoute: () => AdminDashboardRoute,
-  } as any).lazy(() =>
-    import('./routes/_admin/_dashboard/dashboard/each/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+const AuthDashboardEachRouteRoute = AuthDashboardEachRouteImport.update({
+  path: '/each',
+  getParentRoute: () => AuthDashboardRoute,
+} as any).lazy(() =>
+  import('./routes/_auth/_dashboard/each/route.lazy').then((d) => d.Route),
+)
 
 // Populate the FileRoutesByPath interface
 
@@ -100,33 +85,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRoute
     }
-    '/_admin': {
-      preLoaderRoute: typeof AdminImport
+    '/_auth': {
+      preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
-    '/_admin/_dashboard': {
-      preLoaderRoute: typeof AdminDashboardImport
-      parentRoute: typeof AdminImport
+    '/_auth/_dashboard': {
+      preLoaderRoute: typeof AuthDashboardImport
+      parentRoute: typeof AuthImport
     }
-    '/_admin/_remote': {
-      preLoaderRoute: typeof AdminRemoteImport
-      parentRoute: typeof AdminImport
+    '/_auth/_dashboard/each': {
+      preLoaderRoute: typeof AuthDashboardEachRouteImport
+      parentRoute: typeof AuthDashboardImport
     }
-    '/_admin/_dashboard/dashboard/each': {
-      preLoaderRoute: typeof AdminDashboardDashboardEachRouteImport
-      parentRoute: typeof AdminDashboardImport
+    '/_auth/_dashboard/import': {
+      preLoaderRoute: typeof AuthDashboardImportRouteImport
+      parentRoute: typeof AuthDashboardImport
     }
-    '/_admin/_dashboard/dashboard/import': {
-      preLoaderRoute: typeof AdminDashboardDashboardImportRouteImport
-      parentRoute: typeof AdminDashboardImport
+    '/_auth/_dashboard/list': {
+      preLoaderRoute: typeof AuthDashboardListRouteImport
+      parentRoute: typeof AuthDashboardImport
     }
-    '/_admin/_dashboard/dashboard/list': {
-      preLoaderRoute: typeof AdminDashboardDashboardListRouteImport
-      parentRoute: typeof AdminDashboardImport
-    }
-    '/_admin/_remote/integrate/send-enquiry': {
-      preLoaderRoute: typeof AdminRemoteIntegrateSendEnquiryRouteImport
-      parentRoute: typeof AdminRemoteImport
+    '/_auth/integrate/send-enquiry': {
+      preLoaderRoute: typeof AuthIntegrateSendEnquiryRouteImport
+      parentRoute: typeof AuthImport
     }
   }
 }
@@ -136,13 +117,13 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
   LoginRouteRoute,
-  AdminRoute.addChildren([
-    AdminDashboardRoute.addChildren([
-      AdminDashboardDashboardEachRouteRoute,
-      AdminDashboardDashboardImportRouteRoute,
-      AdminDashboardDashboardListRouteRoute,
+  AuthRoute.addChildren([
+    AuthDashboardRoute.addChildren([
+      AuthDashboardEachRouteRoute,
+      AuthDashboardImportRouteRoute,
+      AuthDashboardListRouteRoute,
     ]),
-    AdminRemoteRoute.addChildren([AdminRemoteIntegrateSendEnquiryRouteRoute]),
+    AuthIntegrateSendEnquiryRouteRoute,
   ]),
 ])
 

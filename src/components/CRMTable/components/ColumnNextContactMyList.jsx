@@ -1,4 +1,4 @@
-import ColumnNextContact from "@/routes/-ui/ColumnNextContact"
+import ColumnNextContact from "@/routes/--ui/ColumnNextContact"
 import { crmAddNextContact } from "@/api/bizchat"
 import useContactDateMyListMutationOptions from "../hooks/use-ContactDateMyListMutationOptions"
 

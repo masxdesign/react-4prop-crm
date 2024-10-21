@@ -101,7 +101,11 @@ const DragAlongCell = ({ cell }) => {
         <HoverCard>
             <HoverCardTrigger asChild>{tableCell}</HoverCardTrigger>
             <HoverCardPortal container={document.body}>
-                <HoverCardContent side="right" align="start" className="w-[300px]">
+                <HoverCardContent 
+                    side="right" 
+                    align="start" 
+                    className="min-w-[250px] max-w-[350px] w-auto"
+                >
                     <TableHoverCard cell={cell} />
                 </HoverCardContent>
             </HoverCardPortal>

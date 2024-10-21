@@ -1,14 +1,14 @@
 import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { isEmpty, isString } from "lodash"
+import { ArrowRightIcon, CheckIcon, Copy, Loader2, Pencil } from "lucide-react"
 import htmlEntities from "@/utils/htmlEntities"
 import myDateTimeFormat from "@/utils/myDateTimeFormat"
-import Dd from "./Dd"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ArrowRightCircleIcon, ArrowRightIcon, CheckIcon, Copy, Loader2, LoaderIcon, Pencil, RefreshCcw, SaveIcon } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { useMutation } from "@tanstack/react-query"
 import delay from "@/utils/delay"
+import Dd from "./Dd"
 
 const CopyButton = ({ value, onCopied }) => {
     const [success, setSuccess] = useState(false)
@@ -25,7 +25,7 @@ const CopyButton = ({ value, onCopied }) => {
         <Button
             variant="link"
             size="xs"
-            className="opacity-0 group-hover:opacity-40 group-hover:hover:opacity-100"
+            className="group-hover:opacity-40 group-hover:hover:opacity-100"
             onClick={handleCopyText}
         >
             {success ? (
@@ -96,7 +96,7 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
                 onKeyPress={handleKeyPress}
                 onChange={handleChange}
                 disabled={updateMutation.isPending}
-                className="border-l-0 border-r-0 border-t-0 rounded-none h-3 px-0 focus-visible:ring-0"
+                className="h-[20px] border-l-0 border-r-0 border-t-0 border-b rounded-none px-0 focus-visible:ring-0"
             />
             <Button
                 variant="link"
@@ -115,10 +115,41 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
     )
 }
 
-const Editable = ({ display, value, name, label, updateMutationOptions, editable }) => {
+const Editable = ({ isDate, value, name, label, updateMutationOptions, editable }) => {
     const { toast } = useToast()
 
     const [editmode, setEditmode] = useState(false)
+
+    const renderDisplay = () => {
+        return isDate ? 
+            myDateTimeFormat(value)
+        : isEmpty(value) ? 
+            <i className="opacity-50">(empty)</i>
+        : "email" === name ?
+            <a
+                href={`mailto: ${value}`}
+                className="hover:underline"
+            >
+                {value}
+            </a>
+        : ["phone", "mobile"].includes(name) ? 
+            <a
+                href={`tel: ${value}`}
+                className="hover:underline"
+            >
+                {value}
+            </a>
+        : "website" === name ? 
+            <a
+                href={`https://www.${value}`}
+                target="__blank"
+                className="hover:underline"
+            >
+                {value}
+            </a>
+        : 
+            value
+    }
 
     const handleEditmode = () => {
         setEditmode(true)
@@ -135,7 +166,7 @@ const Editable = ({ display, value, name, label, updateMutationOptions, editable
         })
     }
 
-    const yesEnableEditmode = editable && updateMutationOptions
+    if (editable && !updateMutationOptions) throw new Error('updateMutationOptions is not defined')
 
     return editmode ? (
         <EditableInput 
@@ -146,16 +177,16 @@ const Editable = ({ display, value, name, label, updateMutationOptions, editable
           onReadmode={handleReadmode}
         />
     ) : (
-        <div className="flex gap-3 items-center group">
-            <div className="group-hover:w-2/3 group-hover:overflow-hidden group-hover:truncate">
-                {display}
+        <div className="flex gap-0 items-center group h-[28px]">
+            <div className="grow group-hover:overflow-hidden truncate h-[20px]">
+                {renderDisplay()}
             </div>            
-            <div className="flex shrink basis-1/3">
-                {yesEnableEditmode && (
+            <div className="group-hover:flex hidden shrink">
+                {editable && (
                   <Button
                       variant="link"
                       size="xs"
-                      className="opacity-0 group-hover:opacity-40 group-hover:hover:opacity-100"
+                      className="group-hover:opacity-40 group-hover:hover:opacity-100"
                       onClick={handleEditmode}
                   >
                       <Pencil className="w-3 h-3" />
@@ -186,11 +217,15 @@ const Ddd = forwardRef(
         ref
     ) => {
         const valueRaw = row[name]
-        const value = useMemo(() => {
-            if (names) return names[valueRaw]
 
-            return isString(valueRaw) ? htmlEntities(valueRaw) : valueRaw
-        }, [valueRaw, names])
+        const value = useMemo(() => (
+            names ?
+                names[valueRaw]
+            : isString(valueRaw) ? 
+                htmlEntities(valueRaw) 
+            : 
+                valueRaw
+        ), [valueRaw, names])
 
         if (!alwaysShow && isEmpty(value)) return null
 
@@ -202,79 +237,15 @@ const Ddd = forwardRef(
                 labelClassName={labelClassName}
                 collapsible={collapsible}
                 value={
-                    isDate ? (
-                        <>{myDateTimeFormat(value)}</>
-                    ) : isEmpty(value) ? (
-                        <Editable
-                            display={
-                              <i className="opacity-50">(empty)</i>
-                            }
-                            value={value}
-                            name={name}
-                            label={label}
-                            editable={editable}
-                            updateMutationOptions={updateMutationOptions}
-                        />
-                    ) : "email" === name ? (
-                        <Editable
-                            display={
-                                <a
-                                    href={`mailto: ${value}`}
-                                    className="hover:underline"
-                                >
-                                    {value}
-                                </a>
-                            }
-                            value={value}
-                            name={name}
-                            label={label}
-                            editable={editable}
-                            updateMutationOptions={updateMutationOptions}
-                        />
-                    ) : ["phone", "mobile"].includes(name) ? (
-                        <Editable
-                            display={
-                                <a
-                                    href={`tel: ${value}`}
-                                    className="hover:underline"
-                                >
-                                    {value}
-                                </a>
-                            }
-                            value={value}
-                            name={name}
-                            label={label}
-                            editable={editable}
-                            updateMutationOptions={updateMutationOptions}
-                        />
-                    ) : "website" === name ? (
-                        <Editable
-                            display={
-                                <a
-                                    href={`https://www.${value}`}
-                                    target="__blank"
-                                    className="hover:underline"
-                                >
-                                    {value}
-                                </a>
-                            }
-                            value={value}
-                            name={name}
-                            label={label}
-                            editable={editable}
-                            updateMutationOptions={updateMutationOptions}
-                        />
-                    ) : (
-                        <Editable 
-                          display={value} 
-                          value={value} 
-                          name={name}
-                          label={label}
-                          editable={editable}
-                          updateMutationOptions={updateMutationOptions}  
-                        />
-                    )
-                }
+                    <Editable
+                        name={name}
+                        label={label}
+                        value={value}
+                        isDate={isDate}
+                        editable={editable}
+                        updateMutationOptions={updateMutationOptions}
+                    />
+                    }
                 {...props}
             />
         )

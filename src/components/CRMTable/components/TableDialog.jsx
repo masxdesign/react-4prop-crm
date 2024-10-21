@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { cx } from 'class-variance-authority';
 import _, { isEmpty } from 'lodash';

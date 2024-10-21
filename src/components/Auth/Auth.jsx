@@ -17,12 +17,13 @@ const AuthProvider = ({ children }) => {
         if (userRawData) {
             user = {
                 ...userRawData,
-                bz_uid: userRawData.neg_id ? userRawData.neg_id : `U${userRawData.id}`
+                bz_uid: userRawData.neg_id ? userRawData.neg_id : authUserId
             }
         }
 
         return {
             isAuthenticated: !!user,
+            authUserId: user ? `U${user.id}`: null,
             user,
             setUser,
             login,

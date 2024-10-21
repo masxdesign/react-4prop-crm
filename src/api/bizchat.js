@@ -308,6 +308,11 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
     }
 }
 
+export async function crmFilterByEmail (authUserId, search) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search } })
+    return data
+}
+
 export async function crmListByIds (ids, authUserId) {
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids: ids } })
     return data

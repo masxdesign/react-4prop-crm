@@ -1,5 +1,5 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, DotsHorizontalIcon } from '@radix-ui/react-icons';
+import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { HoverCardPortal } from '@radix-ui/react-hover-card';
 import _ from 'lodash';
 import { cn } from '@/lib/utils';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import TableHoverCard from '../CRMTable/components/TableHoverCard';
-import { SearchCheckIcon, SearchCodeIcon, SearchSlashIcon, Table2Icon, TablePropertiesIcon } from 'lucide-react';
+import { Table2Icon } from 'lucide-react';
 
 function DialogNavigation ({ info, ...props }) {
     const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -47,13 +47,16 @@ function DialogNavigation ({ info, ...props }) {
                   size="sm"
                   onClick={() => dialogModel.showDialog(info.row.original.id)}
                   disabled={!info}
+                  tabIndex={-1}
               >
                 <Icon className="h-4 w-4" />
               </Button>
             </HoverCardTrigger>
             {info && (
               <HoverCardPortal container={document.body}>
-                  <HoverCardContent className="w-[300px]">
+                  <HoverCardContent  
+                    className="min-w-[250px] max-w-[350px] w-auto"
+                  >
                     <TableHoverCard cell={info} hideView />
                   </HoverCardContent>
               </HoverCardPortal>
