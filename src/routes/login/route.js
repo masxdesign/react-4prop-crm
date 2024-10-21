@@ -7,7 +7,7 @@ export const Route = createFileRoute('/login')({
     }),
     beforeLoad: ({ context }) => {
         if(context.auth.isAuthenticated) {
-            throw redirect({ to: '/crm/dashboard/list' })
+            throw redirect({ to: '/crm/list' })
         }
     }
 })

@@ -6,7 +6,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useMap } from '@uidotdev/usehooks';
 import _ from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
-import { fetchSelectedDataQueryOptions, FOURPROP_BASEURL } from '@/api/fourProp';
+import { fetchSelectedDataQueryOptions, FOURPROP_BASEURL } from '@/services/fourProp';
 import numberWithCommas from '@/utils/numberWithCommas';
 import { Button } from '@/components/ui/button';
 import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';

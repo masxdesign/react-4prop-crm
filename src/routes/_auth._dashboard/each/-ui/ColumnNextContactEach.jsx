@@ -1,20 +1,20 @@
 import { addNextContact } from "@/services/fourProp"
-import { useContactDateEachMutationOptions } from "@/components/CRMTable/hooks"
 import { useAuth } from "@/components/Auth/Auth-context"
-import ColumnNextContact from "./ColumnNextContact"
+import useContactDateMutationOptions from "./use-ContactDateEachMutationOptions"
+import ColumnNextContact from "@/components/CRMTable/components/ColumnNextContact"
 
 const ColumnNextContactEach = ({
     id, 
+    tableDataQueryKey = null,
     placeholder = "Pick a date",
     name = "next_contact",
     table = null,
     defaultValue = null,
-    tableDataQueryKey = null,
     onSuccess, 
     message,
 }) => {
     const auth = useAuth()
-    const mutationOptions = useContactDateEachMutationOptions({
+    const mutationOptions = useContactDateMutationOptions({
         id,
         tableDataQueryKey,
         mutationFn: addNextContact,

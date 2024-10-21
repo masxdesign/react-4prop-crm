@@ -7,7 +7,7 @@ import { ReloadIcon } from "@radix-ui/react-icons"
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from "remark-gfm"
 import { reverse, truncate } from "lodash"
-import { getBizchatMessagesLast5 } from "@/api/bizchat"
+import { getBizchatMessagesLast5 } from "@/services/bizchat"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useAuth } from "@/components/Auth/Auth-context"

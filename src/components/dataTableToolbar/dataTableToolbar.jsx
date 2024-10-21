@@ -1,11 +1,9 @@
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 import { Cross2Icon } from "@radix-ui/react-icons"
 import DataTableFacetedFilter from "../dataTableFacetedFilter"
 import DataTableViewOptions from "../DataTableViewOptions"
 import { Input } from "../ui/input"
 import { Button } from "../ui/button"
-import categoriesQueryOptions from "@/api/categoriesQueryOptions"
-import { useSuspenseQuery } from "@tanstack/react-query"
 
 const useFacets = (column) => {
     return useMemo(() => ([...column.getFacetedUniqueValues().keys()]
@@ -16,18 +14,6 @@ const useFacets = (column) => {
         }))), 
         [column.getFacetedUniqueValues()]
     )
-}
-
-const DataTableFacetedFilterCategories = ({ table }) => {
-  const { data } = useSuspenseQuery(categoriesQueryOptions)
-
-  return (
-    <DataTableFacetedFilter
-      column={table.getColumn("categories")}
-      title="Categories"
-      options={data}
-    />
-  )
 }
 
 const DataTableToolbar = ({ table, onInputFilterChange, inputFilter }) => {
@@ -46,9 +32,6 @@ const DataTableToolbar = ({ table, onInputFilterChange, inputFilter }) => {
           onChange={(event) => onInputFilterChange(event.target.value)}
           className="h-8 w-[150px] lg:w-[250px]"
         />
-        {table.getColumn("categories") && (
-          <DataTableFacetedFilterCategories table={table} />
-        )}
         {table.getColumn("company") && (
           <DataTableFacetedFilter
             column={table.getColumn("company")}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react"
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
+import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/services/fourProp"
 import { AuthContext } from "./Auth-context"
-import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/api/fourProp"
 
 const AuthProvider = ({ children }) => {
     const { data } = useSuspenseQuery(authWhoisonlineQueryOptions)

@@ -1,6 +1,6 @@
-import ColumnNextContact from "@/routes/--ui/ColumnNextContact"
-import { crmAddNextContact } from "@/api/bizchat"
+import { crmAddNextContact } from "@/services/bizchat"
 import useContactDateMyListMutationOptions from "../hooks/use-ContactDateMyListMutationOptions"
+import ColumnNextContact from "./ColumnNextContact"
 
 const ColumnNextContactMyList = ({
     importId, 

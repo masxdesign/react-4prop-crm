@@ -3,7 +3,7 @@ import { Uppy } from "@uppy/core"
 import { useUppyState } from "@uppy/react"
 import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import _, { find } from "lodash"
-import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from "@/api/bizchat"
+import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from "@/services/bizchat"
 import { filesSelector } from "@/hooks/use-Chatbox"
 import { attachmentCombiner } from "@/components/Uppy/utils"
 
