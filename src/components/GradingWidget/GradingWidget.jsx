@@ -26,16 +26,15 @@ const REJECT = 'close'
 
 const GradingWidget = ({
     size = 40,
-    defaultGrade = 0,
-    className,
+    value,
     onSelect,
+    className,
     style,
     ...props
 }) => {
 
     const tm = useRef()
     
-    const [value, setValue] = useState(defaultGrade)
     const [hover, setHover] = useState(null)
     const [notify, setNotify] = useState(false)
 
@@ -43,11 +42,9 @@ const GradingWidget = ({
 
         if (tm.current) clearTimeout(tm.current)
 
-        setValue(value)
+        onSelect(value)
         setHover(null)
         setNotify(true)
-
-        onSelect?.(value)
 
         tm.current = setTimeout(() => { setNotify(false) }, 600)
 

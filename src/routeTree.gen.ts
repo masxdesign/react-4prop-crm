@@ -14,16 +14,19 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as AuthImport } from './routes/_auth'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
-import { Route as AuthGradeImport } from './routes/_auth._grade'
+import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthIntegrateSendEnquiriesRouteImport } from './routes/_auth.integrate-send-enquiries/route'
-import { Route as AuthGradeIntegrateGradeImport } from './routes/_auth._grade/integrate-grade'
+import { Route as AuthGradePidImport } from './routes/_auth.grade/$pid'
 import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
-import { Route as AuthGradeIntegrateGradeShareExistingRouteImport } from './routes/_auth._grade/integrate-grade-share/existing/route'
-import { Route as AuthGradeIntegrateGradeShareCreateNewRouteImport } from './routes/_auth._grade/integrate-grade-share/create-new/route'
-import { Route as AuthGradeIntegrateGradeShareIndexRouteImport } from './routes/_auth._grade/integrate-grade-share/index/route'
+import { Route as AuthGradePidShareImport } from './routes/_auth.grade/$pid_.share'
+import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
+import { Route as AuthGradePidShareFirstscreenImport } from './routes/_auth.grade/$pid_.share/_first_screen'
+import { Route as AuthGradePidShareFirstscreenConfirmImport } from './routes/_auth.grade/$pid_.share/_first_screen/confirm'
+import { Route as AuthGradePidShareFirstscreenCreateNewRouteImport } from './routes/_auth.grade/$pid_.share/_first_screen/create-new/route'
+import { Route as AuthGradePidShareFirstscreenIndexRouteImport } from './routes/_auth.grade/$pid_.share/_first_screen/index/route'
 
 // Create/Update Routes
 
@@ -43,7 +46,7 @@ const IndexRoute = IndexImport.update({
 } as any)
 
 const AuthGradeRoute = AuthGradeImport.update({
-  id: '/_grade',
+  path: '/grade',
   getParentRoute: () => AuthRoute,
 } as any)
 
@@ -62,8 +65,8 @@ const AuthIntegrateSendEnquiriesRouteRoute =
     ),
   )
 
-const AuthGradeIntegrateGradeRoute = AuthGradeIntegrateGradeImport.update({
-  path: '/integrate-grade',
+const AuthGradePidRoute = AuthGradePidImport.update({
+  path: '/$pid',
   getParentRoute: () => AuthGradeRoute,
 } as any)
 
@@ -88,34 +91,52 @@ const AuthDashboardEachRouteRoute = AuthDashboardEachRouteImport.update({
   import('./routes/_auth._dashboard/each/route.lazy').then((d) => d.Route),
 )
 
-const AuthGradeIntegrateGradeShareExistingRouteRoute =
-  AuthGradeIntegrateGradeShareExistingRouteImport.update({
-    path: '/integrate-grade-share/existing',
-    getParentRoute: () => AuthGradeRoute,
+const AuthGradePidShareRoute = AuthGradePidShareImport.update({
+  path: '/$pid/share',
+  getParentRoute: () => AuthGradeRoute,
+} as any)
+
+const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
+  {
+    path: '/grade/share/success',
+    getParentRoute: () => AuthRoute,
+  } as any,
+).lazy(() =>
+  import('./routes/_auth.grade_.share_.success/route.lazy').then(
+    (d) => d.Route,
+  ),
+)
+
+const AuthGradePidShareFirstscreenRoute =
+  AuthGradePidShareFirstscreenImport.update({
+    id: '/_first_screen',
+    getParentRoute: () => AuthGradePidShareRoute,
+  } as any)
+
+const AuthGradePidShareFirstscreenConfirmRoute =
+  AuthGradePidShareFirstscreenConfirmImport.update({
+    path: '/confirm',
+    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
+  } as any)
+
+const AuthGradePidShareFirstscreenCreateNewRouteRoute =
+  AuthGradePidShareFirstscreenCreateNewRouteImport.update({
+    path: '/create-new',
+    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
   } as any).lazy(() =>
     import(
-      './routes/_auth._grade/integrate-grade-share/existing/route.lazy'
+      './routes/_auth.grade/$pid_.share/_first_screen/create-new/route.lazy'
     ).then((d) => d.Route),
   )
 
-const AuthGradeIntegrateGradeShareCreateNewRouteRoute =
-  AuthGradeIntegrateGradeShareCreateNewRouteImport.update({
-    path: '/integrate-grade-share/create-new',
-    getParentRoute: () => AuthGradeRoute,
+const AuthGradePidShareFirstscreenIndexRouteRoute =
+  AuthGradePidShareFirstscreenIndexRouteImport.update({
+    path: '/',
+    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
   } as any).lazy(() =>
     import(
-      './routes/_auth._grade/integrate-grade-share/create-new/route.lazy'
+      './routes/_auth.grade/$pid_.share/_first_screen/index/route.lazy'
     ).then((d) => d.Route),
-  )
-
-const AuthGradeIntegrateGradeShareIndexRouteRoute =
-  AuthGradeIntegrateGradeShareIndexRouteImport.update({
-    path: '/integrate-grade-share/',
-    getParentRoute: () => AuthGradeRoute,
-  } as any).lazy(() =>
-    import('./routes/_auth._grade/integrate-grade-share/index/route.lazy').then(
-      (d) => d.Route,
-    ),
   )
 
 // Populate the FileRoutesByPath interface
@@ -142,7 +163,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardImport
       parentRoute: typeof AuthImport
     }
-    '/_auth/_grade': {
+    '/_auth/grade': {
       preLoaderRoute: typeof AuthGradeImport
       parentRoute: typeof AuthImport
     }
@@ -158,21 +179,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardListRouteImport
       parentRoute: typeof AuthDashboardImport
     }
-    '/_auth/_grade/integrate-grade': {
-      preLoaderRoute: typeof AuthGradeIntegrateGradeImport
+    '/_auth/grade/$pid': {
+      preLoaderRoute: typeof AuthGradePidImport
       parentRoute: typeof AuthGradeImport
     }
-    '/_auth/_grade/integrate-grade-share/': {
-      preLoaderRoute: typeof AuthGradeIntegrateGradeShareIndexRouteImport
+    '/_auth/grade/share/success': {
+      preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/grade/$pid/share': {
+      preLoaderRoute: typeof AuthGradePidShareImport
       parentRoute: typeof AuthGradeImport
     }
-    '/_auth/_grade/integrate-grade-share/create-new': {
-      preLoaderRoute: typeof AuthGradeIntegrateGradeShareCreateNewRouteImport
-      parentRoute: typeof AuthGradeImport
+    '/_auth/grade/$pid/share/_first_screen': {
+      preLoaderRoute: typeof AuthGradePidShareFirstscreenImport
+      parentRoute: typeof AuthGradePidShareImport
     }
-    '/_auth/_grade/integrate-grade-share/existing': {
-      preLoaderRoute: typeof AuthGradeIntegrateGradeShareExistingRouteImport
-      parentRoute: typeof AuthGradeImport
+    '/_auth/grade/$pid/share/_first_screen/': {
+      preLoaderRoute: typeof AuthGradePidShareFirstscreenIndexRouteImport
+      parentRoute: typeof AuthGradePidShareFirstscreenImport
+    }
+    '/_auth/grade/$pid/share/_first_screen/create-new': {
+      preLoaderRoute: typeof AuthGradePidShareFirstscreenCreateNewRouteImport
+      parentRoute: typeof AuthGradePidShareFirstscreenImport
+    }
+    '/_auth/grade/$pid/share/_first_screen/confirm': {
+      preLoaderRoute: typeof AuthGradePidShareFirstscreenConfirmImport
+      parentRoute: typeof AuthGradePidShareFirstscreenImport
     }
   }
 }
@@ -190,11 +223,16 @@ export const routeTree = rootRoute.addChildren([
       AuthDashboardListRouteRoute,
     ]),
     AuthGradeRoute.addChildren([
-      AuthGradeIntegrateGradeRoute,
-      AuthGradeIntegrateGradeShareIndexRouteRoute,
-      AuthGradeIntegrateGradeShareCreateNewRouteRoute,
-      AuthGradeIntegrateGradeShareExistingRouteRoute,
+      AuthGradePidRoute,
+      AuthGradePidShareRoute.addChildren([
+        AuthGradePidShareFirstscreenRoute.addChildren([
+          AuthGradePidShareFirstscreenIndexRouteRoute,
+          AuthGradePidShareFirstscreenCreateNewRouteRoute,
+          AuthGradePidShareFirstscreenConfirmRoute,
+        ]),
+      ]),
     ]),
+    AuthGradeShareSuccessRouteRoute,
   ]),
 ])
 

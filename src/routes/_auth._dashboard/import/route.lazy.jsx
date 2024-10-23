@@ -1,5 +1,4 @@
 import 'react-csv-importer/dist/index.css'
-import { faker } from '@faker-js/faker'
 import { createLazyFileRoute, Link, useMatchRoute, useNavigate, useRouteContext, useRouter } from '@tanstack/react-router';
 import { Importer, ImporterField } from 'react-csv-importer';
 import * as yup from "yup"
@@ -12,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form } from '@/components/ui/form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import delay from '@/utils/delay';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRightIcon, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';

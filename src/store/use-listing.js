@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query"
+import { queryOptions, useQuery } from "@tanstack/react-query"
 import { chain, compact, memoize } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
@@ -132,17 +132,28 @@ const propertyTypesSelector = createSelector(
     }
 )
 
+const selectedDetailsCombiner = (selected, propertyTypes, propertiesArray, contents, companies) => (
+    propertiesArray
+        .filter(({ pid }) => selected.includes(pid))
+        .map(property => propertyCombinerMemo(property.pid, property, propertyTypes, contents[property.pid], companies))
+)
+
+const makeSelectedDetailsSelector = createSelector(
+    (_, selected) => selected,
+    propertyTypesSelector,
+    propertiesArraySelector,
+    contentsSelector,
+    companiesSelector,
+    selectedDetailsCombiner
+)
+
 const selectedDetailsSelector = createSelector(
     selectedSelector,
     propertyTypesSelector,
     propertiesArraySelector,
     contentsSelector,
     companiesSelector,
-    (selected, propertyTypes, propertiesArray, contents, companies) => (
-        propertiesArray
-            .filter(({ pid }) => selected.includes(pid))
-            .map(property => propertyCombinerMemo(property.pid, property, propertyTypes, contents[property.pid], companies))
-    )
+    selectedDetailsCombiner
 )
 
 export const resolveAllPropertiesQuerySelector = createSelector(
@@ -219,6 +230,7 @@ function reducer (state, action) {
 
             break
         case "COMPANIES_RECEIVED":
+            
             for (const company of action.payload) {
                 state.companies[company.c] = company
             }
@@ -242,17 +254,46 @@ export const useListing = createImmer((set, get) => ({
     contents: {},
     properties: {},
     companies: {},
+    resolvePropertyDetailsQueryOptions: pid => {
+        return queryOptions({
+            queryKey: ['resolveProperty', pid],
+            queryFn: async () => {
+                const [details] = await get().resolvePropertiesDetails([pid])
+                return details
+            }
+        })
+    },
+    resolvePropertiesDetails: async pids => {
+        try {
+
+            await get().resolvePids(pids)
+
+            return makeSelectedDetailsSelector(get(), pids)
+
+        } catch (e) {
+            console.log(e);
+        }
+    },
     resolveAllProperties: async () => {
         try {
             const { missing, missingContents } = missingSelector(get())
     
-            await Promise.all([
-                get().fetchPropertyTypes(),
-                get().fetchPropertiesByPids(missing),
-                get().fetchContentsByPid(missingContents)
-            ])
+            await get().resolvePids(missing, missingContents)
     
             return selectedDetailsSelector(get())
+
+        } catch (e) {
+            console.log(e);
+        }
+    },
+    resolvePids: (pids, pidsContents = null) => {
+        try {
+
+            return Promise.all([
+                get().fetchPropertyTypes(),
+                get().fetchPropertiesByPids(pids),
+                get().fetchContentsByPids(pidsContents ?? pids)
+            ])
 
         } catch (e) {
             console.log(e);
@@ -261,10 +302,13 @@ export const useListing = createImmer((set, get) => ({
     fetchPropertiesByPids: async (pids) => {
         if (pids.length < 1) return
         const { results, companies } = await queryClient.ensureQueryData(searchPropertiesQuery(pids))
+
+        if (!results || results.length < 1 || !companies) throw new Error('Invalid pids')
+
         get().dispatch(propertiesReceived(results))
         get().dispatch(companiesReceived(companies))
     },
-    fetchContentsByPid: async (pids) => {
+    fetchContentsByPids: async (pids) => {
         if (pids.length < 1) return
         const contents = await queryClient.ensureQueryData(reqPropDescContentQuery(pids))
         get().dispatch(contentsReceived(contents))
