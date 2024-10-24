@@ -24,17 +24,23 @@ function ConfirmComponent () {
   const list = useQuery(tagListQueryOptions)
 
   return (
-    <>
-      <Selection variant="active">
-        {selected?.email}
-      </Selection>
-      {list.isFetching ? (
-        <Loader2 className='animate-spin' />
-      ) : (
-        <AssignTagInput list={list.data} value={tag} onChange={onTagChange} />
-      )}
-      <Button onClick={onShare}>Share</Button>
-    </>
+    <div className='space-y-3'>
+      <div className='space-y-1'>
+        <label className="text-sm font-bold">Share to</label>
+        <Selection variant="active">
+          {selected?.email}
+        </Selection>
+      </div>
+      <div className='space-y-1'>
+        <label className="text-sm font-bold">Assign a group tag to this property</label>
+        {list.isFetching ? (
+          <Loader2 className='animate-spin' />
+        ) : (
+          <AssignTagInput list={list.data} value={tag} onChange={onTagChange} />
+        )}
+      </div>
+      <Button onClick={onShare} disabled={!tag}>Share</Button>
+    </div>
   )
 }
 
@@ -140,7 +146,7 @@ function AssignTagInput ({ list, value: controlledValue, onChange }) {
             {_value.length < 1 || open ? (
               <Input 
                 ref={inputRef}
-                placeholder="Assign a tag" 
+                placeholder="Existing or new tag *" 
                 className="border-0 z-0 relative pr-[40px]" 
                 value={_value}
                 onChange={handleChange} 

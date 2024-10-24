@@ -7,7 +7,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import { useDebounce } from '@uidotdev/usehooks'
 import { cx } from 'class-variance-authority'
-import { ArrowLeftCircleIcon, Loader2, SearchIcon } from 'lucide-react'
+import { ArrowLeftCircleIcon, ArrowRight, ExternalLink, Loader2, SearchIcon } from 'lucide-react'
 import { CheckIcon } from '@radix-ui/react-icons'
 import { useGradeShareContext } from '@/routes/_auth.grade/$pid_.share'
 import Selection from '@/components/Selection'
@@ -43,7 +43,7 @@ function IntegrateGradingComponent () {
 
   return (
     <>
-      <label className='text-sm text-muted-foreground'>to share Select from your List of contacts</label>
+      <label className='text-sm text-muted-foreground'>Search your List of contacts and select</label>
       <div className='sticky top-3 left-0'>
         <SearchIcon className='absolute top-3 left-3 w-4 h-4 text-muted-foreground' />
         <Input 
@@ -67,13 +67,19 @@ function IntegrateGradingComponent () {
         </div>
       ) : (
         <>
-          <p className='text-sm text-muted-foreground'>
-            {queryEnabled ? 
-              `You have are no matches for "${valueDebounced}"`
-              : (
-                <>
-                  or <Link to="create-new" className='font-bold'>add new contact</Link>
-                </>
+          <p className='text-sm'>
+            {queryEnabled ? (
+              <span className='text-muted-foreground'>You have are no matches for {valueDebounced}</span>
+            ) : (
+                <span className='space-x-1'>
+                  <span className='mr-1 text-muted-foreground opacity-80'>or</span>
+                  <Link to="create-new" className='text-sky-700 hover:underline space-x-1'>
+                    <span>
+                      add contact to CRM and share
+                    </span>
+                    <ArrowRight className='inline-block w-3 h-3' />
+                  </Link>
+                </span>
               )
             }
           </p>
@@ -87,6 +93,16 @@ function IntegrateGradingComponent () {
               </Link>
             </Button>
           )}
+          <div className='flex items-center justify-center h-20'>
+            <Button variant="outline" size="sm" asChild>
+              <a href='/crm' target="crm" className='space-x-3'>
+                <span className='text-xs'>
+                  open CRM 
+                </span>
+                <ExternalLink className='w-3 h-3' />
+              </a>
+            </Button>
+          </div>
         </>
       )}
     </>

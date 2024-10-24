@@ -56,11 +56,11 @@ function LayoutGradeComponent () {
 function PropertyDetail ({ data, className }) {
     const { title, statusColor, statusText, sizeText, tenureText, thumbnail, content } = data
     return (
-        <div className={cx("space-y-3 hover:bg-sky-50 max-w-[400px]", className)}>
+        <div className={cx("space-y-3 max-w-[400px]", className)}>
             <div className='flex gap-3'>
                 <img src={thumbnail} className="object-contain w-20 h-20 bg-gray-200" />
                 <div className="space-y-1 sm:space-y-1 text-sm grow">
-                    <span className='font-bold hover:underline'>
+                    <span className='font-bold'>
                         {title}
                     </span>
                     <div className='flex flex-row gap-3'>
@@ -70,8 +70,8 @@ function PropertyDetail ({ data, className }) {
                             "text-sky-600": statusColor === "sky",
                             "text-red-600": statusColor === "red",
                         })}>{statusText}</div>
-                        <div className='text-xs'>{sizeText}</div>
-                        <div className='text-xs'>{tenureText}</div>
+                        <div className='text-xs text-muted-foreground'>{sizeText}</div>
+                        <div className='text-xs text-muted-foreground'>{tenureText}</div>
                     </div>
                     <div className="text-xs opacity-40 truncate max-w-52">{content.teaser}</div>
                 </div>

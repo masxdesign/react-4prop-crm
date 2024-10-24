@@ -13,7 +13,7 @@ import displayTenure from "@/utils/displayTenure"
 import displaySize from "@/utils/displaySize"
 
 export const PROPERTY_STATUS_NAMES = {
-    0: "AVAILABLE",
+    0: "AVAIL",
     1: "UNDER OFFER", 
     2: "Withdrawn",
     8: "LET", 

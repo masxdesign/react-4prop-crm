@@ -49,7 +49,7 @@ function GradeQuestionsComponent () {
                 className={cx('space-x-3', { 'opacity-50': disableShareButton })}                    
             >
                 <ShareIcon className='w-4 h-4' />
-                <span>Share to client</span>
+                <span>Share with CRM contact</span>
                 <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
             </Button>
         </div>
