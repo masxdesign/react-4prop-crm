@@ -418,6 +418,26 @@ export const crmAddLastContact = async (variables, import_id, authUserId) => {
     }
 }
 
+export async function crmTagList (ownerUid) {
+    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/tags`)
+    return data
+}
+
+export async function crmAddTag (ownerUid, name) {
+    const { data } = await bizchatAxios.post(`/api/crm/${ownerUid}/tag`, { name })
+    return data
+}
+
+export async function crmShareGrade (ownerUid, recipient_import_id, pid, grade, tag_id) {
+    const { data } = await bizchatAxios.post(`/api/crm/${ownerUid}/share-grade`, { 
+        recipient_import_id, 
+        pid, 
+        grade, 
+        tag_id
+     })
+    return data
+}
+
 export const getEnquiryRoomAsync = async (userId, type, i) => {
 	const params = { createdBy: userId, type, i }
 	const { data } = await bizchatAxios.get(`/api/enquiry_room`, { params, withCredentials: true })

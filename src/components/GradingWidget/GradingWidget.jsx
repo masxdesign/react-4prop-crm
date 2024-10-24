@@ -54,7 +54,7 @@ const GradingWidget = ({
 
     return (
         <div 
-            className={cx("flex flex-col gap-3", className)} 
+            className={cx("flex flex-col-reverse gap-3", className)} 
             style={{ ...style, width: size }} 
             {...props}
         >

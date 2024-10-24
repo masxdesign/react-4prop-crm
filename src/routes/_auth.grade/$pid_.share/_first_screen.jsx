@@ -22,7 +22,10 @@ function LayoutStep1Component () {
                     </Link>
                 )}
                 <div className='border-r border-2 h-6' />
-                <h2 className='font-bold text-md'>Grade and share this property</h2>
+                <h2 className='font-bold text-md space-x-3'>
+                    <span>Share to client</span>
+                    <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
+                </h2>
             </div>
             <Outlet />
         </div>

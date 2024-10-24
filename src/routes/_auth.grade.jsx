@@ -23,7 +23,7 @@ function LayoutGradeComponent () {
 
     const data = Route.useLoaderData()
 
-    const { defaultGrade = 0 } = Route.useSearch()
+    const { defaultGrade = 2 } = Route.useSearch()
 
     const [value, setValue] = useState(defaultGrade)
 
@@ -32,8 +32,8 @@ function LayoutGradeComponent () {
     }
 
     return (
-        <div className="p-3">
-            <div className='flex gap-3'>
+        <div className="flex justify-center p-0">
+            <div className='inline-flex gap-3'>
                 <div>
                     <GradingWidget 
                         size={30} 
@@ -43,7 +43,7 @@ function LayoutGradeComponent () {
                     />
                 </div>
                 <div className='relative grow px-3 max-w-[400px]'>
-                    <PropertyDetail data={data} className="mb-3" />
+                    <PropertyDetail data={data} className="mb-8" />
                     <LayoutGradeContext.Provider value={{ grade: value }}>
                         <Outlet />
                     </LayoutGradeContext.Provider>                    
@@ -58,22 +58,22 @@ function PropertyDetail ({ data, className }) {
     return (
         <div className={cx("space-y-3 hover:bg-sky-50 max-w-[400px]", className)}>
             <div className='flex gap-3'>
-                <img src={thumbnail} className="object-contain w-10 h-10 sm:w-20 sm:h-20 bg-gray-200" />
-                <div className="space-y-3 sm:space-y-1 text-sm grow">
+                <img src={thumbnail} className="object-contain w-20 h-20 bg-gray-200" />
+                <div className="space-y-1 sm:space-y-1 text-sm grow">
                     <span className='font-bold hover:underline'>
                         {title}
                     </span>
-                    <div className='flex flex-col sm:flex-row gap-0 sm:gap-3'>
-                        <div className={cx("font-bold", { 
+                    <div className='flex flex-row gap-3'>
+                        <div className={cx("text-xs font-bold", { 
                             "text-green-600": statusColor === "green",
                             "text-amber-600": statusColor === "amber",
                             "text-sky-600": statusColor === "sky",
                             "text-red-600": statusColor === "red",
                         })}>{statusText}</div>
-                        <div>{sizeText}</div>
-                        <div>{tenureText}</div>
+                        <div className='text-xs'>{sizeText}</div>
+                        <div className='text-xs'>{tenureText}</div>
                     </div>
-                    <div className="opacity-60 truncate max-w-52">{content.teaser}</div>
+                    <div className="text-xs opacity-40 truncate max-w-52">{content.teaser}</div>
                 </div>
             </div>                
         </div>

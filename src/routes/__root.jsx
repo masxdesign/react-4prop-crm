@@ -11,9 +11,9 @@ function RouteRootComponent() {
   return (
     <>
       <Outlet />
-      <Suspense>
+      {/* <Suspense>
           <TanStackRouterDevtools />
-      </Suspense>
+      </Suspense> */}
     </>
   )
 }

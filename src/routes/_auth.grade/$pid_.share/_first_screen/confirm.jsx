@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useGradeShareContext } from '../../$pid_.share'
 import { Button } from '@/components/ui/button'
-import { ArrowDown, ArrowUp, CheckIcon } from 'lucide-react'
+import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
 import { cx } from 'class-variance-authority'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -12,33 +12,31 @@ import { Slot } from '@radix-ui/react-slot'
 import { isEqual } from 'lodash'
 import { useDebounce } from '@uidotdev/usehooks'
 import { Badge } from '@/components/ui/badge'
+import { useQuery } from '@tanstack/react-query'
 
 export const Route = createFileRoute('/_auth/grade/$pid/share/_first_screen/confirm')({
   component: ConfirmComponent
 })
 
 function ConfirmComponent () {
-  const { onShare, selected, tag, onTagChange } = useGradeShareContext()
+  const { onShare, selected, tag, onTagChange, tagListQueryOptions } = useGradeShareContext()
+
+  const list = useQuery(tagListQueryOptions)
 
   return (
     <>
       <Selection variant="active">
         {selected?.email}
       </Selection>
-      <AssignTagInput value={tag} onChange={onTagChange} />
+      {list.isFetching ? (
+        <Loader2 className='animate-spin' />
+      ) : (
+        <AssignTagInput list={list.data} value={tag} onChange={onTagChange} />
+      )}
       <Button onClick={onShare}>Share</Button>
     </>
   )
 }
-
-const tags = [
-  { id: 1, name: "London houses" },
-  { id: 10, name: "London houses for sale" },
-  { id: 2, name: "Stoke barn conversions" },
-  { id: 3, name: "Berlin open storages" },
-  { id: 4, name: "France retails" },
-  { id: 5, name: "Japan flats" },
-]
 
 const containsCombiner = (item, value) => {
   return item.name.trim().toLowerCase().includes(value.trim().toLowerCase())
@@ -48,13 +46,12 @@ const equalsCombiner = (item, value) => {
   return item.name.trim().toLowerCase() === value.trim().toLowerCase()
 }
 
-function AssignTagInput ({ value: controlledValue, onChange }) {
+function AssignTagInput ({ list, value: controlledValue, onChange }) {
 
   const inputRef = useRef()
 
   const [open, setOpen] = useState(false)
   const [_value, setValue] = useState(controlledValue?.name ?? "")
-  const [filtered, setFiltered] = useState([])
 
   useEffect(() => {
 
@@ -64,23 +61,30 @@ function AssignTagInput ({ value: controlledValue, onChange }) {
 
   }, [controlledValue])
 
-  const value = useDebounce(_value, 500)
+  const value = useDebounce(_value, 400)
+
+  const filtered = useMemo(() => {
+
+    let newFiltered = list.filter(item => containsCombiner(item, value))
+
+    if (!!value && !newFiltered.some(item => equalsCombiner(item, value))) {
+      return [{ id: -1, name: value.trim() }, ...newFiltered]
+    }
+
+    return newFiltered
+
+  }, [list, value])
+
+  const selected = useMemo(
+    () => filtered.find(item => equalsCombiner(item, _value)), 
+    [filtered, _value]
+  )
 
   useEffect(() => {
 
-    let filtered = tags.filter(item => containsCombiner(item, value))
-
-    if (!!value && !filtered.some(item => equalsCombiner(item, value))) {
-      filtered = [{ id: -1, name: value.trim() }, ...filtered]
-    }
-
-    setFiltered(filtered)
-
-    const selected = filtered.find(item => equalsCombiner(item, value))
-
     onChange(selected)
 
-  }, [value])
+  }, [selected])
 
   const handleChange = (e) => {
     setValue(e.target.value)
@@ -113,6 +117,21 @@ function AssignTagInput ({ value: controlledValue, onChange }) {
 
   }, [open])
 
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+        setOpen(false)
+    }
+}
+
+  const getVariant = (item) => {
+    return item.id < 0 ? 
+      "blank"
+    : equalsCombiner(item, _value) ?
+      "active"
+    :
+      "default"
+  }
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -122,20 +141,25 @@ function AssignTagInput ({ value: controlledValue, onChange }) {
               <Input 
                 ref={inputRef}
                 placeholder="Assign a tag" 
-                className="border-0 z-0 relative" 
+                className="border-0 z-0 relative pr-[40px]" 
                 value={_value}
                 onChange={handleChange} 
+                onKeyPress={handleKeyPress}
                 onClick={handleInputClick}
               />
             ) : (
-              <div className='h-[40px] flex items-center px-3 grow' onClick={handleInputClick}>
-                <Badge variant="secondary">
-                  {_value}
-                </Badge>
+              <div className='p-1 grow overflow-hidden h-[40px]' onClick={handleInputClick}>
+                {selected ? (
+                  <Selection variant={getVariant(selected)} size="sm" className="inline-flex py-auto h-full">
+                    {selected.name}
+                  </Selection>
+                ) : (
+                  <Loader2 className='animate-spin' />
+                )}
               </div>
             )}
-            <div className='absolute right-3 top-3 z-10 '>
-              <Slot onClick={handleToggle} className='text-slate-500 w-4 h-4'>
+            <div className='absolute top-0 right-0 p-3 z-10 bg-white rounded-md' onClick={handleToggle}>
+              <Slot className='text-slate-500 w-4 h-4'>
                 {open ? (
                   <ArrowUp />
                 ) : (
@@ -146,24 +170,19 @@ function AssignTagInput ({ value: controlledValue, onChange }) {
           </div>
         </PopoverAnchor>
         <PopoverContent 
+          className="max-h-[50svh] overflow-auto p-2"
           style={{ width: "var(--radix-popper-anchor-width)" }} 
           onOpenAutoFocus={(e) => e.preventDefault()}
           onFocusOutside={handleOutside}
           onPointerDownOutside={handleOutside}
         >
-          <div className='space-y-3'>
+          <div className='space-y-2'>
             {filtered.map(item => (
               <Selection 
                 key={item.id} 
-                variant={
-                  item.id < 0 ? 
-                    "blank"
-                  : equalsCombiner(item, value) ?
-                    "active"
-                  :
-                    "default"
-                } 
+                variant={getVariant(item)} 
                 onClick={() => handleSelect(item)}
+                size="sm"
               >
                 {item.name}
               </Selection>
