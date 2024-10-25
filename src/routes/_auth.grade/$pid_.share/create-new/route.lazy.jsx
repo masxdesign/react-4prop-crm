@@ -8,7 +8,7 @@ import {
     useNavigate,
     useRouterState,
 } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import {
     Form,
     FormControl,
@@ -19,20 +19,23 @@ import {
 } from "@/components/ui/form"
 import { crmImport } from "@/services/bizchat"
 import { useAuth } from "@/components/Auth/Auth-context"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useLayoutGradeContext } from "@/routes/_auth.grade"
-import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/$pid_.share/_first_screen/confirm'
-import { useGradeShareContext } from "@/routes/_auth.grade/$pid_.share"
+import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/$pid_.share/confirm'
+import { useGradeShareContext, useGradeShareFilterByEmailQuery, useGradeShareValidateEmailQuery } from "@/routes/_auth.grade/$pid_.share"
+import { useEffect, useState } from "react"
+import { Loader2 } from "lucide-react"
 
 export const Route = createLazyFileRoute(
-    "/_auth/grade/$pid/share/_first_screen/create-new"
+    "/_auth/grade/$pid/share/create-new"
 )({
     component: AddClientComponent,
 })
 
+const schemaEmail = yup.string().email().required()
 const schema = yup.object({
     first: yup.string().required(),
-    email: yup.string().required(),
+    email: schemaEmail
 })
 
 function AddClientComponent() {
@@ -65,6 +68,65 @@ function AddClientComponent() {
         onConfirm({ id: saved[0], email: values.email })
     }
 
+    const [validateEmailMessage, setValidateEmailMessage] = useState("")
+    const [validateEmailShow, setValidateEmailShow] = useState(false)
+    
+    const [validateEmail, setValidateEmail] = useState("")
+
+    const validateEmailQuery = useGradeShareValidateEmailQuery(validateEmail)
+
+    useEffect(() => {
+
+        const { isFetched, data } = validateEmailQuery
+
+        if (isFetched) {
+
+            let message = ""
+
+            form.setError("email", {  message: "" })
+
+            switch (true) {
+                case data.already_sent && data.in_list:
+                    message = "You shared this property already to this contact."
+                    break
+                case data.already_sent:
+                    message = "Another agency shared this property to this contact"
+                    break
+                case data.in_list:
+                    message = "This email is already is in used in your contacts"
+                    break
+                default:
+                    message = "Email available"
+            }
+            
+            setValidateEmailMessage(message)
+
+        }
+
+
+    }, [validateEmailQuery.data])
+
+    const handleEmailBlur = () => {
+
+        const email = form.getValues("email")
+
+        if (!schemaEmail.isValidSync(email)) return
+        
+        setValidateEmail(email)
+        setValidateEmailShow(true)
+
+    }
+
+    useEffect(() => {
+
+        handleEmailBlur()
+
+    }, [])
+
+    const handleEmailFocus = () => {
+        setValidateEmailShow(false)
+    }
+
     return (
         <div className="flex flex-col gap-6">
             <Form {...form}>
@@ -73,6 +135,28 @@ function AddClientComponent() {
                     onSubmit={form.handleSubmit(onSubmit)}
                 >
                   
+                    <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                              <FormLabel className="text-sm font-bold">Email*</FormLabel>
+                              <FormControl>
+                                  <Input {...field} onBlur={handleEmailBlur} onFocus={handleEmailFocus} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                        )}
+                    />
+
+                    {validateEmailQuery.isPending ? (
+                        <Loader2 className="animate-spin" />
+                    ) : validateEmailShow ? (
+                        <div>
+                            {validateEmailMessage}
+                        </div>
+                    ) : null}
+
                     <FormField
                         control={form.control}
                         name="first"
@@ -96,20 +180,6 @@ function AddClientComponent() {
                         <label className="text-sm font-bold">Company</label>
                         <Input {...form.register("company")} />
                     </div>
-
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem className="space-y-2">
-                              <FormLabel className="text-sm font-bold">Email*</FormLabel>
-                              <FormControl>
-                                  <Input {...field}/>
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                        )}
-                    />
 
                     <div className="space-y-2">
                         <label className="text-sm font-bold">Phone</label>

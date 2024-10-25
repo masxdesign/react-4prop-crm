@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { ShareIcon, User2 } from 'lucide-react'
 import { useLayoutGradeContext } from '.'
-import { Route as RouteGradeShare } from "./$pid_.share/_first_screen/index/route"
+import { Route as RouteGradeShare } from "./$pid_.share/index/route"
 import { cx } from 'class-variance-authority'
 import { postMessage } from '@/utils/iframeHelpers'
 import { Badge } from '@/components/ui/badge'

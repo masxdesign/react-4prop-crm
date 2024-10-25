@@ -23,10 +23,9 @@ import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboa
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
 import { Route as AuthGradePidShareImport } from './routes/_auth.grade/$pid_.share'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
-import { Route as AuthGradePidShareFirstscreenImport } from './routes/_auth.grade/$pid_.share/_first_screen'
-import { Route as AuthGradePidShareFirstscreenConfirmImport } from './routes/_auth.grade/$pid_.share/_first_screen/confirm'
-import { Route as AuthGradePidShareFirstscreenCreateNewRouteImport } from './routes/_auth.grade/$pid_.share/_first_screen/create-new/route'
-import { Route as AuthGradePidShareFirstscreenIndexRouteImport } from './routes/_auth.grade/$pid_.share/_first_screen/index/route'
+import { Route as AuthGradePidShareConfirmImport } from './routes/_auth.grade/$pid_.share/confirm'
+import { Route as AuthGradePidShareCreateNewRouteImport } from './routes/_auth.grade/$pid_.share/create-new/route'
+import { Route as AuthGradePidShareIndexRouteImport } from './routes/_auth.grade/$pid_.share/index/route'
 
 // Create/Update Routes
 
@@ -107,36 +106,29 @@ const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   ),
 )
 
-const AuthGradePidShareFirstscreenRoute =
-  AuthGradePidShareFirstscreenImport.update({
-    id: '/_first_screen',
-    getParentRoute: () => AuthGradePidShareRoute,
-  } as any)
+const AuthGradePidShareConfirmRoute = AuthGradePidShareConfirmImport.update({
+  path: '/confirm',
+  getParentRoute: () => AuthGradePidShareRoute,
+} as any)
 
-const AuthGradePidShareFirstscreenConfirmRoute =
-  AuthGradePidShareFirstscreenConfirmImport.update({
-    path: '/confirm',
-    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
-  } as any)
-
-const AuthGradePidShareFirstscreenCreateNewRouteRoute =
-  AuthGradePidShareFirstscreenCreateNewRouteImport.update({
+const AuthGradePidShareCreateNewRouteRoute =
+  AuthGradePidShareCreateNewRouteImport.update({
     path: '/create-new',
-    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
+    getParentRoute: () => AuthGradePidShareRoute,
   } as any).lazy(() =>
-    import(
-      './routes/_auth.grade/$pid_.share/_first_screen/create-new/route.lazy'
-    ).then((d) => d.Route),
+    import('./routes/_auth.grade/$pid_.share/create-new/route.lazy').then(
+      (d) => d.Route,
+    ),
   )
 
-const AuthGradePidShareFirstscreenIndexRouteRoute =
-  AuthGradePidShareFirstscreenIndexRouteImport.update({
+const AuthGradePidShareIndexRouteRoute =
+  AuthGradePidShareIndexRouteImport.update({
     path: '/',
-    getParentRoute: () => AuthGradePidShareFirstscreenRoute,
+    getParentRoute: () => AuthGradePidShareRoute,
   } as any).lazy(() =>
-    import(
-      './routes/_auth.grade/$pid_.share/_first_screen/index/route.lazy'
-    ).then((d) => d.Route),
+    import('./routes/_auth.grade/$pid_.share/index/route.lazy').then(
+      (d) => d.Route,
+    ),
   )
 
 // Populate the FileRoutesByPath interface
@@ -191,21 +183,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradePidShareImport
       parentRoute: typeof AuthGradeImport
     }
-    '/_auth/grade/$pid/share/_first_screen': {
-      preLoaderRoute: typeof AuthGradePidShareFirstscreenImport
+    '/_auth/grade/$pid/share/': {
+      preLoaderRoute: typeof AuthGradePidShareIndexRouteImport
       parentRoute: typeof AuthGradePidShareImport
     }
-    '/_auth/grade/$pid/share/_first_screen/': {
-      preLoaderRoute: typeof AuthGradePidShareFirstscreenIndexRouteImport
-      parentRoute: typeof AuthGradePidShareFirstscreenImport
+    '/_auth/grade/$pid/share/create-new': {
+      preLoaderRoute: typeof AuthGradePidShareCreateNewRouteImport
+      parentRoute: typeof AuthGradePidShareImport
     }
-    '/_auth/grade/$pid/share/_first_screen/create-new': {
-      preLoaderRoute: typeof AuthGradePidShareFirstscreenCreateNewRouteImport
-      parentRoute: typeof AuthGradePidShareFirstscreenImport
-    }
-    '/_auth/grade/$pid/share/_first_screen/confirm': {
-      preLoaderRoute: typeof AuthGradePidShareFirstscreenConfirmImport
-      parentRoute: typeof AuthGradePidShareFirstscreenImport
+    '/_auth/grade/$pid/share/confirm': {
+      preLoaderRoute: typeof AuthGradePidShareConfirmImport
+      parentRoute: typeof AuthGradePidShareImport
     }
   }
 }
@@ -225,11 +213,9 @@ export const routeTree = rootRoute.addChildren([
     AuthGradeRoute.addChildren([
       AuthGradePidRoute,
       AuthGradePidShareRoute.addChildren([
-        AuthGradePidShareFirstscreenRoute.addChildren([
-          AuthGradePidShareFirstscreenIndexRouteRoute,
-          AuthGradePidShareFirstscreenCreateNewRouteRoute,
-          AuthGradePidShareFirstscreenConfirmRoute,
-        ]),
+        AuthGradePidShareIndexRouteRoute,
+        AuthGradePidShareCreateNewRouteRoute,
+        AuthGradePidShareConfirmRoute,
       ]),
     ]),
     AuthGradeShareSuccessRouteRoute,

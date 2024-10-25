@@ -308,8 +308,15 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
     }
 }
 
-export async function crmFilterByEmail (authUserId, search) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search } })
+export async function crmFilterByEmail (authUserId, search, pid) {
+    if (!pid) throw new Error('Empty pid')
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
+    return data
+}
+
+export async function crmValidateEmail (authUserId, email, pid) {
+    if (!pid) throw new Error('Empty pid')
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
     return data
 }
 

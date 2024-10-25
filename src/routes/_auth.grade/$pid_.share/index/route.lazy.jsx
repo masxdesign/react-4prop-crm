@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from '@/components/Auth/Auth-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,22 +7,18 @@ import { queryOptions, useQuery } from '@tanstack/react-query'
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import { useDebounce } from '@uidotdev/usehooks'
 import { cx } from 'class-variance-authority'
-import { ArrowLeftCircleIcon, ArrowRight, ExternalLink, Loader2, SearchIcon } from 'lucide-react'
+import { ArrowLeftCircleIcon, ArrowRight, ExternalLink, Loader2, MailWarning, MessageSquareWarningIcon, SearchIcon } from 'lucide-react'
 import { CheckIcon } from '@radix-ui/react-icons'
-import { useGradeShareContext } from '@/routes/_auth.grade/$pid_.share'
+import { useGradeShareContext, useGradeShareFilterByEmailQuery } from '@/routes/_auth.grade/$pid_.share'
 import Selection from '@/components/Selection'
 
-export const Route = createLazyFileRoute('/_auth/grade/$pid/share/_first_screen/')({
+export const Route = createLazyFileRoute('/_auth/grade/$pid/share/')({
   component: IntegrateGradingComponent
 })
-
-const initialFiltered = []
 
 function IntegrateGradingComponent () {
 
   const { onConfirm } = useGradeShareContext()
-
-  const auth = useAuth()
   
   const [value, setValue] = useState("")
   
@@ -30,12 +26,7 @@ function IntegrateGradingComponent () {
 
   const queryEnabled = valueDebounced.length > 2
 
-  const query = useQuery(queryOptions({
-    queryKey: ['filterByEmail', auth.authUserId, valueDebounced],
-    queryFn: () => crmFilterByEmail(auth.authUserId, valueDebounced),
-    enabled: queryEnabled,
-    initialData: initialFiltered
-  }))
+  const query = useGradeShareFilterByEmailQuery(valueDebounced, queryEnabled)
 
   const handleValue = (e) => {
     setValue(e.target.value)
@@ -60,6 +51,13 @@ function IntegrateGradingComponent () {
             <Selection
               key={item.id} 
               onClick={() => onConfirm(item)}
+              disabled={item.can_send === 0}
+              hoverOverlayText={
+                item.can_send === 0 &&
+                  <HoverOverlayWarningText 
+                    text="You or another agency shared this property already" 
+                  />
+              }
             >
               {item.email}
             </Selection>
@@ -106,5 +104,14 @@ function IntegrateGradingComponent () {
         </>
       )}
     </>
+  )
+}
+
+function HoverOverlayWarningText ({ text }) {
+  return (
+    <span className='flex space-x-3'>
+      <MessageSquareWarningIcon className='text-yellow-600 w-4 h-4' />
+      <span className='text-left'>{text}</span>
+    </span>
   )
 }

@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useGradeShareContext } from '../../$pid_.share'
+import { useGradeShareContext } from '../$pid_.share'
 import { Button } from '@/components/ui/button'
 import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
 import { cx } from 'class-variance-authority'
@@ -14,7 +14,7 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { Badge } from '@/components/ui/badge'
 import { useQuery } from '@tanstack/react-query'
 
-export const Route = createFileRoute('/_auth/grade/$pid/share/_first_screen/confirm')({
+export const Route = createFileRoute('/_auth/grade/$pid/share/confirm')({
   component: ConfirmComponent
 })
 
@@ -129,13 +129,15 @@ function AssignTagInput ({ list, value: controlledValue, onChange }) {
     }
 }
 
-  const getVariant = (item) => {
-    return item.id < 0 ? 
-      "blank"
-    : equalsCombiner(item, _value) ?
-      "active"
-    :
-      "default"
+  const getVariant = (item, prefix = '') => {
+    return (!prefix ? '': `${prefix}-`) + (
+      item.id < 0 ? 
+        "plus"
+      : equalsCombiner(item, _value) ?
+        "active"
+      :
+        "default"
+    )
   }
 
   return (
@@ -156,7 +158,7 @@ function AssignTagInput ({ list, value: controlledValue, onChange }) {
             ) : (
               <div className='p-1 grow overflow-hidden h-[40px]' onClick={handleInputClick}>
                 {selected ? (
-                  <Selection variant={getVariant(selected)} size="sm" className="inline-flex py-auto h-full">
+                  <Selection variant={getVariant(selected, 'outline')} size="sm" className="inline-flex py-auto h-full">
                     {selected.name}
                   </Selection>
                 ) : (
