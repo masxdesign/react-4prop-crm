@@ -11,6 +11,7 @@ import { ArrowLeftCircleIcon, ArrowRight, ExternalLink, Loader2, MailWarning, Me
 import { CheckIcon } from '@radix-ui/react-icons'
 import { useGradeShareContext, useGradeShareFilterByEmailQuery } from '@/routes/_auth.grade/$pid_.share'
 import Selection from '@/components/Selection'
+import HoverOverlayWarningText from '@/components/HoverOverlayWarningText'
 
 export const Route = createLazyFileRoute('/_auth/grade/$pid/share/')({
   component: IntegrateGradingComponent
@@ -104,14 +105,5 @@ function IntegrateGradingComponent () {
         </>
       )}
     </>
-  )
-}
-
-function HoverOverlayWarningText ({ text }) {
-  return (
-    <span className='flex space-x-3'>
-      <MessageSquareWarningIcon className='text-yellow-600 w-4 h-4' />
-      <span className='text-left'>{text}</span>
-    </span>
   )
 }

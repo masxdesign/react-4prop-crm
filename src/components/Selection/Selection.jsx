@@ -57,7 +57,7 @@ export default function Selection ({ variant, size, className, children, disable
             </Slot>
             {!!hoverOverlayText && (
                 <span className="absolute inset-0 bg-yellow-100/80 hidden group-hover/hoverOverlayText:flex">
-                    <div className="my-auto mx-4 text-xs text-yellow-600">
+                    <div className="my-auto mx-4">
                         {hoverOverlayText}
                     </div>
                 </span>

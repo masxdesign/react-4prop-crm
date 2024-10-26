@@ -5,10 +5,9 @@ import { yupResolver } from "@hookform/resolvers/yup"
 import {
     createLazyFileRoute,
     Link,
-    useNavigate,
     useRouterState,
 } from "@tanstack/react-router"
-import { useForm, useWatch } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import {
     Form,
     FormControl,
@@ -19,12 +18,13 @@ import {
 } from "@/components/ui/form"
 import { crmImport } from "@/services/bizchat"
 import { useAuth } from "@/components/Auth/Auth-context"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { useLayoutGradeContext } from "@/routes/_auth.grade"
-import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/$pid_.share/confirm'
-import { useGradeShareContext, useGradeShareFilterByEmailQuery, useGradeShareValidateEmailQuery } from "@/routes/_auth.grade/$pid_.share"
+import { useMutation } from "@tanstack/react-query"
+import { useGradeShareContext, useGradeShareValidateEmailQuery } from "@/routes/_auth.grade/$pid_.share"
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
+import HoverOverlayWarningText from "@/components/HoverOverlayWarningText"
+import { useCounter } from "@uidotdev/usehooks"
+import { cx } from "class-variance-authority"
 
 export const Route = createLazyFileRoute(
     "/_auth/grade/$pid/share/create-new"
@@ -32,7 +32,10 @@ export const Route = createLazyFileRoute(
     component: AddClientComponent,
 })
 
-const schemaEmail = yup.string().email().required()
+const emailErrorMessage = "Must be a valid email"
+
+const schemaEmail = yup.string().email(emailErrorMessage).required()
+
 const schema = yup.object({
     first: yup.string().required(),
     email: schemaEmail
@@ -60,7 +63,7 @@ function AddClientComponent() {
     })
 
     const importMutation = useMutation({
-        mutationFn: (list) => crmImport(list, auth.authUserId)
+        mutationFn: list => crmImport(list, auth.authUserId)
     })
 
     const onSubmit = async values => {
@@ -68,64 +71,14 @@ function AddClientComponent() {
         onConfirm({ id: saved[0], email: values.email })
     }
 
-    const [validateEmailMessage, setValidateEmailMessage] = useState("")
-    const [validateEmailShow, setValidateEmailShow] = useState(false)
-    
-    const [validateEmail, setValidateEmail] = useState("")
-
-    const validateEmailQuery = useGradeShareValidateEmailQuery(validateEmail)
-
-    useEffect(() => {
-
-        const { isFetched, data } = validateEmailQuery
-
-        if (isFetched) {
-
-            let message = ""
-
-            form.setError("email", {  message: "" })
-
-            switch (true) {
-                case data.already_sent && data.in_list:
-                    message = "You shared this property already to this contact."
-                    break
-                case data.already_sent:
-                    message = "Another agency shared this property to this contact"
-                    break
-                case data.in_list:
-                    message = "This email is already is in used in your contacts"
-                    break
-                default:
-                    message = "Email available"
-            }
-            
-            setValidateEmailMessage(message)
-
-        }
-
-
-    }, [validateEmailQuery.data])
-
-    const handleEmailBlur = () => {
-
-        const email = form.getValues("email")
-
-        if (!schemaEmail.isValidSync(email)) return
-        
-        setValidateEmail(email)
-        setValidateEmailShow(true)
-
-    }
-
-    useEffect(() => {
-
-        handleEmailBlur()
-
-    }, [])
-
-    const handleEmailFocus = () => {
-        setValidateEmailShow(false)
-    }
+    const {
+        validateEmailShow,
+        validateEmailMessage,
+        handleEmailBlur,
+        handleEmailFocus,
+        isValidating,
+        isEmailValid
+    } = useValidateEmail({ form })
 
     return (
         <div className="flex flex-col gap-6">
@@ -144,57 +97,154 @@ function AddClientComponent() {
                               <FormControl>
                                   <Input {...field} onBlur={handleEmailBlur} onFocus={handleEmailFocus} />
                               </FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-xs" />
+                              {validateEmailShow && (
+                                  isValidating ? (
+                                      <Loader2 className="animate-spin" />
+                                  ) : (
+                                      <HoverOverlayWarningText {...validateEmailMessage} />
+                                  )
+                              )}
                           </FormItem>
                         )}
                     />
 
-                    {validateEmailQuery.isPending ? (
-                        <Loader2 className="animate-spin" />
-                    ) : validateEmailShow ? (
-                        <div>
-                            {validateEmailMessage}
+                    <div className={cx("space-y-4", { 
+                        'opacity-50 pointer-events-none': !isEmailValid 
+                    })}>
+                        <FormField
+                            control={form.control}
+                            name="first"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-sm font-bold">Full name</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder="First name*"
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+
+                        <Input placeholder="Last name" {...form.register("last")} />
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold">Company</label>
+                            <Input {...form.register("company")} />
                         </div>
-                    ) : null}
 
-                    <FormField
-                        control={form.control}
-                        name="first"
-                        render={({ field }) => (
-                          <FormItem>
-                              <FormLabel className="text-sm font-bold">Full name</FormLabel>
-                              <FormControl>
-                                  <Input
-                                      placeholder="First name*"
-                                      {...field}
-                                  />
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                        )}
-                    />
+                        <div className="space-y-2">
+                            <label className="text-sm font-bold">Phone</label>
+                            <Input {...form.register("phone")} />
+                        </div>
 
-                    <Input placeholder="Last name" {...form.register("last")} />
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold">Company</label>
-                        <Input {...form.register("company")} />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold">Phone</label>
-                        <Input {...form.register("phone")} />
-                    </div>
-
-                    <div className="flex justify-end gap-3">
-                        <Button variant="outline" asChild>
-                            <Link to="..">Change selection</Link>
-                        </Button>
-                        <Button type="submit">Next</Button>
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" asChild>
+                                <Link to="..">Change selection</Link>
+                            </Button>
+                            <Button type="submit">Next</Button>
+                        </div>
                     </div>
 
                 </form>
             </Form>
         </div>
     )
+}
+
+
+function useValidateEmail ({ form }) {
+
+    console.log(form.formState.errors);
+    
+
+    const [validateEmailMessage, setValidateEmailMessage] = useState(null)
+    const [validateEmailShow, setValidateEmailShow] = useState(false)
+    
+    const [validateEmail, setValidateEmail] = useState("")
+
+    const validateEmailQuery = useGradeShareValidateEmailQuery(validateEmail)
+
+    useEffect(() => {
+
+        const { isFetched, data } = validateEmailQuery
+
+        if (isFetched) {
+
+            const make = variant => text => {
+                setValidateEmailMessage({ text, variant })
+            }
+
+            const isWarning = make("warning")
+            const isSuccess = make("success")
+
+            switch (true) {
+                case data.already_sent && data.in_list:
+                    isWarning("You shared this property already to this contact.")
+                    break
+                case data.already_sent:
+                    isWarning("Another agency shared this property to this contact")
+                    break
+                case data.in_list:
+                    isWarning("This email is already is in used in your contacts")
+                    break
+                default:
+                    isSuccess("Email available")
+            }
+
+        }
+
+    }, [validateEmailQuery.data])
+
+    const [blurCountValue, blurCount] = useCounter(0)
+
+    const handleEmailBlur = () => {
+
+        try {
+
+            form.clearErrors("email")
+
+            const email = form.getValues("email")
+
+            schemaEmail.validateSync(email)
+        
+            setValidateEmail(email)
+            setValidateEmailShow(true)
+
+        } catch (e) {
+
+            if (blurCountValue < 1) return
+    
+            form.setError("email", e)
+
+        } finally {
+
+            blurCount.increment()
+
+        }
+        
+    }
+
+    useEffect(() => {
+
+        handleEmailBlur()
+
+    }, [])
+
+    const handleEmailFocus = () => {
+        setValidateEmailShow(false)
+    }
+
+    return {
+        validateEmailMessage,
+        validateEmailShow,
+        handleEmailFocus,
+        handleEmailBlur,
+        isValidating: validateEmailQuery.isPending,
+        isEmailValid: validateEmailMessage?.variant === "success" && !form.formState.errors?.email
+    }
+
 }
