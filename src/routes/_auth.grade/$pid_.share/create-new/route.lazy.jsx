@@ -21,10 +21,11 @@ import { useAuth } from "@/components/Auth/Auth-context"
 import { useMutation } from "@tanstack/react-query"
 import { useGradeShareContext, useGradeShareValidateEmailQuery } from "@/routes/_auth.grade/$pid_.share"
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, ScanEyeIcon, ScanIcon, ScanSearchIcon } from "lucide-react"
 import HoverOverlayWarningText from "@/components/HoverOverlayWarningText"
 import { useCounter } from "@uidotdev/usehooks"
 import { cx } from "class-variance-authority"
+import { Slot } from "@radix-ui/react-slot"
 
 export const Route = createLazyFileRoute(
     "/_auth/grade/$pid/share/create-new"
@@ -32,7 +33,7 @@ export const Route = createLazyFileRoute(
     component: AddClientComponent,
 })
 
-const emailErrorMessage = "Must be a valid email"
+const emailErrorMessage = "Enter a valid email"
 
 const schemaEmail = yup.string().email(emailErrorMessage).required()
 
@@ -95,58 +96,72 @@ function AddClientComponent() {
                           <FormItem className="space-y-2">
                               <FormLabel className="text-sm font-bold">Email*</FormLabel>
                               <FormControl>
+                                <div className="relative">
                                   <Input {...field} onBlur={handleEmailBlur} onFocus={handleEmailFocus} />
+                                  <div className="absolute right-0 top-0 bottom-0 flex">
+                                    <div className="m-1 text-sky-500 bg-slate-100 hover:bg-sky-100 cursor-pointer flex px-3 rounded-md">
+                                        <Slot className="w-4 h-4 m-auto">
+                                            {isValidating ? (
+                                                <Loader2 className="animate-spin" />
+                                            ) : (
+                                                <ScanSearchIcon />
+                                            )}
+                                        </Slot>
+                                    </div>
+                                  </div>
+                                </div>
                               </FormControl>
                               <FormMessage className="text-xs" />
-                              {validateEmailShow && (
-                                  isValidating ? (
-                                      <Loader2 className="animate-spin" />
-                                  ) : (
-                                      <HoverOverlayWarningText {...validateEmailMessage} />
-                                  )
+                              {isValidating ? (
+                                <div className="px-2 italic text-xs text-muted-foreground">
+                                    Checking availability...
+                                </div>
+                              ) : validateEmailShow ? (
+                                  <HoverOverlayWarningText {...validateEmailMessage} />
+                              ) : !form.formState.errors.email && (
+                                <div className="text-xs text-muted-foreground">
+                                    First {emailErrorMessage} to check availability
+                                </div>
                               )}
                           </FormItem>
                         )}
                     />
 
-                    <div className={cx("space-y-4", { 
-                        'opacity-50 pointer-events-none': !isEmailValid 
-                    })}>
-                        <FormField
-                            control={form.control}
-                            name="first"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-sm font-bold">Full name</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        placeholder="First name*"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
+                    <FormField
+                        control={form.control}
+                        name="first"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-sm font-bold">Full name</FormLabel>
+                            <FormControl>
+                                <Input
+                                    placeholder="First name*"
+                                    {...field}
+                                    disabled={!isEmailValid}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
 
-                        <Input placeholder="Last name" {...form.register("last")} />
+                    <Input placeholder="Last name" {...form.register("last")} disabled={!isEmailValid} />
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold">Company</label>
-                            <Input {...form.register("company")} />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold">Company</label>
+                        <Input {...form.register("company")} disabled={!isEmailValid} />
+                    </div>
 
-                        <div className="space-y-2">
-                            <label className="text-sm font-bold">Phone</label>
-                            <Input {...form.register("phone")} />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold">Phone</label>
+                        <Input {...form.register("phone")} disabled={!isEmailValid} />
+                    </div>
 
-                        <div className="flex justify-end gap-3">
-                            <Button variant="outline" asChild>
-                                <Link to="..">Change selection</Link>
-                            </Button>
-                            <Button type="submit">Next</Button>
-                        </div>
+                    <div className="flex justify-end gap-3">
+                        <Button variant="outline" asChild>
+                            <Link to="..">Change selection</Link>
+                        </Button>
+                        <Button type="submit" disabled={!isEmailValid}>Next</Button>
                     </div>
 
                 </form>
@@ -243,7 +258,7 @@ function useValidateEmail ({ form }) {
         validateEmailShow,
         handleEmailFocus,
         handleEmailBlur,
-        isValidating: validateEmailQuery.isPending,
+        isValidating: validateEmailQuery.isFetching,
         isEmailValid: validateEmailMessage?.variant === "success" && !form.formState.errors?.email
     }
 

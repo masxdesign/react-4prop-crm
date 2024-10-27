@@ -316,7 +316,11 @@ export async function crmFilterByEmail (authUserId, search, pid) {
 
 export async function crmValidateEmail (authUserId, email, pid) {
     if (!pid) throw new Error('Empty pid')
+    
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
+
+    await delay(400)
+
     return data
 }
 
