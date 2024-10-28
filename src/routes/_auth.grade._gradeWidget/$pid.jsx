@@ -4,7 +4,7 @@ import { ShareIcon, User2 } from 'lucide-react'
 import { Route as RouteGradeShare } from "./$pid_.share/index/route"
 import { cx } from 'class-variance-authority'
 import { postMessage } from '@/utils/iframeHelpers'
-import { useRouteGradeContext } from '@/routes/_auth.grade'
+import { useRouteGradeContext } from '@/routes//_auth.grade'
 
 export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid')({
   component: GradeQuestionsComponent

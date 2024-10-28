@@ -1,28 +1,54 @@
 import { useAuth } from '@/components/Auth/Auth-context'
 import PendingComponent from '@/components/PendingComponent'
+import queryClient from '@/queryClient'
 import { crmListById } from '@/services/bizchat'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { queryOptions } from '@tanstack/react-query'
+import { createFileRoute, Link, Outlet, useLoaderData, useRouterState } from '@tanstack/react-router'
 import { cx } from 'class-variance-authority'
+import { ArrowLeftCircleIcon } from 'lucide-react'
 
 export const Route = createFileRoute('/_auth/_dashboard/list/$import_id')({
   component: ListImportIdComponent,
-  pendingComponent: PendingComponent
+  pendingComponent: PendingComponent,
+  loader: ({ context }) => queryClient.ensureQueryData(context.resolveContactDetails),
+  beforeLoad ({ location, params, context }) {
+
+    const { auth } = context
+    const { import_id } = params
+    const { lastLocation, info } = location.state ?? {}
+    
+    return {
+        lastLocation,
+        resolveContactDetails: {
+            queryKey: ['infoById', import_id],
+            queryFn: () => crmListById(import_id, auth.authUserId),
+            initialData: info,
+            enabled: !info
+        }
+    }
+  }
 })
 
 function ListImportIdComponent () {
-    const { lastLocation } = useListImportIdLocationState()
+    const { lastLocation } = Route.useRouteContext()
 
     return (
-        <div className='space-y-5'>
-            <div className='flex items-center justify-start px-3'>
+        <div className='space-y-3'>
+            <div className='flex items-center justify-center h-10 px-3'>
                 {lastLocation && (
                     <Link 
                         to={lastLocation.pathname} 
                         search={lastLocation.search}
-                        className={cx('text-sm', { 'opacity-50 pointer-events-none': !lastLocation })}
+                        className={cx(
+                            'flex flex-col items-center gap-1',
+                            'text-sm text-slate-500', 
+                            { 'opacity-50 pointer-events-none': !lastLocation }
+                        )}
                     >
-                        Back to list
+                        <ArrowLeftCircleIcon />
+                        <span className='text-xs'>
+                            Back to list
+                        </span>
                     </Link>
                 )}
             </div>
@@ -31,26 +57,4 @@ function ListImportIdComponent () {
             </div>
         </div>
     )
-}
-
-export function useListImportIdLocationState () {
-    const { location } = useRouterState()
-    const { lastLocation, info } = location.state ?? {}
-    return { lastLocation, info}
-}
-
-export function useListImportIdQuery () {
-    const auth = useAuth()
-    const { import_id } = Route.useParams()
-
-    const { info = null } = useListImportIdLocationState()
-
-    const query = useQuery({
-        queryKey: ['infoById', import_id],
-        queryFn: () => crmListById(import_id, auth.authUserId),
-        initialData: info,
-        enabled: !info
-    })
-
-    return query
 }

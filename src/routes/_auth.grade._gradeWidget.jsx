@@ -2,7 +2,7 @@ import React from 'react'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import GradingWidget from '@/components/GradingWidget'
 import { cx } from 'class-variance-authority'
-import { useRouteGradeContext } from '../_auth.grade'
+import { useRouteGradeContext } from './_auth.grade'
 import useListing from '@/store/use-listing'
 import queryClient from '@/queryClient'
 import PropertyDetail from '@/components/PropertyDetail'
@@ -34,7 +34,7 @@ function LayoutGradeWidgetComponent () {
                     />
                 </div>
                 <div className='relative grow px-3 max-w-[400px]'>
-                    <PropertyDetail data={data} className="mb-8" />
+                    <PropertyDetail data={data} className="text-sm mb-8" />
                     <Outlet />                  
                 </div>
             </div>

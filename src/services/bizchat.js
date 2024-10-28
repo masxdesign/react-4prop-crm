@@ -6,7 +6,7 @@ import _, { isFunction } from "lodash";
 
 export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
-const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,gradesharecount'
+const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,hash,gradesharecount'
 
 const bizchatAxios = axios.create({
 	baseURL: BIZCHAT_BASEURL,
@@ -327,8 +327,19 @@ export async function crmListByIds (ids, authUserId) {
     return data
 }
 
+export async function crmGenHash (authUserId, import_id) {
+    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/gen-hash/${import_id}`)
+    await delay(400)
+    return data
+}
+
 export async function crmSharedPids (authUserId, import_id, tag_id = null) {
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-sharedPids/${import_id}`, { params: { tag_id } })
+    return data
+}
+
+export async function crmSharedTagPids (authUserId, import_id) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-sharedTagPids/${import_id}`)
     return data
 }
 

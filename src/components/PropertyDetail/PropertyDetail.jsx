@@ -13,31 +13,33 @@ export default function PropertyDetail ({ data, className }) {
         shared = null 
     } = data
     return (
-        <div className={cx("space-y-3", className)}>
-            <div className='flex gap-3'>
-                <img src={thumbnail} className="object-contain w-20 h-20 bg-gray-200" />
-                <div className="space-y-1 sm:space-y-1 text-sm grow">
-                    <span className='font-bold'>
+        <div className={cx('flex gap-4 w-full', className)}>
+            <img src={thumbnail} className="object-contain w-20 h-20 bg-gray-200 rounded-sm" />
+            <div className="min-w-0 space-y-3 grow">
+                <div className="flex flex-col gap-1">
+                    <span className='font-bold text-sm/snug'>
                         {title}
                     </span>
-                    <div className='flex flex-row gap-3'>
+                    <div className='flex flex-row items-center gap-3 text-sm'>
                         <div className={cx("text-xs font-bold", { 
                             "text-green-600": statusColor === "green",
                             "text-amber-600": statusColor === "amber",
                             "text-sky-600": statusColor === "sky",
                             "text-red-600": statusColor === "red",
                         })}>{statusText}</div>
-                        <div className='text-xs text-muted-foreground'>{sizeText}</div>
-                        <div className='text-xs text-muted-foreground'>{tenureText}</div>
+                        <div className='text-muted-foreground'>{sizeText}</div>
+                        <div className='text-muted-foreground'>{tenureText}</div>
                     </div>
-                    <div className="text-xs opacity-40 truncate max-w-52">{content.teaser}</div>
-                    {shared && (
-                        <Badge>
-                            {shared.tag_name}
-                        </Badge>
-                    )}
+                    <div className="w-100 text-sm">
+                        <div className="opacity-40 truncate">{content.teaser}</div>
+                    </div>
                 </div>
-            </div>                
-        </div>
+                {shared && (
+                    <Badge variant="info">
+                        {shared.tag_name}
+                    </Badge>
+                )}
+            </div>
+        </div>   
     )
 }

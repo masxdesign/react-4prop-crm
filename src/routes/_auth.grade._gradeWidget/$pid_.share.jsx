@@ -1,13 +1,14 @@
 import React, { useContext, useState } from 'react'
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useRouteGradeContext } from '@/routes/_auth.grade'
-import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/_gradeWidget/$pid_.share/confirm'
-import { Route as AuthGradeShareSuccessRouteImport } from '@/routes/_auth.grade_.share_.success/route'
+import { useRouteGradeContext } from '@/routes//_auth.grade'
+import { Route as AuthGradePidShareConfirmImport } from '@/routes//_auth.grade._gradeWidget/$pid_.share/confirm'
+import { Route as AuthGradeShareSuccessRouteImport } from '@/routes//_auth.grade_.share_.success/route'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { crmAddTag, crmFilterByEmail, crmShareGrade, crmTagList } from '@/services/bizchat'
-import { Route as AuthGradePromoImport } from '@/routes/_auth.grade/_gradeWidget/$pid_.crm-promo'
+import { Route as AuthGradePromoImport } from '@/routes//_auth.grade._gradeWidget/$pid_.crm-promo'
 import { useAuth } from '@/components/Auth/Auth-context'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { useTagListQueryOptions } from '../_auth._dashboard/tags'
 
 const allowUsersList = ['U161', 'U2']
 
@@ -55,10 +56,7 @@ function GradeShareComponent () {
         )
     })
 
-    const tagListQueryOptions = queryOptions({
-        queryKey: ['tagList', auth.authUserId],
-        queryFn: () => crmTagList(auth.authUserId)
-    })
+    const tagListQueryOptions = useTagListQueryOptions()
 
     const navigate = useNavigate()
 

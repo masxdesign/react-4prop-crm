@@ -9,7 +9,7 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { cx } from 'class-variance-authority'
 import { ArrowLeftCircleIcon, ArrowRight, ExternalLink, Loader2, MailWarning, MessageSquareWarningIcon, SearchIcon } from 'lucide-react'
 import { CheckIcon } from '@radix-ui/react-icons'
-import { useGradeShareContext, useGradeShareFilterByEmailQuery } from '@/routes/_auth.grade/_gradeWidget/$pid_.share'
+import { useGradeShareContext, useGradeShareFilterByEmailQuery } from '@/routes//_auth.grade._gradeWidget/$pid_.share'
 import Selection from '@/components/Selection'
 import HoverOverlayWarningText from '@/components/HoverOverlayWarningText'
 

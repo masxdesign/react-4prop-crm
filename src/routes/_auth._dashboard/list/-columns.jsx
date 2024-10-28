@@ -3,12 +3,11 @@ import DataTableColumnHeader from "@/components/DataTable/DataTableColumnHeader"
 import ColumnLinkable from "@/components/CRMTable/components/ColumnLinkable"
 import ColumnViewButton from "@/components/CRMTable/components/ColumnViewButton"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ColumnNextContactEach } from "@/components/CRMTable/components"
 import ColumnNextContactMyList from "@/components/CRMTable/components/ColumnNextContactMyList"
 
 const columnHelper = createColumnHelper()
 
-export const version = "1.0.1"
+export const version = "1.0.2"
 
 export const columns = [
     columnHelper.display({
@@ -75,6 +74,18 @@ export const columns = [
         id: "gradesharecount",
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Share count" />
+        ),
+        cell: (info) => (
+            <ColumnLinkable
+                info={info}
+                className="w-full truncate font-medium"
+            />
+        ),
+    }),
+    columnHelper.accessor("hash", {
+        id: "hash",
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="#" />
         ),
         cell: (info) => (
             <ColumnLinkable

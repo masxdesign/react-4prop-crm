@@ -1,13 +1,17 @@
-import React, { Suspense } from 'react';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import _ from 'lodash';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { Ddd, Dddl, Ddl } from '@/components/DisplayData/components'
 import ColumnNextContactMyList from './ColumnNextContactMyList';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
-import { Link, useRouterState } from '@tanstack/react-router';
-import { Route as AuthDashboardListImportidSharedImport } from '@/routes/_auth._dashboard/list_.$import_id.shared'
+import { CheckCircleIcon, CheckIcon, CopyIcon, ExternalLinkIcon, HomeIcon, Loader2, Star } from 'lucide-react';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
+import { Route as AuthDashboardListImportidSharedImport } from '@/routes//_auth._dashboard/list_.$import_id.shared'
+import { crmGenHash } from '@/services/bizchat';
+import queryClient from '@/queryClient';
+import { util_pagin_update } from '@/utils/localStorageController';
+import { FOURPROP_BASEURL } from '@/services/fourProp';
 
 function TableDialogMetricsMyList({ info, model }) {
 
@@ -59,7 +63,7 @@ function TableDialogMetricsMyList({ info, model }) {
             )}
             <div className="h-3" />
             {info.gradesharecount > 0 && (
-                <div className='flex gap-4 items-center justify-start'>
+                <div className='flex gap-3 items-center justify-start'>
                     <span className='inline-flex gap-1 text-yellow-700'>
                         <Star className='w-4 h-4 self-center' />
                         You shared
@@ -69,12 +73,95 @@ function TableDialogMetricsMyList({ info, model }) {
                             to={AuthDashboardListImportidSharedImport.to} 
                             params={{ import_id: info.id }}
                             state={{ lastLocation: location, info }}
+                            className='space-x-1'
                         >
-                            {info.gradesharecount} properties
+                            <span>{info.gradesharecount} </span>
+                            <HomeIcon className='w-3 h-3' />
                         </Link>
                     </Button>
+                    <CopyAccessLinkButton info={info} model={model} />
                 </div>
             )}
+        </div>
+    )
+}
+
+function CopyAccessLinkButton ({ info, model }) {
+    const [copied, setCopied] = useState(false)
+    
+    const queryClient = useQueryClient()
+    const navigate = useNavigate()
+
+    const { dataQueryKey } = model.table.options.meta
+
+    const auth = useAuth()
+
+    const genHash = useMutation({
+        mutationFn: import_id => crmGenHash(auth.authUserId, import_id)
+    })
+
+    useEffect(() => {
+
+        if (copied) {
+
+            const t = setTimeout(() => {
+                setCopied(false)
+            }, 700)
+
+            return () => {
+                clearTimeout(t)
+            }
+        }
+
+    }, [copied])
+
+    const handleClick = async e => {
+
+        let hash = info.hash
+
+        if (!hash) {
+
+            const data = await genHash.mutateAsync(info.id)
+            
+            hash = data.hash
+            queryClient.setQueryData(dataQueryKey, util_pagin_update({ id: info.id }, { hash }))
+
+        }
+
+
+        const pathname = `/crm/shared/${hash}`
+
+        if (e.target.dataset.open) {
+            navigate({ to: pathname })
+            return
+        }
+        
+        setCopied(true)
+        navigator.clipboard.writeText(`${FOURPROP_BASEURL}${pathname}`)
+    }
+
+    return (
+        <div className='flex items-center gap-4'>
+            <Button 
+                size="xs" 
+                variant="outline"
+                className="flex gap-2" 
+                onClick={handleClick}
+            >
+                {genHash.isPending ? (
+                    <Loader2 className='animate-spin w-3 h-3' />
+                ) : copied ? (
+                    <CheckCircleIcon className='w-3 h-3' />
+                ) : (
+                    <CopyIcon className='w-3 h-3' />
+                )}
+                <span>Access link</span>
+            </Button>
+            <ExternalLinkIcon 
+                data-open={true}
+                onClick={handleClick} 
+                className='w-3 h-3 cursor-pointer' 
+            />
         </div>
     )
 }
