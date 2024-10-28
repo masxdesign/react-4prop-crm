@@ -2,9 +2,11 @@ import React from 'react';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import CRMTable from '@/components/CRMTable/CRMTable';
 import TableDialogMetricsMyList from '@/components/CRMTable/components/TableDialogMetricsMyList';
+import PendingComponent from '@/components/PendingComponent';
 
 export const Route = createLazyFileRoute('/_auth/_dashboard/list')({
-    component: ListComponent
+    component: ListComponent,
+    pendingComponent: PendingComponent,
 })
 
 function ListComponent() {

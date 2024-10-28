@@ -1,6 +1,8 @@
 import React from "react"
 import { cn } from "@/lib/utils"
 import { format, isToday, isYesterday } from "date-fns"
+import { isNumber, isString } from "lodash"
+import { Badge } from "@/components/ui/badge"
 
 const ColumnLinkable = React.memo(({ info, names, className, dateFormat, ...props }) => {
     const infoValue = info.getValue()
@@ -44,9 +46,28 @@ const ColumnLinkable = React.memo(({ info, names, className, dateFormat, ...prop
         )} 
         {...props}
       >
-        {value?.length > 0 ? value : <i className='font-normal opacity-50'>(empty)</i>}
+        <IsString value={value} />
+        <IsNumber value={value} />
       </div>
     )
 })
+
+function IsString ({ value }) {
+
+  if (!isString(value)) return null
+
+  return (
+    value?.length > 0 ? value : <i className='font-normal opacity-50'>(empty)</i>
+  )
+}
+
+function IsNumber ({ value }) {
+
+  if (!isNumber(value)) return null
+
+  return (
+    <Badge variant={value > 0 ? 'default': 'secondary'}>{value}</Badge>
+  )
+}
 
 export default ColumnLinkable

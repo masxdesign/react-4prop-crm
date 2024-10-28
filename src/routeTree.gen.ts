@@ -17,15 +17,19 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthIntegrateSendEnquiriesRouteImport } from './routes/_auth.integrate-send-enquiries/route'
-import { Route as AuthGradePidImport } from './routes/_auth.grade/$pid'
+import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade/_gradeWidget'
 import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
-import { Route as AuthGradePidShareImport } from './routes/_auth.grade/$pid_.share'
+import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade/_gradeWidget/$pid'
+import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
-import { Route as AuthGradePidShareConfirmImport } from './routes/_auth.grade/$pid_.share/confirm'
-import { Route as AuthGradePidShareCreateNewRouteImport } from './routes/_auth.grade/$pid_.share/create-new/route'
-import { Route as AuthGradePidShareIndexRouteImport } from './routes/_auth.grade/$pid_.share/index/route'
+import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade/_gradeWidget/$pid_.share'
+import { Route as AuthGradeGradeWidgetPidCrmPromoImport } from './routes/_auth.grade/_gradeWidget/$pid_.crm-promo'
+import { Route as AuthDashboardListImportidSharedImport } from './routes/_auth._dashboard/list_.$import_id.shared'
+import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade/_gradeWidget/$pid_.share/confirm'
+import { Route as AuthGradeGradeWidgetPidShareCreateNewRouteImport } from './routes/_auth.grade/_gradeWidget/$pid_.share/create-new/route'
+import { Route as AuthGradeGradeWidgetPidShareIndexRouteImport } from './routes/_auth.grade/_gradeWidget/$pid_.share/index/route'
 
 // Create/Update Routes
 
@@ -64,8 +68,8 @@ const AuthIntegrateSendEnquiriesRouteRoute =
     ),
   )
 
-const AuthGradePidRoute = AuthGradePidImport.update({
-  path: '/$pid',
+const AuthGradeGradeWidgetRoute = AuthGradeGradeWidgetImport.update({
+  id: '/_gradeWidget',
   getParentRoute: () => AuthGradeRoute,
 } as any)
 
@@ -90,9 +94,14 @@ const AuthDashboardEachRouteRoute = AuthDashboardEachRouteImport.update({
   import('./routes/_auth._dashboard/each/route.lazy').then((d) => d.Route),
 )
 
-const AuthGradePidShareRoute = AuthGradePidShareImport.update({
-  path: '/$pid/share',
-  getParentRoute: () => AuthGradeRoute,
+const AuthGradeGradeWidgetPidRoute = AuthGradeGradeWidgetPidImport.update({
+  path: '/$pid',
+  getParentRoute: () => AuthGradeGradeWidgetRoute,
+} as any)
+
+const AuthDashboardListImportidRoute = AuthDashboardListImportidImport.update({
+  path: '/list/$import_id',
+  getParentRoute: () => AuthDashboardRoute,
 } as any)
 
 const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
@@ -106,29 +115,48 @@ const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   ),
 )
 
-const AuthGradePidShareConfirmRoute = AuthGradePidShareConfirmImport.update({
-  path: '/confirm',
-  getParentRoute: () => AuthGradePidShareRoute,
-} as any)
+const AuthGradeGradeWidgetPidShareRoute =
+  AuthGradeGradeWidgetPidShareImport.update({
+    path: '/$pid/share',
+    getParentRoute: () => AuthGradeGradeWidgetRoute,
+  } as any)
 
-const AuthGradePidShareCreateNewRouteRoute =
-  AuthGradePidShareCreateNewRouteImport.update({
+const AuthGradeGradeWidgetPidCrmPromoRoute =
+  AuthGradeGradeWidgetPidCrmPromoImport.update({
+    path: '/$pid/crm-promo',
+    getParentRoute: () => AuthGradeGradeWidgetRoute,
+  } as any)
+
+const AuthDashboardListImportidSharedRoute =
+  AuthDashboardListImportidSharedImport.update({
+    path: '/shared',
+    getParentRoute: () => AuthDashboardListImportidRoute,
+  } as any)
+
+const AuthGradeGradeWidgetPidShareConfirmRoute =
+  AuthGradeGradeWidgetPidShareConfirmImport.update({
+    path: '/confirm',
+    getParentRoute: () => AuthGradeGradeWidgetPidShareRoute,
+  } as any)
+
+const AuthGradeGradeWidgetPidShareCreateNewRouteRoute =
+  AuthGradeGradeWidgetPidShareCreateNewRouteImport.update({
     path: '/create-new',
-    getParentRoute: () => AuthGradePidShareRoute,
+    getParentRoute: () => AuthGradeGradeWidgetPidShareRoute,
   } as any).lazy(() =>
-    import('./routes/_auth.grade/$pid_.share/create-new/route.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/_auth.grade/_gradeWidget/$pid_.share/create-new/route.lazy'
+    ).then((d) => d.Route),
   )
 
-const AuthGradePidShareIndexRouteRoute =
-  AuthGradePidShareIndexRouteImport.update({
+const AuthGradeGradeWidgetPidShareIndexRouteRoute =
+  AuthGradeGradeWidgetPidShareIndexRouteImport.update({
     path: '/',
-    getParentRoute: () => AuthGradePidShareRoute,
+    getParentRoute: () => AuthGradeGradeWidgetPidShareRoute,
   } as any).lazy(() =>
-    import('./routes/_auth.grade/$pid_.share/index/route.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/_auth.grade/_gradeWidget/$pid_.share/index/route.lazy'
+    ).then((d) => d.Route),
   )
 
 // Populate the FileRoutesByPath interface
@@ -171,29 +199,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardListRouteImport
       parentRoute: typeof AuthDashboardImport
     }
-    '/_auth/grade/$pid': {
-      preLoaderRoute: typeof AuthGradePidImport
+    '/_auth/grade/_gradeWidget': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetImport
       parentRoute: typeof AuthGradeImport
     }
     '/_auth/grade/share/success': {
       preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
       parentRoute: typeof AuthImport
     }
-    '/_auth/grade/$pid/share': {
-      preLoaderRoute: typeof AuthGradePidShareImport
-      parentRoute: typeof AuthGradeImport
+    '/_auth/_dashboard/list/$import_id': {
+      preLoaderRoute: typeof AuthDashboardListImportidImport
+      parentRoute: typeof AuthDashboardImport
     }
-    '/_auth/grade/$pid/share/': {
-      preLoaderRoute: typeof AuthGradePidShareIndexRouteImport
-      parentRoute: typeof AuthGradePidShareImport
+    '/_auth/grade/_gradeWidget/$pid': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidImport
+      parentRoute: typeof AuthGradeGradeWidgetImport
     }
-    '/_auth/grade/$pid/share/create-new': {
-      preLoaderRoute: typeof AuthGradePidShareCreateNewRouteImport
-      parentRoute: typeof AuthGradePidShareImport
+    '/_auth/_dashboard/list/$import_id/shared': {
+      preLoaderRoute: typeof AuthDashboardListImportidSharedImport
+      parentRoute: typeof AuthDashboardListImportidImport
     }
-    '/_auth/grade/$pid/share/confirm': {
-      preLoaderRoute: typeof AuthGradePidShareConfirmImport
-      parentRoute: typeof AuthGradePidShareImport
+    '/_auth/grade/_gradeWidget/$pid/crm-promo': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidCrmPromoImport
+      parentRoute: typeof AuthGradeGradeWidgetImport
+    }
+    '/_auth/grade/_gradeWidget/$pid/share': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidShareImport
+      parentRoute: typeof AuthGradeGradeWidgetImport
+    }
+    '/_auth/grade/_gradeWidget/$pid/share/': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidShareIndexRouteImport
+      parentRoute: typeof AuthGradeGradeWidgetPidShareImport
+    }
+    '/_auth/grade/_gradeWidget/$pid/share/create-new': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidShareCreateNewRouteImport
+      parentRoute: typeof AuthGradeGradeWidgetPidShareImport
+    }
+    '/_auth/grade/_gradeWidget/$pid/share/confirm': {
+      preLoaderRoute: typeof AuthGradeGradeWidgetPidShareConfirmImport
+      parentRoute: typeof AuthGradeGradeWidgetPidShareImport
     }
   }
 }
@@ -209,13 +253,19 @@ export const routeTree = rootRoute.addChildren([
       AuthDashboardEachRouteRoute,
       AuthDashboardImportRouteRoute,
       AuthDashboardListRouteRoute,
+      AuthDashboardListImportidRoute.addChildren([
+        AuthDashboardListImportidSharedRoute,
+      ]),
     ]),
     AuthGradeRoute.addChildren([
-      AuthGradePidRoute,
-      AuthGradePidShareRoute.addChildren([
-        AuthGradePidShareIndexRouteRoute,
-        AuthGradePidShareCreateNewRouteRoute,
-        AuthGradePidShareConfirmRoute,
+      AuthGradeGradeWidgetRoute.addChildren([
+        AuthGradeGradeWidgetPidRoute,
+        AuthGradeGradeWidgetPidCrmPromoRoute,
+        AuthGradeGradeWidgetPidShareRoute.addChildren([
+          AuthGradeGradeWidgetPidShareIndexRouteRoute,
+          AuthGradeGradeWidgetPidShareCreateNewRouteRoute,
+          AuthGradeGradeWidgetPidShareConfirmRoute,
+        ]),
       ]),
     ]),
     AuthGradeShareSuccessRouteRoute,

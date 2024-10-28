@@ -7,6 +7,7 @@ const Dddl = ({ items, row, updateMutationOptions = null }) => {
             row={row}
             updateMutationOptions={updateMutationOptions}
             editable={props.editable}
+            copiable={props.copiable}
             {...props}
         />
     ))

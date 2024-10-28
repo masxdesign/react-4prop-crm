@@ -1,13 +1,11 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import * as yup from "yup"
 import { yupResolver } from "@hookform/resolvers/yup"
-import {
-    createLazyFileRoute,
-    Link,
-    useRouterState,
-} from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 import { useForm } from "react-hook-form"
+import { Slot } from "@radix-ui/react-slot"
+import { Loader2, ScanSearchIcon } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
     Form,
     FormControl,
@@ -16,22 +14,11 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { crmImport } from "@/services/bizchat"
-import { useAuth } from "@/components/Auth/Auth-context"
-import { useMutation } from "@tanstack/react-query"
-import { useGradeShareContext, useGradeShareValidateEmailQuery } from "@/routes/_auth.grade/$pid_.share"
-import { useEffect, useState } from "react"
-import { Loader2, ScanEyeIcon, ScanIcon, ScanSearchIcon } from "lucide-react"
 import HoverOverlayWarningText from "@/components/HoverOverlayWarningText"
+import useImportList from "@/hooks/useImportList"
+import useValidateEmailQuery from "@/hooks/useValidateEmailQuery"
+import { useEffect, useState } from "react"
 import { useCounter } from "@uidotdev/usehooks"
-import { cx } from "class-variance-authority"
-import { Slot } from "@radix-ui/react-slot"
-
-export const Route = createLazyFileRoute(
-    "/_auth/grade/$pid/share/create-new"
-)({
-    component: AddClientComponent,
-})
 
 const emailErrorMessage = "Enter a valid email"
 
@@ -42,15 +29,14 @@ const schema = yup.object({
     email: schemaEmail
 })
 
-function AddClientComponent() {
-
-    const { onConfirm } = useGradeShareContext()
-
-    const auth = useAuth()
-
-    const { defaultEmail = "" } = useRouterState({
-        select: (state) => state.location.state,
-    })
+function ImportSingleContactForm ({ 
+    pid = null, 
+    defaultEmail = "", 
+    onSubmit: onSubmitProp,
+    backButton,
+    backButtonText = "Back",
+    submitText = "Add"
+}) {
 
     const form = useForm({
         resolver: yupResolver(schema),
@@ -63,14 +49,7 @@ function AddClientComponent() {
         },
     })
 
-    const importMutation = useMutation({
-        mutationFn: list => crmImport(list, auth.authUserId)
-    })
-
-    const onSubmit = async values => {
-        const { saved } =  await importMutation.mutateAsync([values])
-        onConfirm({ id: saved[0], email: values.email })
-    }
+    const importList = useImportList()
 
     const {
         validateEmailShow,
@@ -78,8 +57,16 @@ function AddClientComponent() {
         handleEmailBlur,
         handleEmailFocus,
         isValidating,
-        isEmailValid
-    } = useValidateEmail({ form })
+        isEmailValid,
+        reset: resetValidateEmail
+    } = useValidateEmail({ form, pid })
+
+    const onSubmit = async values => {
+        const { saved } =  await importList.mutateAsync([values])
+        form.reset()
+        resetValidateEmail()
+        onSubmitProp({ id: saved[0], ...values })
+    }
 
     return (
         <div className="flex flex-col gap-6">
@@ -158,10 +145,16 @@ function AddClientComponent() {
                     </div>
 
                     <div className="flex justify-end gap-3">
-                        <Button variant="outline" asChild>
-                            <Link to="..">Change selection</Link>
+                        {backButton && (
+                            <Button variant="outline" asChild>
+                                <Link to="..">
+                                    {backButtonText}
+                                </Link>
+                            </Button>
+                        )}
+                        <Button type="submit" disabled={!isEmailValid}>
+                            {submitText}
                         </Button>
-                        <Button type="submit" disabled={!isEmailValid}>Next</Button>
                     </div>
 
                 </form>
@@ -170,18 +163,26 @@ function AddClientComponent() {
     )
 }
 
+const initialValidateEmailMessage = null
+const initialValidateEmailShow = false
+const initialValidateEmail = ""
 
-function useValidateEmail ({ form }) {
+export function useValidateEmail ({ form, pid = null }) {
 
-    console.log(form.formState.errors);
-    
+    const [validateEmailMessage, setValidateEmailMessage] = useState(initialValidateEmailMessage)
+    const [validateEmailShow, setValidateEmailShow] = useState(initialValidateEmailShow)
+    const [validateEmail, setValidateEmail] = useState(initialValidateEmail)
 
-    const [validateEmailMessage, setValidateEmailMessage] = useState(null)
-    const [validateEmailShow, setValidateEmailShow] = useState(false)
-    
-    const [validateEmail, setValidateEmail] = useState("")
+    const [blurCountValue, blurCount] = useCounter(0)
 
-    const validateEmailQuery = useGradeShareValidateEmailQuery(validateEmail)
+    const validateEmailQuery = useValidateEmailQuery(validateEmail, pid)
+
+    const reset = () => {
+        setValidateEmailMessage(initialValidateEmailMessage)
+        setValidateEmailShow(initialValidateEmailShow)
+        setValidateEmail(initialValidateEmail)
+        blurCount.reset()
+    }
 
     useEffect(() => {
 
@@ -213,8 +214,6 @@ function useValidateEmail ({ form }) {
         }
 
     }, [validateEmailQuery.data])
-
-    const [blurCountValue, blurCount] = useCounter(0)
 
     const handleEmailBlur = () => {
 
@@ -259,7 +258,10 @@ function useValidateEmail ({ form }) {
         handleEmailFocus,
         handleEmailBlur,
         isValidating: validateEmailQuery.isFetching,
-        isEmailValid: validateEmailMessage?.variant === "success" && !form.formState.errors?.email
+        isEmailValid: validateEmailMessage?.variant === "success" && !form.formState.errors?.email,
+        reset
     }
 
 }
+
+export default ImportSingleContactForm

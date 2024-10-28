@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query"
-import { chain, compact, memoize } from "lodash"
+import { chain, compact, find, map, memoize } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
 import companyCombiner from "@/services/companyCombiner"
@@ -11,6 +11,7 @@ import propertyParse from "@/utils/propertyParse"
 import { createImmer } from "@/utils/zustand-extras"
 import displayTenure from "@/utils/displayTenure"
 import displaySize from "@/utils/displaySize"
+import { crmSharedPids } from "@/services/bizchat"
 
 export const PROPERTY_STATUS_NAMES = {
     0: "AVAIL",
@@ -254,6 +255,25 @@ export const useListing = createImmer((set, get) => ({
     contents: {},
     properties: {},
     companies: {},
+    resolveSharedPropDetailsQueryOptions: (from, import_id, tag_id = null) => {
+        return queryOptions({
+            queryKey: ['resolveProperty', from, import_id, tag_id],
+            queryFn: async () => {
+
+                const shared = await crmSharedPids(from, import_id, tag_id)
+
+                if (shared.length < 1) return []
+
+                const list = await get().resolvePropertiesDetails(map(shared, 'pid'))
+
+                return list.map(details => ({
+                    ...details,
+                    shared: find(shared, { pid: details.id })
+                }))
+
+            }
+        })
+    },
     resolvePropertyDetailsQueryOptions: pid => {
         return queryOptions({
             queryKey: ['resolveProperty', pid],

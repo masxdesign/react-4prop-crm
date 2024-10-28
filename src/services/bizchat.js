@@ -6,7 +6,7 @@ import _, { isFunction } from "lodash";
 
 export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
-const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created'
+const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,gradesharecount'
 
 const bizchatAxios = axios.create({
 	baseURL: BIZCHAT_BASEURL,
@@ -314,9 +314,7 @@ export async function crmFilterByEmail (authUserId, search, pid) {
     return data
 }
 
-export async function crmValidateEmail (authUserId, email, pid) {
-    if (!pid) throw new Error('Empty pid')
-    
+export async function crmValidateEmail (authUserId, email, pid = null) {
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
 
     await delay(400)
@@ -326,6 +324,11 @@ export async function crmValidateEmail (authUserId, email, pid) {
 
 export async function crmListByIds (ids, authUserId) {
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids: ids } })
+    return data
+}
+
+export async function crmSharedPids (authUserId, import_id, tag_id = null) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-sharedPids/${import_id}`, { params: { tag_id } })
     return data
 }
 

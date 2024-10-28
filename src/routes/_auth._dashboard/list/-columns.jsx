@@ -8,7 +8,7 @@ import ColumnNextContactMyList from "@/components/CRMTable/components/ColumnNext
 
 const columnHelper = createColumnHelper()
 
-export const version = "1"
+export const version = "1.0.1"
 
 export const columns = [
     columnHelper.display({
@@ -67,6 +67,18 @@ export const columns = [
             <ColumnLinkable
                 info={info}
                 dateFormat
+                className="w-full truncate font-medium"
+            />
+        ),
+    }),
+    columnHelper.accessor("gradesharecount", {
+        id: "gradesharecount",
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Share count" />
+        ),
+        cell: (info) => (
+            <ColumnLinkable
+                info={info}
                 className="w-full truncate font-medium"
             />
         ),

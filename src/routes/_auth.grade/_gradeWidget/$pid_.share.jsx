@@ -1,15 +1,31 @@
 import React, { useContext, useState } from 'react'
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useLayoutGradeContext } from '../_auth.grade'
-import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/$pid_.share/confirm'
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
+import { useRouteGradeContext } from '@/routes/_auth.grade'
+import { Route as AuthGradePidShareConfirmImport } from '@/routes/_auth.grade/_gradeWidget/$pid_.share/confirm'
 import { Route as AuthGradeShareSuccessRouteImport } from '@/routes/_auth.grade_.share_.success/route'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { crmAddTag, crmFilterByEmail, crmShareGrade, crmTagList, crmValidateEmail } from '@/services/bizchat'
+import { crmAddTag, crmFilterByEmail, crmShareGrade, crmTagList } from '@/services/bizchat'
+import { Route as AuthGradePromoImport } from '@/routes/_auth.grade/_gradeWidget/$pid_.crm-promo'
 import { useAuth } from '@/components/Auth/Auth-context'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 
-export const Route = createFileRoute('/_auth/grade/$pid/share')({
-  component: GradeShareComponent
+const allowUsersList = ['U161', 'U2']
+
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share')({
+  component: GradeShareComponent,
+  beforeLoad: ({ context, params }) => {
+    
+
+    if (!allowUsersList.includes(context.auth.authUserId)) {
+
+        throw redirect({ 
+            to: AuthGradePromoImport.to, 
+            params: { pid: params.pid } 
+        })
+
+    }
+
+  }
 })
 
 const GradeShareContext = React.createContext(null)
@@ -23,7 +39,7 @@ function GradeShareComponent () {
     const { location } = useRouterState()
 
     const { pid } = Route.useParams() 
-    const { grade } = useLayoutGradeContext()
+    const { grade } = useRouteGradeContext()
 
     const addTag = useMutation({
         mutationFn: name => crmAddTag(auth.authUserId, name)
@@ -49,7 +65,7 @@ function GradeShareComponent () {
     const [selected, setSelected] = useState(null)
     const [tag, setTag] = useState(null)
 
-    const handleConfirm = (newSelected) => {
+    const handleConfirm = newSelected => {
         setSelected(newSelected)
         navigate({ to: AuthGradePidShareConfirmImport.to })
     }
@@ -136,20 +152,6 @@ export function useGradeShareFilterByEmailQuery (email, enabled = true) {
     const query = useQuery(queryOptions({
         queryKey: ['filterByEmail', auth.authUserId, email],
         queryFn: () => crmFilterByEmail(auth.authUserId, email, pid),
-        enabled: enabled && !!email,
-        initialData: initialFiltered
-    }))
-
-    return query
-}
-
-export function useGradeShareValidateEmailQuery (email, enabled = true) {
-    const auth = useAuth()
-    const { pid } = Route.useParams() 
-
-    const query = useQuery(queryOptions({
-        queryKey: ['validateEmail', auth.authUserId, email],
-        queryFn: () => crmValidateEmail(auth.authUserId, email, pid),
         enabled: enabled && !!email,
         initialData: initialFiltered
     }))

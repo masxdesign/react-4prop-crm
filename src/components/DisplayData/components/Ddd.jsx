@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { isEmpty, isString } from "lodash"
+import { isEmpty, isNumber, isString } from "lodash"
 import { ArrowRightIcon, CheckIcon, Copy, Loader2, Pencil } from "lucide-react"
 import htmlEntities from "@/utils/htmlEntities"
 import myDateTimeFormat from "@/utils/myDateTimeFormat"
@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { useMutation } from "@tanstack/react-query"
 import delay from "@/utils/delay"
 import Dd from "./Dd"
+import { Badge } from "@/components/ui/badge"
 
 const CopyButton = ({ value, onCopied }) => {
     const [success, setSuccess] = useState(false)
@@ -115,7 +116,7 @@ const EditableInput = ({ defaultValue, onReadmode, updateMutationOptions, name, 
     )
 }
 
-const Editable = ({ isDate, value, name, label, updateMutationOptions, editable }) => {
+const Editable = ({ isDate, value, name, label, updateMutationOptions, editable, copiable = true }) => {
     const { toast } = useToast()
 
     const [editmode, setEditmode] = useState(false)
@@ -123,6 +124,8 @@ const Editable = ({ isDate, value, name, label, updateMutationOptions, editable 
     const renderDisplay = () => {
         return isDate ? 
             myDateTimeFormat(value)
+        : isNumber(value) ?
+            <span>{value}</span>
         : isEmpty(value) ? 
             <i className="opacity-50">(empty)</i>
         : "email" === name ?
@@ -192,7 +195,9 @@ const Editable = ({ isDate, value, name, label, updateMutationOptions, editable 
                       <Pencil className="w-3 h-3" />
                   </Button>
                 )}
-                <CopyButton value={value} onCopied={handleCopied} />
+                {copiable && (
+                    <CopyButton value={value} onCopied={handleCopied} />
+                )}
             </div>
         </div>
     )
@@ -210,6 +215,7 @@ const Ddd = forwardRef(
             alwaysShow,
             collapsible,
             editable,
+            copiable,
             updateMutationOptions,
             isDate,
             ...props
@@ -243,6 +249,7 @@ const Ddd = forwardRef(
                         value={value}
                         isDate={isDate}
                         editable={editable}
+                        copiable={copiable}
                         updateMutationOptions={updateMutationOptions}
                     />
                     }

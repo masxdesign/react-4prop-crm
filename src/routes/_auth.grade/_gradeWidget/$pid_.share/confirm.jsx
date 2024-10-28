@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useGradeShareContext } from '../$pid_.share'
+import { useGradeShareContext } from '.'
 import { Button } from '@/components/ui/button'
 import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
 import { cx } from 'class-variance-authority'
@@ -14,7 +14,7 @@ import { useDebounce } from '@uidotdev/usehooks'
 import { Badge } from '@/components/ui/badge'
 import { useQuery } from '@tanstack/react-query'
 
-export const Route = createFileRoute('/_auth/grade/$pid/share/confirm')({
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share/confirm')({
   component: ConfirmComponent
 })
 
