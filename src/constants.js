@@ -12,3 +12,9 @@ export const COMPANY_TYPE_NAMES = {
     H: 'H',
     X: 'X',
 }
+
+export const WINDOWN_NAMES = {
+    auth: '4prop-crm-auth'
+}
+
+export const BASEPATH = '/crm'

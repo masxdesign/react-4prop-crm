@@ -61,6 +61,15 @@ export const authLogin = async ({ email, password }) => {
     return data
 }
 
+export const fetchUser = async (uid) => {
+    const { data } = await fourProp.post(
+        'api/account/fetch-user', 
+        { id: uid }
+    )
+    
+    return data
+}
+
 export const fetchSearchProperties = async (pids) => {
     try {
 

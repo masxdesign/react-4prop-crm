@@ -12,6 +12,7 @@ import { CheckIcon } from '@radix-ui/react-icons'
 import { useGradeShareContext, useGradeShareFilterByEmailQuery } from '@/routes//_auth.grade._gradeWidget/$pid_.share'
 import Selection from '@/components/Selection'
 import HoverOverlayWarningText from '@/components/HoverOverlayWarningText'
+import { BASEPATH, WINDOWN_NAMES } from '@/constants'
 
 export const Route = createLazyFileRoute('/_auth/grade/_gradeWidget/$pid/share/')({
   component: IntegrateGradingComponent
@@ -94,7 +95,7 @@ function IntegrateGradingComponent () {
           )}
           <div className='flex items-center justify-center h-20'>
             <Button variant="outline" size="sm" asChild>
-              <a href='/crm' target="crm" className='space-x-3'>
+              <a href={BASEPATH} target={WINDOWN_NAMES.auth} className='space-x-3'>
                 <span className='text-xs'>
                   open CRM 
                 </span>

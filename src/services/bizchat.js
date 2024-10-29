@@ -3,6 +3,7 @@ import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
 import axios from "axios";
 import _, { isFunction } from "lodash";
+import { fetchUser } from "./fourProp";
 
 export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
@@ -308,6 +309,16 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
     }
 }
 
+export async function crmOwnerUidInfo (ownerUid) {
+    if (`${ownerUid}`.includes('U')) {
+        const data = await fetchUser(`${ownerUid}`.substring(1))
+        return data
+    }
+
+    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/owner`)
+    return data
+}
+
 export async function crmFilterByEmail (authUserId, search, pid) {
     if (!pid) throw new Error('Empty pid')
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
@@ -323,7 +334,12 @@ export async function crmValidateEmail (authUserId, email, pid = null) {
 }
 
 export async function crmListByIds (ids, authUserId) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids: ids } })
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids } })
+    return data
+}
+
+export async function crmContactByHash (ownerUid, hash) {
+    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/contactByHash`, { params: { include: defaultCrmInclude, hash } })
     return data
 }
 

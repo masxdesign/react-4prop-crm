@@ -7,10 +7,11 @@ import { useAuth } from './components/Auth/Auth-context'
 import queryClient from './queryClient'
 import { routeTree } from './routeTree.gen'
 import './App.css'
+import { BASEPATH } from './constants'
 
 const router = createRouter({ 
   routeTree,
-  basepath: '/crm',
+  basepath: BASEPATH,
   defaultPreload: 'intent',
   context: {
     queryClient,
