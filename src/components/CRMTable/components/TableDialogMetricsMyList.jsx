@@ -129,7 +129,7 @@ function CopyAccessLinkButton ({ info, model }) {
         }
 
 
-        const pathname = `/crm/shared/${hash}`
+        const pathname = `/crm/shared/${hash}/${auth.authUserId}`
 
         if (e.target.dataset.open) {
             navigate({ to: pathname })

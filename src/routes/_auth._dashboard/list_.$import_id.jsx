@@ -2,8 +2,8 @@ import { useAuth } from '@/components/Auth/Auth-context'
 import PendingComponent from '@/components/PendingComponent'
 import queryClient from '@/queryClient'
 import { crmListById } from '@/services/bizchat'
-import { queryOptions } from '@tanstack/react-query'
-import { createFileRoute, Link, Outlet, useLoaderData, useRouterState } from '@tanstack/react-router'
+import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
+import { createFileRoute, Link, Outlet, useLoaderData, useRouteContext, useRouterState } from '@tanstack/react-router'
 import { cx } from 'class-variance-authority'
 import { ArrowLeftCircleIcon } from 'lucide-react'
 
@@ -57,4 +57,18 @@ function ListImportIdComponent () {
             </div>
         </div>
     )
+}
+
+export function useResolveContactDetailsQuery (select = null) {
+    const context = useRouteContext()
+    const query = useSuspenseQuery({
+        ...context.resolveContactDetails,
+        select
+    })
+    return query
+}
+
+export function useImportIdQuery () {
+    const query = useResolveContactDetailsQuery(data => data.id)
+    return query.data
 }

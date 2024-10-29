@@ -56,7 +56,7 @@ function GradeShareComponent () {
         )
     })
 
-    const tagListQueryOptions = useTagListQueryOptions()
+    const tagListQueryOptions = useTagListQueryOptions(auth.authUserId)
 
     const navigate = useNavigate()
 

@@ -10,8 +10,9 @@ import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
 import { cx } from 'class-variance-authority'
 import { UserCard } from '@/components/CRMTable/components'
-import { Route as AuthDashboardListRouteImport } from '@/routes//_auth._dashboard/list/route'
+import { Route as AuthDashboardListRouteImport } from '@/routes/_auth._dashboard/list/route'
 import { find } from 'lodash'
+import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth._dashboard/list_.$import_id'
 
 export const Route = createFileRoute('/_auth/_dashboard/list/$import_id/shared')({
   component: ShareListComponent,
@@ -19,11 +20,10 @@ export const Route = createFileRoute('/_auth/_dashboard/list/$import_id/shared')
 })
 
 function ShareListComponent () {
+  const auth = useAuth()
   const { tag_id } = Route.useParams()
-  const { data } = useShareListSuspenseQuery()
-  const { data: tag } = useTagsSuspenseQuery(data => find(data, { id: tag_id }))
-
-  
+  const { data } = useShareListSuspenseQuery(auth.authUserId)
+  const { data: tag } = useTagsSuspenseQuery(auth.authUserId, data => find(data, { id: tag_id }))
 
   return (
     <div className='flex gap-8 max-w-[1400px] mx-auto'>
@@ -41,7 +41,7 @@ function ShareListComponent () {
         <div className='border rounded-lg p-8 space-y-4 self-start'>
           <h2 className='font-bold text-lg'>Filter by tag</h2>
           <Suspense fallback={<Loader2 className='animate-spin' />}>
-            <Tags />
+            <Tags authUserId={auth.authUserId} />
           </Suspense>
         </div>
         <div className='border rounded-lg p-8 space-y-4 self-start'>
@@ -54,15 +54,15 @@ function ShareListComponent () {
   )
 }
 
-export function useShareListQueryOptions () {
-  const auth = useAuth()
+export function useShareListQueryOptions (authUserId) {
+  const { tag_id = null } = Route.useParams()
 
-  const { import_id, tag_id = null } = Route.useParams()
+  const import_id = useImportIdQuery()
 
   const resolveSharedPropDetailsQueryOptions = useListing.use.resolveSharedPropDetailsQueryOptions()
 
   return resolveSharedPropDetailsQueryOptions(
-    auth.authUserId,
+    authUserId,
     import_id,
     tag_id
   )
@@ -71,8 +71,7 @@ export function useShareListQueryOptions () {
 export function ContactUserCard () {
   const { lastLocation } = Route.useRouteContext()
   const navigate = useNavigate()
-  const context = Route.useRouteContext()
-  const query = useSuspenseQuery(context.resolveContactDetails)
+  const query = useResolveContactDetailsQuery()
 
   const handleView = data => {
     if (lastLocation) {
@@ -101,10 +100,10 @@ export function ContactUserCard () {
   )
 }
 
-export function useTagsSuspenseQuery (select = null) {
-  const { import_id } = Route.useParams()
+export function useTagsSuspenseQuery (authUserId, select = null) {
+  const import_id = useImportIdQuery()
 
-  const tagListQueryOptions = useSharedTagListQueryOptions(import_id)
+  const tagListQueryOptions = useSharedTagListQueryOptions(authUserId, import_id)
   const query = useSuspenseQuery({
     ...tagListQueryOptions,
     select
@@ -113,8 +112,8 @@ export function useTagsSuspenseQuery (select = null) {
   return query
 }
 
-export function Tags () {
-  const query = useTagsSuspenseQuery()
+export function Tags ({ authUserId }) {
+  const query = useTagsSuspenseQuery(authUserId)
 
   return (
     <div className='flex flex-wrap gap-2 text-sm'>
@@ -146,14 +145,14 @@ function TagItem ({ tag }) {
   )
 }
 
-export function useShareListSuspenseQuery () {
-  const shareListQueryOptions = useShareListQueryOptions()
+export function useShareListSuspenseQuery (authUserId) {
+  const shareListQueryOptions = useShareListQueryOptions(authUserId)
   const query = useSuspenseQuery(shareListQueryOptions)
   return query
 }
 
-export function List () {
-  const query = useShareListSuspenseQuery()
+export function List ({ authUserId }) {
+  const query = useShareListSuspenseQuery(authUserId)
 
   return query.data.map(details => (
     <div key={details.id} className='w-full lg:w-1/2 p-2'>
