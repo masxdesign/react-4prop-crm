@@ -1,14 +1,15 @@
 import React, { useContext, useState } from 'react'
-import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, Link, MatchRoute, Outlet, redirect, rootRouteId, useMatch, useMatches, useMatchRoute, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useRouteGradeContext } from '@/routes//_auth.grade'
 import { Route as AuthGradePidShareConfirmImport } from '@/routes//_auth.grade._gradeWidget/$pid_.share/confirm'
 import { Route as AuthGradeShareSuccessRouteImport } from '@/routes//_auth.grade_.share_.success/route'
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { crmAddTag, crmFilterByEmail, crmShareGrade, crmTagList } from '@/services/bizchat'
 import { Route as AuthGradePromoImport } from '@/routes//_auth.grade._gradeWidget/$pid_.crm-promo'
 import { useAuth } from '@/components/Auth/Auth-context'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useTagListQueryOptions } from '../_auth._dashboard/tags'
+import { Button } from '@/components/ui/button'
 
 const allowUsersList = ['U161', 'U2']
 
@@ -36,8 +37,6 @@ export const useGradeShareContext = () => useContext(GradeShareContext)
 function GradeShareComponent () {
     const auth = useAuth()
     const queryClient = useQueryClient()
-
-    const { location } = useRouterState()
 
     const { pid } = Route.useParams() 
     const { grade } = useRouteGradeContext()
@@ -104,21 +103,6 @@ function GradeShareComponent () {
     return (
         <>
             <div className='flex flex-col gap-3 max-w-[400px] relative'>
-                <div className='flex gap-2 items-center'>
-                    <Link to=".." from={location.pathname}>
-                        <ArrowLeft className='w-5 h-5 cursor-pointer' />
-                    </Link>
-                    {selected && (
-                        <Link to="confirm" className='[&.active]:hidden'>
-                            <ArrowRight className='w-5 h-5 cursor-pointer' />
-                        </Link>
-                    )}
-                    <div className='border-r border-2 h-6' />
-                    <h2 className='font-bold text-md space-x-3'>
-                        <span>Share with CRM contact</span>
-                        <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
-                    </h2>
-                </div>
                 <GradeShareContext.Provider value={context}>
                     <Outlet />
                 </GradeShareContext.Provider>
@@ -147,12 +131,12 @@ export function useGradeShareFilterByEmailQuery (email, enabled = true) {
     const auth = useAuth()
     const { pid } = Route.useParams() 
 
-    const query = useQuery(queryOptions({
+    const query = useQuery({
         queryKey: ['filterByEmail', auth.authUserId, email],
         queryFn: () => crmFilterByEmail(auth.authUserId, email, pid),
         enabled: enabled && !!email,
         initialData: initialFiltered
-    }))
+    })
 
     return query
 }

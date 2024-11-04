@@ -1,7 +1,7 @@
 import * as yup from "yup"
 import { yupResolver } from "@hookform/resolvers/yup"
 import { Link } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { Slot } from "@radix-ui/react-slot"
 import { Loader2, ScanSearchIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -17,11 +17,12 @@ import {
 import HoverOverlayWarningText from "@/components/HoverOverlayWarningText"
 import useImportList from "@/hooks/useImportList"
 import useValidateEmailQuery from "@/hooks/useValidateEmailQuery"
-import { useEffect, useState } from "react"
-import { useCounter } from "@uidotdev/usehooks"
+import { useEffect, useMemo, useState } from "react"
+import { useCounter, useDebounce } from "@uidotdev/usehooks"
+import { useGradeShareContext, useGradeShareFilterByEmailQuery } from "@/routes/_auth.grade._gradeWidget/$pid_.share"
+import Selection from "../Selection"
 
 const emailErrorMessage = "Enter a valid email"
-
 const schemaEmail = yup.string().email(emailErrorMessage).required()
 
 const schema = yup.object({
@@ -38,6 +39,8 @@ function ImportSingleContactForm ({
     submitText = "Add"
 }) {
 
+    const { onConfirm } = useGradeShareContext()
+
     const form = useForm({
         resolver: yupResolver(schema),
         defaultValues: {
@@ -52,19 +55,14 @@ function ImportSingleContactForm ({
     const importList = useImportList()
 
     const {
-        validateEmailShow,
-        validateEmailMessage,
-        handleEmailBlur,
-        handleEmailFocus,
+        validateStatus,
         isValidating,
-        isEmailValid,
-        reset: resetValidateEmail
+        suggestionsQuery
     } = useValidateEmail({ form, pid })
 
     const onSubmit = async values => {
         const { saved } =  await importList.mutateAsync([values])
         form.reset()
-        resetValidateEmail()
         onSubmitProp({ id: saved[0], ...values })
     }
 
@@ -81,81 +79,93 @@ function ImportSingleContactForm ({
                         name="email"
                         render={({ field }) => (
                           <FormItem className="space-y-2">
-                              <FormLabel className="text-sm font-bold">Email*</FormLabel>
                               <FormControl>
                                 <div className="relative">
-                                  <Input {...field} onBlur={handleEmailBlur} onFocus={handleEmailFocus} />
-                                  <div className="absolute right-0 top-0 bottom-0 flex">
-                                    <div className="m-1 text-sky-500 bg-slate-100 hover:bg-sky-100 cursor-pointer flex px-3 rounded-md">
-                                        <Slot className="w-4 h-4 m-auto">
-                                            {isValidating ? (
-                                                <Loader2 className="animate-spin" />
-                                            ) : (
-                                                <ScanSearchIcon />
-                                            )}
-                                        </Slot>
-                                    </div>
-                                  </div>
+                                    <Input placeholder="Email address" {...field} />
+                                    {isValidating && (
+                                        <Loader2 className="absolute top-3 right-3 animate-spin w-4 h-4" />
+                                    )}
                                 </div>
                               </FormControl>
                               <FormMessage className="text-xs" />
-                              {isValidating ? (
-                                <div className="px-2 italic text-xs text-muted-foreground">
-                                    Checking availability...
-                                </div>
-                              ) : validateEmailShow ? (
-                                  <HoverOverlayWarningText {...validateEmailMessage} />
-                              ) : !form.formState.errors.email && (
-                                <div className="text-xs text-muted-foreground">
-                                    First {emailErrorMessage} to check availability
-                                </div>
-                              )}
                           </FormItem>
                         )}
                     />
 
-                    <FormField
-                        control={form.control}
-                        name="first"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="text-sm font-bold">Full name</FormLabel>
-                            <FormControl>
-                                <Input
-                                    placeholder="First name*"
-                                    {...field}
-                                    disabled={!isEmailValid}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
+                    {isValidating ? (
+                        <div className="px-2 italic text-xs text-muted-foreground">
+                            Checking availability...
+                        </div>
+                    ) : (
+                        <HoverOverlayWarningText {...validateStatus} />
+                    )}
 
-                    <Input placeholder="Last name" {...form.register("last")} disabled={!isEmailValid} />
+                    {suggestionsQuery.data.length > 0 && (
+                        <div className='space-y-2'>
+                            {suggestionsQuery.data.map(item => (
+                                <Selection
+                                    key={item.id} 
+                                    onClick={() => onConfirm(item)}
+                                    disabled={item.can_send === 0}
+                                    hoverOverlayText={
+                                        item.can_send === 0 &&
+                                            <HoverOverlayWarningText 
+                                                text="You or another agency shared this property already" 
+                                            />
+                                    }
+                                >
+                                    {item.email}
+                                </Selection>
+                            ))}
+                        </div>
+                    )}
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold">Company</label>
-                        <Input {...form.register("company")} disabled={!isEmailValid} />
-                    </div>
+                    {validateStatus?.variant === "success" && (
+                        <>
+                            <FormField
+                                control={form.control}
+                                name="first"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-sm font-bold">Full name</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            placeholder="First name*"
+                                            {...field}
+                                        
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
 
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold">Phone</label>
-                        <Input {...form.register("phone")} disabled={!isEmailValid} />
-                    </div>
+                            <Input placeholder="Last name" {...form.register("last")} />
 
-                    <div className="flex justify-end gap-3">
-                        {backButton && (
-                            <Button variant="outline" asChild>
-                                <Link to="..">
-                                    {backButtonText}
-                                </Link>
-                            </Button>
-                        )}
-                        <Button type="submit" disabled={!isEmailValid}>
-                            {submitText}
-                        </Button>
-                    </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Company</label>
+                                <Input {...form.register("company")} />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold">Phone</label>
+                                <Input {...form.register("phone")} />
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                {backButton && (
+                                    <Button variant="outline" asChild>
+                                        <Link to="..">
+                                            {backButtonText}
+                                        </Link>
+                                    </Button>
+                                )}
+                                <Button type="submit">
+                                    {submitText}
+                                </Button>
+                            </div>
+                        </>
+                    )}
 
                 </form>
             </Form>
@@ -163,103 +173,92 @@ function ImportSingleContactForm ({
     )
 }
 
-const initialValidateEmailMessage = null
-const initialValidateEmailShow = false
-const initialValidateEmail = ""
-
 export function useValidateEmail ({ form, pid = null }) {
 
-    const [validateEmailMessage, setValidateEmailMessage] = useState(initialValidateEmailMessage)
-    const [validateEmailShow, setValidateEmailShow] = useState(initialValidateEmailShow)
-    const [validateEmail, setValidateEmail] = useState(initialValidateEmail)
+    const email = useWatch({ control: form.control, name: 'email' })
 
-    const [blurCountValue, blurCount] = useCounter(0)
+    const debounceEmail = useDebounce(email, 500)
 
-    const validateEmailQuery = useValidateEmailQuery(validateEmail, pid)
+    const validateEmailQuery = useValidateEmailQuery(debounceEmail, pid)
 
-    const reset = () => {
-        setValidateEmailMessage(initialValidateEmailMessage)
-        setValidateEmailShow(initialValidateEmailShow)
-        setValidateEmail(initialValidateEmail)
-        blurCount.reset()
-    }
+    const validateStatus = useMemo(() => {
 
-    useEffect(() => {
+        const { isFetched, data, isFetching } = validateEmailQuery
 
-        const { isFetched, data } = validateEmailQuery
+        if (isFetching) {
+            return { text: 'Checking...', variant: 'checking' }
+        }
 
         if (isFetched) {
 
             const make = variant => text => {
-                setValidateEmailMessage({ text, variant })
+                return { text, variant }
             }
 
-            const isWarning = make("warning")
             const isSuccess = make("success")
+            const isUnavailable = make("unavailable")
+            const isInvalid = make("invalid")
 
             switch (true) {
+                case data === null:
+                    return isInvalid("This email is required")
                 case data.already_sent && data.in_list:
-                    isWarning("You shared this property already to this contact.")
-                    break
+                    return isUnavailable("You shared this property already to this contact")
                 case data.already_sent:
-                    isWarning("Another agency shared this property to this contact")
-                    break
+                    return isUnavailable("Another agency shared this property to this contact")
                 case data.in_list:
-                    isWarning("This email is already is in used in your contacts")
-                    break
+                    return isUnavailable("This email is in your contacts")
+                case data.invalid:
+                    return isInvalid(data.error.type)
                 default:
-                    isSuccess("Email available")
+                    return isSuccess("Email available")
             }
 
         }
 
-    }, [validateEmailQuery.data])
+        return { variant: 'initial', text: 'Please type a valid email' }
 
-    const handleEmailBlur = () => {
+    }, [validateEmailQuery.isFetching, validateEmailQuery.data])
 
-        try {
+    const suggestionsQuery = useGradeShareFilterByEmailQuery(
+        debounceEmail, 
+        ["invalid", "unavailable"].includes(validateStatus.variant)
+    )
 
-            form.clearErrors("email")
+    const validateStatusModified = useMemo(() => {
 
-            const email = form.getValues("email")
+        if (validateStatus.variant === 'invalid') {
 
-            schemaEmail.validateSync(email)
-        
-            setValidateEmail(email)
-            setValidateEmailShow(true)
+            const hasSuggestions = suggestionsQuery.data?.length > 0
 
-        } catch (e) {
+            if (validateStatus.text === 'email') {
 
-            if (blurCountValue < 1) return
-    
-            form.setError("email", e)
+                return {
+                    ...validateStatus,
+                    text: `Enter a valid email to add ${hasSuggestions ? 'or select from the list': ''}`
+                }
 
-        } finally {
+            }
 
-            blurCount.increment()
+            if (validateStatus.text === 'required') {
+
+                return {
+                    ...validateStatus,
+                    text: `Enter a valid email to add or search in your contacts`
+                }
+
+            }
 
         }
-        
-    }
 
-    useEffect(() => {
+        return validateStatus
 
-        handleEmailBlur()
-
-    }, [])
-
-    const handleEmailFocus = () => {
-        setValidateEmailShow(false)
-    }
+    }, [suggestionsQuery.data?.length, validateStatus])
 
     return {
-        validateEmailMessage,
-        validateEmailShow,
-        handleEmailFocus,
-        handleEmailBlur,
-        isValidating: validateEmailQuery.isFetching,
-        isEmailValid: validateEmailMessage?.variant === "success" && !form.formState.errors?.email,
-        reset
+        validateStatus: validateStatusModified,
+        suggestionsQuery,
+        isValidating: validateEmailQuery.isFetching
     }
 
 }

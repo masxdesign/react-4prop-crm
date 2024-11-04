@@ -37,7 +37,7 @@ export default function Selection ({ variant, size, className, children, disable
             }))} 
             onClick={() => {
                 if (disabled) return
-                onClickProp()
+                onClickProp?.()
             }}
             {...props}
         >

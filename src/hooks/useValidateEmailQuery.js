@@ -1,18 +1,18 @@
 import { useAuth } from "@/components/Auth/Auth-context"
 import { crmValidateEmail } from "@/services/bizchat"
-import { queryOptions, useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 
-const initialValidateEmaiFiltered = []
+const initialData = null
 
 export default function useValidateEmailQuery (email, pid = null, enabled = true) {
   const auth = useAuth()
 
-  const query = useQuery(queryOptions({
+  const query = useQuery({
       queryKey: ['validateEmail', auth.authUserId, email, pid],
       queryFn: () => crmValidateEmail(auth.authUserId, email, pid),
-      enabled: enabled && !!email,
-      initialData: initialValidateEmaiFiltered
-  }))
+      enabled: enabled,
+      initialData
+  })
 
   return query
 }

@@ -35,7 +35,6 @@ import { Route as AuthDashboardListImportidSharedImport } from './routes/_auth._
 import { Route as AuthDashboardListImportidSharedIndexImport } from './routes/_auth._dashboard/list_.$import_id.shared.index'
 import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade._gradeWidget/$pid_.share/confirm'
 import { Route as AuthDashboardListImportidSharedTagidImport } from './routes/_auth._dashboard/list_.$import_id.shared.$tag_id'
-import { Route as AuthGradeGradeWidgetPidShareCreateNewRouteImport } from './routes/_auth.grade._gradeWidget/$pid_.share/create-new/route'
 import { Route as AuthGradeGradeWidgetPidShareIndexRouteImport } from './routes/_auth.grade._gradeWidget/$pid_.share/index/route'
 
 // Create/Update Routes
@@ -185,16 +184,6 @@ const AuthDashboardListImportidSharedTagidRoute =
     getParentRoute: () => AuthDashboardListImportidSharedRoute,
   } as any)
 
-const AuthGradeGradeWidgetPidShareCreateNewRouteRoute =
-  AuthGradeGradeWidgetPidShareCreateNewRouteImport.update({
-    path: '/create-new',
-    getParentRoute: () => AuthGradeGradeWidgetPidShareRoute,
-  } as any).lazy(() =>
-    import(
-      './routes/_auth.grade._gradeWidget/$pid_.share/create-new/route.lazy'
-    ).then((d) => d.Route),
-  )
-
 const AuthGradeGradeWidgetPidShareIndexRouteRoute =
   AuthGradeGradeWidgetPidShareIndexRouteImport.update({
     path: '/',
@@ -297,10 +286,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidShareIndexRouteImport
       parentRoute: typeof AuthGradeGradeWidgetPidShareImport
     }
-    '/_auth/grade/_gradeWidget/$pid/share/create-new': {
-      preLoaderRoute: typeof AuthGradeGradeWidgetPidShareCreateNewRouteImport
-      parentRoute: typeof AuthGradeGradeWidgetPidShareImport
-    }
     '/_auth/_dashboard/list/$import_id/shared/$tag_id': {
       preLoaderRoute: typeof AuthDashboardListImportidSharedTagidImport
       parentRoute: typeof AuthDashboardListImportidSharedImport
@@ -341,7 +326,6 @@ export const routeTree = rootRoute.addChildren([
         AuthGradeGradeWidgetPidCrmPromoRoute,
         AuthGradeGradeWidgetPidShareRoute.addChildren([
           AuthGradeGradeWidgetPidShareIndexRouteRoute,
-          AuthGradeGradeWidgetPidShareCreateNewRouteRoute,
           AuthGradeGradeWidgetPidShareConfirmRoute,
         ]),
       ]),

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link, useMatch, useMatchRoute, useRouterState } from '@tanstack/react-router'
 import { useGradeShareContext } from '.'
 import { Button } from '@/components/ui/button'
 import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
@@ -23,10 +23,29 @@ function ConfirmComponent () {
 
   const list = useQuery(tagListQueryOptions)
 
+  const { location } = useRouterState()
+
+  const matchRoute = useMatchRoute()
+
+  const match = matchRoute({ to: "/_auth/grade/_gradeWidget/231020182546/share/confirm", params: { pid: '231020182546' } })
+
+  console.log(match);
+  
+
   return (
     <div className='space-y-3'>
+      <div className='flex gap-2 items-center'>
+          <h2 className='font-bold text-md space-x-3'>
+              <span>Send this property to?</span>
+              <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
+          </h2>
+          <Button variant="secondary" size="xs" className="ml-auto" asChild>
+              <Link to=".." from={location.pathname}>
+                  Change
+              </Link>
+          </Button>
+      </div>
       <div className='space-y-1'>
-        <label className="text-sm font-bold">Share to</label>
         <Selection variant="active">
           {selected?.email}
         </Selection>

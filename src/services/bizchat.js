@@ -1,9 +1,13 @@
+import * as yup from "yup"
 import delay from "@/utils/delay";
 import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
 import axios from "axios";
 import _, { isFunction } from "lodash";
 import { fetchUser } from "./fourProp";
+
+const emailErrorMessage = "Enter a valid email"
+const schemaEmail = yup.string().email(emailErrorMessage).required()
 
 export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
 
@@ -326,11 +330,26 @@ export async function crmFilterByEmail (authUserId, search, pid) {
 }
 
 export async function crmValidateEmail (authUserId, email, pid = null) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
 
-    await delay(400)
+    try {
 
-    return data
+        schemaEmail.validateSync(email)
+
+        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
+    
+        await delay(400)
+
+        return data
+
+    } catch (e) {
+
+        return {
+            invalid: true,
+            error: e
+        }
+
+    }
+
 }
 
 export async function crmListByIds (ids, authUserId) {
