@@ -93,16 +93,6 @@ function IntegrateGradingComponent () {
               </Link>
             </Button>
           )}
-          <div className='flex items-center justify-center h-20'>
-            <Button variant="outline" size="sm" asChild>
-              <a href={BASEPATH} target={WINDOWN_NAMES.auth} className='space-x-3'>
-                <span className='text-xs'>
-                  open CRM 
-                </span>
-                <ExternalLink className='w-3 h-3' />
-              </a>
-            </Button>
-          </div>
         </>
       )}
     </>

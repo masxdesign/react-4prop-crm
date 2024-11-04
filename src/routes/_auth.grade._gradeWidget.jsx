@@ -33,7 +33,7 @@ function LayoutGradeWidgetComponent () {
                         className="sticky top-3 left-0 z-10"
                     />
                 </div>
-                <div className='relative grow px-3 max-w-[400px]'>
+                <div className='relative grow px-3 max-w-[450px]'>
                     <PropertyDetail data={data} className="text-sm mb-8" />
                     <Outlet />                  
                 </div>

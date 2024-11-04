@@ -34,12 +34,11 @@ function ConfirmComponent () {
 
   return (
     <div className='space-y-3'>
-      <div className='flex gap-2 items-center'>
+      <div className='flex gap-3 items-center justify-between'>
           <h2 className='font-bold text-md space-x-3'>
               <span>Send this property to?</span>
-              <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
           </h2>
-          <Button variant="secondary" size="xs" className="ml-auto" asChild>
+          <Button variant="secondary" size="xs" asChild>
               <Link to=".." from={location.pathname}>
                   Change
               </Link>
@@ -58,7 +57,9 @@ function ConfirmComponent () {
           <AssignTagInput list={list.data} value={tag} onChange={onTagChange} />
         )}
       </div>
-      <Button onClick={onShare} disabled={!tag}>Share</Button>
+      <div className='flex justify-center'>
+        <Button onClick={onShare} disabled={!tag}>Share</Button>
+      </div>
     </div>
   )
 }

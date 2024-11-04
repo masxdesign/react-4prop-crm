@@ -34,8 +34,6 @@ function ImportSingleContactForm ({
     pid = null, 
     defaultEmail = "", 
     onSubmit: onSubmitProp,
-    backButton,
-    backButtonText = "Back",
     submitText = "Add"
 }) {
 
@@ -78,7 +76,7 @@ function ImportSingleContactForm ({
                         control={form.control}
                         name="email"
                         render={({ field }) => (
-                          <FormItem className="space-y-2">
+                          <FormItem className="space-y-2 sticky top-3 left-0 z-20">
                               <FormControl>
                                 <div className="relative">
                                     <Input placeholder="Email address" {...field} />
@@ -87,7 +85,6 @@ function ImportSingleContactForm ({
                                     )}
                                 </div>
                               </FormControl>
-                              <FormMessage className="text-xs" />
                           </FormItem>
                         )}
                     />
@@ -152,14 +149,7 @@ function ImportSingleContactForm ({
                                 <Input {...form.register("phone")} />
                             </div>
 
-                            <div className="flex justify-end gap-3">
-                                {backButton && (
-                                    <Button variant="outline" asChild>
-                                        <Link to="..">
-                                            {backButtonText}
-                                        </Link>
-                                    </Button>
-                                )}
+                            <div className="flex justify-end">
                                 <Button type="submit">
                                     {submitText}
                                 </Button>

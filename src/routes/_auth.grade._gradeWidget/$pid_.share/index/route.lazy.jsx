@@ -28,7 +28,6 @@ function AddClientComponent() {
             <div className='flex gap-2 items-center'>
                 <h2 className='font-bold text-md space-x-3'>
                     <span>Send this property to?</span>
-                    <span className='inline-block px-2 py-1 font-bold bg-yellow-300 text-orange-800 rounded-sm text-xs'>crm</span>
                 </h2>
                 {selected && (
                     <Link to="confirm" className='[&.active]:hidden'>
@@ -41,8 +40,6 @@ function AddClientComponent() {
                 defaultEmail={defaultEmail}
                 onSubmit={onConfirm}
                 submitText="Next"
-                backButtonText="Change selection"
-                backButton
             />
         </>
     )

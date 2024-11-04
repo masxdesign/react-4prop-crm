@@ -102,7 +102,7 @@ function GradeShareComponent () {
     
     return (
         <>
-            <div className='flex flex-col gap-3 max-w-[400px] relative'>
+            <div className='flex flex-col gap-3 max-w-[450px] relative'>
                 <GradeShareContext.Provider value={context}>
                     <Outlet />
                 </GradeShareContext.Provider>
