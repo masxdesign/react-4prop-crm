@@ -278,7 +278,8 @@ export const useListing = createImmer((set, get) => ({
         return queryOptions({
             queryKey: ['resolveProperty', pid],
             queryFn: async () => {
-                const [details] = await get().resolvePropertiesDetails([pid])
+                const [details] = await get().resolvePropertiesDetails([`${pid}`])
+                
                 return details
             }
         })
@@ -288,7 +289,9 @@ export const useListing = createImmer((set, get) => ({
 
             await get().resolvePids(pids)
 
-            return makeSelectedDetailsSelector(get(), pids)
+            const details = makeSelectedDetailsSelector(get(), pids)
+
+            return details
 
         } catch (e) {
             console.log(e);

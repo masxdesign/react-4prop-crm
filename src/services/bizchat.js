@@ -323,8 +323,7 @@ export async function crmOwnerUidInfo (ownerUid) {
     return data
 }
 
-export async function crmFilterByEmail (authUserId, search, pid) {
-    if (!pid) throw new Error('Empty pid')
+export async function crmFilterByEmail (authUserId, search, pid = null) {
     const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
     return data
 }

@@ -20,7 +20,7 @@ const hoverOverlayWarningTextVariants = cva(
 
 export default function HoverOverlayWarningText ({ text, variant, className }) {
     return (
-      <span className={cn(hoverOverlayWarningTextVariants({ variant }), className)}>
+      <div className={cn(hoverOverlayWarningTextVariants({ variant }), className)}>
         <Slot className="w-4 h-4">
           {variant === 'success' ? (
             <CheckIcon className='text-green-600' />
@@ -31,6 +31,6 @@ export default function HoverOverlayWarningText ({ text, variant, className }) {
         <span className='text-left'>
           {text}
         </span>
-      </span>
+      </div>
     )
 }

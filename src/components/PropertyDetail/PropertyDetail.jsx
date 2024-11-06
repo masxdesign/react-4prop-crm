@@ -33,7 +33,7 @@ export default function PropertyDetail ({ data, className }) {
                         <div className='text-muted-foreground'>{tenureText}</div>
                     </div>
                     <div className="w-100 text-sm">
-                        <div className="opacity-40 truncate">{content.teaser}</div>
+                        <div className="opacity-40">{content.teaser}</div>
                     </div>
                 </div>
                 {shared && (

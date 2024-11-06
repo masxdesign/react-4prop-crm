@@ -17,8 +17,10 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthIntegrateSendEnquiriesRouteImport } from './routes/_auth.integrate-send-enquiries/route'
+import { Route as AuthGradeSharingIndexImport } from './routes/_auth.grade-sharing_.index'
 import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerUid'
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
+import { Route as AuthGradeSharingSelectClientImport } from './routes/_auth.grade-sharing.select-client'
 import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
@@ -74,6 +76,11 @@ const AuthIntegrateSendEnquiriesRouteRoute =
     ),
   )
 
+const AuthGradeSharingIndexRoute = AuthGradeSharingIndexImport.update({
+  path: '/grade-sharing/',
+  getParentRoute: () => AuthRoute,
+} as any)
+
 const AccessHashOwnerUidRoute = AccessHashOwnerUidImport.update({
   path: '/access/$hash/$ownerUid',
   getParentRoute: () => rootRoute,
@@ -83,6 +90,12 @@ const AuthGradeGradeWidgetRoute = AuthGradeGradeWidgetImport.update({
   id: '/_gradeWidget',
   getParentRoute: () => AuthGradeRoute,
 } as any)
+
+const AuthGradeSharingSelectClientRoute =
+  AuthGradeSharingSelectClientImport.update({
+    path: '/grade-sharing/select-client',
+    getParentRoute: () => AuthRoute,
+  } as any)
 
 const AuthDashboardListRouteRoute = AuthDashboardListRouteImport.update({
   path: '/list',
@@ -234,6 +247,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardListRouteImport
       parentRoute: typeof AuthDashboardImport
     }
+    '/_auth/grade-sharing/select-client': {
+      preLoaderRoute: typeof AuthGradeSharingSelectClientImport
+      parentRoute: typeof AuthImport
+    }
     '/_auth/grade/_gradeWidget': {
       preLoaderRoute: typeof AuthGradeGradeWidgetImport
       parentRoute: typeof AuthGradeImport
@@ -241,6 +258,10 @@ declare module '@tanstack/react-router' {
     '/access/$hash/$ownerUid': {
       preLoaderRoute: typeof AccessHashOwnerUidImport
       parentRoute: typeof rootRoute
+    }
+    '/_auth/grade-sharing/': {
+      preLoaderRoute: typeof AuthGradeSharingIndexImport
+      parentRoute: typeof AuthImport
     }
     '/_auth/grade/share/success': {
       preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
@@ -330,6 +351,8 @@ export const routeTree = rootRoute.addChildren([
         ]),
       ]),
     ]),
+    AuthGradeSharingSelectClientRoute,
+    AuthGradeSharingIndexRoute,
     AuthGradeShareSuccessRouteRoute,
   ]),
   AccessHashOwnerUidRoute.addChildren([

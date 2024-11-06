@@ -129,7 +129,7 @@ const initialFiltered = []
 
 export function useGradeShareFilterByEmailQuery (email, enabled = true) {
     const auth = useAuth()
-    const { pid } = Route.useParams() 
+    const { pid = null } = Route.useParams() 
 
     const query = useQuery({
         queryKey: ['filterByEmail', auth.authUserId, email],

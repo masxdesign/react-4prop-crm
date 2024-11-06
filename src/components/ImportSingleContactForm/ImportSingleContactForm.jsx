@@ -17,7 +17,7 @@ import {
 import HoverOverlayWarningText from "@/components/HoverOverlayWarningText"
 import useImportList from "@/hooks/useImportList"
 import useValidateEmailQuery from "@/hooks/useValidateEmailQuery"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useCounter, useDebounce } from "@uidotdev/usehooks"
 import { useGradeShareContext, useGradeShareFilterByEmailQuery } from "@/routes/_auth.grade._gradeWidget/$pid_.share"
 import Selection from "../Selection"
@@ -32,12 +32,18 @@ const schema = yup.object({
 
 function ImportSingleContactForm ({ 
     pid = null, 
+    onSelect,
     defaultEmail = "", 
-    onSubmit: onSubmitProp,
     submitText = "Add"
 }) {
 
-    const { onConfirm } = useGradeShareContext()
+    const emailInputRef = useRef()
+
+    useEffect(() => {
+
+        emailInputRef.current.focus()
+
+    }, [])
 
     const form = useForm({
         resolver: yupResolver(schema),
@@ -61,105 +67,110 @@ function ImportSingleContactForm ({
     const onSubmit = async values => {
         const { saved } =  await importList.mutateAsync([values])
         form.reset()
-        onSubmitProp({ id: saved[0], ...values })
+        onSelect?.({ id: saved[0], ...values })
     }
 
     return (
-        <div className="flex flex-col gap-6">
-            <Form {...form}>
-                <form
-                    className="flex flex-col gap-4"
-                    onSubmit={form.handleSubmit(onSubmit)}
-                >
-                  
-                    <FormField
-                        control={form.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem className="space-y-2 sticky top-3 left-0 z-20">
-                              <FormControl>
-                                <div className="relative">
-                                    <Input placeholder="Email address" {...field} />
-                                    {isValidating && (
-                                        <Loader2 className="absolute top-3 right-3 animate-spin w-4 h-4" />
+        <Form {...form}>
+            <form
+                onSubmit={form.handleSubmit(onSubmit)} 
+                className='flex flex-col justify-between h-screen'>
+                <div className='p-3'>
+                    <div className="flex flex-col gap-6">
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                            <FormItem className="space-y-2 sticky top-0 left-0 z-20 bg-white">
+                                    {isValidating ? (
+                                        <div className="px-2 italic text-xs text-muted-foreground">
+                                            Checking availability...
+                                        </div>
+                                    ) : (
+                                        <HoverOverlayWarningText {...validateStatus} />
                                     )}
-                                </div>
-                              </FormControl>
-                          </FormItem>
-                        )}
-                    />
-
-                    {isValidating ? (
-                        <div className="px-2 italic text-xs text-muted-foreground">
-                            Checking availability...
-                        </div>
-                    ) : (
-                        <HoverOverlayWarningText {...validateStatus} />
-                    )}
-
-                    {suggestionsQuery.data.length > 0 && (
-                        <div className='space-y-2'>
-                            {suggestionsQuery.data.map(item => (
-                                <Selection
-                                    key={item.id} 
-                                    onClick={() => onConfirm(item)}
-                                    disabled={item.can_send === 0}
-                                    hoverOverlayText={
-                                        item.can_send === 0 &&
-                                            <HoverOverlayWarningText 
-                                                text="You or another agency shared this property already" 
-                                            />
-                                    }
-                                >
-                                    {item.email}
-                                </Selection>
-                            ))}
-                        </div>
-                    )}
-
-                    {validateStatus?.variant === "success" && (
-                        <>
-                            <FormField
-                                control={form.control}
-                                name="first"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-sm font-bold">Full name</FormLabel>
                                     <FormControl>
-                                        <Input
-                                            placeholder="First name*"
-                                            {...field}
-                                        
-                                        />
+                                        <div className="relative">
+                                            <Input placeholder="Email address" {...field} ref={emailInputRef} />
+                                            {isValidating && (
+                                                <Loader2 className="absolute top-3 right-3 animate-spin w-4 h-4" />
+                                            )}
+                                        </div>
                                     </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
+                            </FormItem>
+                            )}
+                        />
 
-                            <Input placeholder="Last name" {...form.register("last")} />
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Company</label>
-                                <Input {...form.register("company")} />
+                        {suggestionsQuery.data.length > 0 && (
+                            <div className='space-y-2'>
+                                {suggestionsQuery.data.map(item => (
+                                    <Selection
+                                        key={item.id} 
+                                        onClick={() => onSelect(item)}
+                                        disabled={item.can_send === 0}
+                                        hoverOverlayText={
+                                            item.can_send === 0 &&
+                                                <HoverOverlayWarningText 
+                                                    text="You or another agency shared this property already" 
+                                                />
+                                        }
+                                    >
+                                        {item.email}
+                                    </Selection>
+                                ))}
                             </div>
+                        )}
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold">Phone</label>
-                                <Input {...form.register("phone")} />
-                            </div>
+                        {validateStatus?.variant === "success" && (
+                            <>
+                                <FormField
+                                    control={form.control}
+                                    name="first"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-sm font-bold">Full name</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="First name*"
+                                                {...field}
+                                            
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
 
-                            <div className="flex justify-end">
-                                <Button type="submit">
-                                    {submitText}
-                                </Button>
-                            </div>
-                        </>
+                                <Input placeholder="Last name" {...form.register("last")} />
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Company</label>
+                                    <Input {...form.register("company")} />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold">Phone</label>
+                                    <Input {...form.register("phone")} />
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+                <div className='flex gap-3 justify-center sticky inset-x-0 text-white bg-slate-400 bottom-0 p-3 border-t'>
+                    <Button asChild>
+                        <Link to="..">
+                            Back
+                        </Link>
+                    </Button>
+                    {validateStatus?.variant === "success" && (
+                        <Button type="submit">
+                            {submitText}
+                        </Button>
                     )}
-
-                </form>
-            </Form>
-        </div>
+                </div>
+            </form>
+        </Form>
     )
 }
 
