@@ -9,7 +9,7 @@ export const useGradeSharingStore = createImmer((set, get) => ({
     openedPid: null,
     openedGrade: null,
     selected: null,
-    grades: [],
+    pidGrades: [],
     setFromBin: bin => {
 
         const [selectedId, selectedEmail, tagId, tagName] = JSON.parse(decodeFromBinary(bin))
@@ -28,31 +28,46 @@ export const useGradeSharingStore = createImmer((set, get) => ({
     },
     setOpenedProperty: (grade, pid) => set({ openedPid: pid, openedGrade: grade }),
     setTag: tag => set({ tag }),
+    setInfo: info => {
+
+        set(state => {
+            state.tag = {
+                id: info.to.tagId,
+                name: info.to.tagName
+            }
+            state.selected = {
+                id: info.to.selectedId,
+                email: info.to.email
+            }
+            state.pidGrades = info.selectedList
+        })
+    
+    },
     setOpenedGrade: openedGrade => set({ openedGrade }),
     setSelected: selected => set({ selected }),
     removePidGrade: pid => {
 
-        const index = get().grades.findIndex(item => item.pid === pid)
+        const index = get().pidGrades.findIndex(item => item.pid === pid)
 
         if (index < 0) return
             
         set(state => {
-            state.grades.splice(index, 1)
+            state.pidGrades.splice(index, 1)
         })
 
     },
     upsertPidGrade: (pid, grade) => {
 
-        const index = get().grades.findIndex(item => item.pid === pid)
+        const index = get().pidGrades.findIndex(item => item.pid === pid)
 
         if(index < 0) {
             set(state => {
-                state.grades.push({ grade, pid })
+                state.pidGrades.push({ grade, pid })
             })
             return
         }
         set(state => {
-            state.grades[index].grade = grade
+            state.pidGrades[index].grade = grade
         })
 
     }

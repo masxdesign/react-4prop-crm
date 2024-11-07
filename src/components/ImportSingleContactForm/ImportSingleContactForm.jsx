@@ -21,6 +21,8 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { useCounter, useDebounce } from "@uidotdev/usehooks"
 import { useGradeShareContext, useGradeShareFilterByEmailQuery } from "@/routes/_auth.grade._gradeWidget/$pid_.share"
 import Selection from "../Selection"
+import { useLocalStorage } from "@uidotdev/usehooks"
+import { uniq, uniqBy } from "lodash"
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
@@ -36,6 +38,13 @@ function ImportSingleContactForm ({
     defaultEmail = "", 
     submitText = "Add"
 }) {
+
+    const [recentPersisted] = useLocalStorage("grade-sharing:recent", [])
+
+    const recent = useMemo(() => 
+        uniqBy(recentPersisted, 'id'), 
+        [recentPersisted]
+    )
 
     const emailInputRef = useRef()
 
@@ -56,13 +65,15 @@ function ImportSingleContactForm ({
         },
     })
 
+    const email = useWatch({ control: form.control, name: 'email' })
+
     const importList = useImportList()
 
     const {
         validateStatus,
         isValidating,
         suggestionsQuery
-    } = useValidateEmail({ form, pid })
+    } = useValidateEmail({ email, pid })
 
     const onSubmit = async values => {
         const { saved } =  await importList.mutateAsync([values])
@@ -122,6 +133,20 @@ function ImportSingleContactForm ({
                             </div>
                         )}
 
+                        {(!suggestionsQuery.isFetching && !isValidating && !email )&& (
+                            <div className='space-y-2'>
+                                <h3 className="text-sm font-bold">Recent</h3>
+                                {recent.map(item => (
+                                    <Selection
+                                        key={item.id} 
+                                        onClick={() => onSelect(item)}
+                                    >
+                                        {item.email}
+                                    </Selection>
+                                ))}
+                            </div>
+                        )}
+
                         {validateStatus?.variant === "success" && (
                             <>
                                 <FormField
@@ -174,10 +199,7 @@ function ImportSingleContactForm ({
     )
 }
 
-export function useValidateEmail ({ form, pid = null }) {
-
-    const email = useWatch({ control: form.control, name: 'email' })
-
+export function useValidateEmail ({ email, pid = null }) {
     const debounceEmail = useDebounce(email, 500)
 
     const validateEmailQuery = useValidateEmailQuery(debounceEmail, pid)

@@ -8,6 +8,7 @@ import queryClient from './queryClient'
 import { routeTree } from './routeTree.gen'
 import './App.css'
 import { BASEPATH } from './constants'
+import { Loader2 } from 'lucide-react'
 
 const router = createRouter({ 
   routeTree,
@@ -30,7 +31,12 @@ const InnerAuth = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Suspense fallback={<p>Loading...</p>}>
+      <Suspense 
+        fallback={
+          <div className="flex items-center justify-center h-screen w-100">
+              <Loader2 className="animate-spin w-20 h-20" />
+          </div>
+        }>
         <AuthProvider>
             <InnerAuth />
         </AuthProvider>

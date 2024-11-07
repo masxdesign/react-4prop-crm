@@ -20,6 +20,7 @@ import { Route as AuthIntegrateSendEnquiriesRouteImport } from './routes/_auth.i
 import { Route as AuthGradeSharingIndexImport } from './routes/_auth.grade-sharing_.index'
 import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerUid'
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
+import { Route as AuthGradeSharingSetupEmailImport } from './routes/_auth.grade-sharing_.setup-email'
 import { Route as AuthGradeSharingSelectClientImport } from './routes/_auth.grade-sharing.select-client'
 import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
@@ -90,6 +91,13 @@ const AuthGradeGradeWidgetRoute = AuthGradeGradeWidgetImport.update({
   id: '/_gradeWidget',
   getParentRoute: () => AuthGradeRoute,
 } as any)
+
+const AuthGradeSharingSetupEmailRoute = AuthGradeSharingSetupEmailImport.update(
+  {
+    path: '/grade-sharing/setup-email',
+    getParentRoute: () => AuthRoute,
+  } as any,
+)
 
 const AuthGradeSharingSelectClientRoute =
   AuthGradeSharingSelectClientImport.update({
@@ -251,6 +259,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeSharingSelectClientImport
       parentRoute: typeof AuthImport
     }
+    '/_auth/grade-sharing/setup-email': {
+      preLoaderRoute: typeof AuthGradeSharingSetupEmailImport
+      parentRoute: typeof AuthImport
+    }
     '/_auth/grade/_gradeWidget': {
       preLoaderRoute: typeof AuthGradeGradeWidgetImport
       parentRoute: typeof AuthGradeImport
@@ -352,6 +364,7 @@ export const routeTree = rootRoute.addChildren([
       ]),
     ]),
     AuthGradeSharingSelectClientRoute,
+    AuthGradeSharingSetupEmailRoute,
     AuthGradeSharingIndexRoute,
     AuthGradeShareSuccessRouteRoute,
   ]),

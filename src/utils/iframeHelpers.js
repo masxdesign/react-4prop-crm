@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react"
 import useListing from "@/store/use-listing"
+import { useGradeSharingStore } from "@/hooks/useGradeSharing"
 
 export const inIframe = () => window.self !== window.top
 
@@ -27,6 +28,11 @@ export function postMessage (action) {
 
 export function onMessage (event) {
     switch (event.data.type) {
+        case 'GRADE_SHARING_INFO_RECIEVED':
+
+            useGradeSharingStore.getState().setInfo(event.data.payload)
+            break
+
         default:
             useListing.getState().dispatch(event.data)
     }
@@ -66,6 +72,6 @@ export function useIframeHelper () {
 }
 
 export function setupIframeListener () {
-    postMessage({ type: "READY" })
     window.addEventListener('message', onMessage)
+    postMessage({ type: "READY" })
 }

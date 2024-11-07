@@ -160,7 +160,7 @@ const selectedDetailsSelector = createSelector(
 export const resolveAllPropertiesQuerySelector = createSelector(
     selectedSelector,
     state => state.resolveAllProperties,
-    (selected, resolveAllProperties) => queryOptions({
+    (selected, resolveAllProperties) => ({
         queryKey: ["resolveAllProperties", selected],
         queryFn: resolveAllProperties,
         enabled: selected.length > 0
@@ -195,6 +195,7 @@ export const contentsReceived = (contents) => ({
 function reducer (state, action) {
     switch (action.type) {
         case "READY":
+
             if (!action.payload) return
             
             const { types, subtypes, properties, companies, selected, contents } = action.payload

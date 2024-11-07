@@ -42,7 +42,7 @@ const GradingWidget = ({
 
         if (tm.current) clearTimeout(tm.current)
 
-        onSelect(value)
+        onSelect?.(value)
         setHover(null)
         setNotify(true)
 

@@ -213,7 +213,6 @@ export function List ({ from }) {
         </div>
         <div className='min-w-0'>
           <PropertyDetail 
-            key={details.id}
             data={details}
           />
         </div>
