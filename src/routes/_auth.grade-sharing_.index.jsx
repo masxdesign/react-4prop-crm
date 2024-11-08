@@ -6,16 +6,18 @@ import { createFileRoute, Link, useRouterState } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useAuth } from '@/components/Auth/Auth-context'
-import { tagListQueryOptions } from '@/features/tags/queryOptions'
+import { sharedTagListQueryOptions, tagListQueryOptions } from '@/features/tags/queryOptions'
 import { Button } from '@/components/ui/button'
 import { decodeFromBinary, encodeToBinary } from '@/utils/binary'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { postMessage } from '@/utils/iframeHelpers'
 import useListing from '@/store/use-listing'
 import PropertyDetail from '@/components/PropertyDetail'
 import GradingWidget from '@/components/GradingWidget'
 import { useLocalStorage } from "@uidotdev/usehooks"
 import { takeRight } from "lodash"
+import { recentGradeSharesQueryOptions } from "@/features/gradeSharing/services"
+import { ArrowTopRightIcon } from "@radix-ui/react-icons"
 
 export const Route = createFileRoute('/_auth/grade-sharing/')({
   component: GradeSharingConfirmComponent
@@ -36,8 +38,6 @@ function GradeSharingConfirmComponent () {
 
     const auth = useAuth()
 
-    const [recent, setRecent] = useLocalStorage("grade-sharing:recent", [])
-
     const { pid, defaultGrade = null } = Route.useSearch()
     
     const { value } = Route.useSearch()
@@ -55,23 +55,22 @@ function GradeSharingConfirmComponent () {
             setOpenedProperty(defaultGrade, pid)
         }
 
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+
     }, [])
 
     const openedPid = useGradeSharingStore.use.openedPid()
     const openedGrade = useGradeSharingStore.use.openedGrade()
     const setOpenedGrade = useGradeSharingStore.use.setOpenedGrade()
     const selected = useGradeSharingStore.use.selected()
-    const setSelected = useGradeSharingStore.use.setSelected()
     const tag = useGradeSharingStore.use.tag()
     const setTag = useGradeSharingStore.use.setTag()
-
-    const tagsQuery = useQuery(tagListQueryOptions(auth.authUserId))
 
     const handleCancel = () => {
         postMessage({ type: "HIDE" })
     }
 
-    const validated = useMemo(() => {
+    const validate = useCallback((selected, tag) => {
 
         try {
 
@@ -86,110 +85,83 @@ function GradeSharingConfirmComponent () {
         
         }
 
-    }, [selected, tag])
+    }, [])
 
-    const handleApply = () => {
+    const validated = useMemo(() => validate(selected, tag), [selected, tag])
 
-        if (!validated) return 
+    const applyClientTag = useCallback(({ selected, tag }) => {
 
-        const data = [validated.selected.id, validated.selected.email, validated.tag.id, validated.tag.name, openedPid, openedGrade]
+        const data = [selected.id, selected.email, tag.id, tag.name, openedPid, openedGrade]
         const bin = encodeToBinary(JSON.stringify(data))
 
         postMessage({ type: "GRADESHARING_CLIENT_TAG", payload: bin })
         postMessage({ type: "HIDE" })
 
-        setRecent(prevState => {
+    }, [openedPid, openedGrade])
 
-            const { id, email } = validated.selected
-            const _id = `${id}.${validated.tag.id}`
-
-            if (prevState.some(item => item._id === _id)) {
-                return prevState
-            }
-
-            return [
-                { _id, id, email, tag: validated.tag },
-                ...takeRight(prevState, 9)
-            ]
-
-        })
-        
+    const handleApply = () => {
+        applyClientTag({ selected, tag })
     }
     
     return (
         <div className='flex flex-col justify-between h-screen'>
-            <div className='p-3 space-y-4'> 
+            <div className='py-3 space-y-4'> 
                 {openedPid && (
-                    <>
+                    <div className="px-3 space-y-2">
                         <h3 className="text-sm font-bold">
                             Grade your first property
                         </h3>
                         <Suspense fallback={<Loader2 className='animate-spin' />}>
-                            <PropertyGrade pid={openedPid} grade={openedGrade} onGrade={setOpenedGrade} />
+                            <PropertyGrade 
+                                pid={openedPid} 
+                                grade={openedGrade} 
+                                onGrade={setOpenedGrade} 
+                            />
                         </Suspense>
-                        <div className="h-3"></div>
-                    </>
-                )}               
-                <div className='space-y-2'>
-                    <h3 className="text-sm font-bold">
-                        Select client to receive graded Properties
-                    </h3>
-                    <Link to="select-client" className='block'>
-                        {selected ? (
-                            <Selection variant="active">
-                                {selected.email}
-                            </Selection>
-                        ) : (
-                            <Selection variant="plus">
-                                Client email address (required)
-                            </Selection>
-                        )}
-                    </Link>
-                </div>
-                <div className='space-y-2'>
-                    <h3 className="text-sm font-bold">
-                        Enter a search ref/name for you & your Client
-                    </h3>
-                    {tagsQuery.isFetching ? (
-                        <Loader2 className='animate-spin' />
-                    ) : (
-                        <AssignTagInput 
-                            list={tagsQuery.data} 
-                            value={tag} 
-                            onChange={setTag} 
-                            placeholder="eg. Stratford Shop (required)"
-                        />
-                    )}
-                </div>     
-
-                <div className="h-8"></div>
-                <div className='space-y-2'>
-                    <h3 className="text-sm font-bold">Recent</h3>
-                    <div className="space-y-2">
-                        {recent.map(item => {
-
-                            const handleSelect = () => {
-                                setSelected(item)
-                                if (item.tag) setTag(item.tag)
-                            }
-
-                            return (
-                                <div 
-                                    key={item._id}
-                                    onClick={handleSelect}
-                                    className="rounded-lg p-3 text-sm space-y-1 bg-slate-100 hover:bg-slate-200 cursor-pointer"
-                                >
-                                    <div className="">
-                                        {item.email}
-                                    </div>
-                                    <div className="text-slate-500">
-                                        {item.tag?.name}
-                                    </div>
-                                </div>
-                            )
-                        })}
                     </div>
-                </div>          
+                )}        
+
+                <div className="sticky top-0 bg-white space-y-4 px-3 py-3 shadow-sm">                
+                    <div className='space-y-2'>
+                        <h3 className="text-sm font-bold">
+                            Select client to receive graded Properties
+                        </h3>
+                        <Link to="select-client" search={{ pid: openedPid }} className='block'>
+                            {selected ? (
+                                <Selection variant="active">
+                                    {selected.email}
+                                </Selection>
+                            ) : (
+                                <Selection variant="plus">
+                                    Client email address (required)
+                                </Selection>
+                            )}
+                        </Link>
+                    </div>
+                    {selected && (
+                        <div className='space-y-2'>
+                            <h3 className="text-sm font-bold">
+                                Enter a search ref/name for you & your Client
+                            </h3>
+                            <Suspense fallback={<Loader2 className="animate-spin" />}>
+                                <AssignTagControl 
+                                    authUserId={auth.authUserId} 
+                                    importId={selected.id}
+                                    selected={tag}
+                                    onSelect={setTag}
+                                />
+                            </Suspense>
+                        </div>     
+                    )}
+                </div>       
+
+                <div className='px-3 space-y-2'>
+                    <h3 className="text-sm font-bold">Recent</h3>
+                    <Suspense fallback={<Loader2 className="animate-spin" />}>
+                        <RecentGradeShares authUserId={auth.authUserId} onSelect={applyClientTag} />
+                    </Suspense>
+                </div> 
+
             </div>
             <div className='flex gap-3 justify-center bg-white sticky inset-x-0  bottom-0 p-3 border-t'>
                 <div className='space-x-3 text-center'>
@@ -222,5 +194,64 @@ function PropertyGrade ({ pid, grade, onGrade }) {
             </div>
             <PropertyDetail data={dataQuery.data} className="text-sm mb-8" />
         </div>
+    )
+}
+
+function AssignTagControl ({ authUserId, importId, selected, onSelect }) {
+    const tagsQuery = useSuspenseQuery(sharedTagListQueryOptions(authUserId, importId))
+
+    return (
+        <AssignTagInput 
+            list={tagsQuery.data} 
+            selected={selected} 
+            onSelect={onSelect} 
+            placeholder="eg. Stratford Shop (required)"
+        />
+    )
+}
+
+function RecentGradeShares ({ authUserId, onSelect }) {
+    const query = useSuspenseQuery(recentGradeSharesQueryOptions(authUserId))
+
+    const setSelected = useGradeSharingStore.use.setSelected()
+    const setTag = useGradeSharingStore.use.setTag()
+
+    if (query.data.length < 1) {
+        return <span className="text-slate-500">No grade shares yet</span>
+    }
+
+    return (
+        <div className="space-y-2">
+            {query.data.map(item => {
+
+                const handleSelect = () => {
+                    const selected = { id: item.import_id, email: item.email }
+                    const tag = { name: item.tagName, id: item.tag_id }
+
+                    setSelected(selected)
+                    if (item.tag_id) setTag(tag)
+
+                    onSelect({ selected, tag })
+                }
+
+                return (
+                    <div 
+                        key={`${item.import_id}.${item.tag_id}`}
+                        onClick={handleSelect}
+                        className="flex justify-between gap-5 rounded-lg p-3 text-sm bg-slate-100 hover:bg-slate-200 cursor-pointer"
+                    >
+                        <div className="space-y-1">
+                            <div>
+                                {item.email}
+                            </div>
+                            <div className="text-slate-500">
+                                {item.tagName}
+                            </div>
+                        </div>
+                        <ArrowTopRightIcon />
+                    </div>
+                )
+            })}
+        </div>        
     )
 }

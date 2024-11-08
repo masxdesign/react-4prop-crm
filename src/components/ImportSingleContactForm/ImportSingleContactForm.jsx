@@ -19,10 +19,12 @@ import useImportList from "@/hooks/useImportList"
 import useValidateEmailQuery from "@/hooks/useValidateEmailQuery"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useCounter, useDebounce } from "@uidotdev/usehooks"
-import { useGradeShareContext, useGradeShareFilterByEmailQuery } from "@/routes/_auth.grade._gradeWidget/$pid_.share"
 import Selection from "../Selection"
 import { useLocalStorage } from "@uidotdev/usehooks"
 import { uniq, uniqBy } from "lodash"
+import { useQuery } from "@tanstack/react-query"
+import { filterByEmailQueryOptions } from "@/features/gradeSharing/services"
+import { useAuth } from "../Auth/Auth-context"
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
@@ -38,13 +40,6 @@ function ImportSingleContactForm ({
     defaultEmail = "", 
     submitText = "Add"
 }) {
-
-    const [recentPersisted] = useLocalStorage("grade-sharing:recent", [])
-
-    const recent = useMemo(() => 
-        uniqBy(recentPersisted, 'id'), 
-        [recentPersisted]
-    )
 
     const emailInputRef = useRef()
 
@@ -69,11 +64,13 @@ function ImportSingleContactForm ({
 
     const importList = useImportList()
 
+    const debounceEmail = useDebounce(email, 500)
+
     const {
         validateStatus,
         isValidating,
         suggestionsQuery
-    } = useValidateEmail({ email, pid })
+    } = useValidateEmail({ email: debounceEmail, pid })
 
     const onSubmit = async values => {
         const { saved } =  await importList.mutateAsync([values])
@@ -115,6 +112,7 @@ function ImportSingleContactForm ({
 
                         {suggestionsQuery.data.length > 0 && (
                             <div className='space-y-2'>
+                                {!debounceEmail && <h3 className="text-sm font-bold">Recent</h3>}
                                 {suggestionsQuery.data.map(item => (
                                     <Selection
                                         key={item.id} 
@@ -126,20 +124,6 @@ function ImportSingleContactForm ({
                                                     text="You or another agency shared this property already" 
                                                 />
                                         }
-                                    >
-                                        {item.email}
-                                    </Selection>
-                                ))}
-                            </div>
-                        )}
-
-                        {(!suggestionsQuery.isFetching && !isValidating && !email )&& (
-                            <div className='space-y-2'>
-                                <h3 className="text-sm font-bold">Recent</h3>
-                                {recent.map(item => (
-                                    <Selection
-                                        key={item.id} 
-                                        onClick={() => onSelect(item)}
                                     >
                                         {item.email}
                                     </Selection>
@@ -200,9 +184,7 @@ function ImportSingleContactForm ({
 }
 
 export function useValidateEmail ({ email, pid = null }) {
-    const debounceEmail = useDebounce(email, 500)
-
-    const validateEmailQuery = useValidateEmailQuery(debounceEmail, pid)
+    const validateEmailQuery = useValidateEmailQuery(email, pid)
 
     const validateStatus = useMemo(() => {
 
@@ -243,10 +225,14 @@ export function useValidateEmail ({ email, pid = null }) {
 
     }, [validateEmailQuery.isFetching, validateEmailQuery.data])
 
-    const suggestionsQuery = useGradeShareFilterByEmailQuery(
-        debounceEmail, 
+    const auth = useAuth()
+
+    const suggestionsQuery = useQuery(filterByEmailQueryOptions(
+        auth.authUserId,
+        email, 
+        pid,
         ["invalid", "unavailable"].includes(validateStatus.variant)
-    )
+    ))
 
     const validateStatusModified = useMemo(() => {
 

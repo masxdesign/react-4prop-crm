@@ -377,6 +377,11 @@ export async function crmSharedTagPids (authUserId, import_id) {
     return data
 }
 
+export async function crmRecentGradeShares (authUserId) {
+    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/recent-grade-shares`)
+    return data
+}
+
 export async function crmListUpdateDetails (ownerUid, import_id, name, newValue) {
     const { data } = await bizchatAxios.patch(`/api/crm/${ownerUid}/list/${import_id}`, { name, newValue })
     return data
@@ -487,12 +492,11 @@ export async function crmAddTag (ownerUid, name) {
     return data
 }
 
-export async function crmShareGrade (ownerUid, recipient_import_id, pid, grade, tag_id) {
+export async function crmShareGrade (ownerUid, recipient_import_id, tag_id, pidGrades) {
     const { data } = await bizchatAxios.post(`/api/crm/${ownerUid}/share-grade`, { 
-        recipient_import_id, 
-        pid, 
-        grade, 
-        tag_id
+        recipient_import_id,
+        tag_id,
+        pidGrades
      })
     return data
 }

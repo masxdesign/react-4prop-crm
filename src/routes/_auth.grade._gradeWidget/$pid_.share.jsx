@@ -4,12 +4,11 @@ import { useRouteGradeContext } from '@/routes//_auth.grade'
 import { Route as AuthGradePidShareConfirmImport } from '@/routes//_auth.grade._gradeWidget/$pid_.share/confirm'
 import { Route as AuthGradeShareSuccessRouteImport } from '@/routes//_auth.grade_.share_.success/route'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { crmAddTag, crmFilterByEmail, crmShareGrade, crmTagList } from '@/services/bizchat'
+import { crmAddTag } from '@/services/bizchat'
 import { Route as AuthGradePromoImport } from '@/routes//_auth.grade._gradeWidget/$pid_.crm-promo'
 import { useAuth } from '@/components/Auth/Auth-context'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { useTagListQueryOptions } from '../_auth._dashboard/tags'
-import { Button } from '@/components/ui/button'
+import { tagListQueryOptions } from '@/features/tags/queryOptions'
+import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 
 const allowUsersList = ['U161', 'U2']
 
@@ -45,17 +44,9 @@ function GradeShareComponent () {
         mutationFn: name => crmAddTag(auth.authUserId, name)
     })
 
-    const shareGrade = useMutation({
-        mutationFn: ({ recipient_import_id, pid, grade, tag_id }) => crmShareGrade(
-            auth.authUserId, 
-            recipient_import_id, 
-            pid, 
-            grade, 
-            tag_id
-        )
-    })
+    const pidGradesMutation = usePidGradesMutation()
 
-    const tagListQueryOptions = useTagListQueryOptions(auth.authUserId)
+    const tagListQueryOptions_ = tagListQueryOptions(auth.authUserId)
 
     const navigate = useNavigate()
 
@@ -75,14 +66,16 @@ function GradeShareComponent () {
             const newTag = await addTag.mutateAsync(tag.name)
             tag_id = newTag.id
 
-            queryClient.invalidateQueries({ queryKey: tagListQueryOptions.queryKey })
+            queryClient.invalidateQueries({ queryKey: tagListQueryOptions_.queryKey })
         }
 
-        const result = await shareGrade.mutateAsync({
+        const result = await pidGradesMutation.mutateAsync({
             recipient_import_id: selected.id, 
-            pid, 
-            grade, 
-            tag_id 
+            tag_id,
+            pidGrades: { 
+                pid, 
+                grade
+            }
         })
 
         console.log(result)
@@ -97,7 +90,7 @@ function GradeShareComponent () {
         onSelect: setSelected, 
         onConfirm: handleConfirm,
         onShare: handleShare,
-        tagListQueryOptions
+        tagListQueryOptions: tagListQueryOptions_
     }
     
     return (
@@ -123,20 +116,4 @@ function GradeShareComponent () {
             )}
         </>
     )
-}
-
-const initialFiltered = []
-
-export function useGradeShareFilterByEmailQuery (email, enabled = true) {
-    const auth = useAuth()
-    const { pid = null } = Route.useParams() 
-
-    const query = useQuery({
-        queryKey: ['filterByEmail', auth.authUserId, email],
-        queryFn: () => crmFilterByEmail(auth.authUserId, email, pid),
-        enabled: enabled && !!email,
-        initialData: initialFiltered
-    })
-
-    return query
 }

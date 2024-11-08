@@ -15,45 +15,26 @@ const equalsCombiner = (item, value) => {
     return item.name.trim().toLowerCase() === value.trim().toLowerCase()
 }
 
-export default function AssignTagInput ({ placeholder, list, value: controlledValue, onChange }) {
+export default function AssignTagInput ({ placeholder, list, selected, onSelect }) {
 
     const inputRef = useRef()
   
     const [open, setOpen] = useState(false)
-    const [_value, setValue] = useState(controlledValue?.name ?? "")
+    const [value, setValue] = useState("")
   
-    useEffect(() => {
-  
-      if (controlledValue) {
-        setValue(controlledValue.name)
-      }
-  
-    }, [controlledValue])
-  
-    const value = useDebounce(_value, 400)
+    const debouncedValue = useDebounce(value, 400)
   
     const filtered = useMemo(() => {
   
-      let newFiltered = list.filter(item => containsCombiner(item, value))
+      let newFiltered = list.filter(item => containsCombiner(item, debouncedValue))
   
-      if (!!value && !newFiltered.some(item => equalsCombiner(item, value))) {
-        return [{ id: -1, name: value.trim() }, ...newFiltered]
+      if (!!debouncedValue && !newFiltered.some(item => equalsCombiner(item, debouncedValue))) {
+        return [{ id: -1, name: debouncedValue.trim() }, ...newFiltered]
       }
   
       return newFiltered
   
-    }, [list, value])
-  
-    const selected = useMemo(
-      () => filtered.find(item => equalsCombiner(item, _value)), 
-      [filtered, _value]
-    )
-  
-    useEffect(() => {
-  
-      onChange(selected)
-  
-    }, [selected])
+    }, [list, debouncedValue])
   
     const handleChange = (e) => {
       setValue(e.target.value)
@@ -67,7 +48,8 @@ export default function AssignTagInput ({ placeholder, list, value: controlledVa
       setOpen(true)
     }
   
-    const handleSelect = (item) => {
+    const handleSelect = item => {
+      onSelect(item)
       setValue(item.name)
       setOpen(false)
     }
@@ -77,6 +59,14 @@ export default function AssignTagInput ({ placeholder, list, value: controlledVa
         e.preventDefault()
       }
     }
+
+    useEffect(() => {
+
+      if (selected) {
+        setValue(selected.name)
+      }
+
+    }, [selected])
   
     useEffect(() => {
   
@@ -96,7 +86,7 @@ export default function AssignTagInput ({ placeholder, list, value: controlledVa
       return (!prefix ? '': `${prefix}-`) + (
         item.id < 0 ? 
           "plus"
-        : equalsCombiner(item, _value) ?
+        : equalsCombiner(item, value) ?
           "active"
         :
           "default"
@@ -108,12 +98,12 @@ export default function AssignTagInput ({ placeholder, list, value: controlledVa
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverAnchor asChild>
             <div className='flex relative border rounded-md anchor'>
-              {_value.length < 1 || open ? (
+              {value.length < 1 || open ? (
                 <Input 
                   ref={inputRef}
                   placeholder={placeholder}
                   className="border-0 z-0 relative pr-[40px]" 
-                  value={_value}
+                  value={value}
                   onChange={handleChange} 
                   onKeyPress={handleKeyPress}
                   onClick={handleInputClick}

@@ -5,7 +5,6 @@ import { useAuth } from '@/components/Auth/Auth-context'
 import useListing from '@/store/use-listing'
 import PropertyDetail from '@/components/PropertyDetail'
 import GradingWidget from '@/components/GradingWidget'
-import { useSharedTagListQueryOptions } from './tags'
 import { Suspense } from 'react'
 import { FilterIcon, Loader2, TagIcon, User } from 'lucide-react'
 import { cx } from 'class-variance-authority'
@@ -14,6 +13,7 @@ import { Route as AuthDashboardListRouteImport } from '@/routes/_auth._dashboard
 import { find } from 'lodash'
 import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth._dashboard/list_.$import_id'
 import { BASEPATH, WINDOWN_NAMES } from '@/constants'
+import { sharedTagListQueryOptions } from '@/features/tags/queryOptions'
 
 export const Route = createFileRoute('/_auth/_dashboard/list/$import_id/shared')({
   component: ShareListComponent,
@@ -145,9 +145,8 @@ export function ContactUserCard () {
 export function useTagsSuspenseQuery (from, select = null) {
   const import_id = useImportIdQuery()
 
-  const tagListQueryOptions = useSharedTagListQueryOptions(from, import_id)
   const query = useSuspenseQuery({
-    ...tagListQueryOptions,
+    ...sharedTagListQueryOptions(from, import_id),
     select
   })
 
