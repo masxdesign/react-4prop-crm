@@ -3,7 +3,7 @@ import { chain, compact, find, map, memoize } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
 import companyCombiner from "@/services/companyCombiner"
-import { reqPropDescContentQuery, searchPropertiesQuery, subtypesJson, typesJson } from "@/services/fourProp"
+import { fetchNewlyGradedProperties, reqPropDescContentQuery, searchPropertiesQuery, subtypesJson, typesJson } from "@/services/fourProp"
 import propertySubtypesKeyValueCombiner from "@/services/propertySubtypesKeyValueCombiner"
 import propertyTypesCombiner from "@/services/propertyTypesCombiner"
 import lowerKeyObject from "@/utils/lowerKeyObject"
@@ -133,6 +133,11 @@ const propertyTypesSelector = createSelector(
     }
 )
 
+const detailsCombiner = (propertyTypes, propertiesArray, contents, companies) => (
+    propertiesArray
+        .map(property => propertyCombinerMemo(property.pid, property, propertyTypes, contents[property.pid], companies))
+)
+
 const selectedDetailsCombiner = (selected, propertyTypes, propertiesArray, contents, companies) => (
     propertiesArray
         .filter(({ pid }) => selected.includes(pid))
@@ -146,6 +151,14 @@ const makeSelectedDetailsSelector = createSelector(
     contentsSelector,
     companiesSelector,
     selectedDetailsCombiner
+)
+
+const detailsSelector = createSelector(
+    propertyTypesSelector,
+    propertiesArraySelector,
+    contentsSelector,
+    companiesSelector,
+    detailsCombiner
 )
 
 const selectedDetailsSelector = createSelector(
@@ -166,6 +179,11 @@ export const resolveAllPropertiesQuerySelector = createSelector(
         enabled: selected.length > 0
     })
 )
+
+export const newlyGradedQuery = {
+    queryKey: ['newlyGraded'],
+    queryFn: fetchNewlyGradedProperties
+}
 
 export const propertyTypesReceived = (types, subtypes) => ({
     type: "PROPERTY_TYPES_RECEIVED", 
@@ -226,7 +244,7 @@ function reducer (state, action) {
             break
         case "PROPERTIES_RECEIVED":
             for (const property of action.payload) {
-                const property_ = property.pid ? property : lowerKeyObject(property)
+                const property_ = lowerKeyObject(property)
                 state.properties[property_.pid] = property_
             }
 
@@ -332,6 +350,31 @@ export const useListing = createImmer((set, get) => ({
         get().dispatch(propertiesReceived(results))
         get().dispatch(companiesReceived(companies))
     },
+    fetchNewlyGradedProperties: async () => {
+
+        try {
+
+            await get().fetchPropertyTypes()
+    
+            const { results, companies } = await queryClient.ensureQueryData(newlyGradedQuery)
+    
+            if (!results || results.length < 1 || !companies) throw new Error('Invalid pids')
+    
+            get().dispatch(propertiesReceived(results))
+            
+            const pids = pidsSelector(get())
+            await get().fetchContentsByPids(pids)
+    
+            get().dispatch(companiesReceived(companies))
+    
+            const details = detailsSelector(get())
+    
+            return details
+
+        } catch (e) {
+            return []
+        }
+    },
     fetchContentsByPids: async (pids) => {
         if (pids.length < 1) return
         const contents = await queryClient.ensureQueryData(reqPropDescContentQuery(pids))
@@ -347,5 +390,13 @@ export const useListing = createImmer((set, get) => ({
     },
     dispatch: (args) => set((state) => reducer(state, args))
 }))
+
+export const useQueryfetchNewlyGradedProperties = () => {
+    const fetchNewlyGradedProperties = useListing(state => state.fetchNewlyGradedProperties)
+    return useQuery({
+        queryKey: ['newlyGradedWithDetails'],
+        queryFn: fetchNewlyGradedProperties
+    })
+}
 
 export default useListing

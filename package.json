@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "dev:crm": "vite",
     "dev": "concurrently --kill-others -n react,bizchat,db-sync  \"vite\" npm:backend-bizchat npm:backend-db-sync",
     "build": "vite build",
     "backend-bizchat": "cd ../backend-bizchat/volumes/bizchat && npm run dev",

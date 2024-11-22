@@ -518,7 +518,7 @@ export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
 }
 
 export const sendBizchatPropertyEnquiry = async ({ userId, form, attachments = [] }) => {
-	if (import.meta.env.DEV) return 
+	// if (import.meta.env.DEV) return 
 
     let enquiryRoom = await getEnquiryRoomAsync(userId, "P", form.property.id)
 

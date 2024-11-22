@@ -6,7 +6,10 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries')({
     loader: ({ context }) => queryClient.ensureQueryData(context.queryOptions),
     beforeLoad () {
         return {
-            queryOptions: resolveAllPropertiesQuerySelector(useListing.getState())
+            queryOptions: {
+                queryKey: ['newlyGradedWithDetails'],
+                queryFn: useListing.getState().fetchNewlyGradedProperties
+            }
         }
     }
 })

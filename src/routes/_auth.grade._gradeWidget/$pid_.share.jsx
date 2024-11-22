@@ -10,7 +10,7 @@ import { useAuth } from '@/components/Auth/Auth-context'
 import { tagListQueryOptions } from '@/features/tags/queryOptions'
 import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 
-const allowUsersList = ['U161', 'U2']
+const allowUsersList = ['U161', 'U2', 'U60726']
 
 export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share')({
   component: GradeShareComponent,

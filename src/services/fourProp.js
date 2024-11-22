@@ -84,6 +84,18 @@ export const fetchSearchProperties = async (pids) => {
     }
 }
 
+export const fetchNewlyGradedProperties = async () => {
+    try {
+
+        const { data } = await fourProp.get(`api/search/newlyGraded`, { withCredentials: true })
+
+        return data
+    
+    } catch (e) {
+        console.error(e)
+    }
+}
+
 export const authLogout = () => fourProp.post('api/account/logout')
 
 const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile,mail_list_max_date_sent,mail_list_total,mail_list_template_name"

@@ -17,14 +17,16 @@ const AuthProvider = ({ children }) => {
         if (userRawData) {
             user = {
                 ...userRawData,
-                bz_uid: userRawData.neg_id ? userRawData.neg_id : authUserId
+                bz_uid: userRawData.neg_id ? userRawData.neg_id : `U${userRawData.id}`
             }
         }
 
         return {
             isAuthenticated: !!user,
             authUserId: user ? `U${user.id}`: null,
+            displayName: user?.display_name ?? `${user?.first} ${user?.last}`,
             user,
+            allowFutureFeatured: ['2', '161', '207', '60726'].includes(`${user.id}`),
             setUser,
             login,
             logout
