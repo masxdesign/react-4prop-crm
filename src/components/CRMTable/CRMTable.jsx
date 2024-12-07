@@ -6,7 +6,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { useMap } from '@uidotdev/usehooks';
 import _ from 'lodash';
 import useTableModel from '@/hooks/use-TableModel';
-import { fetchSelectedDataQueryOptions, FOURPROP_BASEURL } from '@/services/fourProp';
+import { fetchSelectedDataQueryOptions } from '@/services/fourProp';
 import numberWithCommas from '@/utils/numberWithCommas';
 import { Button } from '@/components/ui/button';
 import DataTableFacetedFilter from '@/components/dataTableFacetedFilter';
@@ -21,6 +21,7 @@ import DataTableViewOptions from '@/components/DataTableViewOptions';
 import { useSelectionControl, useSendBizchatDialog } from '@/components/CRMTable/hooks';
 import { SelectionControl, SendBizchatDialog } from '@/components/CRMTable/components';
 import TableDialog from './components/TableDialog';
+import { FOURPROP_BASEURL } from '@/services/fourPropClient';
 
 export default function CRMTable ({ 
   tableName, 

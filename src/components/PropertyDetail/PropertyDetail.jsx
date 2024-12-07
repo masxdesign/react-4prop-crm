@@ -1,6 +1,6 @@
 import { cx } from "class-variance-authority"
 import { Badge } from "@/components/ui/badge"
-import { FOURPROP_BASEURL } from "@/services/fourProp"
+import { FOURPROP_BASEURL } from "@/services/fourPropClient"
 
 export default function PropertyDetail ({ data, className }) {
     const { 

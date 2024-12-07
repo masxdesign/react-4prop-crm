@@ -4,7 +4,7 @@ import PendingComponent from '@/components/PendingComponent'
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'
 import { Loader2, User } from 'lucide-react'
-import { FOURPROP_BASEURL } from '@/services/fourProp'
+import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 
 export const Route = createFileRoute('/access/$hash/$ownerUid/shared')({
   component: AccessSharedWrapperComponent,

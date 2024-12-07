@@ -10,18 +10,8 @@ import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
 import useListing from "@/store/use-listing";
 import { getTime } from "date-fns";
-
-export const FOURPROP_BASEURL = window.config?.site_url ?? import.meta.env.VITE_FOURPROP_BASEURL
-
-const fourPropLive = axios.create({
-    baseURL: "https://4prop.com",
-    withCredentials: true
-})
-
-const fourProp = axios.create({
-    baseURL: FOURPROP_BASEURL,
-    withCredentials: true
-})
+import { fourPropClient, FOURPROP_BASEURL } from "./fourPropClient";
+import { propReqContentsQuery, subtypesQuery, typesQuery } from "@/store/listing.queries";
 
 const grantAccess = async () => {
 
@@ -32,7 +22,7 @@ const grantAccess = async () => {
 
     try {
 
-        const res = await fourProp.post("api/login", body)
+        const res = await fourPropClient.post("api/login", body)
 
     } catch (e) {
         console.log("Grant Access: " + e.message)
@@ -43,7 +33,7 @@ const grantAccess = async () => {
 export const authWhoisonlineQueryOptions = queryOptions({
     queryKey: ['whoisonline'],
     queryFn: async () => {
-        const { data } = await fourProp.post('api/login')
+        const { data } = await fourPropClient.post('api/login')
 
         return data
     },
@@ -53,7 +43,7 @@ export const authWhoisonlineQueryOptions = queryOptions({
 export const authLogin = async ({ email, password }) => {
     const { default: each_password_generator } = await import("@/utils/each_password_generator")
 
-    const { data } = await fourProp.post(
+    const { data } = await fourPropClient.post(
         'api/login', 
         { email, password, each_password: each_password_generator(password) }
     )
@@ -62,7 +52,7 @@ export const authLogin = async ({ email, password }) => {
 }
 
 export const fetchUser = async (uid) => {
-    const { data } = await fourProp.post(
+    const { data } = await fourPropClient.post(
         'api/account/fetch-user', 
         { id: uid }
     )
@@ -75,7 +65,7 @@ export const fetchSearchProperties = async (pids) => {
 
         if (pids.length < 1) return { results: [], companies: [] }
 
-        const { data } = await fourProp.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
+        const { data } = await fourPropClient.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
 
         return data
     
@@ -87,7 +77,7 @@ export const fetchSearchProperties = async (pids) => {
 export const fetchNewlyGradedProperties = async () => {
     try {
 
-        const { data } = await fourProp.get(`api/search/newlyGraded`, { withCredentials: true })
+        const { data } = await fourPropClient.get(`api/search/newlyGraded`, { withCredentials: true })
 
         return data
     
@@ -96,7 +86,7 @@ export const fetchNewlyGradedProperties = async () => {
     }
 }
 
-export const authLogout = () => fourProp.post('api/account/logout')
+export const authLogout = () => fourPropClient.post('api/account/logout')
 
 const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile,mail_list_max_date_sent,mail_list_total,mail_list_template_name"
 
@@ -150,7 +140,7 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
         }
     }
     
-    let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+    let { data } = await fourPropClient.get('api/crud/CRM--EACH_db', { params })
 
     if (authUserId) {
         let d2 = []
@@ -178,7 +168,7 @@ export const fetchNegotiatorByNids = async (nids) => {
         ids: `${nids}`
     }
 
-    const { data } = await fourProp.get(`api/crud/CRM--EACH_db`, { params })
+    const { data } = await fourPropClient.get(`api/crud/CRM--EACH_db`, { params })
 
     return data
 }
@@ -228,7 +218,7 @@ export const fetchNegotiator = async (nid) => {
         include: defaultNegotiatorInclude
     }
 
-    const { data } = await fourProp.get(`api/crud/CRM--EACH_db/${nid}`, { params })
+    const { data } = await fourPropClient.get(`api/crud/CRM--EACH_db/${nid}`, { params })
 
     return data
 }
@@ -248,7 +238,7 @@ export const addNextContact = async (variables, { id }) => {
 
     body.note = message
 
-    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
+    const { data } = await fourPropClient.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
 
     return data
 
@@ -266,7 +256,7 @@ export const addLastContact = async (variables, { id }) => {
         note: message
     }
 
-    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
+    const { data } = await fourPropClient.post(`api/crud/CRM--EACH_db/__createContactNote/${id}`, body)
 
     return data
 
@@ -292,7 +282,7 @@ export const addNote = async (variables, id, authUserId) => {
 
     if (isEmpty(message)) throw new Error('message is empty')
 
-    const { data } = await fourProp.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
+    const { data } = await fourPropClient.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
         type: '0',
         note: message
     })
@@ -303,7 +293,7 @@ export const addNote = async (variables, id, authUserId) => {
 
 export const fetchNotes = async (recipient, auth) => {
     let [notes, lastMessage, mailshots] = await Promise.all([
-        fourProp.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
+        fourPropClient.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
         getBizchatLastMessage({ from: auth.user.neg_id, recipient }),
         getAllMailShots(recipient, auth.id)
     ])
@@ -353,39 +343,11 @@ export const fetchFacets = async (column = 'company') => {
         column
     }
 
-    const { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
+    const { data } = await fourPropClient.get('api/crud/CRM--EACH_db', { params })
 
     return data
 
 }
-
-export const reqPropDescContentQuery = (reqPropContentByIds, isProp = true) => queryOptions({
-    queryKey: ["reqPropDescContent", reqPropContentByIds, isProp],
-    queryFn: async () => {
-        const params = { reqPropContentByIds: reqPropContentByIds.join(','), isProp }
-        const { data } = await fourProp.get(`/api/each`, { params, withCredentials: true })
-
-        return zipObject(reqPropContentByIds, data)
-    }
-})
-
-export const versionsJson = queryOptions({
-    queryKey: ["versionsJson"],
-    queryFn: () => fourProp.get(`new/variables/versions.json`, { withCredentials: false })
-})
-
-export const dataJson = name => queryOptions({
-    queryKey: ["dataJson", name],
-    queryFn: async () => {
-        const versions = await queryClient.ensureQueryData(versionsJson)
-        const { data } = await fourProp.get(`new/variables/${name}${versions.data[name]}.json`, { withCredentials: false })
-        return data
-    }
-})
-
-export const typesJson = dataJson("types")
-export const subtypesJson = dataJson("subtypes")
-export const areasJson = dataJson("locations")
 
 const propertySubtypesKeyValueCombinerMemo = memoize(propertySubtypesKeyValueCombiner)
 const propertyTypesCombinerMemo = memoize(propertyTypesCombiner)
@@ -433,9 +395,9 @@ export const propertiesDetailsSearchQuery = pids => queryOptions({
 
         const [{ results, companies }, contents, types, subtypes] = await Promise.all([
             queryClient.ensureQueryData(searchPropertiesQuery(pids)),
-            queryClient.ensureQueryData(reqPropDescContentQuery(pids)),
-            queryClient.ensureQueryData(typesJson),
-            queryClient.ensureQueryData(subtypesJson)
+            queryClient.ensureQueryData(propReqContentsQuery(pids)),
+            queryClient.ensureQueryData(typesQuery),
+            queryClient.ensureQueryData(subtypesQuery)
         ])
 
         const { setProperties, setCompanies } = useListing.getState()
@@ -472,8 +434,8 @@ export const propertiesDetailsQuery = memoize(results => {
 
             const [contents, types, subtypes] = await Promise.all([
                 queryClient.ensureQueryData(reqPropDescContentQuery(pids)),
-                queryClient.ensureQueryData(typesJson),
-                queryClient.ensureQueryData(subtypesJson)
+                queryClient.ensureQueryData(typesQuery),
+                queryClient.ensureQueryData(subtypesQuery)
             ])
 
             const { setProperties, setCompanies } = useListing.getState()

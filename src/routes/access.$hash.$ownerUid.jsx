@@ -5,7 +5,7 @@ import PendingComponent from '@/components/PendingComponent'
 import { ContactUserCard } from '@/routes/_auth._dashboard/list_.$import_id.shared'
 import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
-import { FOURPROP_BASEURL } from '@/services/fourProp'
+import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 
 export const Route = createFileRoute('/access/$hash/$ownerUid')({
   component: ParentAccessComponent,

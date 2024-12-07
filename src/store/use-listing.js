@@ -1,9 +1,9 @@
 import { queryOptions, useQuery } from "@tanstack/react-query"
-import { chain, compact, find, map, memoize } from "lodash"
+import { chain, compact, find, map, pick } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
 import companyCombiner from "@/services/companyCombiner"
-import { fetchNewlyGradedProperties, reqPropDescContentQuery, searchPropertiesQuery, subtypesJson, typesJson } from "@/services/fourProp"
+import { fetchNewlyGradedProperties, searchPropertiesQuery } from "@/services/fourProp"
 import propertySubtypesKeyValueCombiner from "@/services/propertySubtypesKeyValueCombiner"
 import propertyTypesCombiner from "@/services/propertyTypesCombiner"
 import lowerKeyObject from "@/utils/lowerKeyObject"
@@ -12,6 +12,9 @@ import { createImmer } from "@/utils/zustand-extras"
 import displayTenure from "@/utils/displayTenure"
 import displaySize from "@/utils/displaySize"
 import { crmSharedPids } from "@/services/bizchat"
+import { propReqContentsQuery, subtypesQuery, typesQuery } from "./listing.queries"
+
+const IS_NULL = "IS_NULL"
 
 export const PROPERTY_STATUS_NAMES = {
     0: "AVAIL",
@@ -39,7 +42,7 @@ export const PROPERTY_STATUS_COLORS = {
     41: "red"
 }
 
-const propertyCombinerMemo = memoize((pid, original, propertyTypes, content, companies_) => {
+const propertyCombiner = (pid, original, propertyTypes, content = [], companies_) => {
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
     const tenure = propertyParse.tenure(original)
     const addressText = propertyParse.addressText({ showPostcode: true })(original)
@@ -65,9 +68,17 @@ const propertyCombinerMemo = memoize((pid, original, propertyTypes, content, com
     const companies = propertyParse.companies(companies_)(original)
     const pictures = propertyParse.pictures(original)
 
+    const { grade, last_sender, chat_id, tag_name, tag_id, enquiry_choices } = original
+
     return {
         id: pid,
+        enquiry_choices,
+        tag_name,
+        tag_id,
         title,
+        grade,
+        chat_id,
+        need_reply: last_sender !== null,
         subtypesText,
         addressText,
         pictures,
@@ -86,9 +97,10 @@ const propertyCombinerMemo = memoize((pid, original, propertyTypes, content, com
         agents: chain(original.dealswith).trim(',').split(',').uniq().value(),
         original
     }
-})
+}
 
 const propertiesSelector = (state) => state.properties
+const filterByTagsSelector = (state) => state.filterByTags
 
 const propertiesArraySelector = createSelector(
     propertiesSelector,
@@ -123,6 +135,12 @@ const companiesSelector = createSelector(
     (companies) => Object.values(companies).map(companyCombiner)
 )
 
+export const propertyTypescombiner = (types, subtypes) => {
+    const subtypesKeyValue = propertySubtypesKeyValueCombiner(subtypes)
+    const propertyTypes = propertyTypesCombiner(types, subtypesKeyValue)
+    return propertyTypes
+}
+
 const propertyTypesSelector = createSelector(
     (state) => state.types,
     (state) => state.subtypes,
@@ -133,15 +151,15 @@ const propertyTypesSelector = createSelector(
     }
 )
 
-const detailsCombiner = (propertyTypes, propertiesArray, contents, companies) => (
+export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies) => (
     propertiesArray
-        .map(property => propertyCombinerMemo(property.pid, property, propertyTypes, contents[property.pid], companies))
+        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies))
 )
 
 const selectedDetailsCombiner = (selected, propertyTypes, propertiesArray, contents, companies) => (
     propertiesArray
         .filter(({ pid }) => selected.includes(pid))
-        .map(property => propertyCombinerMemo(property.pid, property, propertyTypes, contents[property.pid], companies))
+        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies))
 )
 
 const makeSelectedDetailsSelector = createSelector(
@@ -159,6 +177,54 @@ const detailsSelector = createSelector(
     contentsSelector,
     companiesSelector,
     detailsCombiner
+)
+
+const filterPropertiesArrayByTagsSelector = createSelector(
+    propertiesArraySelector,
+    filterByTagsSelector,
+    (properties, filterByTags) => {
+        return properties.filter(row => {
+            const value = row.tag_id === null ? IS_NULL: `${row.tag_id}`
+            return filterByTags.includes(value)
+        })
+    }
+)
+
+export const filteredByTagsDetailsSelector = createSelector(
+    propertyTypesSelector,
+    filterPropertiesArrayByTagsSelector,
+    contentsSelector,
+    companiesSelector,
+    detailsCombiner
+)
+
+export const tagsFromPropertiesSelector = createSelector(
+    propertiesArraySelector,
+    (properties) => {
+        const tags = chain(properties)
+            .map(row => {
+                const { tag_id, tag_name } = pick(row, ["tag_id", "tag_name"])
+
+                if (tag_id === null) {
+                    return {
+                        id: IS_NULL,
+                        name: "Unnamed",
+                        weight: 0
+                    }
+                }
+
+                return {
+                    id: tag_id,
+                    name: tag_name,
+                    weight: 1
+                }
+            })
+            .uniqBy("id")
+            .sortBy(["weight", "name"])
+            .value()
+
+        return tags
+    }
 )
 
 const selectedDetailsSelector = createSelector(
@@ -266,6 +332,7 @@ function reducer (state, action) {
 }
 
 export const useListing = createImmer((set, get) => ({
+    filterByTags: [],
     types: null,
     subtypes: null,
     areas: null,
@@ -274,6 +341,23 @@ export const useListing = createImmer((set, get) => ({
     contents: {},
     properties: {},
     companies: {},
+    setFilterByTagsChange: (filterByTags) => {
+        set({ filterByTags })
+    },
+    filterByTagsChange: ({ value, checked }) => {
+        set(state => {
+
+            if (checked) {
+                state.filterByTags.push(value)
+                return
+            }
+
+            const index = state.filterByTags.indexOf(value)
+
+            state.filterByTags.splice(index, 1)
+
+        })
+    },
     resolveSharedPropDetailsQueryOptions: (from, import_id, tag_id = null) => {
         return queryOptions({
             queryKey: ['resolveProperty', from, import_id, tag_id],
@@ -363,7 +447,8 @@ export const useListing = createImmer((set, get) => ({
             get().dispatch(propertiesReceived(results))
             
             const pids = pidsSelector(get())
-            await get().fetchContentsByPids(pids)
+
+            get().fetchContentsByPids(pids)
     
             get().dispatch(companiesReceived(companies))
     
@@ -377,14 +462,14 @@ export const useListing = createImmer((set, get) => ({
     },
     fetchContentsByPids: async (pids) => {
         if (pids.length < 1) return
-        const contents = await queryClient.ensureQueryData(reqPropDescContentQuery(pids))
+        const contents = await queryClient.ensureQueryData(propReqContentsQuery(pids))
         get().dispatch(contentsReceived(contents))
     },
     fetchPropertyTypes: async () => {
         if (get().types) return
         const [types, subtypes] = await Promise.all([
-            queryClient.ensureQueryData(typesJson),
-            queryClient.ensureQueryData(subtypesJson)
+            queryClient.ensureQueryData(typesQuery),
+            queryClient.ensureQueryData(subtypesQuery)
         ])
         get().dispatch(propertyTypesReceived(types, subtypes))
     },

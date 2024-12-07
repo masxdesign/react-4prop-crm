@@ -2,41 +2,44 @@ import * as yup from "yup"
 import delay from "@/utils/delay";
 import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
-import axios from "axios";
 import _, { isFunction } from "lodash";
 import { fetchUser } from "./fourProp";
+import bizchatClient from "./bizchatClient";
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
 
-export const BIZCHAT_BASEURL = window?.bizChatURL ?? import.meta.env.VITE_BIZCHAT_BASEURL
-
 const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,hash,gradesharecount'
 
-const bizchatAxios = axios.create({
-	baseURL: BIZCHAT_BASEURL,
-    withCredentials: true
-})
+export const fetchTagsByUserId = async (user_id) => {
+    const { data } = await bizchatClient.get(`/api/crm/v2/${user_id}/tags`)
+    return data
+}
+
+export const fetchTagsByUserIdEnquired = async (user_id) => {
+    const { data } = await bizchatClient.get(`/api/crm/v2/${user_id}/tags/enquired`)
+    return data
+}
 
 export const getMassBizchatList = async ({ from }) => {
-    const { data } = await bizchatAxios.get(`/api/crm/mass_list/${from}`)
+    const { data } = await bizchatClient.get(`/api/crm/mass_list/${from}`)
     return data
 }
 
 export const getMassBizchatStat = async ({ from }) => {
-    const { data } = await bizchatAxios.get(`/api/crm/mass_stat/${from}`)
+    const { data } = await bizchatClient.get(`/api/crm/mass_stat/${from}`)
     return data
 }
 
 export const getListUnreadTotal = async ({ from, recipients }) => {
     const params = { recipients: `${recipients}` }
-    const { data } = await bizchatAxios.get(`/api/crm/list_unread_total/${from}`, { params })
+    const { data } = await bizchatClient.get(`/api/crm/list_unread_total/${from}`, { params })
     return data
 }
 
 export const getMassBizchatNotEmailed = async ({ crm_id }) => {
     if (!crm_id) return null
-    const { data } = await bizchatAxios.get(`/api/crm/mass_not_emailed/${crm_id}`)
+    const { data } = await bizchatClient.get(`/api/crm/mass_not_emailed/${crm_id}`)
     return data
 }
 
@@ -108,7 +111,7 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
 
         if (context) form.append('context', JSON.stringify(context))
         
-        const { data } = await bizchatAxios.post(`/api/crm/create_chat_attachments`, form)
+        const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, form)
 
         return data
     
@@ -137,7 +140,7 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
         form.append('recipients', safe_recipients)
         form.append('subjectLine', subjectLine)
         
-        const { data } = await bizchatAxios.post(`/api/crm/send_mass_attachments`, form)
+        const { data } = await bizchatClient.post(`/api/crm/send_mass_attachments`, form)
     
         await delay(1000)
         return data
@@ -147,23 +150,29 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
     }
 }
 
+export const getBizchatMessagesLastN = async ({ chatId, authUserId, limit }) => {
+    if (!_.isInteger(limit)) throw new Error("limit is not an integer")
+    const { data } = await bizchatClient.get(`/api/messages_last_n/${chatId}/${authUserId}/${limit}`)
+    return data
+}
+
 export const getBizchatMessagesLast5 = async ({ chatId, authUserId }) => {
-    const { data } = await bizchatAxios.get(`/api/messages_last_5/${chatId}/${authUserId}`)
+    const { data } = await bizchatClient.get(`/api/messages_last_5/${chatId}/${authUserId}`)
     return data
 }
 
 export const getBizchatLastMessage = async ({ from, recipient }) => {
-    const { data } = await bizchatAxios.get(`/api/crm/last_message/${from}/${recipient}`)
+    const { data } = await bizchatClient.get(`/api/crm/last_message/${from}/${recipient}`)
     return data
 }
 
 export const getAllMailShots = async (nid, uid) => {
-    const { data } = await bizchatAxios.post(`/api/crm/all_mail_shots`, { nid, uid })
+    const { data } = await bizchatClient.post(`/api/crm/all_mail_shots`, { nid, uid })
     return data
 }
 
 export const getCurrentApplicantUser = async () => {
-    const { data } = await bizchatAxios.post('/api/applicant/current')
+    const { data } = await bizchatClient.post('/api/applicant/current')
 
     if(!data) return null
 
@@ -171,30 +180,30 @@ export const getCurrentApplicantUser = async () => {
 }
 
 export const updateCurrentApplicantUser = async (form) => {
-    const { data } = await bizchatAxios.put('/api/applicant/current', { form })
+    const { data } = await bizchatClient.put('/api/applicant/current', { form })
     return data
 }
 
 export const resetPasswordApplicantUser = async (new_password, resetKey) => {
-    const { data } = await bizchatAxios.put('/api/applicant/reset-password', { new_password, resetKey })
+    const { data } = await bizchatClient.put('/api/applicant/reset-password', { new_password, resetKey })
     return data
 }
 
 export const forgotPasswordApplicantUser = async (email) => {
     const params = { email }
-    const { data } = await bizchatAxios.get('/api/applicant/reset-password', { params })
+    const { data } = await bizchatClient.get('/api/applicant/reset-password', { params })
     return data
 }
 
 export const logoutShareApplicant = async () => {
-    const { data } = await bizchatAxios.post('/api/applicant/logout')
+    const { data } = await bizchatClient.post('/api/applicant/logout')
     return data
 }
 
 export const verifyShareApplicantUser = async (email, password) => {
     try {
 
-        const { data } = await bizchatAxios.post('/api/applicant/login', { email, password })
+        const { data } = await bizchatClient.post('/api/applicant/login', { email, password })
         return data
 
     } catch (e) {
@@ -205,7 +214,7 @@ export const verifyShareApplicantUser = async (email, password) => {
 }
 
 export const crmImport = async (list, authUserId) => {
-    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/import`, list)
+    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/import`, list)
 
     await delay(600)
 
@@ -217,7 +226,7 @@ export const crmImport = async (list, authUserId) => {
 export const crmFacetList = async (column, authUserId) => {
     try {
 
-        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/facet/${column}`)
+        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/facet/${column}`)
 
         return data
 
@@ -281,7 +290,7 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
             }
         }
 
-        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list`, { params })
+        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list`, { params })
         
         // let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
 
@@ -319,12 +328,12 @@ export async function crmOwnerUidInfo (ownerUid) {
         return data
     }
 
-    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/owner`)
+    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/owner`)
     return data
 }
 
 export async function crmFilterByEmail (authUserId, search, pid = null) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
     return data
 }
 
@@ -334,7 +343,7 @@ export async function crmValidateEmail (authUserId, email, pid = null) {
 
         schemaEmail.validateSync(email)
 
-        const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
+        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
     
         await delay(400)
 
@@ -352,38 +361,38 @@ export async function crmValidateEmail (authUserId, email, pid = null) {
 }
 
 export async function crmListByIds (ids, authUserId) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids } })
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids } })
     return data
 }
 
 export async function crmContactByHash (ownerUid, hash) {
-    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/contactByHash`, { params: { include: defaultCrmInclude, hash } })
+    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/contactByHash`, { params: { include: defaultCrmInclude, hash } })
     return data
 }
 
 export async function crmGenHash (authUserId, import_id) {
-    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/gen-hash/${import_id}`)
+    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/gen-hash/${import_id}`)
     await delay(400)
     return data
 }
 
 export async function crmSharedPids (authUserId, import_id, tag_id = null) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-sharedPids/${import_id}`, { params: { tag_id } })
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-sharedPids/${import_id}`, { params: { tag_id } })
     return data
 }
 
 export async function crmSharedTagPids (authUserId, import_id) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/list-sharedTagPids/${import_id}`)
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-sharedTagPids/${import_id}`)
     return data
 }
 
 export async function crmRecentGradeShares (authUserId) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/recent-grade-shares`)
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/recent-grade-shares`)
     return data
 }
 
 export async function crmListUpdateDetails (ownerUid, import_id, name, newValue) {
-    const { data } = await bizchatAxios.patch(`/api/crm/${ownerUid}/list/${import_id}`, { name, newValue })
+    const { data } = await bizchatClient.patch(`/api/crm/${ownerUid}/list/${import_id}`, { name, newValue })
     return data
 }
 
@@ -393,13 +402,13 @@ export async function crmListById (id, authUserId) {
 }
 
 export async function crmFetchNotes (import_id, authUserId) {
-    const { data } = await bizchatAxios.get(`/api/crm/${authUserId}/${import_id}/notes`)
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/${import_id}/notes`)
 
     return [data, {}, null, null, []]
 }
 
 export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
-    const { data } = await bizchatAxios.post(`/api/crm/${authUserId}/note`, {
+    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/note`, {
         type,
         body,
         import_id,
@@ -483,17 +492,17 @@ export const crmAddLastContact = async (variables, import_id, authUserId) => {
 }
 
 export async function crmTagList (ownerUid) {
-    const { data } = await bizchatAxios.get(`/api/crm/${ownerUid}/tags`)
+    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/tags`)
     return data
 }
 
 export async function crmAddTag (ownerUid, name) {
-    const { data } = await bizchatAxios.post(`/api/crm/${ownerUid}/tag`, { name })
+    const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/tag`, { name })
     return data
 }
 
 export async function crmShareGrade (ownerUid, recipient_import_id, tag_id, pidGrades) {
-    const { data } = await bizchatAxios.post(`/api/crm/${ownerUid}/share-grade`, { 
+    const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/share-grade`, { 
         recipient_import_id,
         tag_id,
         pidGrades
@@ -503,17 +512,17 @@ export async function crmShareGrade (ownerUid, recipient_import_id, tag_id, pidG
 
 export const getEnquiryRoomAsync = async (userId, type, i) => {
 	const params = { createdBy: userId, type, i }
-	const { data } = await bizchatAxios.get(`/api/enquiry_room`, { params, withCredentials: true })
+	const { data } = await bizchatClient.get(`/api/enquiry_room`, { params, withCredentials: true })
 	return data
 }
 
 export const addEnquiryRoomAsync = async (name, userId, type, i, tab) => {
-	const { data } = await bizchatAxios.post(`/api/enquiry_room`, { name, createdBy: userId, type, i, tab }, { withCredentials: true })
+	const { data } = await bizchatClient.post(`/api/enquiry_room`, { name, createdBy: userId, type, i, tab }, { withCredentials: true })
 	return data
 }
 
 export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
-	const { data } = await bizchatAxios.post(`/api/attachments`, formDataOrBody, { withCredentials: true, ...config })
+	const { data } = await bizchatClient.post(`/api/attachments`, formDataOrBody, { withCredentials: true, ...config })
     return data
 }
 

@@ -4,10 +4,7 @@ import { cx } from "class-variance-authority"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible"
 import { ReloadIcon } from "@radix-ui/react-icons"
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from "remark-gfm"
 import { reverse, truncate } from "lodash"
-import { getBizchatMessagesLast5 } from "@/services/bizchat"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useAuth } from "@/components/Auth/Auth-context"
@@ -16,10 +13,8 @@ import ChatboxMessages from "./ChatboxMessages"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 import { attachmentCombiner } from "@/components/Uppy/utils"
 import { Attachment } from "@/components/Uppy/components"
-
-const LinkRender = ({ className, ...props }) => {
-    return <a {...props} className={cn("underline", className)} target="_blank" rel="noreferrer" />
-}
+import { bizchatMessagesLast5Query } from "@/features/messaging/messaging.queries"
+import ReactMarkdown from "@/features/messaging/components/ReactMarkdown"
 
 const messageCombiner = (type, body, from, chatId) => {
     if (type === 'A') {
@@ -44,13 +39,7 @@ const BizchatMessagePreview = memo(({ type = 'M', body, chatId, from, className,
     return (
         <span className={cx("space-y-1", className)}>
             {showMessage && (
-                <ReactMarkdown 
-                    components={{
-                        a: LinkRender
-                    }}
-                    children={messageData.teaser} 
-                    remarkPlugins={[remarkGfm]}                                     
-                />
+                <ReactMarkdown content={messageData.teaser} />
             )}
             {messageData.attachments?.length > 0 && (
                 messageData.attachments.map(({ name, url, fileType, fileSize }) => {
@@ -152,11 +141,7 @@ const ChatboxBizchatMessage = ({ type = 'A', chatId, body, created, from }) => {
 }
 
 function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
-    const { data, refetch } = useSuspenseQuery({
-        queryKey: ["bizchatMessagesLast5", authUserId, chatId],
-        queryFn: () => getBizchatMessagesLast5({ authUserId, chatId }),
-        staleTime: Infinity,
-    })
+    const { data, refetch } = useSuspenseQuery(bizchatMessagesLast5Query(authUserId, chatId))
 
     const messages = useMemo(() => {
         return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id }) => {
@@ -194,13 +179,7 @@ function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
                                     </HoverCardContent>
                                 </HoverCard>
                             )}
-                            <ReactMarkdown 
-                                components={{
-                                    a: LinkRender
-                                }}
-                                children={messageData.teaser} 
-                                remarkPlugins={[remarkGfm]}                                     
-                            />
+                            <ReactMarkdown content={messageData.teaser} />
                             <div className="flex">
                                 {messageData.teaser.length !== messageData.body.length && (
                                     <Button size="xs" variant="secondary" className="my-4 mx-auto" onClick={handleClick}>

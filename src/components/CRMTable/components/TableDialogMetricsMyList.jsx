@@ -11,7 +11,7 @@ import { Route as AuthDashboardListImportidSharedImport } from '@/routes//_auth.
 import { crmGenHash } from '@/services/bizchat';
 import queryClient from '@/queryClient';
 import { util_pagin_update } from '@/utils/localStorageController';
-import { FOURPROP_BASEURL } from '@/services/fourProp';
+import { FOURPROP_BASEURL } from '@/services/fourPropClient';
 
 function TableDialogMetricsMyList({ info, model }) {
 

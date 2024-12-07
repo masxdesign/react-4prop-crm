@@ -1,6 +1,6 @@
+import { BIZCHAT_BASEURL } from "@/services/bizchatClient"
 import { cx } from "class-variance-authority"
 import { defaultStyles, FileIcon } from "react-file-icon"
-import { BIZCHAT_BASEURL } from "@/services/bizchat"
 
 const Attachment = ({ name, url, fileType, fileSize, className }) => {
     return (
