@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function FilterSearchRef({ value = null, onValueChange }) {
     const auth = useAuth()
 
-    const { data } = useSuspenseQuery(searchReferenceListingQuery(auth.authUserId)) 
+    const { data } = useSuspenseQuery(searchReferenceListingQuery(auth.authUserId))
 
     return (
         <Select value={value} onValueChange={onValueChange}>

@@ -1,4 +1,4 @@
-import { subtypesQuery, typesQuery } from '@/store/listing.queries'
+import { subtypesQuery, suitablePropertiesEnquiriedQuery, typesQuery } from '@/store/listing.queries'
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router'
 import { isEmpty, isEqual } from 'lodash'
 
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries/enquiries'
   search: {
     middlewares: [retainSearchParams(['filters'])],
   },
-  beforeLoad: ({ search }) => {
+  beforeLoad: ({ search, perpage }) => {
 
     const isFiltersPure = isEmpty(search.filters) 
       || isEqual(search.filters, defaultFilterValues)
@@ -31,11 +31,14 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries/enquiries'
 
     const isFiltersDirty = !(isEmpty(filters) 
       || isEqual(filters, defaultFilterValues))
+
+    const page = Number(search.page ?? 1)
     
     return {
-        page: Number(search.page ?? 1),
+        page,
         filters,
-        isFiltersDirty
+        isFiltersDirty,
+        listQuery: suitablePropertiesEnquiriedQuery({ page, perpage, filters })
     }
 
   },

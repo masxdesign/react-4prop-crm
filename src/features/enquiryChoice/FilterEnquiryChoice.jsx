@@ -4,13 +4,13 @@ const FilterEnquiryChoice = (props) => {
 
     return (
         <Select {...props}>
-            <SelectTrigger className="h-8 w-[100px] text-left">
+            <SelectTrigger className="h-8 w-[150px] text-left">
                 <SelectValue placeholder={<span className="text-muted-foreground">Filter by choice</span>} />
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value={null}>All</SelectItem>
-                <SelectItem value={2}>PDF</SelectItem>
-                <SelectItem value={1}>View</SelectItem>
+                <SelectItem value={2}>PDF sent</SelectItem>
+                <SelectItem value={1}>View requested</SelectItem>
             </SelectContent>
         </Select>
     )

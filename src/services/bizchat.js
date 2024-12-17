@@ -52,30 +52,29 @@ export const fetchBlobFromObjectURLAsync = async (url, filename) => {
 
 const thumbnailWidth = 320
 
-const formDataFileMergeAsync = async ({ form, file, filename = null }) => {
+const formDataFileMergeAsync = async (formData, { file, filename = null }) => {
     const [_, originalFilename] = file.name.match(/(.*)\.(jpeg|jpg|gif|png|pdf)$/i)
     const renamedFilename = isFunction(filename) ? filename(file): nanoid()
     const renamedName = `${renamedFilename}.${file.extension}`
 
-    form.append('attachments', new File([file.data], renamedName, { type: file.type }), renamedName)
+    formData.append('attachments', new File([file.data], renamedName, { type: file.type }), renamedName)
 
     if (['jpeg', 'jpg', 'gif', 'png'].includes(file.extension.toLowerCase())) {
         const fileThumbRenamed = await skaler(file.data, { width: thumbnailWidth, name: renamedName })
-        form.append('attachments', fileThumbRenamed, `p_${renamedName}`)
+        formData.append('attachments', fileThumbRenamed, `p_${renamedName}`)
     }
 
     return [originalFilename, renamedFilename, file.extension, file.size]
 }
 
-export const formDataFilesMergeAsync = async ({ form, files = [], message, filename = null }) => {
+export const formDataFilesMergeAsync = async (formData, { files = [], message, filename = null }) => {
     let message_type = 'M'
     let message_text = message
 
     if (files.length > 0) {
 
         const meta = await Promise.all(files.map(([_, file]) => 
-            formDataFileMergeAsync({
-                form,
+            formDataFileMergeAsync(formData, {
                 file,
                 filename
             })
@@ -97,21 +96,20 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
 
         if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
 
-        const form = new FormData
+        const formData = new FormData
 
-        await formDataFilesMergeAsync({ 
-            form,
+        await formDataFilesMergeAsync(formData, {
             files, 
             message, 
             filename: () => `${from}-${recipient}crm-${nanoid()}`
         })
 
-        form.append('from', from)
-        form.append('recipient', recipient)
+        formData.append('from', from)
+        formData.append('recipient', recipient)
 
-        if (context) form.append('context', JSON.stringify(context))
+        if (context) formData.append('context', JSON.stringify(context))
         
-        const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, form)
+        const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, formData)
 
         return data
     
@@ -127,20 +125,19 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
 
         if (safe_recipients.length < 1) throw new Error('recipients is empty')
 
-        const form = new FormData
+        const formData = new FormData
 
-        await formDataFilesMergeAsync({
-            form,
+        await formDataFilesMergeAsync(formData, {
             files, 
             message,
             filename: () => `${from}mcrm-${nanoid()}`
         })
     
-        form.append('from', from)
-        form.append('recipients', safe_recipients)
-        form.append('subjectLine', subjectLine)
+        formData.append('from', from)
+        formData.append('recipients', safe_recipients)
+        formData.append('subjectLine', subjectLine)
         
-        const { data } = await bizchatClient.post(`/api/crm/send_mass_attachments`, form)
+        const { data } = await bizchatClient.post(`/api/crm/send_mass_attachments`, formData)
     
         await delay(1000)
         return data
@@ -526,26 +523,89 @@ export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
     return data
 }
 
-export const sendBizchatPropertyEnquiry = async ({ userId, form, attachments = [] }) => {
-	// if (import.meta.env.DEV) return 
-
-    let enquiryRoom = await getEnquiryRoomAsync(userId, "P", form.property.id)
+export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices = null, attachments = [] }) => {
+    let enquiryRoom = await getEnquiryRoomAsync(from, "P", property.id)
 
     if (!enquiryRoom) {
-        enquiryRoom = await addEnquiryRoomAsync(form.property.title, userId, "P", form.property.id, 'E')
+        enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E')
     }
 
-    return uploadAttachmentsAsync({
-        message: createEnquiryPropertyMessageDataObject(userId, enquiryRoom, form, attachments),
-        context: createPropertyEnquiryContextObject(enquiryRoom, form.property)
+    if (!enquiryRoom) throw new Error('missing enquiryRoom')
+    
+    const chat_id = enquiryRoom.id
+
+    const contextObject = createPropertyEnquiryContextObject(enquiryRoom.name, property)
+
+    return replyBizchatMessage({ from, chat_id, recipients, message, choices, attachments, contextObject })
+}
+
+export const replyBizchatEnquiryMessage = async ({
+    property,
+    from,
+    chat_id,
+    recipients,
+    attachments,
+    message
+}) => {
+    const contextObject = createPropertyEnquiryContextObject(property.title, property)
+
+    return replyBizchatMessage({ 
+        from, 
+        chat_id, 
+        recipients, 
+        message,
+        attachments,
+        contextObject
     })
 }
 
-function createPropertyEnquiryContextObject (enquiryRoom, property) {
+export const replyBizchatMessage = async ({ from, chat_id, recipients, message, choices, attachments = [], contextObject = null }) => {
+    const messageDataObject = createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choices)
+
+    let formData
+    
+    if (attachments.length > 0) {
+    
+        formData = new FormData
+    
+        const meta = await Promise.all(attachments.map(([_, file]) => 
+            formDataFileMergeAsync(formData, {
+                file,
+                filename: (file) => `${from}_${chat_id}_${file.name}`
+            })
+        ))
+    
+        formData.append("message", JSON.stringify({
+            ...messageDataObject,
+            type: 'A',
+            body: JSON.stringify([
+                messageDataObject.body, 
+                ...meta
+            ])
+        }))
+    
+        if (contextObject) {
+            formData.append("context", JSON.stringify(contextObject))
+        }
+    
+    } else {
+    
+        formData = { message: messageDataObject }
+
+        if (contextObject) {
+            formData.context = contextObject
+        }
+    
+    }
+    
+    return uploadAttachmentsAsync(formData)
+}
+
+export function createPropertyEnquiryContextObject (chatName, property) {
 	const { id, sizeText, tenureText, title, content, thumbnail } = property
 
 	return { 
-		chatName: enquiryRoom.name, 
+		chatName, 
 		chatType: "P", 
 		broadcastSender: true, 
 		forceNotifyNewMessage: true,
@@ -564,10 +624,13 @@ function createPropertyEnquiryContextObject (enquiryRoom, property) {
 	}
 }
 
-function createEnquiryPropertyMessageDataObject (userId, enquiryRoom, form, attachments= []) {
-    const { viewing, pdf, message, property } = form
-    
-    if (property.agents.length < 1) throw new Error("property.agents empty")
+const defaultChoicesBool = {
+    viewing: false, 
+    pdf: false
+}
+
+function createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choicesBool = defaultChoicesBool) {
+    const { viewing, pdf } = choicesBool
 
 	let choices = 0
 
@@ -580,11 +643,11 @@ function createEnquiryPropertyMessageDataObject (userId, enquiryRoom, form, atta
     }
 
 	return { 
-		from: userId, 
+		from, 
 		body: message, 
-		recipients: `${property.agents}`,
-		chat_id: enquiryRoom.id,
+		recipients: `${recipients}`,
+		chat_id,
 		choices,
-		type: attachments.length > 0 ? 'A': 'M'
+		type: 'M'
 	}
 }

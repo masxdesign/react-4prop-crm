@@ -262,6 +262,17 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
+export const updateGrade = (pid, { grade, autoSearchReference, tag_id }) => {
+    const { data } = fourPropClient.put(`/api/records/gradings`, {
+        pid, 
+        grade,
+        autoSearchReference,
+        tag_id
+    }, { withCredentials: true })
+
+    return data
+}
+
 export const addNote = async (variables, id, authUserId) => {
     const { message = '', files, _button } = variables
 

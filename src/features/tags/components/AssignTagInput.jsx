@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent } from '@/components/ui/popover'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { PopoverAnchor } from '@radix-ui/react-popover'
 import Selection from '@/components/Selection'
 import { Slot } from '@radix-ui/react-slot'
@@ -15,9 +15,8 @@ const equalsCombiner = (item, value) => {
     return item.name.trim().toLowerCase() === value.trim().toLowerCase()
 }
 
-export default function AssignTagInput ({ placeholder, list, selected, onSelect }) {
-
-    const inputRef = useRef()
+const AssignTagInput = React.forwardRef(({ placeholder, list, selected, onSelect }, ref) => {
+    const inputRef = useRef(null)
   
     const [open, setOpen] = useState(false)
     const [value, setValue] = useState("")
@@ -47,6 +46,14 @@ export default function AssignTagInput ({ placeholder, list, selected, onSelect 
     const handleInputClick = () => {
       setOpen(true)
     }
+
+    useImperativeHandle(ref, () => {
+      return {
+        focus: () => {
+          setOpen(true)
+        }
+      }
+    }, [setOpen])
   
     const handleSelect = item => {
       onSelect(item)
@@ -131,13 +138,13 @@ export default function AssignTagInput ({ placeholder, list, selected, onSelect 
             </div>
           </PopoverAnchor>
           <PopoverContent 
-            className="max-h-[50svh] overflow-auto p-2"
-            style={{ width: "var(--radix-popper-anchor-width)" }} 
+            className="overflow-hidden"
+            style={{ width: "var(--radix-popper-anchor-width)", overscrollBehavior: "auto" }} 
             onOpenAutoFocus={(e) => e.preventDefault()}
             onFocusOutside={handleOutside}
             onPointerDownOutside={handleOutside}
           >
-            <div className='space-y-2'>
+            <div className='max-h-[300px] space-y-2 overflow-y-auto'>
               {filtered.map(item => (
                 <Selection 
                   key={item.id} 
@@ -153,4 +160,6 @@ export default function AssignTagInput ({ placeholder, list, selected, onSelect 
         </Popover>
       </>
     )
-}
+})
+
+export default AssignTagInput

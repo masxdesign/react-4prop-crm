@@ -13,12 +13,18 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries')({
     middlewares: [retainSearchParams(['_origin'])],
   },
   beforeLoad: ({ search }) => {
+
+    let origin = null
+
+    if (search._origin) {
+        origin = new URL(`${FOURPROP_BASEURL}${decodeFromBinary(search._origin)}`)
+    }
+
     return {
         perpage: 8,
-        origin: search._origin 
-            ? `${FOURPROP_BASEURL}${decodeFromBinary(search._origin)}`
-            : null
+        origin
     }
+    
   }
 })
 
@@ -33,8 +39,10 @@ function RouteComponent() {
 
     return (
         <>
-            <div className='sticky top-0 inset-x-0 bg-slate-50 z-20 flex px-4'>
-                <Logo className="w-7 mr-4" />
+            <div className='sticky top-0 inset-x-0 bg-slate-50 z-20 flex items-center px-4'>
+                <a href={FOURPROP_BASEURL} className='mr-4'>
+                    <Logo className="w-7" />
+                </a>
                 {origin && (
                     <Button variant="link" size="sm" className="self-center">
                         <a href={origin} className='flex gap-1 items-center'>
@@ -74,7 +82,7 @@ const NavItem = ({ className, asChild, ...props }) => {
     const Comp = asChild ? Slot: Link
     return (
         <Comp 
-            className={cn('text-sm border-b-2 border-transparent [&.active]:font-bold [&.active]:text-primary [&.active]:border-b-primary px-3 py-3', className)}
+            className={cn('text-sm border-b border-transparent [&.active]:font-bold [&.active]:text-primary [&.active]:border-b-primary px-3 py-3', className)}
             {...props}
         />
     )

@@ -1,28 +1,30 @@
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { createLazyFileRoute } from '@tanstack/react-router'
-import useListing, { filteredByTagsDetailsSelector, resolveAllPropertiesQuerySelector, tagsFromPropertiesSelector, useQueryfetchNewlyGradedProperties } from '@/store/use-listing'
+import { createLazyFileRoute, Link } from '@tanstack/react-router'
+import useListing, { filteredByTagsDetailsSelector, propertyGradeChanged, resolveAllPropertiesQuerySelector, tagsFromPropertiesSelector, useQueryfetchNewlyGradedProperties } from '@/store/use-listing'
 import { inIframe, postMessage, useIframeHelper } from '@/utils/iframeHelpers'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Form, FormProvider, useForm, useFormContext } from 'react-hook-form'
 import { FormField } from '@/components/ui/form'
 import { Button } from '@/components/ui/button'
 import { OpenInNewWindowIcon } from '@radix-ui/react-icons'
 import delay from '@/utils/delay'
 import { sendBizchatPropertyEnquiry } from '@/services/bizchat'
-import { isEmpty } from 'lodash'
+import { isEmpty, map } from 'lodash'
 import { cx } from 'class-variance-authority'
-import { X } from 'lucide-react'
+import { Loader2Icon, X } from 'lucide-react'
 import GradingWidget from '@/components/GradingWidget'
 import { cn } from '@/lib/utils'
+import TogglableTruncateContent from '@/components/TogglableTruncateContent/CollapsibleContent'
+import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
+import SearchReferenceSelect from '@/features/searchReference/component/SearchReferenceSelect'
+import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
 
 export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/')({
   component: Component
 })
-
-const isIframe = inIframe()
 
 function Component () {
   
@@ -35,8 +37,17 @@ function Component () {
   const tags = useListing(tagsFromPropertiesSelector)
   const data = useListing(filteredByTagsDetailsSelector)
 
+  const pids = useMemo(() => map(data, "id"), [data])
+  const filteredSent = useMemo(() => sent.filter(pid => pids.includes(pid)), [pids, sent])
+  const left = useMemo(() => pids.length - filteredSent.length, [pids, filteredSent])
+
+  const no_properties = tags.length < 1 && pids?.length < 1
+  const finished = pids?.length > 0 && filteredSent.length === pids?.length
+  const disable_email_button = pids?.length < 1
+  const percentage = Math.round(filteredSent.length / pids?.length * 100)
+
   const form = useForm({
-    defaultValues: {
+    values: {
       message: "",
       items: data?.map((property) => ({ 
         pdf: true, 
@@ -49,7 +60,9 @@ function Component () {
 
   const controller = useRef()
 
-  const mutation = useMutation({ mutationFn: sendBizchatPropertyEnquiry })
+  const sendPropertyEnquiry = useMutation({ 
+    mutationFn: sendBizchatPropertyEnquiry 
+  })
 
   const onSubmit = async (values) => {
     
@@ -66,19 +79,24 @@ function Component () {
 
         await delay(150)
 
-        if (process.env.NODE_ENV === 'production') {
+        console.log(form);
+        
+        // if (process.env.NODE_ENV === 'production') {
 
-          await mutation.mutateAsync({
-            userId: auth.user.bz_uid, 
-            form: {
-              ...form,
-              message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`
+          if (form.property.agents.length < 1) throw new Error("property.agents empty")
+
+          await sendPropertyEnquiry.mutateAsync({
+            from: auth.user.bz_uid, 
+            recipients: form.property.agents,
+            message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
+            property: form.property,
+            choices: {
+              pdf: form.pdf,
+              viewing: form.viewing
             }
           })
-  
-          // postMessage({ type: "DESELECT", payload: pid })
 
-        }
+        // }
 
         setSent(prev => ([...prev, pid]))
 
@@ -89,7 +107,6 @@ function Component () {
     } catch (e) {
       
       console.log(e)
-      return
 
     } finally {
 
@@ -103,10 +120,6 @@ function Component () {
     postMessage({ type: "HIDE" })
   }
 
-  const no_properties = tags.length < 1 && data?.length < 1
-  const finished = data?.length > 0 && sent.length === data?.length
-  const disable_email_button = data?.length < 1
-
   if (no_properties) {
     return (
       <div className='flex flex-col gap-8 items-center justify-center min-h-[300px] mx-auto'>
@@ -116,38 +129,29 @@ function Component () {
       </div>
     )
   }
-  
-  const percentage = Math.round(sent.length / data?.length * 100)
 
   return (
     <>
       {form.formState.isSubmitting && (
         <div 
-          className='absolute inset-0 bg-black/20 flex z-50'>
-            <div className='flex flex-col m-auto bg-white shadow-xl p-8 rounded-md space-y-2'>
+          className='fixed inset-0 bg-black/20 flex z-50'>
+            <div className='flex flex-col m-auto bg-white shadow-xl px-8 py-4 rounded-md gap-2'>
+              <strong className='mb-4 text-center'>Sending</strong>
               <div className='bg-blue-50 w-40 rounded-xl'>
                 <div 
                   className='relative transition-all h-3 flex bg-blue-500 min-w-1 rounded-xl shadow-md' 
                   style={{ width: `${percentage}%` }}
                 >
                   <span className='absolute flex gap-1 flex-nowrap -right-5 -top-5 m-auto drop-shadow-sm'>
-                    <span className='text-blue-500 text-xs font-bold'>{sent.length}</span>
-                    <span className='text-slate-400 text-xs text-nowrap'>/ {data?.length}</span> 
+                    <span className='text-blue-500 text-xs font-bold'>{filteredSent.length}</span>
+                    <span className='text-slate-400 text-xs text-nowrap'>/ {pids?.length}</span> 
                   </span>
                 </div>
               </div>
-              <div className='text-center text-xs text-slate-400'>Do not close tab</div>
-              <Button onClick={() => controller.current?.abort('cancelled reason')} className="self-center">Pause</Button>
+              <div className='text-center text-xs text-slate-400'>Do not close this tab</div>
+              <Button size="xs" onClick={() => controller.current?.abort('cancelled reason')} className="self-center">Pause</Button>
             </div>
           </div>
-      )}
-      {isIframe && (
-        <button
-          onClick={handleHide}
-          className="absolute z-20 right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </button>
       )}
       <FormProvider {...form}>
         <form ref={ref} className="relative z-10 flex flex-col py-8" onSubmit={form.handleSubmit(onSubmit)}>
@@ -156,9 +160,10 @@ function Component () {
             <h1 className='text-3xl font-bold'>
               Email agents
             </h1>
-            <p className='text-muted-foreground'>
-              Start a conversation with agents dealing with properties in your suitable listing. Send to all or only to those in a particular search reference
-            </p>
+            <TogglableTruncateContent 
+              className="text-muted-foreground"
+              content="This page starts your conversations with agents for Properties you have considered suitable (1-3 stars). Email for one or many 'Search References’ at the same time (unless you want to differentiate between one SearchRef and another). The conversations will then move into the 'Active’ tab, until you reject a Property x, when it will move into 'Inactive'. You can regrade Properties at any time to bring your list to the most suitable Property you want to rent or buy."
+            />
           </div>
 
           <div className='space-y-8'>
@@ -168,15 +173,15 @@ function Component () {
               <Textarea 
                 {...form.register("message")} 
                 disabled={finished}
-                placeholder="write here a request that applies to every Property below,&#10;eg. your proposed use of the Property and if suitable OR viewing dates &#10;The specific message is for each individual Property" 
+                placeholder="Write here a universal message that applies to every property below.&#10;eg. your proposed use for the property, asking if it would be suitable, or preferred viewing dates.&#10;The 'specific message' is for each individual property." 
                 id="message" 
               />
             </div>
 
             <div className='space-y-2 rounded'>
-              <div className='font-bold text-sm flex gap-2 justify-between'>
-                <span>Enquire on {data.length} properties</span>
-                <span className='text-center text-xs font-normal text-muted-foreground'>Scroll right to see more 'search references'</span>
+              <div className='text-sm flex gap-2 items-center'>
+                <span className='font-bold'>Enquire on {data.length} properties</span>
+                <span className='text-center text-xs font-normal text-muted-foreground'>scroll right if more 'Search References'</span>
               </div>
               <div className='border shadow-sm space-y-0 w-11/12 lg:w-full'>
                 
@@ -185,44 +190,30 @@ function Component () {
                 </div>
 
                 <div className="space-y-0 max-h-[450px] overflow-y-auto">
-                  {data.map((details, index) => {
-                    const { id, title, statusColor, statusText, sizeText, tenureText, thumbnail, content, original } = details
-                    
-                    return (
-                      <div key={id} className="space-y-0 p-4 even:bg-sky-50">
-                        <div className='flex gap-4'>
-                          <div>
-                            <Grading pid={id} defaultValue={original.grade} />
-                          </div>
-                          <img src={thumbnail} className="object-contain size-10 sm:size-28 bg-gray-200" />
-                          <div className="space-y-3 sm:space-y-2 text-sm flex-grow">
-                            <a href={`https://4prop.com/view-details/${id}`} target="_blank" className='font-bold hover:underline'>
-                              {title}
-                              <OpenInNewWindowIcon className='inline ml-1 opacity-50' />
-                            </a>
-                            <div className='flex flex-col sm:flex-row gap-0 sm:gap-3'>
-                              <div className={cx("font-bold", { 
-                                "text-green-600": statusColor === "green",
-                                "text-amber-600": statusColor === "amber",
-                                "text-sky-600": statusColor === "sky",
-                                "text-red-600": statusColor === "red",
-                              })}>{statusText}</div>
-                              <div>{sizeText}</div>
-                              <div>{tenureText}</div>
-                            </div>
-                            <div className="opacity-60 truncate max-w-[360px]">{content.teaser}</div>
-                            {sent.includes(id) ? (
-                              <i className='border rounded-lg px-1 shadow-sm inline-block text-slate-600'>Sent!</i>
-                            ) : form.formState.isSubmitting ? (
-                              <span className='inline-block bg-amber-50 text-amber-600'>Sending...</span>
-                            ) : (
-                              <FormItems index={index} item={details} />
-                            )}
-                          </div>
-                        </div>                
-                      </div>
-                    )
-                  })}
+                  <EnquiryGradingMessagingList 
+                    list={data}
+                    gradingComponent={Grading}
+                    rowClassName="even:bg-sky-50"
+                    renderRightSide={(row, index) => {
+                      return filteredSent.includes(row.id) ? (
+                        <div className='flex gap-2 items-center'>
+                          <i className='border rounded-lg px-1 shadow-sm inline-block text-slate-600'>Sent!</i>
+                          <Suspense fallback={<Loader2Icon className="animate-spin" />}>
+                            <SearchReferenceSelect tag_id={row.tag_id} pid={row.id} />
+                          </Suspense>
+                        </div>
+                      ) : form.formState.isSubmitting ? (
+                        <div className='flex gap-2 items-center'>
+                          <span className='inline-block bg-amber-50 text-amber-600'>Sending...</span>
+                          <Suspense fallback={<Loader2Icon className="animate-spin" />}>
+                            <SearchReferenceSelect tag_id={row.tag_id} pid={row.id} />
+                          </Suspense>
+                        </div>
+                      ) : (
+                        <PdfViewSpecifyMessage index={index} item={row} />
+                      )
+                    }}
+                  />
                 </div>
               </div>
 
@@ -240,19 +231,30 @@ function Component () {
               </div>
               <div className='self-end ml-auto flex gap-4'>
                 {finished ? (
-                  <Button onClick={handleHide} className="mx-auto">Finish</Button>
+                  <Button asChild>
+                    <Link to="enquiries">
+                      Finish
+                    </Link>
+                  </Button>
                 ) : form.formState.isSubmitting ? (
                   <>
                     <Button className="mx-auto" disabled>Sending...</Button>
                   </>
                 ) : (
                   <>
-                    <Button onClick={handleHide} variant="outline" asChild>
-                      <a href={origin}>
-                        Cancel
-                      </a>
+                    {origin && (
+                      <Button variant="outline" asChild>
+                        <a href={origin}>
+                          Cancel
+                        </a>
+                      </Button>
+                    )}
+                    <Button className="space-x-2" type="submit" disabled={disable_email_button}>
+                      <span>
+                        Email
+                      </span>
+                      {left > 0 && <span className='text-xs bg-amber-600 px-1 rounded'>{left}</span>}
                     </Button>
-                    <Button type="submit" disabled={disable_email_button}>Email</Button>
                   </>
                 )}
               </div>
@@ -264,36 +266,67 @@ function Component () {
   )
 }
 
-function Grading ({ pid, defaultValue }) {
-  const [value, setValue] = useState(defaultValue)
-  
-  const handleSelect = newValue => {
-    setValue(newValue)
-    postMessage({ 
-      type: "GRADE_CHANGED", 
-      payload: newValue, 
-      meta: { 
-        pid,
-        prevGrade: value
-      } 
-    })
+const Grading = ({ row }) => {
+  const { id, grade } = row
+  const gradeUpdater = useGradeUpdater(id)
+
+  const handleSelect = async (grade) => {
+    await gradeUpdater.mutateAsync({ grade })
+    useListing.getState().dispatch(propertyGradeChanged(id, grade))
   }
 
   return (
-    <GradingWidget 
-        size={20}
-        value={value} 
-        onSelect={handleSelect}
-    />
+      <GradingWidget 
+          size={20}
+          value={grade}
+          onSelect={handleSelect}                                         
+      />
   )
 }
 
-function FormItems ({ index, item }) {
+function TagName({ tagName, className, ...props }) {
+  return (
+    <div 
+      className={cn('inline-block border border-slate-200 text-slate-500 text-xs rounded px-2 py-1', className)} 
+      {...props}
+    >
+      {tagName ? tagName: "Unnamed"}
+    </div>
+  )
+}
+// function Grading ({ pid, defaultValue }) {
+//   const [value, setValue] = useState(defaultValue)
+  
+//   const handleSelect = newValue => {
+//     setValue(newValue)
+//     postMessage({ 
+//       type: "GRADE_CHANGED", 
+//       payload: newValue, 
+//       meta: { 
+//         pid,
+//         prevGrade: value
+//       } 
+//     })
+//   }
+
+//   return (
+//     <GradingWidget 
+//         size={20}
+//         value={value} 
+//         onSelect={handleSelect}
+//     />
+//   )
+// }
+
+function PdfViewSpecifyMessage ({ index, item }) {
   const form = useFormContext()
   const fieldRef = useRef()
 
   const [isOpen, setIsOpen] = useState(false)
   const { title, tag_name } = item
+
+  console.log(item);
+  
 
   useEffect(() => {
 
@@ -314,9 +347,9 @@ function FormItems ({ index, item }) {
         <CollapsibleTrigger className='text-sky-700 hover:underline'>
           specific message
         </CollapsibleTrigger>
-        <span className='ml-auto border border-slate-200 text-slate-500 text-xs rounded px-2 py-1'>
-          {tag_name ? tag_name: "Unnamed"}
-        </span>
+        <Suspense fallback={<Loader2Icon className="animate-spin" />}>
+          <SearchReferenceSelect tag_id={item.tag_id} pid={item.id} />
+        </Suspense>
       </div>
       <CollapsibleContent className='py-3'>
         <FormField

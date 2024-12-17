@@ -42,10 +42,22 @@ export const PROPERTY_STATUS_COLORS = {
     41: "red"
 }
 
-const propertyCombiner = (pid, original, propertyTypes, content = [], companies_) => {
+const defaultPropertyDetailsSetting = {
+    addressShowMore: false,
+    addressShowBuilding: false
+}
+
+const propertyCombiner = (pid, original, propertyTypes, content = [], companies_, setting = defaultPropertyDetailsSetting) => {
+    const { addressShowMore, addressShowBuilding } = setting
+    
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
     const tenure = propertyParse.tenure(original)
-    const addressText = propertyParse.addressText({ showPostcode: true })(original)
+
+    const addressText = propertyParse.addressText({ 
+        showMore: addressShowMore, 
+        showBuilding: addressShowBuilding, 
+        showPostcode: true 
+    })(original)
     
     const size = propertyParse.size(original)
     const sizeText = size.isIn ? displaySize({ ...size, decimal: 2 }): null
@@ -151,9 +163,9 @@ const propertyTypesSelector = createSelector(
     }
 )
 
-export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies) => (
+export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies, settings = defaultPropertyDetailsSetting) => (
     propertiesArray
-        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies))
+        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies, settings))
 )
 
 const selectedDetailsCombiner = (selected, propertyTypes, propertiesArray, contents, companies) => (
@@ -261,6 +273,12 @@ export const propertiesReceived = (properties) => ({
     payload: properties
 })
 
+export const propertyGradeChanged = (pid, grade) => ({
+    type: "PROPERTY_GRADE_CHANGED", 
+    payload: grade,
+    meta: { pid }
+})
+
 export const selectedReceived = (selected) => ({
     type: "SELECTED_RECEIVED", 
     payload: selected
@@ -314,6 +332,11 @@ function reducer (state, action) {
                 state.properties[property_.pid] = property_
             }
 
+            break
+        case "PROPERTY_GRADE_CHANGED":
+            if (state.properties[action.meta.pid]) {
+                state.properties[action.meta.pid].grade = action.payload
+            }
             break
         case "COMPANIES_RECEIVED":
             

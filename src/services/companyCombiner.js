@@ -16,6 +16,7 @@ const companyCombiner = (company) => {
         })
 
         return {
+            original: output ? output(1): '',
             full: output ? output(3): '',
             preview: output ? output(2): ''
         }

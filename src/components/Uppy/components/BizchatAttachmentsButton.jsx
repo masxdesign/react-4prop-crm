@@ -9,8 +9,9 @@ import { useIsFirstRender, usePrevious } from '@uidotdev/usehooks';
 import { PopoverContentWithoutPortal } from '@/components/ui-custom/popover';
 import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
+import { cn } from '@/lib/utils';
 
-function BizchatAttachmentsButton ({ uppy, ...props }) {
+function BizchatAttachmentsButton ({ uppy, className, ...props }) {
     const { toast } = useToast()
   
     const files = useUppyState(uppy, filesSelector)
@@ -45,7 +46,7 @@ function BizchatAttachmentsButton ({ uppy, ...props }) {
     return (
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="secondary" size="xs" className="relative" {...props}>
+          <Button variant="secondary" size="xs" className={cn("relative", className)} {...props}>
             <PaperclipIcon className='text-slate-500 w-4 h-4' />
             {files.length > 0 && (
               <span className='flex absolute -right-2 -top-2 text-[10px] items-center justify-center bg-sky-200 text-sky-500 w-5 h-5 rounded-full'>
