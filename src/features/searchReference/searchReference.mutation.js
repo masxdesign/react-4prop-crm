@@ -1,9 +1,5 @@
-import queryClient from "@/queryClient"
 import { updateGrade } from "@/services/fourProp"
-import useListing, { propertyGradeChanged } from "@/store/use-listing"
-import delay from "@/utils/delay"
 import { useMutation } from "@tanstack/react-query"
-import { produce } from "immer"
 
 export const useGradeUpdater = (pid) => {
     return useMutation({

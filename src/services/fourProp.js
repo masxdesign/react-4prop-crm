@@ -262,13 +262,16 @@ export const addLastContact = async (variables, { id }) => {
 
 }
 
-export const updateGrade = (pid, { grade, autoSearchReference, tag_id }) => {
-    const { data } = fourPropClient.put(`/api/records/gradings`, {
+export const updateGrade = async (pid, { grade, autoSearchReference, tag_id }) => {
+    const { data } = await fourPropClient.put(`/api/records/gradings`, {
         pid, 
         grade,
         autoSearchReference,
         tag_id
     }, { withCredentials: true })
+
+    console.log(data);
+    
 
     return data
 }
@@ -444,7 +447,7 @@ export const propertiesDetailsQuery = memoize(results => {
             if (properties_.length < 1) return []
 
             const [contents, types, subtypes] = await Promise.all([
-                queryClient.ensureQueryData(reqPropDescContentQuery(pids)),
+                queryClient.ensureQueryData(propReqContentsQuery(pids)),
                 queryClient.ensureQueryData(typesQuery),
                 queryClient.ensureQueryData(subtypesQuery)
             ])

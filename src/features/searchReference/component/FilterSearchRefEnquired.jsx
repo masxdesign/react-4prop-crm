@@ -1,12 +1,8 @@
-import { useAuth } from "@/components/Auth/Auth-context"
-import { useSuspenseQuery } from "@tanstack/react-query"
-import { searchReferenceListingEnquiredQuery } from "../searchReference.queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import useSearchReferenceListingEnquired from "../searchReference.hooks"
 
-export default function FilterSearchRefEnquired({ value = null, onValueChange }) {
-    const auth = useAuth()
-
-    const { data } = useSuspenseQuery(searchReferenceListingEnquiredQuery(auth.authUserId)) 
+export default function FilterSearchRefEnquired({ value = null, showCount, onValueChange }) {
+    const { data } = useSearchReferenceListingEnquired() 
 
     return (
         <Select value={value} onValueChange={onValueChange}>
@@ -20,9 +16,8 @@ export default function FilterSearchRefEnquired({ value = null, onValueChange })
                     <SelectItem 
                         key={row.id} 
                         value={row.id}
-                        disabled={row.count < 1}
                     >
-                        {row.name} {row.count > 0 && <span className="rounded bg-sky-100 px-2 ml-2">{row.count}</span>}
+                        {row.name} {showCount && row.count > 0 && <span className="rounded bg-sky-100 px-2 ml-2">{row.count}</span>}
                     </SelectItem>
                 ))}
             </SelectContent>

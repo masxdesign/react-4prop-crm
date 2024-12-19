@@ -6,9 +6,9 @@ import AuthProvider from './components/Auth/Auth'
 import { useAuth } from './components/Auth/Auth-context'
 import queryClient from './queryClient'
 import { routeTree } from './routeTree.gen'
-import './App.css'
 import { BASEPATH } from './constants'
 import { Loader2 } from 'lucide-react'
+import './App.css'
 
 const router = createRouter({ 
   routeTree,

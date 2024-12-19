@@ -1,15 +1,21 @@
 import React, { useState, useRef } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { cx } from "class-variance-authority"
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
+import { Slot } from "@radix-ui/react-slot"
 
-const MotionIcon = ({ icon, color }) => (
+const STAR = 'star'
+const REJECT = 'close'
+
+const MotionIcon = React.forwardRef(({ icon, color }, ref) => (
     <motion.div 
+        ref={ref}
         style={{ backgroundImage: `url(https://4prop.com/svg/${icon}/10/${color})` }}
         className="bg-no-repeat pt-[100%] cursor-pointer bg-cover"
         whileTap={{ scale: .6 }}
         whileHover={{ scale: 1.2 }}
     />
-)
+))
 
 const matrix = [
     [0, 0, 0, 0],
@@ -21,15 +27,13 @@ const matrix = [
 
 const labels = ["", "Reject", "Least suitable", "Suitable", "Most suitable"]
 
-const STAR = 'star'
-const REJECT = 'close'
-
 const GradingWidget = ({
     size = 40,
     value,
     onSelect,
     className,
     style,
+    tooltipTextReject = "Move to inactive",
     ...props
 }) => {
 
@@ -61,9 +65,8 @@ const GradingWidget = ({
             {list.map((active, id) => {
                 const newValue = id + 1
 
-                return (
+                const component = (
                     <div 
-                        key={newValue}
                         className="relative"
                         onClick={() => handleSelect(newValue)}
                         onMouseEnter={() => setHover(newValue)}
@@ -97,6 +100,26 @@ const GradingWidget = ({
                         )}
                     </div>
                 )
+
+                if (id === 0) {
+                    return (
+                        <Tooltip delayDuration={100} key={newValue}>
+                            <TooltipTrigger asChild>
+                                {component}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                {tooltipTextReject}
+                            </TooltipContent>
+                        </Tooltip>
+                    )
+                }
+
+                return (
+                    <Slot key={newValue}>
+                        {component}
+                    </Slot>
+                )
+
             })}
         </div>
     )

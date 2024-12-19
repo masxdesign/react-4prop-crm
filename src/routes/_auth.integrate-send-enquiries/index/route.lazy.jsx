@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
-import useListing, { filteredByTagsDetailsSelector, propertyGradeChanged, resolveAllPropertiesQuerySelector, tagsFromPropertiesSelector, useQueryfetchNewlyGradedProperties } from '@/store/use-listing'
+import useListing, { filteredByTagsDetailsSelector, IS_NULL, propertyGradeChanged, propertyRemoved, propertySearchReferenceChanged, resolveAllPropertiesQuerySelector, tagsFromPropertiesSelector, useQueryfetchNewlyGradedProperties } from '@/store/use-listing'
 import { inIframe, postMessage, useIframeHelper } from '@/utils/iframeHelpers'
 import { Textarea } from '@/components/ui/textarea'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { OpenInNewWindowIcon } from '@radix-ui/react-icons'
 import delay from '@/utils/delay'
 import { sendBizchatPropertyEnquiry } from '@/services/bizchat'
-import { isEmpty, map } from 'lodash'
+import _, { isEmpty, map } from 'lodash'
 import { cx } from 'class-variance-authority'
 import { Loader2Icon, X } from 'lucide-react'
 import GradingWidget from '@/components/GradingWidget'
@@ -21,6 +21,7 @@ import TogglableTruncateContent from '@/components/TogglableTruncateContent/Coll
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
 import SearchReferenceSelect from '@/features/searchReference/component/SearchReferenceSelect'
 import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
+import { useIsFirstRender } from '@uidotdev/usehooks'
 
 export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/')({
   component: Component
@@ -198,16 +199,12 @@ function Component () {
                       return filteredSent.includes(row.id) ? (
                         <div className='flex gap-2 items-center'>
                           <i className='border rounded-lg px-1 shadow-sm inline-block text-slate-600'>Sent!</i>
-                          <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-                            <SearchReferenceSelect tag_id={row.tag_id} pid={row.id} />
-                          </Suspense>
+                          <SearchReferenceEmailAgents row={row} />
                         </div>
                       ) : form.formState.isSubmitting ? (
                         <div className='flex gap-2 items-center'>
                           <span className='inline-block bg-amber-50 text-amber-600'>Sending...</span>
-                          <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-                            <SearchReferenceSelect tag_id={row.tag_id} pid={row.id} />
-                          </Suspense>
+                          <SearchReferenceEmailAgents row={row} />
                         </div>
                       ) : (
                         <PdfViewSpecifyMessage index={index} item={row} />
@@ -266,67 +263,62 @@ function Component () {
   )
 }
 
+const SearchReferenceEmailAgents = ({ row }) => {
+  const handleSelect = (tag) => {
+    useListing.getState().filterByTagsChange({ value: tag.id, checked: true })
+    useListing.getState().dispatch(propertySearchReferenceChanged(row.id, tag))
+  }
+
+  const handleClick = (selected) => {
+    useListing.getState().setAllChecked(false)
+    useListing.getState().setFilterByTagsChange([])
+    useListing.getState().filterByTagsChange({ value: selected ? selected.id: IS_NULL, checked: true })
+  }
+
+  return (
+    <Suspense fallback={<Loader2Icon className="animate-spin" />}>
+      <SearchReferenceSelect 
+        pid={row.id} 
+        tag_id={row.tag_id} 
+        onSelect={handleSelect}
+        onClick={handleClick}
+      />
+    </Suspense>
+  )
+}
+
 const Grading = ({ row }) => {
   const { id, grade } = row
   const gradeUpdater = useGradeUpdater(id)
 
   const handleSelect = async (grade) => {
+
     await gradeUpdater.mutateAsync({ grade })
+
+    if (grade === 1) {
+      useListing.getState().dispatch(propertyRemoved(id))
+      return
+    }
+
     useListing.getState().dispatch(propertyGradeChanged(id, grade))
+
   }
 
   return (
       <GradingWidget 
           size={20}
           value={grade}
-          onSelect={handleSelect}                                         
+          onSelect={handleSelect}  
+          tooltipTextReject="Drop from list"                                       
       />
   )
 }
-
-function TagName({ tagName, className, ...props }) {
-  return (
-    <div 
-      className={cn('inline-block border border-slate-200 text-slate-500 text-xs rounded px-2 py-1', className)} 
-      {...props}
-    >
-      {tagName ? tagName: "Unnamed"}
-    </div>
-  )
-}
-// function Grading ({ pid, defaultValue }) {
-//   const [value, setValue] = useState(defaultValue)
-  
-//   const handleSelect = newValue => {
-//     setValue(newValue)
-//     postMessage({ 
-//       type: "GRADE_CHANGED", 
-//       payload: newValue, 
-//       meta: { 
-//         pid,
-//         prevGrade: value
-//       } 
-//     })
-//   }
-
-//   return (
-//     <GradingWidget 
-//         size={20}
-//         value={value} 
-//         onSelect={handleSelect}
-//     />
-//   )
-// }
 
 function PdfViewSpecifyMessage ({ index, item }) {
   const form = useFormContext()
   const fieldRef = useRef()
 
   const [isOpen, setIsOpen] = useState(false)
-  const { title, tag_name } = item
-
-  console.log(item);
-  
 
   useEffect(() => {
 
@@ -347,9 +339,7 @@ function PdfViewSpecifyMessage ({ index, item }) {
         <CollapsibleTrigger className='text-sky-700 hover:underline'>
           specific message
         </CollapsibleTrigger>
-        <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-          <SearchReferenceSelect tag_id={item.tag_id} pid={item.id} />
-        </Suspense>
+        <SearchReferenceEmailAgents row={item} />
       </div>
       <CollapsibleContent className='py-3'>
         <FormField
@@ -359,7 +349,7 @@ function PdfViewSpecifyMessage ({ index, item }) {
             <Textarea 
               {...field} 
               ref={fieldRef} 
-              placeholder={`Specific message for ${title}`} 
+              placeholder={`Specific message for ${item.title}`} 
               className="mb-1"
             />
           )}
@@ -391,8 +381,8 @@ function FormItemsCheckbox ({ index, name, label }) {
 }
 
 function FilterByTag({ tags }) {
-  const [allChecked, setAllChecked] = useState(true)
-
+  const allChecked = useListing.use.allChecked()
+  const setAllChecked = useListing.use.setAllChecked()
   const filterByTagsChange = useListing.use.filterByTagsChange()
   const filterByTags = useListing.use.filterByTags()
   const setFilterByTagsChange = useListing.use.setFilterByTagsChange()

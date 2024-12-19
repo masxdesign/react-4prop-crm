@@ -16,8 +16,13 @@ export const fetchTagsByUserId = async (user_id) => {
     return data
 }
 
-export const fetchTagsByUserIdEnquired = async (user_id) => {
-    const { data } = await bizchatClient.get(`/api/crm/v2/${user_id}/tags/enquired`)
+export const fetchTagsByUserIdEnquired = async (bz_user_id) => {
+    const { data } = await bizchatClient.get(`/api/crm/v2/${bz_user_id}/tags/enquired`)
+    return data
+}
+
+export const crmUpdateTag = async (bz_user_id, tag_id, newName) => {
+    const { data } = await bizchatClient.put(`/api/crm/v2/${bz_user_id}/tags/${tag_id}`, { newName })
     return data
 }
 

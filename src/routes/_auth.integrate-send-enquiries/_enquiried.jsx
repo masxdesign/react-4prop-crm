@@ -7,7 +7,7 @@ const defaultFilterValues = {
   choice: null
 }
 
-export const Route = createFileRoute('/_auth/integrate-send-enquiries/enquiries')({
+export const Route = createFileRoute('/_auth/integrate-send-enquiries/_enquiried')({
   loader: ({ context: { queryClient } }) => {
     return Promise.all([
       queryClient.ensureQueryData(typesQuery),
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries/enquiries'
   search: {
     middlewares: [retainSearchParams(['filters'])],
   },
-  beforeLoad: ({ search, perpage }) => {
+  beforeLoad: ({ search }) => {
 
     const isFiltersPure = isEmpty(search.filters) 
       || isEqual(search.filters, defaultFilterValues)
@@ -37,8 +37,7 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries/enquiries'
     return {
         page,
         filters,
-        isFiltersDirty,
-        listQuery: suitablePropertiesEnquiriedQuery({ page, perpage, filters })
+        isFiltersDirty
     }
 
   },

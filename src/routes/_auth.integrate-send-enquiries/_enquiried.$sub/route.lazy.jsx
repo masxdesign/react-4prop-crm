@@ -10,7 +10,7 @@ import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { propReqContentsQuery, subtypesQuery, suitablePropertiesEnquiriedQuery, typesQuery } from '@/store/listing.queries'
 import { detailsCombiner, propertyTypescombiner } from '@/store/use-listing'
 import lowerKeyObject from '@/utils/lowerKeyObject'
-import { ReloadIcon } from '@radix-ui/react-icons'
+import { EnvelopeClosedIcon, ReloadIcon } from '@radix-ui/react-icons'
 import { useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import companyCombiner from '@/services/companyCombiner'
@@ -28,8 +28,9 @@ import { Attachment } from '@/components/Uppy/components'
 import SearchReferenceSelect from '@/features/searchReference/component/SearchReferenceSelect'
 import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
 import GradingWidget from '@/components/GradingWidget'
+import { produce } from 'immer'
 
-export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/enquiries')({
+export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/_enquiried/$sub')({
   component: RouteComponent,
   pendingComponent: PendingComponent
 })
@@ -39,17 +40,15 @@ function combineQueries(result) {
 
   if (!propertiesData) return null
 
-  const properties = propertiesData.results.map(row => lowerKeyObject(row))
-  const pids = map(properties, "pid")
-
-  const companies = propertiesData.companies?.map((row) => companyCombiner(row))
+  const pids = map(propertiesData.results, "pid")
+  const companies = propertiesData.companies.map((row) => companyCombiner(row))
 
   return {
     data: {
-      types: propertyTypescombiner(types, subtypes), 
-      properties,
-      companies,
       pids,
+      companies,
+      types: propertyTypescombiner(types, subtypes), 
+      properties: propertiesData.results,
       pages: propertiesData.pagin.pages,
       need_reply: propertiesData.pagin.need_reply,
       count: propertiesData.pagin.count
@@ -63,7 +62,7 @@ const defaultPropertyDetailsSetting = {
 }
 
 function RouteComponent() {
-  const { page, filters, isFiltersDirty, listQuery } = Route.useRouteContext()
+  const { page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription } = Route.useRouteContext()
 
   const navigate = Route.useNavigate()
 
@@ -124,13 +123,6 @@ function RouteComponent() {
       choice: value
     })
   }
-
-  const X = (
-    <span 
-        style={{ backgroundImage: `url(${FOURPROP_BASEURL}/svg/close/10/999)` }}
-        className="bg-no-repeat size-5 cursor-pointer bg-cover inline-block align-middle translate-y-[-1px]"
-    />
-  )
   
   return (
     <div className="space-y-4 pt-8">
@@ -141,11 +133,11 @@ function RouteComponent() {
       )}
 
       <div className='space-y-2'>
-        <h1 className='text-3xl font-bold'>
-          Enquiries
+        <h1 className='text-3xl space-x-2'>
+          <span className='font-bold'>{pageTitle}</span>
         </h1>
         <p className='text-muted-foreground'>
-          Your current active enquiries. View and reply to messages sent back from the agent. By selecting the {X} enquiries are placed in the inactive listing
+          {pageDescription}
         </p>
       </div>
 
@@ -178,26 +170,17 @@ function RouteComponent() {
             <div className='flex gap-8'>
               <Pagination 
                 page={page} 
-                pages={data.pages} 
-                className=""
+                pages={data.pages}
               />
             </div>
 
             <div className='flex gap-2'>
-              {isFetched && (
-                <Link 
-                  to="."
-                  key="dd"
-                  search={{ page: 1 }}
-                  onClick={() => {
-                    refetch()
-                  }}
-                  className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
-                >
-                  <span>{isRefetching ? "refetching...": "Refresh"}</span>
-                  <ReloadIcon />
-                </Link>
-              )}
+              <div 
+                className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
+              >
+                <EnvelopeClosedIcon />
+                <span className='text-slate-900 text-sm font-bold'>{data.count}</span>
+              </div>             
               {data.need_reply > 0 ? (
                 <div 
                   className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
@@ -214,6 +197,20 @@ function RouteComponent() {
                   <span>No replies</span>
                 </div>
               )}
+              {isFetched && (
+                <Link 
+                  to="."
+                  key="dd"
+                  search={{ page: 1 }}
+                  onClick={() => {
+                    refetch()
+                  }}
+                  className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
+                >
+                  <span>{isRefetching ? "refetching...": "Refresh"}</span>
+                  <ReloadIcon />
+                </Link>
+              )} 
             </div>
             
           </div>
@@ -222,10 +219,17 @@ function RouteComponent() {
             rowClassName="border rounded-lg"
             gradingComponent={Grading}
             renderLeftSide={(row) => {
+              const handleClick = (selected) => {
+                handleFilterSearchRefChange(selected ? selected.id: "NULL")
+              }
               return (
                 <>
                   <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-                    <SearchReferenceSelect tag_id={row.tag_id} pid={row.id} />
+                    <SearchReferenceSelect 
+                      tag_id={row.tag_id} 
+                      pid={row.id} 
+                      onClick={handleClick}
+                    />
                   </Suspense>
                   <Choices choices={row.enquiry_choices} className="flex-col gap-2" />
                 </>
@@ -284,21 +288,18 @@ function EnquiryMessagingWidget({ chat_id, property, need_reply }) {
 }
 
 const Grading = ({ row }) => {
-  const queryClient = useQueryClient()
-  const { id, grade } = row
-  const gradeUpdater = useGradeUpdater(id)
+  const { onGradeChange } = Route.useRouteContext()
+  const gradeUpdater = useGradeUpdater(row.id)
 
   const handleSelect = async (grade) => {
     await gradeUpdater.mutateAsync({ grade })
-    queryClient.invalidateQueries({
-      queryKey: ['suitablePropertiesEnquiried']
-    })
+    onGradeChange(row.id, grade)
   }
 
   return (
       <GradingWidget 
           size={20}
-          value={grade}
+          value={row.grade}
           onSelect={handleSelect}                                         
       />
   )
@@ -434,7 +435,7 @@ function Pagination({ page, pages, className, strokeWidth = 2 }) {
         <ChevronLeft strokeWidth={strokeWidth} className='size-4' />
       </Link>
 
-      <span className='text-xs px-2'>{page} of {pages}</span>
+      <span className='text-xs px-2'>page {page} of {pages}</span>
       
       <Link
         from={Route.fullPath}

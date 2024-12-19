@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query"
-import { chain, compact, find, map, pick } from "lodash"
+import _, { chain, compact, find, map, pick } from "lodash"
 import { createSelector } from "reselect"
 import queryClient from "@/queryClient"
 import companyCombiner from "@/services/companyCombiner"
@@ -14,7 +14,7 @@ import displaySize from "@/utils/displaySize"
 import { crmSharedPids } from "@/services/bizchat"
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "./listing.queries"
 
-const IS_NULL = "IS_NULL"
+export const IS_NULL = "IS_NULL"
 
 export const PROPERTY_STATUS_NAMES = {
     0: "AVAIL",
@@ -279,6 +279,24 @@ export const propertyGradeChanged = (pid, grade) => ({
     meta: { pid }
 })
 
+export const propertySearchReferenceChanged = (pid, tag) => ({
+    type: "PROPERTY_SEARCH_REFERENCE_CHANGED", 
+    payload: tag,
+    meta: { pid }
+})
+
+export const allPropertySearchReferenceRenamed = (tag_id, newName) => ({
+    type: "ALL_PROPERTY_SEARCH_REFERENCE_RENAMED", 
+    payload: newName,
+    meta: { tag_id }
+})
+
+export const propertyRemoved = (pid) => ({
+    type: "PROPERTY_REMOVED", 
+    payload: null,
+    meta: { pid }
+})
+
 export const selectedReceived = (selected) => ({
     type: "SELECTED_RECEIVED", 
     payload: selected
@@ -333,11 +351,43 @@ function reducer (state, action) {
             }
 
             break
-        case "PROPERTY_GRADE_CHANGED":
-            if (state.properties[action.meta.pid]) {
-                state.properties[action.meta.pid].grade = action.payload
-            }
+        case "PROPERTY_REMOVED":
+            delete state.properties[action.meta.pid]
+
             break
+        case "PROPERTY_GRADE_CHANGED": {
+
+            const row = state.properties[action.meta.pid]
+
+            if(!row) break
+
+            row.grade = action.payload
+
+            break
+        }
+        case "PROPERTY_SEARCH_REFERENCE_CHANGED": {
+
+            const row = state.properties[action.meta.pid]
+
+            if(!row) break
+
+            row.tag_id = action.payload.id
+            row.tag_name = action.payload.name
+
+            break
+        }
+        case "ALL_PROPERTY_SEARCH_REFERENCE_RENAMED": {
+
+            Object.entries(state.properties).forEach(([__, row]) => {
+
+                if (!_.isEqual(row.tag_id, action.meta.tag_id)) return
+
+                row.tag_name = action.payload
+
+            })
+
+            break
+        }
         case "COMPANIES_RECEIVED":
             
             for (const company of action.payload) {
@@ -355,6 +405,7 @@ function reducer (state, action) {
 }
 
 export const useListing = createImmer((set, get) => ({
+    allChecked: true,
     filterByTags: [],
     types: null,
     subtypes: null,
@@ -364,6 +415,9 @@ export const useListing = createImmer((set, get) => ({
     contents: {},
     properties: {},
     companies: {},
+    setAllChecked: (allChecked) => {
+        set({ allChecked })
+    },
     setFilterByTagsChange: (filterByTags) => {
         set({ filterByTags })
     },
