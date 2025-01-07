@@ -16,23 +16,25 @@ import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
-import { Route as AuthIntegrateSendEnquiriesRouteImport } from './routes/_auth.integrate-send-enquiries/route'
+import { Route as AuthComImport } from './routes/_auth._com'
 import { Route as AuthGradeSharingIndexImport } from './routes/_auth.grade-sharing_.index'
 import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerUid'
-import { Route as AuthIntegrateSendEnquiriesEnquiriedImport } from './routes/_auth.integrate-send-enquiries/_enquiried'
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
 import { Route as AuthGradeSharingSetupEmailImport } from './routes/_auth.grade-sharing_.setup-email'
 import { Route as AuthGradeSharingSelectClientImport } from './routes/_auth.grade-sharing.select-client'
-import { Route as AuthIntegrateSendEnquiriesRenameSearchReferenceRouteImport } from './routes/_auth.integrate-send-enquiries/rename-search-reference/route'
+import { Route as AuthComUserImport } from './routes/_auth._com/user'
 import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
-import { Route as AuthIntegrateSendEnquiriesIndexRouteImport } from './routes/_auth.integrate-send-enquiries/index/route'
+import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
+import { Route as AuthComEnquiriesRouteImport } from './routes/_auth._com/_enquiries/route'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
 import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
-import { Route as AuthIntegrateSendEnquiriesEnquiriedSubRouteImport } from './routes/_auth.integrate-send-enquiries/_enquiried.$sub/route'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
+import { Route as AuthComUserRenameSearchReferenceRouteImport } from './routes/_auth._com/user/rename-search-reference/route'
+import { Route as AuthComUserEmailAgentsRouteImport } from './routes/_auth._com/user/email-agents/route'
+import { Route as AuthComUserSubRouteImport } from './routes/_auth._com/user/$sub/route'
 import { Route as AccessHashOwnerUidSharedIndexImport } from './routes/access.$hash.$ownerUid.shared.index'
 import { Route as AccessHashOwnerUidSharedTagidImport } from './routes/access.$hash.$ownerUid.shared.$tag_id'
 import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade._gradeWidget/$pid_.share'
@@ -70,11 +72,10 @@ const AuthDashboardRoute = AuthDashboardImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 
-const AuthIntegrateSendEnquiriesRouteRoute =
-  AuthIntegrateSendEnquiriesRouteImport.update({
-    path: '/integrate-send-enquiries',
-    getParentRoute: () => AuthRoute,
-  } as any)
+const AuthComRoute = AuthComImport.update({
+  id: '/_com',
+  getParentRoute: () => AuthRoute,
+} as any)
 
 const AuthGradeSharingIndexRoute = AuthGradeSharingIndexImport.update({
   path: '/grade-sharing/',
@@ -85,12 +86,6 @@ const AccessHashOwnerUidRoute = AccessHashOwnerUidImport.update({
   path: '/access/$hash/$ownerUid',
   getParentRoute: () => rootRoute,
 } as any)
-
-const AuthIntegrateSendEnquiriesEnquiriedRoute =
-  AuthIntegrateSendEnquiriesEnquiriedImport.update({
-    id: '/_enquiried',
-    getParentRoute: () => AuthIntegrateSendEnquiriesRouteRoute,
-  } as any)
 
 const AuthGradeGradeWidgetRoute = AuthGradeGradeWidgetImport.update({
   id: '/_gradeWidget',
@@ -110,15 +105,10 @@ const AuthGradeSharingSelectClientRoute =
     getParentRoute: () => AuthRoute,
   } as any)
 
-const AuthIntegrateSendEnquiriesRenameSearchReferenceRouteRoute =
-  AuthIntegrateSendEnquiriesRenameSearchReferenceRouteImport.update({
-    path: '/rename-search-reference',
-    getParentRoute: () => AuthIntegrateSendEnquiriesRouteRoute,
-  } as any).lazy(() =>
-    import(
-      './routes/_auth.integrate-send-enquiries/rename-search-reference/route.lazy'
-    ).then((d) => d.Route),
-  )
+const AuthComUserRoute = AuthComUserImport.update({
+  path: '/user',
+  getParentRoute: () => AuthComRoute,
+} as any)
 
 const AuthDashboardListRouteRoute = AuthDashboardListRouteImport.update({
   path: '/list',
@@ -141,15 +131,19 @@ const AuthDashboardEachRouteRoute = AuthDashboardEachRouteImport.update({
   import('./routes/_auth._dashboard/each/route.lazy').then((d) => d.Route),
 )
 
-const AuthIntegrateSendEnquiriesIndexRouteRoute =
-  AuthIntegrateSendEnquiriesIndexRouteImport.update({
-    path: '/',
-    getParentRoute: () => AuthIntegrateSendEnquiriesRouteRoute,
-  } as any).lazy(() =>
-    import('./routes/_auth.integrate-send-enquiries/index/route.lazy').then(
-      (d) => d.Route,
-    ),
-  )
+const AuthComAgentRouteRoute = AuthComAgentRouteImport.update({
+  path: '/agent',
+  getParentRoute: () => AuthComRoute,
+} as any).lazy(() =>
+  import('./routes/_auth._com/agent/route.lazy').then((d) => d.Route),
+)
+
+const AuthComEnquiriesRouteRoute = AuthComEnquiriesRouteImport.update({
+  id: '/_enquiries',
+  getParentRoute: () => AuthComRoute,
+} as any).lazy(() =>
+  import('./routes/_auth._com/_enquiries/route.lazy').then((d) => d.Route),
+)
 
 const AccessHashOwnerUidSharedRoute = AccessHashOwnerUidSharedImport.update({
   path: '/shared',
@@ -166,16 +160,6 @@ const AuthDashboardListImportidRoute = AuthDashboardListImportidImport.update({
   getParentRoute: () => AuthDashboardRoute,
 } as any)
 
-const AuthIntegrateSendEnquiriesEnquiriedSubRouteRoute =
-  AuthIntegrateSendEnquiriesEnquiriedSubRouteImport.update({
-    path: '/$sub',
-    getParentRoute: () => AuthIntegrateSendEnquiriesEnquiriedRoute,
-  } as any).lazy(() =>
-    import(
-      './routes/_auth.integrate-send-enquiries/_enquiried.$sub/route.lazy'
-    ).then((d) => d.Route),
-  )
-
 const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   {
     path: '/grade/share/success',
@@ -185,6 +169,33 @@ const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   import('./routes/_auth.grade_.share_.success/route.lazy').then(
     (d) => d.Route,
   ),
+)
+
+const AuthComUserRenameSearchReferenceRouteRoute =
+  AuthComUserRenameSearchReferenceRouteImport.update({
+    path: '/rename-search-reference',
+    getParentRoute: () => AuthComUserRoute,
+  } as any).lazy(() =>
+    import('./routes/_auth._com/user/rename-search-reference/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthComUserEmailAgentsRouteRoute =
+  AuthComUserEmailAgentsRouteImport.update({
+    path: '/email-agents',
+    getParentRoute: () => AuthComUserRoute,
+  } as any).lazy(() =>
+    import('./routes/_auth._com/user/email-agents/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthComUserSubRouteRoute = AuthComUserSubRouteImport.update({
+  path: '/$sub',
+  getParentRoute: () => AuthComUserRoute,
+} as any).lazy(() =>
+  import('./routes/_auth._com/user/$sub/route.lazy').then((d) => d.Route),
 )
 
 const AccessHashOwnerUidSharedIndexRoute =
@@ -261,8 +272,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
-    '/_auth/integrate-send-enquiries': {
-      preLoaderRoute: typeof AuthIntegrateSendEnquiriesRouteImport
+    '/_auth/_com': {
+      preLoaderRoute: typeof AuthComImport
       parentRoute: typeof AuthImport
     }
     '/_auth/_dashboard': {
@@ -273,9 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeImport
       parentRoute: typeof AuthImport
     }
-    '/_auth/integrate-send-enquiries/': {
-      preLoaderRoute: typeof AuthIntegrateSendEnquiriesIndexRouteImport
-      parentRoute: typeof AuthIntegrateSendEnquiriesRouteImport
+    '/_auth/_com/_enquiries': {
+      preLoaderRoute: typeof AuthComEnquiriesRouteImport
+      parentRoute: typeof AuthComImport
+    }
+    '/_auth/_com/agent': {
+      preLoaderRoute: typeof AuthComAgentRouteImport
+      parentRoute: typeof AuthComImport
     }
     '/_auth/_dashboard/each': {
       preLoaderRoute: typeof AuthDashboardEachRouteImport
@@ -289,9 +304,9 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardListRouteImport
       parentRoute: typeof AuthDashboardImport
     }
-    '/_auth/integrate-send-enquiries/rename-search-reference': {
-      preLoaderRoute: typeof AuthIntegrateSendEnquiriesRenameSearchReferenceRouteImport
-      parentRoute: typeof AuthIntegrateSendEnquiriesRouteImport
+    '/_auth/_com/user': {
+      preLoaderRoute: typeof AuthComUserImport
+      parentRoute: typeof AuthComImport
     }
     '/_auth/grade-sharing/select-client': {
       preLoaderRoute: typeof AuthGradeSharingSelectClientImport
@@ -305,10 +320,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeGradeWidgetImport
       parentRoute: typeof AuthGradeImport
     }
-    '/_auth/integrate-send-enquiries/_enquiried': {
-      preLoaderRoute: typeof AuthIntegrateSendEnquiriesEnquiriedImport
-      parentRoute: typeof AuthIntegrateSendEnquiriesRouteImport
-    }
     '/access/$hash/$ownerUid': {
       preLoaderRoute: typeof AccessHashOwnerUidImport
       parentRoute: typeof rootRoute
@@ -317,13 +328,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeSharingIndexImport
       parentRoute: typeof AuthImport
     }
+    '/_auth/_com/user/$sub': {
+      preLoaderRoute: typeof AuthComUserSubRouteImport
+      parentRoute: typeof AuthComUserImport
+    }
+    '/_auth/_com/user/email-agents': {
+      preLoaderRoute: typeof AuthComUserEmailAgentsRouteImport
+      parentRoute: typeof AuthComUserImport
+    }
+    '/_auth/_com/user/rename-search-reference': {
+      preLoaderRoute: typeof AuthComUserRenameSearchReferenceRouteImport
+      parentRoute: typeof AuthComUserImport
+    }
     '/_auth/grade/share/success': {
       preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
       parentRoute: typeof AuthImport
-    }
-    '/_auth/integrate-send-enquiries/_enquiried/$sub': {
-      preLoaderRoute: typeof AuthIntegrateSendEnquiriesEnquiriedSubRouteImport
-      parentRoute: typeof AuthIntegrateSendEnquiriesEnquiriedImport
     }
     '/_auth/_dashboard/list/$import_id': {
       preLoaderRoute: typeof AuthDashboardListImportidImport
@@ -382,11 +401,13 @@ export const routeTree = rootRoute.addChildren([
   IndexRoute,
   LoginRouteRoute,
   AuthRoute.addChildren([
-    AuthIntegrateSendEnquiriesRouteRoute.addChildren([
-      AuthIntegrateSendEnquiriesIndexRouteRoute,
-      AuthIntegrateSendEnquiriesRenameSearchReferenceRouteRoute,
-      AuthIntegrateSendEnquiriesEnquiriedRoute.addChildren([
-        AuthIntegrateSendEnquiriesEnquiriedSubRouteRoute,
+    AuthComRoute.addChildren([
+      AuthComEnquiriesRouteRoute,
+      AuthComAgentRouteRoute,
+      AuthComUserRoute.addChildren([
+        AuthComUserSubRouteRoute,
+        AuthComUserEmailAgentsRouteRoute,
+        AuthComUserRenameSearchReferenceRouteRoute,
       ]),
     ]),
     AuthDashboardRoute.addChildren([

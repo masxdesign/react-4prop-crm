@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { bizchatMessagesLastNQuery } from "@/features/messaging/messaging.queries"
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import { createSelector } from "reselect"
 import { chain, last } from "lodash"
 

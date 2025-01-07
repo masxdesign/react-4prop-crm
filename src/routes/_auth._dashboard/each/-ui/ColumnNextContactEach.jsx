@@ -1,5 +1,5 @@
 import { addNextContact } from "@/services/fourProp"
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import useContactDateMutationOptions from "./use-ContactDateEachMutationOptions"
 import ColumnNextContact from "@/components/CRMTable/components/ColumnNextContact"
 

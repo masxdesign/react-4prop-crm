@@ -24,7 +24,7 @@ import { useLocalStorage } from "@uidotdev/usehooks"
 import { uniq, uniqBy } from "lodash"
 import { useQuery } from "@tanstack/react-query"
 import { filterByEmailQueryOptions } from "@/features/gradeSharing/services"
-import { useAuth } from "../Auth/Auth-context"
+import { useAuth } from "../Auth/Auth"
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()

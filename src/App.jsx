@@ -2,8 +2,8 @@ import { Suspense } from 'react'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
-import AuthProvider from './components/Auth/Auth'
-import { useAuth } from './components/Auth/Auth-context'
+import AuthProvider, { initialAuthState } from './components/Auth/Auth'
+import { useAuth } from './components/Auth/Auth'
 import queryClient from './queryClient'
 import { routeTree } from './routeTree.gen'
 import { BASEPATH } from './constants'
@@ -16,7 +16,8 @@ const router = createRouter({
   defaultPreload: 'intent',
   context: {
     queryClient,
-    auth: null
+    perpage: 8,
+    auth: initialAuthState
   }
 })
 

@@ -23,7 +23,7 @@ import SearchReferenceSelect from '@/features/searchReference/component/SearchRe
 import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
 import { useIsFirstRender } from '@uidotdev/usehooks'
 
-export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/')({
+export const Route = createLazyFileRoute('/_auth/_com/user/email-agents')({
   component: Component
 })
 

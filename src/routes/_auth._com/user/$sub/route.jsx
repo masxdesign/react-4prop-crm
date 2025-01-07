@@ -1,9 +1,15 @@
-import { FOURPROP_BASEURL } from '@/services/fourPropClient'
-import { suitablePropertiesEnquiriedQuery } from '@/store/listing.queries'
 import { createFileRoute, notFound } from '@tanstack/react-router'
+import { subtypesQuery, suitablePropertiesEnquiriedQuery, typesQuery } from '@/store/listing.queries'
+import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { produce } from 'immer'
 
-export const Route = createFileRoute('/_auth/integrate-send-enquiries/_enquiried/$sub')({
+export const Route = createFileRoute('/_auth/_com/user/$sub')({
+  loader: ({ context: { queryClient } }) => {
+      return Promise.all([
+        queryClient.ensureQueryData(typesQuery),
+        queryClient.ensureQueryData(subtypesQuery)
+      ])
+  },
   beforeLoad: ({ params, context: { queryClient, page, filters, perpage } }) => {
 
     const activeListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters })

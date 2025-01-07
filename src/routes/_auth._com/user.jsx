@@ -1,38 +1,19 @@
-import { createFileRoute, Link, Outlet, retainSearchParams } from '@tanstack/react-router'
+import { useState } from 'react'
+import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import Logo from "@/assets/logo.svg?react"
 import { Button } from '@/components/ui/button'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
-import { decodeFromBinary } from '@/utils/binary'
 import { cn } from '@/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
 import { ArrowLeft, MoreHorizontal } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { useState } from 'react'
 
-export const Route = createFileRoute('/_auth/integrate-send-enquiries')({
-  component: RouteComponent,
-  search: {
-    middlewares: [retainSearchParams(['_origin'])],
-  },
-  beforeLoad: ({ search }) => {
-
-    let origin = null
-
-    if (search._origin) {
-        origin = new URL(`${FOURPROP_BASEURL}${decodeFromBinary(search._origin)}`)
-    }
-
-    return {
-        perpage: 8,
-        origin
-    }
-    
-  }
+export const Route = createFileRoute('/_auth/_com/user')({
+  component: RouteComponent
 })
 
 const menu = [
-    { id: "email", to: '.', label: "Email agents" },
+    { id: "email", to: 'email-agents', label: "Email agents" },
     { id: "enquiries", to: 'active', label: "Active" },
     { id: "inactive", to: 'inactive', label: "Inactive" }
 ]

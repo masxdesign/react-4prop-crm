@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/components/Auth/Auth-context';
+import { useAuth } from '@/components/Auth/Auth';
 import LoginForm from '@/components/LoginForm';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { flushSync } from 'react-dom';
@@ -19,13 +19,7 @@ function LoginComponent() {
   const handleSubmit = async (variables) => {
     try {
 
-      const data = await auth.login.mutateAsync(variables)
-
-      if(data.error) throw new Error(data.error)
-
-      flushSync(() => {
-        auth.setUser(data)
-      })
+      await auth.loginSubmit(variables)
 
       navigate({ to: search.redirect })
 

@@ -2,7 +2,7 @@ import React, { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import _, { isEmpty } from 'lodash';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useAuth } from '@/components/Auth/Auth-context';
+import { useAuth } from '@/components/Auth/Auth';
 import { Button } from '@/components/ui/button';
 import ProgressCircle from '@/components/ProgressCircle';
 import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'

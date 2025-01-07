@@ -1,7 +1,7 @@
 import PendingComponent from '@/components/PendingComponent'
 import { createFileRoute, Link, Outlet, useLoaderData, useNavigate, useRouteContext, useRouterState } from '@tanstack/react-router'
 import { useQueries, useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import useListing from '@/store/use-listing'
 import PropertyDetail from '@/components/PropertyDetail'
 import GradingWidget from '@/components/GradingWidget'

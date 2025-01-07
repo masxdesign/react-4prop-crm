@@ -1,4 +1,4 @@
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import PendingComponent from '@/components/PendingComponent'
 import queryClient from '@/queryClient'
 import { crmListById } from '@/services/bizchat'

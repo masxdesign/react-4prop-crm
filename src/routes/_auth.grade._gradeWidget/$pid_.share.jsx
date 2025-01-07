@@ -6,7 +6,7 @@ import { Route as AuthGradeShareSuccessRouteImport } from '@/routes//_auth.grade
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { crmAddTag } from '@/services/bizchat'
 import { Route as AuthGradePromoImport } from '@/routes//_auth.grade._gradeWidget/$pid_.crm-promo'
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import { tagListQueryOptions } from '@/features/tags/queryOptions'
 import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 

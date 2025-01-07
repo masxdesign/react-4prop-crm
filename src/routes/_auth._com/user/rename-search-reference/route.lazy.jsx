@@ -13,7 +13,7 @@ import { Slot } from '@radix-ui/react-slot'
 import { ErrorMessage } from '@hookform/error-message'
 import '@/utils/yup-unique'
 import { crmUpdateTag } from '@/services/bizchat'
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import useListing, { allPropertySearchReferenceRenamed } from '@/store/use-listing'
 
 const validateSchema = yup.object().shape({
@@ -25,7 +25,7 @@ const validateSchema = yup.object().shape({
   .unique("Name must be unique", (a) => a.name)
 })
 
-export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/rename-search-reference')({
+export const Route = createLazyFileRoute('/_auth/_com/user/rename-search-reference')({
   component: RouteComponent
 })
 

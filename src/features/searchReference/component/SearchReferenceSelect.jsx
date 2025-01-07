@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { searchReferenceListingEnquiredQuery } from '../searchReference.queries'
 import AssignTagInputScrollList from '@/features/tags/components/AssignTagInputScrollList'

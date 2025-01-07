@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import { crmImport } from "@/services/bizchat"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 

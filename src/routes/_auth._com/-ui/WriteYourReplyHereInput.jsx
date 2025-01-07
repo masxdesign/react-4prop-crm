@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { yupResolver } from "@hookform/resolvers/yup"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import { replyBizchatEnquiryMessage } from "@/services/bizchat"
 import { selectReplyTo, useMessagesLastNList } from "./hooks"
 import { useUppyState } from "@uppy/react"

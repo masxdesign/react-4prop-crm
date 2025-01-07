@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/Auth/Auth-context";
+import { useAuth } from "@/components/Auth/Auth";
 import { crmShareGrade } from "@/services/bizchat";
 import { useMutation } from "@tanstack/react-query";
 

@@ -7,15 +7,14 @@ import FilterEnquiryChoice from '@/features/enquiryChoice/FilterEnquiryChoice'
 import FilterSearchRefEnquired from '@/features/searchReference/component/FilterSearchRefEnquired'
 import { cn } from '@/lib/utils'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
-import { propReqContentsQuery, subtypesQuery, suitablePropertiesEnquiriedQuery, typesQuery } from '@/store/listing.queries'
+import { propReqContentsQuery, subtypesQuery, typesQuery } from '@/store/listing.queries'
 import { detailsCombiner, propertyTypescombiner } from '@/store/use-listing'
-import lowerKeyObject from '@/utils/lowerKeyObject'
 import { EnvelopeClosedIcon, ReloadIcon } from '@radix-ui/react-icons'
-import { useQuery, useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
+import { useQuery, useSuspenseQueries } from '@tanstack/react-query'
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import companyCombiner from '@/services/companyCombiner'
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
-import { useAuth } from '@/components/Auth/Auth-context'
+import { useAuth } from '@/components/Auth/Auth'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { useInView } from 'react-intersection-observer'
 import WriteYourReplyHereInput from '../-ui/WriteYourReplyHereInput'
@@ -28,9 +27,8 @@ import { Attachment } from '@/components/Uppy/components'
 import SearchReferenceSelect from '@/features/searchReference/component/SearchReferenceSelect'
 import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
 import GradingWidget from '@/components/GradingWidget'
-import { produce } from 'immer'
 
-export const Route = createLazyFileRoute('/_auth/integrate-send-enquiries/_enquiried/$sub')({
+export const Route = createLazyFileRoute('/_auth/_com/_enquiries')({
   component: RouteComponent,
   pendingComponent: PendingComponent
 })
@@ -274,7 +272,10 @@ function EnquiryMessagingWidget({ chat_id, property, need_reply }) {
           />
         </div>
         <div className='p-3'>
-          <WriteYourReplyHereInput chat_id={chat_id} property={property} />
+          <WriteYourReplyHereInput 
+            chat_id={chat_id} 
+            property={property} 
+          />
         </div>
       </div>
     )

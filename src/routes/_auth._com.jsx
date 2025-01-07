@@ -1,5 +1,6 @@
-import { subtypesQuery, suitablePropertiesEnquiriedQuery, typesQuery } from '@/store/listing.queries'
 import { createFileRoute, retainSearchParams } from '@tanstack/react-router'
+import { FOURPROP_BASEURL } from '@/services/fourPropClient'
+import { decodeFromBinary } from '@/utils/binary'
 import { isEmpty, isEqual } from 'lodash'
 
 const defaultFilterValues = {
@@ -7,15 +8,12 @@ const defaultFilterValues = {
   choice: null
 }
 
-export const Route = createFileRoute('/_auth/integrate-send-enquiries/_enquiried')({
-  loader: ({ context: { queryClient } }) => {
-    return Promise.all([
-      queryClient.ensureQueryData(typesQuery),
-      queryClient.ensureQueryData(subtypesQuery)
-    ])
-  },
+export const Route = createFileRoute('/_auth/_com')({
   search: {
-    middlewares: [retainSearchParams(['filters'])],
+      middlewares: [
+        retainSearchParams(['_origin']),
+        retainSearchParams(['filters'])
+      ],
   },
   beforeLoad: ({ search }) => {
 
@@ -33,15 +31,23 @@ export const Route = createFileRoute('/_auth/integrate-send-enquiries/_enquiried
       || isEqual(filters, defaultFilterValues))
 
     const page = Number(search.page ?? 1)
-    
+
+    let origin = null
+
+    if (search._origin) {
+        origin = new URL(`${FOURPROP_BASEURL}${decodeFromBinary(search._origin)}`)
+    }
+
     return {
+        origin,
         page,
         filters,
         isFiltersDirty
     }
-
+    
   },
   validateSearch : (search) => {
+    
     return {
       page: Number(search.page) === 1 ? undefined : search.page,
       filters: isEmpty(search.filters) || isEqual(search.filters, defaultFilterValues)  

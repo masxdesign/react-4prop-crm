@@ -1,5 +1,5 @@
 import { flushSync } from 'react-dom';
-import { useAuth } from '@/components/Auth/Auth-context';
+import { useAuth } from '@/components/Auth/Auth';
 import { Toaster } from '@/components/ui/toaster';
 import { Link, Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
@@ -14,12 +14,8 @@ function dashboardComponent() {
   const auth = useAuth()
 
   const handleLogout = async () => {
-    await auth.logout.mutateAsync()
-    flushSync(() => {
-      auth.setUser(null)
-    })
+    await auth.logout()
     navigate({ to: '/crm/login' })
-    console.log({navigate});
   }
   
   return (

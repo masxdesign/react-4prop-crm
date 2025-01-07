@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import { searchReferenceListingEnquiredQuery } from "./searchReference.queries"
 import { useSuspenseQuery } from "@tanstack/react-query"
 

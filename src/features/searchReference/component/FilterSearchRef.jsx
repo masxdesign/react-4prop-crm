@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/Auth/Auth-context"
+import { useAuth } from "@/components/Auth/Auth"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { searchReferenceListingQuery } from "../searchReference.queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"

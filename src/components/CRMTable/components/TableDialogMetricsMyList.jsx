@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import _ from 'lodash';
-import { useAuth } from '@/components/Auth/Auth-context';
+import { useAuth } from '@/components/Auth/Auth';
 import { Ddd, Dddl, Ddl } from '@/components/DisplayData/components'
 import ColumnNextContactMyList from './ColumnNextContactMyList';
 import { Button } from '@/components/ui/button';
