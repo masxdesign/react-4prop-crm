@@ -2,7 +2,7 @@ import * as yup from "yup"
 import delay from "@/utils/delay";
 import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
-import _, { isFunction } from "lodash";
+import _, { isFunction, values } from "lodash";
 import { fetchUser } from "./fourProp";
 import bizchatClient from "./bizchatClient";
 
@@ -152,9 +152,9 @@ export const sendMassBizchat = async ({ files = [], from, recipients, subjectLin
     }
 }
 
-export const getBizchatMessagesLastN = async ({ chatId, authUserId, limit }) => {
+export const getBizchatMessagesLastN = async ({ bzUserId, chatId, limit }) => {
     if (!_.isInteger(limit)) throw new Error("limit is not an integer")
-    const { data } = await bizchatClient.get(`/api/messages_last_n/${chatId}/${authUserId}/${limit}`)
+    const { data } = await bizchatClient.get(`/api/messages_last_n/${chatId}/${bzUserId}/${limit}`)
     return data
 }
 
@@ -383,13 +383,13 @@ export async function crmSharedPids (authUserId, import_id, tag_id = null) {
     return data
 }
 
-export async function crmSharedTagPids (authUserId, import_id) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-sharedTagPids/${import_id}`)
+export async function crmSharedTagPids (from_uid) {
+    const { data } = await bizchatClient.get(`/api/crm/listSharedTagPids/${from_uid}`)
     return data
 }
 
-export async function crmRecentGradeShares (authUserId) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/recent-grade-shares`)
+export async function crmRecentGradeShares (from_uid) {
+    const { data } = await bizchatClient.get(`/api/crm/geRecentGradeShares/${from_uid}`)
     return data
 }
 
@@ -504,12 +504,22 @@ export async function crmAddTag (ownerUid, name) {
 }
 
 export async function crmShareGrade (ownerUid, recipient_import_id, tag_id, pidGrades) {
-    const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/share-grade`, { 
+
+    console.log(
+        ownerUid,
         recipient_import_id,
         tag_id,
         pidGrades
-     })
-    return data
+    );
+    
+    return null
+
+    // const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/share-grade`, { 
+    //     recipient_import_id,
+    //     tag_id,
+    //     pidGrades
+    //  })
+    // return data
 }
 
 export const getEnquiryRoomAsync = async (userId, type, i) => {
@@ -518,8 +528,8 @@ export const getEnquiryRoomAsync = async (userId, type, i) => {
 	return data
 }
 
-export const addEnquiryRoomAsync = async (name, userId, type, i, tab) => {
-	const { data } = await bizchatClient.post(`/api/enquiry_room`, { name, createdBy: userId, type, i, tab }, { withCredentials: true })
+export const addEnquiryRoomAsync = async (name, createdBy, type, i, tab, applicant_uid = null) => {
+	const { data } = await bizchatClient.post(`/api/enquiry_room`, { name, createdBy, type, i, tab, applicant_uid }, { withCredentials: true })
 	return data
 }
 
@@ -528,12 +538,21 @@ export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
     return data
 }
 
-export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices = null, attachments = [] }) => {
-    let enquiryRoom = await getEnquiryRoomAsync(from, "P", property.id)
+export const propertyGradeShareAsync = async (uid, pid, grade, from_uid, tag) => {
+    const body = { grade, from_uid, tag }
+	const { data } = await bizchatClient.post(`/api/crm/propertyGradeShare/${uid}/${pid}`, body, { withCredentials: true })
+    return data
+}
 
-    if (!enquiryRoom) {
-        enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E')
-    }
+export const getUidByImportId = async (ownerUid, import_id, createUser = false) => {
+    const params = { createUser }
+    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/uidByImportId/${import_id}`, { params })
+    return data
+}
+
+export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices, applicant_uid = null, attachments = [] }) => {
+
+    const enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E', applicant_uid)
 
     if (!enquiryRoom) throw new Error('missing enquiryRoom')
     
@@ -542,6 +561,21 @@ export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, pr
     const contextObject = createPropertyEnquiryContextObject(enquiryRoom.name, property)
 
     return replyBizchatMessage({ from, chat_id, recipients, message, choices, attachments, contextObject })
+}
+
+export const sendBizchatPropertyGradeShare = async ({ uid, pid, grade, from_uid, tag, from, message, property }) => {
+    const { success, error } = await propertyGradeShareAsync(uid, pid, grade, from_uid, tag)
+
+    if (!success) throw new Error(error)
+
+    return sendBizchatPropertyEnquiry({
+        from,
+        recipients: `U${uid}`,
+        message,
+        property,
+        applicant_uid: uid
+    })
+
 }
 
 export const replyBizchatEnquiryMessage = async ({

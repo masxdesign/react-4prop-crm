@@ -10,7 +10,7 @@ function RouteComponent() {
 
     const navigate = Route.useNavigate()
 
-    const enquiryListProps = useEnquiryList(listQuery)
+    const { list, data, refetch, isFetched, isRefetching } = useEnquiryList(listQuery)
 
     const handleFiltersChange = (filterValues) => {
         navigate({
@@ -42,8 +42,12 @@ function RouteComponent() {
             </div>
             <EnquiriesPage 
                 page={page} 
+                list={list}
+                data={data}
                 filters={filters} 
-                enquiryListProps={enquiryListProps}
+                refetch={refetch}
+                isFetched={isFetched}
+                isRefetching={isRefetching}
                 isFiltersDirty={isFiltersDirty} 
                 onFilterChange={handleFiltersChange}
             /> 

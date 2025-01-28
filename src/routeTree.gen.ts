@@ -27,7 +27,6 @@ import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
 import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
-import { Route as AuthComEnquiriesRouteImport } from './routes/_auth._com/_enquiries/route'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
 import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
@@ -136,13 +135,6 @@ const AuthComAgentRouteRoute = AuthComAgentRouteImport.update({
   getParentRoute: () => AuthComRoute,
 } as any).lazy(() =>
   import('./routes/_auth._com/agent/route.lazy').then((d) => d.Route),
-)
-
-const AuthComEnquiriesRouteRoute = AuthComEnquiriesRouteImport.update({
-  id: '/_enquiries',
-  getParentRoute: () => AuthComRoute,
-} as any).lazy(() =>
-  import('./routes/_auth._com/_enquiries/route.lazy').then((d) => d.Route),
 )
 
 const AccessHashOwnerUidSharedRoute = AccessHashOwnerUidSharedImport.update({
@@ -284,10 +276,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeImport
       parentRoute: typeof AuthImport
     }
-    '/_auth/_com/_enquiries': {
-      preLoaderRoute: typeof AuthComEnquiriesRouteImport
-      parentRoute: typeof AuthComImport
-    }
     '/_auth/_com/agent': {
       preLoaderRoute: typeof AuthComAgentRouteImport
       parentRoute: typeof AuthComImport
@@ -402,7 +390,6 @@ export const routeTree = rootRoute.addChildren([
   LoginRouteRoute,
   AuthRoute.addChildren([
     AuthComRoute.addChildren([
-      AuthComEnquiriesRouteRoute,
       AuthComAgentRouteRoute,
       AuthComUserRoute.addChildren([
         AuthComUserSubRouteRoute,

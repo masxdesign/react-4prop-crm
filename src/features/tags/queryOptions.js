@@ -5,9 +5,9 @@ export const tagListQueryOptions = authUserId => ({
     queryFn: () => crmTagList(authUserId)
 })
 
-export function sharedTagListQueryOptions (authUserId, import_id) {
+export function sharedTagListQueryOptions (from_uid, import_id) {
     return {
-        queryKey: ['sharedTagList', authUserId, import_id],
-        queryFn: () => crmSharedTagPids(authUserId, import_id)
+        queryKey: ['sharedTagList', from_uid, import_id],
+        queryFn: () => crmSharedTagPids(from_uid, import_id)
     }
 }

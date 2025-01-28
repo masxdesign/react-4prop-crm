@@ -145,7 +145,7 @@ function GradeSharingConfirmComponent () {
                             </h3>
                             <Suspense fallback={<Loader2 className="animate-spin" />}>
                                 <AssignTagControl 
-                                    authUserId={auth.authUserId} 
+                                    from_id={auth.user.id} 
                                     importId={selected.id}
                                     selected={tag}
                                     onSelect={setTag}
@@ -158,7 +158,7 @@ function GradeSharingConfirmComponent () {
                 <div className='px-3 space-y-2'>
                     <h3 className="text-sm font-bold">Recent</h3>
                     <Suspense fallback={<Loader2 className="animate-spin" />}>
-                        <RecentGradeShares authUserId={auth.authUserId} onSelect={applyClientTag} />
+                        <RecentGradeShares from_uid={auth.user.id} onSelect={applyClientTag} />
                     </Suspense>
                 </div> 
 
@@ -197,8 +197,8 @@ function PropertyGrade ({ pid, grade, onGrade }) {
     )
 }
 
-function AssignTagControl ({ authUserId, importId, selected, onSelect }) {
-    const tagsQuery = useSuspenseQuery(sharedTagListQueryOptions(authUserId, importId))
+function AssignTagControl ({ from_id, importId, selected, onSelect }) {
+    const tagsQuery = useSuspenseQuery(sharedTagListQueryOptions(from_id, importId))
 
     return (
         <AssignTagInput 
@@ -210,8 +210,8 @@ function AssignTagControl ({ authUserId, importId, selected, onSelect }) {
     )
 }
 
-function RecentGradeShares ({ authUserId, onSelect }) {
-    const query = useSuspenseQuery(recentGradeSharesQueryOptions(authUserId))
+function RecentGradeShares ({ from_uid, onSelect }) {
+    const query = useSuspenseQuery(recentGradeSharesQueryOptions(from_uid))
 
     const setSelected = useGradeSharingStore.use.setSelected()
     const setTag = useGradeSharingStore.use.setTag()

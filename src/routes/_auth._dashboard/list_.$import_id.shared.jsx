@@ -30,7 +30,8 @@ function ShareListComponent () {
 
   return (
     <SharedListPage 
-      from={auth.authUserId}
+      authUserId={auth.authUserId}
+      from_uid={auth.user.id}
       list={<Outlet />} 
       sidebarBlock={
         <Suspense fallback={<Loader2 className='animate-spin' />}>
@@ -47,10 +48,10 @@ function ShareListComponent () {
   )
 }
 
-export function SharedListPage ({ from, list, sidebarBlock }) {
+export function SharedListPage ({ authUserId, from_uid, list, sidebarBlock }) {
   const { tag_id } = Route.useParams()
-  const { data } = useShareListSuspenseQuery(from)
-  const { data: tag } = useTagsSuspenseQuery(from, data => find(data, { id: tag_id }))
+  const { data } = useShareListSuspenseQuery(authUserId)
+  const { data: tag } = useTagsSuspenseQuery(from_uid, data => find(data, { id: tag_id }))
 
   return (
     <div className='flex gap-8 max-w-[1400px] mx-auto'>
@@ -142,11 +143,11 @@ export function ContactUserCard () {
   )
 }
 
-export function useTagsSuspenseQuery (from, select = null) {
+export function useTagsSuspenseQuery (from_uid, select = null) {
   const import_id = useImportIdQuery()
 
   const query = useSuspenseQuery({
-    ...sharedTagListQueryOptions(from, import_id),
+    ...sharedTagListQueryOptions(from_uid, import_id),
     select
   })
 

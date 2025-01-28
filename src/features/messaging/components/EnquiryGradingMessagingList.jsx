@@ -1,23 +1,27 @@
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
+import { User } from 'lucide-react'
 
 function EnquiryGradingMessagingList({ 
     list,
     renderLeftSide,
     renderRightSide,
     rowClassName,
-    gradingComponent: Grading
+    gradingComponent: Grading,
+    context
 }) {
     return list.map((row, index) => {
-      const { id, title, statusColor, statusText, sizeText, tenureText, thumbnail, content, companies } = row
-  
+      const { id, title, statusColor, statusText, sizeText, tenureText, thumbnail, content } = row
+
       return (
-        <div key={id} className={cn("space-y-0 p-4", rowClassName)}>
+        <div key={id} className={cn("space-y-4 p-4", rowClassName)}>
+          {row.client && <ClientContactInformation client={row.client} />}
           <div className='flex gap-8'>
             <div className='flex flex-col gap-4 basis-1/5 overflow-hidden'>
               <div className='flex items-start gap-4'>
                 <div>
-                  <Grading row={row} />
+                  {Grading && <Grading row={row} context={context} />}
                 </div>
                 <div className='bg-gray-200 size-10 sm:size-28'>
                   <img src={thumbnail} className='object-cover w-full h-full' />
@@ -52,16 +56,12 @@ function EnquiryGradingMessagingList({
                   </div>            
                 </div>
                 <div className='basis-1/5 self-start flex flex-col gap-1'>
-                  <div className='text-xs text-center text-muted-foreground'>{companies[0].name}</div>
-                  {!companies[0].logo.original ? (
-                    <div className='bg-slate-50 p-2 flex items-center justify-center font-bold text-slate-400 h-12'>
-                      <span>No logo</span>
-                    </div>
-                  ) : (
-                    <div className='bg-slate-50 p-2 w-full flex justify-center items-center self-start'>
-                      <img src={companies[0].logo.original} className='max-h-12 object-cover' />
-                    </div>
-                  )}
+                    {row.companies[0] && (
+                      <PropertyCompany
+                        logo={row.companies[0].logo.original}
+                        name={row.companies[0].name}
+                      />
+                    )}
                 </div>
               </div>
               {renderRightSide?.(row, index)}
@@ -70,6 +70,48 @@ function EnquiryGradingMessagingList({
         </div>
       )
     })
+}
+
+function PropertyCompany({ logo, name }) {
+  return (
+    <>
+      <div className='text-xs text-center text-muted-foreground'>{name}</div>
+      {logo ? (
+        <div className='bg-slate-50 p-2 w-full flex justify-center items-center self-start'>
+          <img src={logo} className='max-h-12 object-cover' />
+        </div>
+      ) : (
+        <div className='bg-slate-50 p-2 flex items-center justify-center font-bold text-slate-400 h-12'>
+          <span>No logo</span>
+        </div>
+      )}
+    </>
+  )
+}
+
+function ClientContactInformation({ client }) {
+  return (
+    <div className='flex items-center gap-4 text-xs border-b px-4 pb-2 -mt-2 -mx-4 shadow-sm rounded-md'>
+      <div className='flex gap-2 items-center text-muted-foreground'>
+        <User className='size-3'/>
+        <span>Client</span>
+      </div>
+      <div>{client.phone}</div>
+      <div className='ml-auto flex gap-8 items-center'>
+
+        <div className='flex gap-2 items-center'>
+          <div className='font-bold'>Sent by</div>
+          <div>{client.display_name}</div>
+          <div className='bg-slate-50 size-5 rounded-full overflow-hidden flex justify-center items-center self-start'>
+            <img src={`${FOURPROP_BASEURL}${client.avatar_sm}`} className='max-h-12 object-cover' />
+          </div>
+        </div>
+        
+        <Button size="xs" variant="outline">More info</Button>
+
+      </div>
+    </div>
+  )
 }
 
 export default EnquiryGradingMessagingList

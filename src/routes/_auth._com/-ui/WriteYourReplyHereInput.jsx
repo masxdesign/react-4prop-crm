@@ -71,13 +71,13 @@ const WriteYourReplyHereInputForm = ({ onSubmit }) => {
 const WriteYourReplyHereInput = ({ chat_id, property }) => {
     const auth = useAuth()
     const queryClient = useQueryClient()
-    const replyTo = useMessagesLastNList(chat_id, (state) => selectReplyTo(state, auth.authUserId))
+    const replyTo = useMessagesLastNList(auth.bzUserId, chat_id, (state) => selectReplyTo(state, auth.bzUserId))
 
     const sendReply = useMutation({
         mutationFn: (variables) => 
             replyBizchatEnquiryMessage({ 
                 chat_id, 
-                from: auth.authUserId, 
+                from: auth.bzUserId, 
                 recipients: replyTo, 
                 message: variables.message,
                 attachments: variables.files,
@@ -85,7 +85,7 @@ const WriteYourReplyHereInput = ({ chat_id, property }) => {
             }),
         onSuccess: () => {
             queryClient.invalidateQueries({ 
-                queryKey: ["bizchatMessagesLastN", auth.authUserId, chat_id] 
+                queryKey: ["bizchatMessagesLastN", auth.bzUserId, chat_id] 
             })
         }
     })

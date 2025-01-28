@@ -84,23 +84,25 @@ function Component () {
         
         // if (process.env.NODE_ENV === 'production') {
 
-          if (form.property.agents.length < 1) throw new Error("property.agents empty")
+        if (form.property.agents.length < 1) {
+          throw new Error("property.agents empty")
+        }
 
-          await sendPropertyEnquiry.mutateAsync({
-            from: auth.user.bz_uid, 
-            recipients: form.property.agents,
-            message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
-            property: form.property,
-            choices: {
-              pdf: form.pdf,
-              viewing: form.viewing
-            }
-          })
+        await sendPropertyEnquiry.mutateAsync({
+          from: auth.bzUserId, 
+          recipients: form.property.agents,
+          message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
+          property: form.property,
+          choices: {
+            pdf: form.pdf,
+            viewing: form.viewing
+          },
+          applicant_uid: null
+        })
 
         // }
 
         setSent(prev => ([...prev, pid]))
-
         await delay(250)
         
       }

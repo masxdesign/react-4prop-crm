@@ -14,15 +14,17 @@ export const initialAuthState = {
 
 const initializer = (user) => {
     if (!user) return initialAuthState
+    
+    const isAgent = user.neg_id ? true : false
+
     return {
         ...initialAuthState,
         isAuthenticated: true,
+        isAgent,
+        bzUserId: user.neg_id ? user.neg_id : `U${user.id}`,
         authUserId: `U${user.id}`,
         displayName: user.display_name ?? `${user.first} ${user.last}`,
-        user: {
-            ...user,
-            bz_uid: user.neg_id ? user.neg_id : `U${user.id}`
-        },
+        user,
         allowFutureFeatured: ['2', '161', '207', '60726'].includes(`${user.id}`),
     }
 }

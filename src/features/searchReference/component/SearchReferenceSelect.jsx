@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button'
 import { ChevronDown, Edit3 } from 'lucide-react'
 import { useGradeUpdater } from '../searchReference.mutation'
 import useSearchReferenceListingEnquired from '../searchReference.hooks'
+import SearchReferenceButton from './SearchReferenceButton'
 
 function SearchReferenceSelect({ tag_id, pid, onSelect, onClick }) {
+    const auth = useAuth()
+
     const inputRef = useRef(null)
     const [open, setOpen] = useState(false)
 
@@ -60,14 +63,16 @@ function SearchReferenceSelect({ tag_id, pid, onSelect, onClick }) {
   
     return (
       <>
-        <div className='inline-flex items-stretch bg-white shadow-sm cursor-pointer border border-sky-200 text-sky-500 text-xs rounded hover:border-sky-500 overflow-hidden'>
-          <div className='px-2 py-1 hover:underline' onClick={handleClick}>
+        <SearchReferenceButton>
+          <div className='px-2 py-1 flex-1 hover:underline' onClick={handleClick}>
               {selected ? selected.name: "Unnamed"}
           </div>
-          <div onClick={handleOpen} className='flex items-center justify-center px-2 border-l border-l-sky-200 bg-sky-50 hover:bg-sky-500 hover:text-white ml-auto'>
-            <ChevronDown className='size-3 ml-auto' />
-          </div>
-        </div>
+          {!auth.isAgent && (
+            <div onClick={handleOpen} className='flex items-center justify-center px-2 border-l border-l-sky-200 bg-sky-50 hover:bg-sky-500 hover:text-white ml-auto'>
+              <ChevronDown className='size-3 ml-auto' />
+            </div>
+          )}
+        </SearchReferenceButton>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="flex gap-4 flex-col justify-center max-w-[450px]">
             <h2 className='font-bold text-lg'>Change search reference</h2>

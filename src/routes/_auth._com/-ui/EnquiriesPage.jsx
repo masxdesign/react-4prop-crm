@@ -42,6 +42,7 @@ function combineQueries(result) {
       companies,
       types: propertyTypescombiner(types, subtypes), 
       properties: propertiesData.results,
+      clients: propertiesData.clients,
       pages: propertiesData.pagin.pages,
       need_reply: propertiesData.pagin.need_reply,
       count: propertiesData.pagin.count
@@ -72,6 +73,7 @@ export const useEnquiryList = (listQuery) => {
       data.properties,
       contentsQuery.data ?? [],
       data.companies,
+      data.clients,
       defaultPropertyDetailsSetting
     ), 
     [data.properties, contentsQuery.data]
@@ -91,7 +93,11 @@ export const useEnquiryList = (listQuery) => {
 function EnquiriesPage({
   page, 
   isFiltersDirty, 
-  enquiryListProps: { list, data, refetch, isFetched, isRefetching },
+  list, 
+  data, 
+  refetch, 
+  isFetched, 
+  isRefetching,
   filters, 
   onFilterChange: handleFiltersChange
 }) {
@@ -267,10 +273,12 @@ function EnquiryMessagingWidget({ chat_id, property, need_reply }) {
 }
 
 const Grading = ({ row }) => {
+  const auth = useAuth()
   const onGradeChange = useRouteContext({ select: (c) => c.onGradeChange })
   const gradeUpdater = useGradeUpdater(row.id)
 
   const handleSelect = async (grade) => {
+    if (auth.isAgent) return
     await gradeUpdater.mutateAsync({ grade })
     onGradeChange(row.id, grade)
   }
@@ -286,16 +294,16 @@ const Grading = ({ row }) => {
 
 function LastMessagesList({ chat_id }) {
   const auth = useAuth()
-  const data = useMessagesLastNList(chat_id)
+  const data = useMessagesLastNList(auth.bzUserId, chat_id)
 
   return data.map(row => {
-    const isSender = row.from === auth.authUserId
+    const isSender = row.from === auth.bzUserId
     
     return (
       <ChatboxBubbleBzStyle key={row.id} variant={isSender ? "sender": "recipient"} 
         className="relative min-w-64 shadow-sm">
         <strong className='text-xs'>
-          {isSender ? "Message you sent": "Message from agent"}
+          {isSender ? "Message you sent": `Message from ${auth.isAgent ? "client": "agent"}`}
         </strong>
         <ChatboxBubbleBzMessage 
           type={row.type}

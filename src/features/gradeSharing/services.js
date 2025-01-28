@@ -7,7 +7,7 @@ export const filterByEmailQueryOptions = (authUserId, email, pid, enabled) => ({
     initialData: []
 })
 
-export const recentGradeSharesQueryOptions = authUserId => ({
-    queryKey: ['recentGradeShares', authUserId],
-    queryFn: () => crmRecentGradeShares(authUserId)
+export const recentGradeSharesQueryOptions = (from_uid) => ({
+    queryKey: ['recentGradeShares', from_uid],
+    queryFn: () => crmRecentGradeShares(from_uid)
 })

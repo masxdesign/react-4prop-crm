@@ -6,7 +6,7 @@ export const bizchatMessagesLast5Query = (authUserId, chatId) => queryOptions({
     queryFn: () => getBizchatMessagesLast5({ authUserId, chatId })
 })
 
-export const bizchatMessagesLastNQuery = (authUserId, chatId, limit) => queryOptions({
-    queryKey: ["bizchatMessagesLastN", authUserId, chatId, limit],
-    queryFn: () => getBizchatMessagesLastN({ authUserId, chatId, limit })
+export const bizchatMessagesLastNQuery = (bzUserId, chatId, limit) => queryOptions({
+    queryKey: ["bizchatMessagesLastN", bzUserId, chatId, limit],
+    queryFn: () => getBizchatMessagesLastN({ bzUserId, chatId, limit })
 })

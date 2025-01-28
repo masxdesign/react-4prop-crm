@@ -1,14 +1,12 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { bizchatMessagesLastNQuery } from "@/features/messaging/messaging.queries"
-import { useAuth } from "@/components/Auth/Auth"
 import { createSelector } from "reselect"
 import { chain, last } from "lodash"
 
 const default_lastN_limit = 1
 
-export const useMessagesLastNList = (chat_id, select) => {
-  const auth = useAuth()
-  const options = bizchatMessagesLastNQuery(auth.authUserId, chat_id, default_lastN_limit)
+export const useMessagesLastNList = (bzUserId, chat_id, select) => {
+  const options = bizchatMessagesLastNQuery(bzUserId, chat_id, default_lastN_limit)
   const { data } = useSuspenseQuery({
     ...options,
     select
@@ -20,8 +18,8 @@ const selectLastMessage = state => last(state)
 
 export const selectReplyTo = createSelector(
   selectLastMessage,
-  (_, authUserId) => authUserId,
-  (lastMessage, authUserId) => {
+  (_, bzUserId) => bzUserId,
+  (lastMessage, bzUserId) => {
     if (!lastMessage) return null
 
     const { recipients, from } = lastMessage
@@ -30,7 +28,7 @@ export const selectReplyTo = createSelector(
       .trim(',')
       .split(',')
       .uniq()
-      .filter(uid => uid !== authUserId)
+      .filter(id => id !== bzUserId)
       .value()
 
     return uids
