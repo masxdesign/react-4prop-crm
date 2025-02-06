@@ -12,14 +12,20 @@ export const Route = createFileRoute('/_auth/_com/user')({
   component: RouteComponent
 })
 
-const menu = [
+const menuClient = [
     { id: "email", to: 'email-agents', label: "Email agents" },
     { id: "enquiries", to: 'active', label: "Active" },
     { id: "inactive", to: 'inactive', label: "Inactive" }
 ]
 
+const menuAgent = [
+    { id: "enquiries", to: 'active', label: "Active" },
+    { id: "inactive", to: 'inactive', label: "Inactive" }
+]
+
 function RouteComponent() {
-    const { origin } = Route.useRouteContext()
+    const { origin, auth } = Route.useRouteContext()
+    const menu = auth.isAgent ? menuAgent: menuClient
 
     return (
         <>

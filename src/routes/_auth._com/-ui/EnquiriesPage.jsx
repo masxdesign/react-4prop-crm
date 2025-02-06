@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, FileCheckIcon, HomeIcon, Loader2Icon, MessagesSquareIcon, XIcon } from 'lucide-react'
 import { map } from 'lodash'
@@ -27,6 +27,9 @@ import { Attachment } from '@/components/Uppy/components'
 import SearchReferenceSelect from '@/features/searchReference/component/SearchReferenceSelect'
 import { useGradeUpdater } from '@/features/searchReference/searchReference.mutation'
 import GradingWidget from '@/components/GradingWidget'
+import { Button } from '@/components/ui/button'
+import { useMap } from '@uidotdev/usehooks'
+import WriteYourReplyHereInputForm from './WriteYourReplyHereInputForm'
 
 function combineQueries(result) {
   const [ { data: types }, { data: subtypes }, { data: propertiesData } ] = result
@@ -43,6 +46,7 @@ function combineQueries(result) {
       types: propertyTypescombiner(types, subtypes), 
       properties: propertiesData.results,
       clients: propertiesData.clients,
+      from_uids: propertiesData.from_uids,
       pages: propertiesData.pagin.pages,
       need_reply: propertiesData.pagin.need_reply,
       count: propertiesData.pagin.count
@@ -56,6 +60,8 @@ const defaultPropertyDetailsSetting = {
 }
 
 export const useEnquiryList = (listQuery) => {
+  const auth = useAuth()
+
   const { data } = useSuspenseQueries({
     queries: [
       typesQuery,
@@ -73,10 +79,11 @@ export const useEnquiryList = (listQuery) => {
       data.properties,
       contentsQuery.data ?? [],
       data.companies,
-      data.clients,
-      defaultPropertyDetailsSetting
+      auth.isAgent ? data.clients: data.from_uids,
+      defaultPropertyDetailsSetting,
+      auth
     ), 
-    [data.properties, contentsQuery.data]
+    [data.properties, contentsQuery.data, auth]
   )
 
   const { refetch, isFetched, isRefetching } = useQuery(listQuery)
@@ -101,6 +108,7 @@ function EnquiriesPage({
   filters, 
   onFilterChange: handleFiltersChange
 }) {
+  
   useEffect(() => {
 
     if (isFetched) {
@@ -120,6 +128,8 @@ function EnquiriesPage({
       choice: value
     })
   }
+
+  const activeKey = useMap(list.map((row) => ([row.id, 0])))
   
   return (
     <>
@@ -148,7 +158,6 @@ function EnquiriesPage({
       {data.pages > 0 ? (
         <>
           <div className="flex justify-between">
-
             <div className='flex gap-8'>
               <Pagination 
                 page={page} 
@@ -193,9 +202,9 @@ function EnquiriesPage({
                   <ReloadIcon />
                 </Link>
               )} 
-            </div>
-            
+            </div>  
           </div>
+
           <EnquiryGradingMessagingList 
             list={list} 
             rowClassName="border rounded-lg"
@@ -204,6 +213,9 @@ function EnquiriesPage({
               const handleClick = (selected) => {
                 handleFilterSearchRefChange(selected ? selected.id: "NULL")
               }
+              const currActivekey = activeKey.get(row.id)
+              const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
+
               return (
                 <>
                   <Suspense fallback={<Loader2Icon className="animate-spin" />}>
@@ -213,18 +225,35 @@ function EnquiriesPage({
                       onClick={handleClick}
                     />
                   </Suspense>
+                  {row.client?.isGradeShare && (
+                    <div className='flex flex-col gap-1'>
+                      {["Applicant", "Property agents"].map((label, index) => (
+                        <Button 
+                          key={index}
+                          variant="outline" 
+                          className={cn("text-xs", { [activeClassName]: currActivekey === index })}
+                          onClick={() => {
+                            activeKey.set(row.id, index)
+                          }}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                   <Choices choices={row.enquiry_choices} className="flex-col gap-2" />
                 </>
               )
             }}
             renderRightSide={(row) => {
               if (!row.chat_id) return null
-              return (
-                  <EnquiryMessagingWidget 
-                      property={row}
-                      chat_id={row.chat_id} 
-                      need_reply={row.need_reply} 
-                  />
+              return activeKey.get(row.id) === 1 ? (
+                <EnquiryMessagingWidget property={row} />
+              ) : (
+                <EnquiryMessagingWidget 
+                  chat_id={row.chat_id} 
+                  property={row}
+                />
               )
             }}
           />
@@ -241,18 +270,19 @@ function EnquiriesPage({
   )
 }
 
-function EnquiryMessagingWidget({ chat_id, property, need_reply }) {
+function EnquiryMessagingWidget({ chat_id, property }) {
   const { ref: inViewRef, inView } = useInView({ triggerOnce: true })
 
   let child = null
 
   if (inView) {
-    child = (
+    child = chat_id ? (
       <div className='flex flex-col gap-2 bg-cyan-400 rounded-xl'>
         <ViewAllMessagesLink chat_id={chat_id} />
         <div className='flex flex-col-reverse gap-4 px-3'>
           <LastMessagesList 
             chat_id={chat_id}
+            isGradeShare={property.client?.isGradeShare}
           />
         </div>
         <div className='p-3'>
@@ -261,6 +291,13 @@ function EnquiryMessagingWidget({ chat_id, property, need_reply }) {
             property={property} 
           />
         </div>
+      </div>
+    ) : (
+      <div className='bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4'>
+        <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
+          There are no messages yet <br/>Start conversation with <b>property agents</b>
+        </div>
+        <WriteYourReplyHereInputForm placeholder="Write your message here..." />
       </div>
     )
   }
@@ -292,7 +329,7 @@ const Grading = ({ row }) => {
   )
 }
 
-function LastMessagesList({ chat_id }) {
+function LastMessagesList({ chat_id, isGradeShare }) {
   const auth = useAuth()
   const data = useMessagesLastNList(auth.bzUserId, chat_id)
 
@@ -302,9 +339,13 @@ function LastMessagesList({ chat_id }) {
     return (
       <ChatboxBubbleBzStyle key={row.id} variant={isSender ? "sender": "recipient"} 
         className="relative min-w-64 shadow-sm">
-        <strong className='text-xs'>
-          {isSender ? "Message you sent": `Message from ${auth.isAgent ? "client": "agent"}`}
-        </strong>
+        {isSender ? (
+          <strong className='text-xs'>Message you sent</strong>
+        ) : auth.isAgent ? (
+          <strong className='text-xs'>Message from {isGradeShare ? "applicant": "client"}</strong>
+        ) : (
+          <strong className='text-xs'>Message from agent</strong>
+        )}
         <ChatboxBubbleBzMessage 
           type={row.type}
           body={!row.body ? '*no message*': row.body}

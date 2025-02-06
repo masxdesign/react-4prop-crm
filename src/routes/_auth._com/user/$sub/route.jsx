@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
         queryClient.ensureQueryData(subtypesQuery)
       ])
   },
-  beforeLoad: ({ params, context: { queryClient, page, filters, perpage } }) => {
+  beforeLoad: ({ params, context: { auth, queryClient, page, filters, perpage } }) => {
 
     const activeListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters })
     const inactiveListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters, inactive: true })
@@ -77,10 +77,14 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
         )
 
         return {
-            pageTitle: "Enquiries",
-            pageDescription: (
+            pageTitle: "Active",
+            pageDescription: auth.isAgent ? (
               <>
-                Your current active enquiries. View and reply to messages sent back from the agent. By selecting the {X} enquiries are placed in the inactive listing
+                View and reply to grade shares and enquiries made on 4prop
+              </>
+            ) : (
+              <>
+                View and reply to messages sent back from the agent. By selecting the {X} enquiries are placed in the inactive listing
               </>
             ),
             onGradeChange,

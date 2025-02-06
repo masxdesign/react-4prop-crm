@@ -13,6 +13,7 @@ import displayTenure from "@/utils/displayTenure"
 import displaySize from "@/utils/displaySize"
 import { crmSharedPids } from "@/services/bizchat"
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "./listing.queries"
+import myDateTimeFormat from "@/utils/myDateTimeFormat"
 
 export const IS_NULL = "IS_NULL"
 
@@ -47,7 +48,7 @@ const defaultPropertyDetailsSetting = {
     addressShowBuilding: false
 }
 
-const propertyCombiner = (pid, original, propertyTypes, content = [], companies_, clients = [], setting = defaultPropertyDetailsSetting) => {
+const propertyCombiner = (pid, original, propertyTypes, content = [], companies_, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
     const { addressShowMore, addressShowBuilding } = setting
     
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
@@ -80,7 +81,41 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
     const companies = propertyParse.companies(companies_)(original)
     const pictures = propertyParse.pictures(original)
 
-    const { grade, gradinguid, last_sender, chat_id, tag_name, tag_id, enquiry_choices } = original
+    const { grade, gradinguid, gradingupdated, grade_from_uid, last_sender, chat_id, tag_name, tag_id, enquiry_choices } = original
+
+    let client = null
+    let from_uid = null
+
+    if (auth) {
+
+        if (auth.isAgent) {
+
+            client = clientsFromUids.find(client => client.id === gradinguid)
+            
+            if (client) {
+                const isGradeShare = auth.user.id === grade_from_uid
+        
+                client = {
+                    ...client,
+                    isGradeShare
+                }
+            }
+
+        } else {
+
+            from_uid = clientsFromUids.find(client => client.id === grade_from_uid)
+
+            if (from_uid) {
+
+                from_uid.company = companies_.find((row) => row.cid === from_uid.cid)
+
+            }
+
+        }
+
+
+    }
+    
 
     return {
         id: pid,
@@ -97,6 +132,8 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         thumbnail: pictures.thumbs[0],
         types: parseTypes.types,
         subtypes: parseTypes.subtypes,
+        grade_from_uid,
+        grade_updated: gradingupdated ? myDateTimeFormat(gradingupdated): null,
         tenureText: displayTenure(tenure),
         sizeText,
         landText,
@@ -106,7 +143,8 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         statusColor: PROPERTY_STATUS_COLORS[original.status],
         content: content_,
         companies,
-        client: clients.find(client => client.id === gradinguid),
+        client,
+        from_uid,
         agents: chain(original.dealswith).trim(',').split(',').uniq().value(),
         original
     }
@@ -164,9 +202,9 @@ const propertyTypesSelector = createSelector(
     }
 )
 
-export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies, clients = [], settings = defaultPropertyDetailsSetting) => (
+export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies, clientsFromUids = [], settings = defaultPropertyDetailsSetting, auth = null) => (
     propertiesArray
-        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies, clients, settings))
+        .map(property => propertyCombiner(property.pid, property, propertyTypes, contents[property.pid], companies, clientsFromUids, settings, auth))
 )
 
 const selectedDetailsCombiner = (selected, propertyTypes, propertiesArray, contents, companies) => (
