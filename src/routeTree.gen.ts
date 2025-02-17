@@ -17,6 +17,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthComImport } from './routes/_auth._com'
+import { Route as ViewDetailsPidRouteImport } from './routes/view-details.$pid/route'
 import { Route as AuthGradeSharingIndexImport } from './routes/_auth.grade-sharing_.index'
 import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerUid'
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
@@ -75,6 +76,13 @@ const AuthComRoute = AuthComImport.update({
   id: '/_com',
   getParentRoute: () => AuthRoute,
 } as any)
+
+const ViewDetailsPidRouteRoute = ViewDetailsPidRouteImport.update({
+  path: '/view-details/$pid',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/view-details.$pid/route.lazy').then((d) => d.Route),
+)
 
 const AuthGradeSharingIndexRoute = AuthGradeSharingIndexImport.update({
   path: '/grade-sharing/',
@@ -264,6 +272,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
+    '/view-details/$pid': {
+      preLoaderRoute: typeof ViewDetailsPidRouteImport
+      parentRoute: typeof rootRoute
+    }
     '/_auth/_com': {
       preLoaderRoute: typeof AuthComImport
       parentRoute: typeof AuthImport
@@ -423,6 +435,7 @@ export const routeTree = rootRoute.addChildren([
     AuthGradeSharingIndexRoute,
     AuthGradeShareSuccessRouteRoute,
   ]),
+  ViewDetailsPidRouteRoute,
   AccessHashOwnerUidRoute.addChildren([
     AccessHashOwnerUidSharedRoute.addChildren([
       AccessHashOwnerUidSharedTagidRoute,

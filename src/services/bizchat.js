@@ -551,6 +551,8 @@ export const getUidByImportId = async (ownerUid, import_id, createUser = false) 
 }
 
 export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices, applicant_uid = null, attachments = [] }) => {
+    
+    if (recipients.includes(from)) throw new Error('[from] is in [recipients]')
 
     const enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E', applicant_uid)
 

@@ -1,7 +1,9 @@
+import { useAuth } from '@/components/Auth/Auth'
 import { cn } from '@/lib/utils'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { EnvelopeClosedIcon } from '@radix-ui/react-icons'
 import { StarIcon } from 'lucide-react'
+import PropertyCompany from './PropertyCompany'
 
 function EnquiryGradingMessagingList({ 
     list,
@@ -11,19 +13,17 @@ function EnquiryGradingMessagingList({
     gradingComponent: Grading,
     context
 }) {
+
     return list.map((row, index) => {
-      const { id, title, statusColor, statusText, sizeText, tenureText, thumbnail, content, client, grade_updated, from_uid } = row
-
-      console.log(from_uid);
+      const { id, title, enquired, statusColor, statusText, sizeText, tenureText, thumbnail, content, grade_updated } = row
       
-
       return (
         <div key={id} className={rowClassName}>
-          {from_uid && (
+          {enquired.from_uid && (
             <SharingAgentContactInformation />
           )}
-          {client && (
-            <ClientContactInformation client={client} grade_updated={grade_updated} />
+          {enquired.client && (
+            <ClientContactInformation client={enquired.client} grade_updated={grade_updated} />
           )}
           <div className='flex gap-0'>
             <div className='flex flex-col gap-4 basis-1/5 overflow-hidden p-4'>
@@ -63,19 +63,14 @@ function EnquiryGradingMessagingList({
                     {content.teaser}
                   </div>            
                 </div>
-                <div className='basis-1/5 self-start flex flex-col gap-1'>
-                    {from_uid ? (
-                      <PropertyCompany
-                        logo={from_uid.company.logo.original}
-                        name={from_uid.company.name}
-                      />
-                    ) : row.companies[0] ? (
-                      <PropertyCompany
-                        logo={row.companies[0].logo.original}
-                        name={row.companies[0].name}
-                      />
-                    ) : null}
-                </div>
+                {enquired.company && (
+                  <div className='basis-1/5 self-start flex flex-col gap-1'>
+                    <PropertyCompany
+                      logo={enquired.company.logo.original}
+                      name={enquired.company.name}
+                    />
+                  </div>
+                )}
               </div>
               {renderRightSide?.(row, index, context)}
             </div>
@@ -83,23 +78,6 @@ function EnquiryGradingMessagingList({
         </div>
       )
     })
-}
-
-function PropertyCompany({ logo, name }) {
-  return (
-    <>
-      <div className='text-xs text-center text-muted-foreground'>{name}</div>
-      {logo ? (
-        <div className='bg-slate-50 p-2 w-full flex justify-center items-center self-start'>
-          <img src={logo} className='max-h-12 object-cover' />
-        </div>
-      ) : (
-        <div className='bg-slate-50 p-2 flex items-center justify-center font-bold text-slate-400 h-12'>
-          <span>No logo</span>
-        </div>
-      )}
-    </>
-  )
 }
 
 function ClientContactInformation({ client, grade_updated }) {
@@ -137,7 +115,7 @@ function SharingAgentContactInformation() {
 
   return (
     <div className='flex justify-center items-center gap-4 text-xs border-b px-4 py-3 shadow-sm rounded-md bg-gray-100'>
-      This agent shared this property
+      Property shared by an agent
     </div>
   )
 }

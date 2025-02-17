@@ -33,9 +33,8 @@ const grantAccess = async () => {
 export const authWhoisonlineQueryOptions = queryOptions({
     queryKey: ['whoisonline'],
     queryFn: async () => {
-        const { data } = await fourPropClient.post('api/login')
-
-        return data
+        const res = await fourPropClient.post('api/login')
+        return res.data
     },
     staleTime: Infinity
 })
@@ -43,12 +42,12 @@ export const authWhoisonlineQueryOptions = queryOptions({
 export const authLogin = async ({ email, password }) => {
     const { default: each_password_generator } = await import("@/utils/each_password_generator")
 
-    const { data } = await fourPropClient.post(
+    const res = await fourPropClient.post(
         'api/login', 
         { email, password, each_password: each_password_generator(password) }
     )
     
-    return data
+    return res.data
 }
 
 export const fetchUser = async (uid) => {

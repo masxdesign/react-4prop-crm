@@ -12,7 +12,7 @@ export const initialAuthState = {
     allowFutureFeatured: false
 }
 
-const initializer = (user) => {
+export const authCombiner = (user) => {
     if (!user) return initialAuthState
     
     const isAgent = user.neg_id ? true : false
@@ -38,7 +38,7 @@ const initializer = (user) => {
 //     switch (action.type) {
 //         case 'USER_RECEIVED': {
 //             const user = action.payload
-//             return initializer(user)
+//             return authCombiner(user)
 //         }
 //     }
 //     throw Error('Unknown action: ' + action.type);
@@ -46,7 +46,7 @@ const initializer = (user) => {
 
 const AuthProvider = ({ children }) => {
     const { data } = useSuspenseQuery(authWhoisonlineQueryOptions)
-    const [state, setState] = useState(() => initializer(data))
+    const [state, setState] = useState(() => authCombiner(data))
     // const [state, dispatch] = useReducer(authReducer, data, initializer)
 
     return (
@@ -71,14 +71,16 @@ export const useAuth = () => {
         if(data.error) throw new Error(data.error)
 
         flushSync(() => {
-            setState(data)
+            setState(authCombiner(data))
         })
     }
 
     const handleLogout = async () => {
         await logout.mutateAsync()
         flushSync(() => {
-            setState(null)
+            setState({
+                logout: true
+            })
         })
     }
 

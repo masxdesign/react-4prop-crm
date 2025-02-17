@@ -1,12 +1,14 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import EnquiriesPage, { useEnquiryList } from '../../-ui/enquiriesPage'
+import { produce } from 'immer'
+import { useAuth } from '@/components/Auth/Auth-context'
 
 export const Route = createLazyFileRoute('/_auth/_com/user/$sub')({
     component: RouteComponent
 })
 
 function RouteComponent() {
-    const { page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription } = Route.useRouteContext()
+    const { page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription, queryClient } = Route.useRouteContext()
 
     const navigate = Route.useNavigate()
 
@@ -24,6 +26,19 @@ function RouteComponent() {
                 }
             })
         })
+    }
+
+    const handleDealingAgentFirstMessage = (message, variables) => {
+        queryClient.setQueryData(listQuery.queryKey, (prev) => {
+            return produce(prev, (draft) => {
+                const row = draft.results.find((row) => row.pid === variables.property.id)
+
+                if (row) {
+                    row.dealing_agents_chat_id = message.chat_id
+                }  
+            })
+        })
+
     }
 
     return (
@@ -50,6 +65,7 @@ function RouteComponent() {
                 isRefetching={isRefetching}
                 isFiltersDirty={isFiltersDirty} 
                 onFilterChange={handleFiltersChange}
+                onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
             /> 
         </div>
     )

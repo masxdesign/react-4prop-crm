@@ -48,6 +48,57 @@ const defaultPropertyDetailsSetting = {
     addressShowBuilding: false
 }
 
+const propertyEnquiredVariablesCombiner = (original, companies, clientsFromUids, auth) => {
+    let client = null
+    let from_uid = null
+    let company = companies[0]
+
+    if (auth) {
+
+        if (auth.isAgent) {
+
+            client = clientsFromUids.find(client => client.id === original.gradinguid)
+            
+            if (client) {
+                const isGradeShare = auth.user.id === original.grade_from_uid
+        
+                client = {
+                    ...client,
+                    isGradeShare
+                }
+            }
+
+        } else {
+
+            from_uid = clientsFromUids.find(client => client.id === original.grade_from_uid)
+
+            if (from_uid) {
+
+                from_uid.company = companies.find((row) => row.cid === from_uid.cid)
+
+            }
+
+        }
+
+
+    }
+
+    if (client && !client.isGradeShare) {
+      company = null
+    }
+    
+    if (from_uid) {
+      company = from_uid.company
+    }
+
+    return {
+        company,
+        client,
+        from_uid,
+        need_reply: original.last_sender !== null
+    }
+}
+
 const propertyCombiner = (pid, original, propertyTypes, content = [], companies_, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
     const { addressShowMore, addressShowBuilding } = setting
     
@@ -81,51 +132,19 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
     const companies = propertyParse.companies(companies_)(original)
     const pictures = propertyParse.pictures(original)
 
-    const { grade, gradinguid, gradingupdated, grade_from_uid, last_sender, chat_id, tag_name, tag_id, enquiry_choices } = original
+    const { grade, gradingupdated, grade_from_uid, chat_id, tag_name, tag_id, enquiry_choices } = original
 
-    let client = null
-    let from_uid = null
-
-    if (auth) {
-
-        if (auth.isAgent) {
-
-            client = clientsFromUids.find(client => client.id === gradinguid)
-            
-            if (client) {
-                const isGradeShare = auth.user.id === grade_from_uid
-        
-                client = {
-                    ...client,
-                    isGradeShare
-                }
-            }
-
-        } else {
-
-            from_uid = clientsFromUids.find(client => client.id === grade_from_uid)
-
-            if (from_uid) {
-
-                from_uid.company = companies_.find((row) => row.cid === from_uid.cid)
-
-            }
-
-        }
-
-
-    }
+    const enquired = propertyEnquiredVariablesCombiner(original, companies, clientsFromUids, auth)
     
-
     return {
         id: pid,
+        enquired,
         enquiry_choices,
         tag_name,
         tag_id,
         title,
         grade,
         chat_id,
-        need_reply: last_sender !== null,
         subtypesText,
         addressText,
         pictures,
@@ -143,8 +162,6 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         statusColor: PROPERTY_STATUS_COLORS[original.status],
         content: content_,
         companies,
-        client,
-        from_uid,
         agents: chain(original.dealswith).trim(',').split(',').uniq().value(),
         original
     }

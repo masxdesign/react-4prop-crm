@@ -10,7 +10,7 @@ export const Route = createLazyFileRoute('/login')({
 
 function LoginComponent() {
   const search = Route.useSearch()
-  const navigate = useNavigate({ from: '/login' })
+  const navigate = Route.useNavigate()
 
   const [errors, setErrors] = useState(null)
 
@@ -20,6 +20,9 @@ function LoginComponent() {
     try {
 
       await auth.loginSubmit(variables)
+
+      console.log(search.redirect);
+      
 
       navigate({ to: search.redirect })
 

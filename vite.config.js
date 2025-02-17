@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import path from 'path'
 import react from '@vitejs/plugin-react'
 import jsconfigPaths from 'vite-jsconfig-paths'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
@@ -38,6 +39,19 @@ export default defineConfig(({ command, mode }) => {
       }
     },
     plugins: [...shared.plugins],
+    experimental: {
+      renderBuiltUrl(filename, { hostId, hostType, type }) {
+        if (type === 'public') {
+          return 'https://localhost:5173/' + filename
+        }
+        else if (path.extname(hostId) === '.js') {
+          return { runtime: `window.__assetsPath(${JSON.stringify(filename)})` }
+        }
+        else {
+          return 'https://localhost:5173/' + filename
+        }
+      }
+    }
   }
 
 })

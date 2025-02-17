@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, FileCheckIcon, HomeIcon, Loader2Icon, MessagesSquareIcon, XIcon } from 'lucide-react'
+import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, FileCheckIcon, HomeIcon, Loader2, Loader2Icon, MessagesSquareIcon, XIcon } from 'lucide-react'
 import { map } from 'lodash'
 import PendingComponent from '@/components/PendingComponent'
 import FilterEnquiryChoice from '@/features/enquiryChoice/FilterEnquiryChoice'
@@ -14,7 +14,7 @@ import { useQuery, useSuspenseQueries } from '@tanstack/react-query'
 import { createLazyFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/react-router'
 import companyCombiner from '@/services/companyCombiner'
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
-import { useAuth } from '@/components/Auth/Auth'
+import { authCombiner, useAuth } from '@/components/Auth/Auth'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { useInView } from 'react-intersection-observer'
 import WriteYourReplyHereInput from './WriteYourReplyHereInput'
@@ -29,27 +29,45 @@ import { useGradeUpdater } from '@/features/searchReference/searchReference.muta
 import GradingWidget from '@/components/GradingWidget'
 import { Button } from '@/components/ui/button'
 import { useMap } from '@uidotdev/usehooks'
-import WriteYourReplyHereInputForm from './WriteYourReplyHereInputForm'
+import WriteYourMessageHereInput from './WriteYourMessageHereInput'
 
-function combineQueries(result) {
-  const [ { data: types }, { data: subtypes }, { data: propertiesData } ] = result
+function combineQueries(result, pauth) {
+  const [ { data: dtypes }, { data: dsubtypes }, { data: pdata } ] = result
 
-  if (!propertiesData) return null
+  if (!pdata) return null
 
-  const pids = map(propertiesData.results, "pid")
-  const companies = propertiesData.companies.map((row) => companyCombiner(row))
+  const properties = pdata.results
+  const pids = map(properties, "pid")
+  const companies = pdata.companies.map((row) => companyCombiner(row))
+  const types = propertyTypescombiner(dtypes, dsubtypes)
+  const auth = pdata.i ? authCombiner(pdata.i): pauth
 
   return {
     data: {
       pids,
       companies,
-      types: propertyTypescombiner(types, subtypes), 
-      properties: propertiesData.results,
-      clients: propertiesData.clients,
-      from_uids: propertiesData.from_uids,
-      pages: propertiesData.pagin.pages,
-      need_reply: propertiesData.pagin.need_reply,
-      count: propertiesData.pagin.count
+      types,
+      auth,
+      properties: pdata.results,
+      pages: pdata.pagin.pages,
+      need_reply: pdata.pagin.need_reply,
+      count: pdata.pagin.count,
+      fetchPropReqContentsQuery: propReqContentsQuery(pids, true),
+      propertyDetailsCombiner: (contentsData = []) => {
+
+        const clientsFromUids = auth.isAgent ? pdata.clients: pdata.from_uids
+
+        return detailsCombiner(
+          types,
+          properties,
+          contentsData,
+          companies,
+          clientsFromUids,
+          defaultPropertyDetailsSetting,
+          auth
+        )
+
+      }
     }
   }
 }
@@ -68,22 +86,14 @@ export const useEnquiryList = (listQuery) => {
       subtypesQuery,
       listQuery
     ],
-    combine: combineQueries
+    combine: useCallback((result) => combineQueries(result, auth), [auth])
   })
 
-  const contentsQuery = useQuery(propReqContentsQuery(data.pids, true))
+  const contentsQuery = useQuery(data.fetchPropReqContentsQuery)
 
-  const list = useMemo(() => 
-    detailsCombiner(
-      data.types,
-      data.properties,
-      contentsQuery.data ?? [],
-      data.companies,
-      auth.isAgent ? data.clients: data.from_uids,
-      defaultPropertyDetailsSetting,
-      auth
-    ), 
-    [data.properties, contentsQuery.data, auth]
+  const list = useMemo(
+    () => data.propertyDetailsCombiner(contentsQuery.data), 
+    [data, contentsQuery]
   )
 
   const { refetch, isFetched, isRefetching } = useQuery(listQuery)
@@ -106,7 +116,8 @@ function EnquiriesPage({
   isFetched, 
   isRefetching,
   filters, 
-  onFilterChange: handleFiltersChange
+  onFilterChange: handleFiltersChange,
+  onDealingAgentFirstMessage: handleDealingAgentFirstMessage
 }) {
   
   useEffect(() => {
@@ -225,7 +236,7 @@ function EnquiriesPage({
                       onClick={handleClick}
                     />
                   </Suspense>
-                  {row.client?.isGradeShare && (
+                  {row.enquired.client?.isGradeShare && (
                     <div className='flex flex-col gap-1'>
                       {["Applicant", "Property agents"].map((label, index) => (
                         <Button 
@@ -247,12 +258,23 @@ function EnquiriesPage({
             }}
             renderRightSide={(row) => {
               if (!row.chat_id) return null
+
               return activeKey.get(row.id) === 1 ? (
-                <EnquiryMessagingWidget property={row} />
+                <EnquiryMessagingWidget 
+                  property={row}
+                  chat_id={row.original.dealing_agents_chat_id}
+                  onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
+                  recipientLabel="property agent"
+                />
               ) : (
                 <EnquiryMessagingWidget 
-                  chat_id={row.chat_id} 
                   property={row}
+                  chat_id={row.chat_id} 
+                  recipientLabel={
+                    row.isGradeShare 
+                      ? "applicant"
+                      : "client"
+                  }
                 />
               )
             }}
@@ -270,7 +292,7 @@ function EnquiriesPage({
   )
 }
 
-function EnquiryMessagingWidget({ chat_id, property }) {
+function EnquiryMessagingWidget({ chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   const { ref: inViewRef, inView } = useInView({ triggerOnce: true })
 
   let child = null
@@ -282,7 +304,7 @@ function EnquiryMessagingWidget({ chat_id, property }) {
         <div className='flex flex-col-reverse gap-4 px-3'>
           <LastMessagesList 
             chat_id={chat_id}
-            isGradeShare={property.client?.isGradeShare}
+            recipientLabel={recipientLabel}
           />
         </div>
         <div className='p-3'>
@@ -297,14 +319,19 @@ function EnquiryMessagingWidget({ chat_id, property }) {
         <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
           There are no messages yet <br/>Start conversation with <b>property agents</b>
         </div>
-        <WriteYourReplyHereInputForm placeholder="Write your message here..." />
+        <WriteYourMessageHereInput 
+          property={property} 
+          onSuccess={onDealingAgentFirstMessage}
+        />
       </div>
     )
   }
 
   return (
       <div ref={inViewRef}>
-         {child}
+        <Suspense fallback={<Loader2 className="animate-spin" />}>
+          {child}
+        </Suspense>
       </div>
   )
 }
@@ -329,7 +356,7 @@ const Grading = ({ row }) => {
   )
 }
 
-function LastMessagesList({ chat_id, isGradeShare }) {
+function LastMessagesList({ chat_id, recipientLabel }) {
   const auth = useAuth()
   const data = useMessagesLastNList(auth.bzUserId, chat_id)
 
@@ -342,7 +369,7 @@ function LastMessagesList({ chat_id, isGradeShare }) {
         {isSender ? (
           <strong className='text-xs'>Message you sent</strong>
         ) : auth.isAgent ? (
-          <strong className='text-xs'>Message from {isGradeShare ? "applicant": "client"}</strong>
+          <strong className='text-xs'>Message from {recipientLabel}</strong>
         ) : (
           <strong className='text-xs'>Message from agent</strong>
         )}

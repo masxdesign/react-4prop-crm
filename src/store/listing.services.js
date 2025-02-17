@@ -2,7 +2,29 @@ import { fourPropClient } from "@/services/fourPropClient"
 import lowerKeyObject from "@/utils/lowerKeyObject"
 import { zipObject } from "lodash"
 
-export const fetchSuitableProperties = async ({ enquiryChoicesIsNotNull, inactive = false, page = 1, perpage = 15, filters = {} }) => {
+export const fetchProperties = async (params) => {
+    const { data } = await fourPropClient.get(`api/search`, { params })
+
+    if (!data) throw new Error("no results")
+
+    return {
+        ...data,
+        companies: data.companies ?? [],
+        results: data.results?.map(row => lowerKeyObject(row)) ?? []
+    }
+}
+
+export const fetchEnquiredPropertyByPid = (pid, hash) => fetchProperties({
+    pids: `${pid}`,
+    limit: 1,
+    enquiryMetric: true,
+    isSuitable: true,
+    i: hash
+    // i: '07427676',
+    // i: 'c57e8598'
+})
+
+export const fetchSuitableProperties = ({ enquiryChoicesIsNotNull, inactive = false, page = 1, perpage = 15, filters = {} }) => {
     try {
 
         const { searchRef, choice } = filters
@@ -23,15 +45,7 @@ export const fetchSuitableProperties = async ({ enquiryChoicesIsNotNull, inactiv
             params.enquiryChoices = choice
         }
 
-        const { data } = await fourPropClient.get(`api/search`, { params })
-
-        if (!data) throw new Error("no results")
-
-        return {
-            ...data,
-            companies: data.companies ?? [],
-            results: data.results?.map(row => lowerKeyObject(row)) ?? []
-        }
+        return fetchProperties(params)
     
     } catch (e) {
         console.error(e)
