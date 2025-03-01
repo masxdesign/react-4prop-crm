@@ -10,7 +10,7 @@ const WriteYourMessageHereInput = ({ property, onSuccess }) => {
         mutationFn: sendBizchatPropertyEnquiry,
         onSuccess
     })
-    
+
     const handleSubmit = (values) => sendMessage.mutateAsync({
         from: auth.bzUserId, 
         recipients: property.agents,
@@ -22,7 +22,7 @@ const WriteYourMessageHereInput = ({ property, onSuccess }) => {
         },
         applicant_uid: null
     })
-    
+
     return (
         <WriteYourReplyHereInputForm
             placeholder="Write your message here..." 
@@ -30,6 +30,5 @@ const WriteYourMessageHereInput = ({ property, onSuccess }) => {
         />
     )
 }
-
 
 export default WriteYourMessageHereInput

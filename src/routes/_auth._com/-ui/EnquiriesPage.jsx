@@ -30,6 +30,8 @@ import GradingWidget from '@/components/GradingWidget'
 import { Button } from '@/components/ui/button'
 import { useMap } from '@uidotdev/usehooks'
 import WriteYourMessageHereInput from './WriteYourMessageHereInput'
+import Grading from '@/features/messaging/components/Grading'
+import Choices from '@/features/messaging/components/Choices'
 
 function combineQueries(result, pauth) {
   const [ { data: dtypes }, { data: dsubtypes }, { data: pdata } ] = result
@@ -111,11 +113,14 @@ function EnquiriesPage({
   page, 
   isFiltersDirty, 
   list, 
+  bz_hash,
+  isAgent,
   data, 
   refetch, 
   isFetched, 
   isRefetching,
   filters, 
+  onGradeChange,
   onFilterChange: handleFiltersChange,
   onDealingAgentFirstMessage: handleDealingAgentFirstMessage
 }) {
@@ -140,7 +145,7 @@ function EnquiriesPage({
     })
   }
 
-  const activeKey = useMap(list.map((row) => ([row.id, 0])))
+  const activeKey = useMap(list.map((row) => ([row.key, 0])))
   
   return (
     <>
@@ -218,13 +223,15 @@ function EnquiriesPage({
 
           <EnquiryGradingMessagingList 
             list={list} 
+            isAgent={isAgent}
             rowClassName="border rounded-lg"
+            onGradeChange={onGradeChange}
             gradingComponent={Grading}
             renderLeftSide={(row) => {
               const handleClick = (selected) => {
                 handleFilterSearchRefChange(selected ? selected.id: "NULL")
               }
-              const currActivekey = activeKey.get(row.id)
+              const currActivekey = activeKey.get(row.key)
               const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
 
               return (
@@ -234,6 +241,7 @@ function EnquiriesPage({
                       tag_id={row.tag_id} 
                       pid={row.id} 
                       onClick={handleClick}
+                      isAgent={data.auth.isAgent}
                     />
                   </Suspense>
                   {row.enquired.client?.isGradeShare && (
@@ -244,7 +252,7 @@ function EnquiriesPage({
                           variant="outline" 
                           className={cn("text-xs", { [activeClassName]: currActivekey === index })}
                           onClick={() => {
-                            activeKey.set(row.id, index)
+                            activeKey.set(row.key, index)
                           }}
                         >
                           {label}
@@ -259,15 +267,17 @@ function EnquiriesPage({
             renderRightSide={(row) => {
               if (!row.chat_id) return null
 
-              return activeKey.get(row.id) === 1 ? (
-                <EnquiryMessagingWidget 
+              return activeKey.get(row.key) === 1 ? (
+                <EnquiryMessagingWidgetInView 
+                  bz_hash={bz_hash}
                   property={row}
                   chat_id={row.original.dealing_agents_chat_id}
                   onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
                   recipientLabel="property agent"
                 />
               ) : (
-                <EnquiryMessagingWidget 
+                <EnquiryMessagingWidgetInView 
+                  bz_hash={bz_hash}
                   property={row}
                   chat_id={row.chat_id} 
                   recipientLabel={
@@ -292,39 +302,51 @@ function EnquiriesPage({
   )
 }
 
-function EnquiryMessagingWidget({ chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
+function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
+  return chat_id ? (
+    <div className='flex flex-col gap-2 bg-cyan-400 rounded-xl'>
+      <ViewAllMessagesLink chat_id={chat_id} bz_hash={bz_hash} />
+      <div className='flex flex-col-reverse gap-4 px-3'>
+        <LastMessagesList 
+          chat_id={chat_id}
+          recipientLabel={recipientLabel}
+        />
+      </div>
+      <div className='p-3'>
+        <WriteYourReplyHereInput 
+          chat_id={chat_id} 
+          property={property} 
+        />
+      </div>
+    </div>
+  ) : (
+    <div className='bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4'>
+      <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
+        There are no messages yet <br/>Start conversation with <b>property agents</b>
+      </div>
+      <WriteYourMessageHereInput 
+        property={property} 
+        onSuccess={onDealingAgentFirstMessage}
+      />
+    </div>
+  )
+}
+
+export function EnquiryMessagingWidgetInView({ bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   const { ref: inViewRef, inView } = useInView({ triggerOnce: true })
 
   let child = null
 
   if (inView) {
-    child = chat_id ? (
-      <div className='flex flex-col gap-2 bg-cyan-400 rounded-xl'>
-        <ViewAllMessagesLink chat_id={chat_id} />
-        <div className='flex flex-col-reverse gap-4 px-3'>
-          <LastMessagesList 
-            chat_id={chat_id}
-            recipientLabel={recipientLabel}
-          />
-        </div>
-        <div className='p-3'>
-          <WriteYourReplyHereInput 
-            chat_id={chat_id} 
-            property={property} 
-          />
-        </div>
-      </div>
-    ) : (
-      <div className='bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4'>
-        <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
-          There are no messages yet <br/>Start conversation with <b>property agents</b>
-        </div>
-        <WriteYourMessageHereInput 
-          property={property} 
-          onSuccess={onDealingAgentFirstMessage}
-        />
-      </div>
-    )
+    child = (
+      <EnquiryMessagingWidget 
+        bz_hash={bz_hash}
+        chat_id={chat_id} 
+        property={property} 
+        recipientLabel={recipientLabel} 
+        onDealingAgentFirstMessage={onDealingAgentFirstMessage}
+      />
+    ) 
   }
 
   return (
@@ -333,26 +355,6 @@ function EnquiryMessagingWidget({ chat_id, property, recipientLabel, onDealingAg
           {child}
         </Suspense>
       </div>
-  )
-}
-
-const Grading = ({ row }) => {
-  const auth = useAuth()
-  const onGradeChange = useRouteContext({ select: (c) => c.onGradeChange })
-  const gradeUpdater = useGradeUpdater(row.id)
-
-  const handleSelect = async (grade) => {
-    if (auth.isAgent) return
-    await gradeUpdater.mutateAsync({ grade })
-    onGradeChange(row.id, grade)
-  }
-
-  return (
-      <GradingWidget 
-          size={20}
-          value={row.grade}
-          onSelect={handleSelect}                                         
-      />
   )
 }
 
@@ -412,30 +414,8 @@ const ChatboxBubbleBzMessage = ({ type, body, from, chat_id, className }) => {
   )
 }
 
-function Choices({ className, choices }) {
-
-  if (choices === null || choices < 1) return null
-
-  return (
-    <ul className={cn('flex gap-4 text-xs', className)}>
-      {(choices & 2) > 0 && (
-        <li className='flex items-center gap-1'>
-          <FileCheckIcon strokeWidth={2} className='size-3' />
-          PDF sent
-        </li>
-      )}
-      {(choices & 1) > 0 && (
-        <li className='flex items-center gap-1'>
-          <HomeIcon strokeWidth={2} className='size-3' />
-          View requested
-        </li>
-      )}
-    </ul>
-  )
-}
-
-function ViewAllMessagesLink({ chat_id }) {
-  const conversation_url = `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}`
+function ViewAllMessagesLink({ chat_id, bz_hash }) {
+  const conversation_url = `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}?hide_top_bar=1&i=${bz_hash}`
 
   return (
     <Dialog>

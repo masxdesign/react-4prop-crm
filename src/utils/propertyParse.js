@@ -306,11 +306,14 @@ const propertyParse = {
             amenities: htmlEntities(amenities || '')
         }
     },
-    companies: (companies) => ({ cids }) => uniqBy(companies, 'b').filter(({ cid }) => cids.includes(`,${cid},`)).map(({ logo, ...rest }) => ({
-        ...rest,
-        logo,
-        logoImageUrl: logo.preview
-    }))
+    companies: (companies) => (original) => {
+        const { cids } = original
+
+        let companiesFiltered = uniqBy(companies, 'b')
+        companiesFiltered = companiesFiltered.filter((row) => cids.includes(`,${row.cid},`))
+
+        return companiesFiltered
+    }
 }
 
 export default propertyParse

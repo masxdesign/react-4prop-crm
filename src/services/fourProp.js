@@ -30,11 +30,18 @@ const grantAccess = async () => {
 
 }
 
-export const authWhoisonlineQueryOptions = queryOptions({
-    queryKey: ['whoisonline'],
+export const authWhoisonlineQueryOptions = (hash) => queryOptions({
+    queryKey: ['whoisonline', hash],
     queryFn: async () => {
-        const res = await fourPropClient.post('api/login')
-        return res.data
+        const params = {}
+        
+        if (hash) {
+            params.i = hash
+        }
+
+        const { data } = await fourPropClient.post('api/login', null, { params })
+
+        return data
     },
     staleTime: Infinity
 })
@@ -262,12 +269,21 @@ export const addLastContact = async (variables, { id }) => {
 }
 
 export const updateGrade = async (pid, { grade, autoSearchReference, tag_id }) => {
-    const { data } = await fourPropClient.put(`/api/records/gradings`, {
+    const search = new URLSearchParams(window.location.search)
+    const body = {
         pid, 
         grade,
         autoSearchReference,
         tag_id
-    }, { withCredentials: true })
+    }
+
+    const params = {}
+
+    if (search.has('i')) {
+        params.i = search.get('i')
+    }
+
+    const { data } = await fourPropClient.put(`/api/records/gradings`, body, { params, withCredentials: true })
 
     console.log(data);
     

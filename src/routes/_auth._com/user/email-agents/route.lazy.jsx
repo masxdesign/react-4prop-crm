@@ -201,15 +201,15 @@ function Component () {
                       return filteredSent.includes(row.id) ? (
                         <div className='flex gap-2 items-center'>
                           <i className='border rounded-lg px-1 shadow-sm inline-block text-slate-600'>Sent!</i>
-                          <SearchReferenceEmailAgents row={row} />
+                          <SearchReferenceEmailAgents row={row} isAgent={auth.isAgent} />
                         </div>
                       ) : form.formState.isSubmitting ? (
                         <div className='flex gap-2 items-center'>
                           <span className='inline-block bg-amber-50 text-amber-600'>Sending...</span>
-                          <SearchReferenceEmailAgents row={row} />
+                          <SearchReferenceEmailAgents row={row} isAgent={auth.isAgent} />
                         </div>
                       ) : (
-                        <PdfViewSpecifyMessage index={index} item={row} />
+                        <PdfViewSpecifyMessage index={index} item={row} isAgent={auth.isAgent} />
                       )
                     }}
                   />
@@ -265,7 +265,7 @@ function Component () {
   )
 }
 
-const SearchReferenceEmailAgents = ({ row }) => {
+const SearchReferenceEmailAgents = ({ row, isAgent }) => {
   const handleSelect = (tag) => {
     useListing.getState().filterByTagsChange({ value: tag.id, checked: true })
     useListing.getState().dispatch(propertySearchReferenceChanged(row.id, tag))
@@ -284,6 +284,7 @@ const SearchReferenceEmailAgents = ({ row }) => {
         tag_id={row.tag_id} 
         onSelect={handleSelect}
         onClick={handleClick}
+        isAgent={isAgent}
       />
     </Suspense>
   )
@@ -316,7 +317,7 @@ const Grading = ({ row }) => {
   )
 }
 
-function PdfViewSpecifyMessage ({ index, item }) {
+function PdfViewSpecifyMessage ({ index, item, isAgent }) {
   const form = useFormContext()
   const fieldRef = useRef()
 
@@ -341,7 +342,7 @@ function PdfViewSpecifyMessage ({ index, item }) {
         <CollapsibleTrigger className='text-sky-700 hover:underline'>
           specific message
         </CollapsibleTrigger>
-        <SearchReferenceEmailAgents row={item} />
+        <SearchReferenceEmailAgents row={item} isAgent={isAgent} />
       </div>
       <CollapsibleContent className='py-3'>
         <FormField

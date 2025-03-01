@@ -2,9 +2,9 @@ import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { fetchDataJson, fetchEnquiredPropertyByPid, fetchPropReqContentsQuery, fetchSuitablePropertiesEnquiried, fetchversionsJson } from "./listing.services";
 import queryClient from "@/queryClient";
 
-export const fetchEnquiredPropertyByPidQuery = (pid, hash) => queryOptions({
-    queryKey: ['fetchEnquiredPropertyByPidQuery', pid, hash],
-    queryFn: () => fetchEnquiredPropertyByPid(pid, hash),
+export const fetchEnquiredPropertyByPidQuery = (pid, hash, gradingUid = null) => queryOptions({
+    queryKey: ['fetchEnquiredPropertyByPidQuery', pid, hash, gradingUid],
+    queryFn: () => fetchEnquiredPropertyByPid(pid, hash, gradingUid),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 20
 })

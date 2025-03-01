@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
               const idx = draft.results.findIndex(prevRow => prevRow.pid === pid)
       
               if (idx > -1) {
-                if (grade > 1) {
+                if (grade > 1) { // remove from inactive list
                   delete draft.results.splice(idx, 1)
                   return
                 }

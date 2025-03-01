@@ -10,9 +10,7 @@ import { useGradeUpdater } from '../searchReference.mutation'
 import useSearchReferenceListingEnquired from '../searchReference.hooks'
 import SearchReferenceButton from './SearchReferenceButton'
 
-function SearchReferenceSelect({ tag_id, pid, onSelect, onClick }) {
-    const auth = useAuth()
-
+function SearchReferenceSelect({ tag_id, pid, onSelect, isAgent, onClick }) {
     const inputRef = useRef(null)
     const [open, setOpen] = useState(false)
 
@@ -67,7 +65,7 @@ function SearchReferenceSelect({ tag_id, pid, onSelect, onClick }) {
           <div className='px-2 py-1 flex-1 hover:underline' onClick={handleClick}>
               {selected ? selected.name: "Unnamed"}
           </div>
-          {!auth.isAgent && (
+          {!isAgent && (
             <div onClick={handleOpen} className='flex items-center justify-center px-2 border-l border-l-sky-200 bg-sky-50 hover:bg-sky-500 hover:text-white ml-auto'>
               <ChevronDown className='size-3 ml-auto' />
             </div>

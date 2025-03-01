@@ -45,7 +45,11 @@ export const authCombiner = (user) => {
 // }
 
 const AuthProvider = ({ children }) => {
-    const { data } = useSuspenseQuery(authWhoisonlineQueryOptions)
+    const [_authWhoisonlineQueryOptions] = useState(() => {
+        const search = new URLSearchParams(window.location.search)
+        return authWhoisonlineQueryOptions(search.get('i'))
+    })
+    const { data } = useSuspenseQuery(_authWhoisonlineQueryOptions)
     const [state, setState] = useState(() => authCombiner(data))
     // const [state, dispatch] = useReducer(authReducer, data, initializer)
 

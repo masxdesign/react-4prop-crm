@@ -8,7 +8,7 @@ export const Route = createLazyFileRoute('/_auth/_com/user/$sub')({
 })
 
 function RouteComponent() {
-    const { page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription, queryClient } = Route.useRouteContext()
+    const { auth, page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription, queryClient, onGradeChange } = Route.useRouteContext()
 
     const navigate = Route.useNavigate()
 
@@ -40,7 +40,7 @@ function RouteComponent() {
         })
 
     }
-
+    
     return (
         <div className="space-y-4 pt-8">
             {document.getElementById('menu_enquiries') && data.count > 0 && createPortal(
@@ -57,10 +57,13 @@ function RouteComponent() {
             </div>
             <EnquiriesPage 
                 page={page} 
+                bz_hash={auth.user.bz_hash}
+                isAgent={auth.isAgent}
                 list={list}
                 data={data}
                 filters={filters} 
                 refetch={refetch}
+                onGradeChange={onGradeChange}
                 isFetched={isFetched}
                 isRefetching={isRefetching}
                 isFiltersDirty={isFiltersDirty} 

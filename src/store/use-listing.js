@@ -14,6 +14,7 @@ import displaySize from "@/utils/displaySize"
 import { crmSharedPids } from "@/services/bizchat"
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "./listing.queries"
 import myDateTimeFormat from "@/utils/myDateTimeFormat"
+import { FOURPROP_BASEURL } from "@/services/fourPropClient"
 
 export const IS_NULL = "IS_NULL"
 
@@ -48,25 +49,73 @@ const defaultPropertyDetailsSetting = {
     addressShowBuilding: false
 }
 
-const propertyEnquiredVariablesCombiner = (original, companies, clientsFromUids, auth) => {
+const defaultUserInfo = {
+    gradeShare: false,
+    client: null,
+    agent: null
+}
+
+const enquiredUserInfo = (auth, enquired) => {
+    if (auth.isAgent) {
+        return {
+            ...defaultUserInfo,
+            agent: auth.user.id,
+            gradeShare: enquired.client?.isGradeShare
+        }
+    } 
+    
+    return {
+        ...defaultUserInfo,
+        client: auth.user.id,
+        gradeShare: !!enquired.from_uid
+    }
+}
+
+const propertyEnquiredVariablesCombiner = (original, companies_pool, companies, clientsFromUids, auth) => {
     let client = null
     let from_uid = null
     let company = companies[0]
+
+    let brand = null
+    
+    const i_am_the_enquirier = original.gradinguid === auth?.user.id
+    const agent_to_agent = auth?.isAgent && i_am_the_enquirier
+
+    if (company) {
+        brand = {
+            name: company.name,
+            phone: company.phone,
+            logo: company.logo.original
+        }
+    }
 
     if (auth) {
 
         if (auth.isAgent) {
 
-            client = clientsFromUids.find(client => client.id === original.gradinguid)
+            if (!i_am_the_enquirier) {
+
+                client = clientsFromUids.find(client => client.id === original.gradinguid)
+                
+                if (client) {
+                    const isGradeShare = original.grade_from_uid === auth.user.id
+
+                    if (isGradeShare) {
+                        brand = {
+                            name: auth.user.company.name,
+                            phone: auth.user.company.phone,
+                            logo: `${FOURPROP_BASEURL}/${auth.user.company.logo}`
+                        }
+                    }
             
-            if (client) {
-                const isGradeShare = auth.user.id === original.grade_from_uid
-        
-                client = {
-                    ...client,
-                    isGradeShare
+                    client = {
+                        ...client,
+                        isGradeShare
+                    }
                 }
+
             }
+
 
         } else {
 
@@ -74,32 +123,44 @@ const propertyEnquiredVariablesCombiner = (original, companies, clientsFromUids,
 
             if (from_uid) {
 
-                from_uid.company = companies.find((row) => row.cid === from_uid.cid)
+                company = companies_pool.find((row) => row.cid === from_uid.cid)
+
+                from_uid = {
+                    ...from_uid,
+                    company 
+                }
+
+                brand = {
+                    name: company.name,
+                    phone: company.phone,
+                    logo: company.logo.original
+                }
 
             }
 
         }
 
-
     }
 
-    if (client && !client.isGradeShare) {
-      company = null
-    }
-    
-    if (from_uid) {
-      company = from_uid.company
-    }
-
-    return {
+    const enquired = {
+        brand,
+        i_am_the_enquirier,
+        agent_to_agent,
         company,
         client,
         from_uid,
-        need_reply: original.last_sender !== null
+        isEnquiry: client?.id ?? from_uid?.id ?? original.gradinguid,
+        need_reply: original.last_sender !== null,
+        gradinguid: original.gradinguid ? parseInt(original.gradinguid): undefined
+    }
+
+    return {
+        ...enquired,
+        userInfo: enquiredUserInfo(auth, enquired)
     }
 }
 
-const propertyCombiner = (pid, original, propertyTypes, content = [], companies_, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
+const propertyCombiner = (pid, original, propertyTypes, content = [], companies_pool, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
     const { addressShowMore, addressShowBuilding } = setting
     
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
@@ -129,12 +190,12 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         amenities: content[2] ?? ""
     })
     
-    const companies = propertyParse.companies(companies_)(original)
+    const companies = propertyParse.companies(companies_pool)(original)
     const pictures = propertyParse.pictures(original)
 
     const { grade, gradingupdated, grade_from_uid, chat_id, tag_name, tag_id, enquiry_choices } = original
 
-    const enquired = propertyEnquiredVariablesCombiner(original, companies, clientsFromUids, auth)
+    const enquired = propertyEnquiredVariablesCombiner(original, companies_pool, companies, clientsFromUids, auth)
     
     return {
         id: pid,
@@ -163,7 +224,10 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         content: content_,
         companies,
         agents: chain(original.dealswith).trim(',').split(',').uniq().value(),
-        original
+        original,
+        lat: parseFloat(original.latitude),
+        lng: parseFloat(original.longitude),
+        key: `${pid}.${original.gradinguid}`
     }
 }
 

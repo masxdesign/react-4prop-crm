@@ -15,10 +15,13 @@ const defaultValues = {
     password: ""
 }
 
-const LoginForm = ({ onSubmit, isPending, ...props }) => {
+const LoginForm = ({ defaultEmail, onSubmit, isPending, ...props }) => {
     const form = useForm({ 
         resolver: yupResolver(schema),
-        defaultValues,
+        defaultValues: {
+            ...defaultValues,
+            email: defaultEmail ?? defaultValues.email
+        },
         errors: props.errors
     })
 

@@ -4,49 +4,58 @@ import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { EnvelopeClosedIcon } from '@radix-ui/react-icons'
 import { StarIcon } from 'lucide-react'
 import PropertyCompany from './PropertyCompany'
+import { Link } from '@tanstack/react-router'
 
 function EnquiryGradingMessagingList({ 
     list,
+    isAgent,
     renderLeftSide,
     renderRightSide,
     rowClassName,
+    onGradeChange,
     gradingComponent: Grading,
     context
 }) {
 
+    // todo: my enquiry on 4prop
+
     return list.map((row, index) => {
-      const { id, title, enquired, statusColor, statusText, sizeText, tenureText, thumbnail, content, grade_updated } = row
-      
+      const { key, id, title, enquired, statusColor, statusText, sizeText, tenureText, thumbnail, content, grade_updated } = row
+
       return (
-        <div key={id} className={rowClassName}>
+        <div key={key} className={rowClassName}>
           {enquired.from_uid && (
-            <SharingAgentContactInformation />
+            <div className='flex justify-center items-center gap-4 text-xs border-b px-4 py-3 shadow-sm rounded-md bg-gray-100'>
+              Property sent to me by the agent
+            </div>
           )}
-          {enquired.client && (
-            <ClientContactInformation client={enquired.client} grade_updated={grade_updated} />
-          )}
+          <ClientContactInformation 
+            enquired={enquired} 
+            grade_updated={grade_updated} 
+            isAgent={isAgent}
+          />
           <div className='flex gap-0'>
-            <div className='flex flex-col gap-4 basis-1/5 overflow-hidden p-4'>
+            <div className='flex flex-col gap-2 overflow-hidden p-4'>
               <div className='flex items-start gap-4'>
                 <div>
-                  {Grading && <Grading row={row} context={context} />}
+                  {Grading && <Grading row={row} context={context} onGradeChange={onGradeChange} />}
                 </div>
-                <div className='bg-gray-200 size-10 sm:size-28 rounded-lg overflow-hidden'>
+                <div className='bg-gray-200 size-10 sm:size-28 overflow-hidden'>
                   <img src={thumbnail} className='object-cover w-full h-full' />
                 </div>
               </div>
               {renderLeftSide?.(row, index, context)}
             </div>
-            <div className="flex-1 space-y-3 sm:space-y-2 text-sm p-4">
-              <div className='flex gap-4'>
-                <div className='flex-1 flex flex-col gap-2'>
-                  <a 
-                    href={`${FOURPROP_BASEURL}/view-details/${id}`} 
-                    target="_blank" 
-                    className='font-bold hover:underline'
+            <div className="flex-1 space-y-3 sm:space-y-2 text-sm p-4 grow">
+              <div className='flex gap-2'>
+                <div className='flex flex-col gap-2 grow max-w-[450px] mr-auto'>
+                  <Link 
+                    to={`/crm/view-details/${id}`} 
+                    search={{ a: isAgent ? row.enquired.gradinguid: undefined }}
+                    className='text-lg font-bold hover:underline leading-snug'
                   >
                     {title}
-                  </a>
+                  </Link>
                   <div className='flex flex-col sm:flex-row gap-0 sm:gap-3'>
                     <div className={cn("font-bold", { 
                       "text-green-600": statusColor === "green",
@@ -59,12 +68,12 @@ function EnquiryGradingMessagingList({
                     <div>{sizeText}</div>
                     <div>{tenureText}</div>
                   </div>
-                  <div className="opacity-60 truncate max-w-[360px] min-h-[20px]">
-                    {content.teaser}
+                  <div className="opacity-60 text-nowrap overflow-hidden truncate min-h-[20px]">
+                    {content.description}
                   </div>            
                 </div>
                 {enquired.company && (
-                  <div className='basis-1/5 self-start flex flex-col gap-1'>
+                  <div className='flex flex-col items-center px-4'>
                     <PropertyCompany
                       logo={enquired.company.logo.original}
                       name={enquired.company.name}
@@ -80,42 +89,43 @@ function EnquiryGradingMessagingList({
     })
 }
 
-function ClientContactInformation({ client, grade_updated }) {
+function ClientContactInformation({ isAgent, enquired, grade_updated }) {
 
-  return (
-    <div className='flex items-center gap-4 text-xs border-b px-4 py-3 shadow-sm rounded-md bg-gray-100'>
-      {client.isGradeShare ? (
+  if (!isAgent) return  null
+
+  return enquired.agent_to_agent ? (
+    <div className='flex items-center gap-4 text-xs border-b px-4 py-3 rounded-t-sm bg-gray-50'>
+      <div className='flex gap-2 items-center text-muted-foreground'>
+        <EnvelopeClosedIcon className='size-3'/>
+        <span>You enquiried about this property</span>
+      </div>
+      <div>{grade_updated}</div>
+    </div>
+  ) : (
+    <div className='flex items-center gap-4 text-xs border-b px-4 py-3 rounded-t-sm bg-gray-50'>
+      {enquired.client.isGradeShare ? (
         <div className='flex gap-2 items-center text-muted-foreground'>
           <StarIcon className='size-3'/>
-          <span>Grade share</span>
+          <span>You shared this property to an applicant</span>
         </div>
       ) : (
         <div className='flex gap-2 items-center text-muted-foreground'>
           <EnvelopeClosedIcon className='size-3'/>
-          <span>Enquiry</span>
+          <span>A client enquiried about this property</span>
         </div>
       )}
       <div>{grade_updated}</div>
       <div className='ml-auto flex gap-8 items-center'>
 
         <div className='flex gap-2 items-center'>
-          <div className='font-bold'>{client.isGradeShare ? "Applicant": "Client"}</div>
-          <div>{client.display_name}</div>
+          <div className='font-bold'>{enquired.client.isGradeShare ? "Applicant": "Client"}</div>
+          <div>{enquired.client.display_name}</div>
           <div className='bg-slate-50 size-5 rounded-full overflow-hidden flex justify-center items-center self-start'>
-            <img src={`${FOURPROP_BASEURL}${client.avatar_sm}`} className='max-h-12 object-cover' />
+            <img src={`${FOURPROP_BASEURL}${enquired.client.avatar_sm}`} className='max-h-12 object-cover' />
           </div>
         </div>
 
       </div>
-    </div>
-  )
-}
-
-function SharingAgentContactInformation() {
-
-  return (
-    <div className='flex justify-center items-center gap-4 text-xs border-b px-4 py-3 shadow-sm rounded-md bg-gray-100'>
-      Property shared by an agent
     </div>
   )
 }

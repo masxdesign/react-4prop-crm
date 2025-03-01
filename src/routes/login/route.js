@@ -6,7 +6,7 @@ export const Route = createFileRoute('/login')({
         redirect: z.string().catch('/'),
     }),
     beforeLoad: ({ context }) => {
-        if(context.auth.isAuthenticated) {
+        if(!context.auth.user?.need_to_login && context.auth.isAuthenticated) {
             throw redirect({ to: '/crm/list' })
         }
     }

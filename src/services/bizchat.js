@@ -551,7 +551,6 @@ export const getUidByImportId = async (ownerUid, import_id, createUser = false) 
 }
 
 export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices, applicant_uid = null, attachments = [] }) => {
-    
     if (recipients.includes(from)) throw new Error('[from] is in [recipients]')
 
     const enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E', applicant_uid)
@@ -560,7 +559,7 @@ export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, pr
     
     const chat_id = enquiryRoom.id
 
-    const contextObject = createPropertyEnquiryContextObject(enquiryRoom.name, property)
+    const contextObject = createPropertyEnquiryContextObject(enquiryRoom.name, property, enquiryRoom._inserted)
 
     return replyBizchatMessage({ from, chat_id, recipients, message, choices, attachments, contextObject })
 }
@@ -588,8 +587,7 @@ export const replyBizchatEnquiryMessage = async ({
     attachments,
     message
 }) => {
-    const contextObject = createPropertyEnquiryContextObject(property.title, property)
-
+    const contextObject = createPropertyEnquiryContextObject(property.title, property, false)
     return replyBizchatMessage({ 
         from, 
         chat_id, 
@@ -642,14 +640,16 @@ export const replyBizchatMessage = async ({ from, chat_id, recipients, message, 
     return uploadAttachmentsAsync(formData)
 }
 
-export function createPropertyEnquiryContextObject (chatName, property) {
-	const { id, sizeText, tenureText, title, content, thumbnail } = property
+export function createPropertyEnquiryContextObject (chatName, property, newly_inserted) {
+	const { id, sizeText, tenureText, title, content, thumbnail, enquired } = property
 
 	return { 
 		chatName, 
 		chatType: "P", 
+        newly_inserted,
 		broadcastSender: true, 
 		forceNotifyNewMessage: true,
+        enquiredUserInfo: enquired?.userInfo,
 		enquiry: {
 			properties: [
 				{
@@ -658,7 +658,7 @@ export function createPropertyEnquiryContextObject (chatName, property) {
 					teaser: content.teaser,
 					thumb: thumbnail?.replace(/^https:\/\/4prop.com/, ''),
 					sizeText, 
-					tenureText
+					tenureText,
 				}
 			]
 		}

@@ -44,6 +44,7 @@ function LoginComponent() {
           onSubmit={handleSubmit} 
           isPending={auth.login.isPending}
           errors={errors}
+          defaultEmail={search.email}
         />
       </div>
     </div>

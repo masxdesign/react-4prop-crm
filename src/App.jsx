@@ -14,6 +14,9 @@ const router = createRouter({
   routeTree,
   basepath: BASEPATH,
   defaultPreload: 'intent',
+  scrollRestoration: true,
+  getScrollRestorationKey: (location) => location.pathname,
+  scrollBehavior: 'instant',
   context: {
     queryClient,
     perpage: 8,

@@ -14,14 +14,13 @@ export const fetchProperties = async (params) => {
     }
 }
 
-export const fetchEnquiredPropertyByPid = (pid, hash) => fetchProperties({
+export const fetchEnquiredPropertyByPid = (pid, hash, gradingUid = null) => fetchProperties({
     pids: `${pid}`,
     limit: 1,
     enquiryMetric: true,
     isSuitable: true,
-    i: hash
-    // i: '07427676',
-    // i: 'c57e8598'
+    i: hash,
+    gradingUid
 })
 
 export const fetchSuitableProperties = ({ enquiryChoicesIsNotNull, inactive = false, page = 1, perpage = 15, filters = {} }) => {
