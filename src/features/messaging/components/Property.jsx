@@ -34,10 +34,10 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     <div className="flex justify-center gap-2 mx-auto max-w-7xl px-16 py-4">
                         <p className="text-sky-800 text-sm">
                             <b>Welcome {isAgent ? "Agent": "visitor"}, </b>
-                            {row.enquired.from_uid ? (  
+                            {row.enquired?.from_uid ? (  
                                 `an agent shared this property with you`
-                            ) : row.enquired.client ? (
-                                row.enquired.client.isGradeShare 
+                            ) : row.enquired?.client ? (
+                                row.enquired?.client.isGradeShare 
                                     ? "You shared this property with"
                                     : "This property was enquired by"
                             ) : (
@@ -218,7 +218,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                             Message agent
                         </div>
                         <p>
-                            {row.enquired.from_uid ? (
+                            {row.enquired?.from_uid ? (
                                 `${row.enquired.company.name} shared this property with you`
                             ) : (
                                 "You enquired about this property"

@@ -5,22 +5,32 @@ import { Button } from '@/components/ui/button'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { cn } from '@/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
-import { ArrowLeft, MoreHorizontal } from 'lucide-react'
+import { ArrowLeft, CrossIcon, MoreHorizontal, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { MagnifyingGlassIcon, StarFilledIcon } from '@radix-ui/react-icons'
 
 export const Route = createFileRoute('/_auth/_com/user')({
   component: RouteComponent
 })
 
-const menuClient = [
-    { id: "email", to: 'email-agents', label: "Email agents" },
-    { id: "enquiries", to: 'active', label: "Active" },
-    { id: "inactive", to: 'inactive', label: "Inactive" }
+const menuShared = [
+    { id: "inactive", to: 'inactive', label: <X className='text-pink-300 size-5'/> },
+    { id: "enquiries", to: 'active', search: { filters: { choice: null } }, mask: { to: 'active' }, includeSearch: true, label: <StarFilledIcon  className='text-amber-500 size-5'/> },
+    { id: "rfi", to: '/crm/user/active', search: { filters: { choice: 2 } }, label: "RFI", mask: {
+        to: '/crm/user/rfi'
+    }, includeSearch: true },
+    { id: "view", to: '/crm/user/active', search: { filters: { choice: 1 } }, label: "View", mask: {
+        to: '/crm/user/view'
+    }, includeSearch: true },
 ]
 
 const menuAgent = [
-    { id: "enquiries", to: 'active', label: "Active" },
-    { id: "inactive", to: 'inactive', label: "Inactive" }
+    ...menuShared
+]
+
+const menuClient = [
+    ...menuShared,
+    { id: "email", to: 'email-agents', label: "Email agents" },
 ]
 
 function RouteComponent() {
@@ -44,15 +54,24 @@ function RouteComponent() {
                 <nav className='ml-auto flex gap-4 items-center justify-center'>
                     <NavItem asChild>
                         <a href={`${FOURPROP_BASEURL}/property-search`}>
-                            New search
+                            <MagnifyingGlassIcon className='size-5 scale-x-[-1]' />
                         </a>
                     </NavItem>
+                    {origin && (
+                        <NavItem asChild>
+                            <a href={origin}>
+                                <StarFilledIcon  className='text-slate-300 size-5'/>
+                            </a>
+                        </NavItem>
+                    )}
                     
                     {menu.map((link) => (
                         <NavItem 
                             key={link.id} 
                             to={link.to}
-                            activeOptions={{ exact: true, includeSearch: false }}
+                            mask={link.mask}
+                            search={link.search}
+                            activeOptions={{ exact: true, includeSearch: link.includeSearch ?? false }}
                         >
                             {link.label}
                             <span className='suffix'></span>
@@ -73,7 +92,7 @@ const NavItem = ({ className, asChild, ...props }) => {
     const Comp = asChild ? Slot: Link
     return (
         <Comp 
-            className={cn('text-sm border-b border-transparent [&.active]:font-bold [&.active]:text-primary [&.active]:border-b-primary px-3 py-3', className)}
+            className={cn('text-xs font-bold text-slate-400 border-b-[3px] border-transparent [&.active]:font-bold [&.active]:text-primary [&.active]:border-b-sky-700 px-3 py-3', className)}
             {...props}
         />
     )

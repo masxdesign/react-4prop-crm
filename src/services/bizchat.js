@@ -5,6 +5,7 @@ import skaler from "@/utils/skaler";
 import _, { isFunction, values } from "lodash";
 import { fetchUser } from "./fourProp";
 import bizchatClient from "./bizchatClient";
+import { propertyCompactCombiner } from "@/store/use-listing";
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
@@ -544,6 +545,11 @@ export const propertyGradeShareAsync = async (uid, pid, grade, from_uid, tag) =>
     return data
 }
 
+export const propertyGradeShareOneEmailAsync = async (variables) => {
+	const { data } = await bizchatClient.post(`/api/crm/propertyGradeShareOneEmail`, variables, { withCredentials: true })
+    return data
+}
+
 export const getUidByImportId = async (ownerUid, import_id, createUser = false) => {
     const params = { createUser }
     const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/uidByImportId/${import_id}`, { params })
@@ -559,17 +565,28 @@ export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, pr
     
     const chat_id = enquiryRoom.id
 
-    const contextObject = createPropertyEnquiryContextObject(enquiryRoom.name, property, enquiryRoom._inserted)
+    const contextObject = createPropertyEnquiryContextObject(
+        enquiryRoom.name, 
+        property, 
+        enquiryRoom._inserted, 
+        applicant_uid
+    )
 
     return replyBizchatMessage({ from, chat_id, recipients, message, choices, attachments, contextObject })
 }
 
-export const sendBizchatPropertyGradeShare = async ({ uid, pid, grade, from_uid, tag, from, message, property }) => {
-    const { success, error } = await propertyGradeShareAsync(uid, pid, grade, from_uid, tag)
+export const sendBizchatPropertyGradeShare = async (variables) => {
+    const { uid, pid, grade, from_uid, tag, from, message, property } = variables
 
-    if (!success) throw new Error(error)
+    console.log(variables);
+    return { gradeShareResult: { tag: { id: 1234 } } }
+    
 
-    return sendBizchatPropertyEnquiry({
+    const result = await propertyGradeShareAsync(uid, pid, grade, from_uid, tag)
+
+    if (result.error) throw new Error(result.error)
+
+    const _message = await sendBizchatPropertyEnquiry({
         from,
         recipients: `U${uid}`,
         message,
@@ -577,6 +594,7 @@ export const sendBizchatPropertyGradeShare = async ({ uid, pid, grade, from_uid,
         applicant_uid: uid
     })
 
+    return { gradeShareResult: result, message: _message }
 }
 
 export const replyBizchatEnquiryMessage = async ({
@@ -585,6 +603,7 @@ export const replyBizchatEnquiryMessage = async ({
     chat_id,
     recipients,
     attachments,
+    choices,
     message
 }) => {
     const contextObject = createPropertyEnquiryContextObject(property.title, property, false)
@@ -593,6 +612,7 @@ export const replyBizchatEnquiryMessage = async ({
         chat_id, 
         recipients, 
         message,
+        choices,
         attachments,
         contextObject
     })
@@ -640,26 +660,18 @@ export const replyBizchatMessage = async ({ from, chat_id, recipients, message, 
     return uploadAttachmentsAsync(formData)
 }
 
-export function createPropertyEnquiryContextObject (chatName, property, newly_inserted) {
-	const { id, sizeText, tenureText, title, content, thumbnail, enquired } = property
-
+export function createPropertyEnquiryContextObject (chatName, property, newly_inserted, applicant_uid = null) {
 	return { 
 		chatName, 
 		chatType: "P", 
         newly_inserted,
+        applicant_uid: applicant_uid ?? property.enquired?.applicant_uid,
 		broadcastSender: true, 
 		forceNotifyNewMessage: true,
-        enquiredUserInfo: enquired?.userInfo,
+        enquiredUserInfo: property.enquired?.userInfo,
 		enquiry: {
 			properties: [
-				{
-					pid: id,
-					title, 
-					teaser: content.teaser,
-					thumb: thumbnail?.replace(/^https:\/\/4prop.com/, ''),
-					sizeText, 
-					tenureText,
-				}
+                propertyCompactCombiner(property)
 			]
 		}
 	}
@@ -681,6 +693,14 @@ function createEnquiryPropertyMessageDataObject(from, chat_id, recipients, messa
 
 	if(pdf) {
 		choices = choices | 2
+    }
+
+    let recipients_ = `${recipients}`
+
+    const matches = /^TEST=(\d+)$/.exec(message)
+
+    if (matches) {
+        recipients_ = matches[1]
     }
 
 	return { 

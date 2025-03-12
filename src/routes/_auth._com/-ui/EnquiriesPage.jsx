@@ -269,6 +269,7 @@ function EnquiriesPage({
 
               return activeKey.get(row.key) === 1 ? (
                 <EnquiryMessagingWidgetInView 
+                  key={1}
                   bz_hash={bz_hash}
                   property={row}
                   chat_id={row.original.dealing_agents_chat_id}
@@ -277,6 +278,7 @@ function EnquiriesPage({
                 />
               ) : (
                 <EnquiryMessagingWidgetInView 
+                  key={2}
                   bz_hash={bz_hash}
                   property={row}
                   chat_id={row.chat_id} 

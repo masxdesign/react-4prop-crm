@@ -7,26 +7,29 @@ const WriteYourMessageHereInput = ({ property, onSuccess }) => {
     const auth = useAuth()
 
     const sendMessage = useMutation({
-        mutationFn: sendBizchatPropertyEnquiry,
-        onSuccess
-    })
+        mutationFn: async (variables) => {
+            const message = await sendBizchatPropertyEnquiry({
+                from: auth.bzUserId, 
+                recipients: property.agents,
+                message: variables.message,
+                property,
+                choices: variables.choices,
+                applicant_uid: null
+            })
 
-    const handleSubmit = (values) => sendMessage.mutateAsync({
-        from: auth.bzUserId, 
-        recipients: property.agents,
-        message: values.message,
-        property,
-        choices: {
-            pdf: false,
-            viewing: false
+            return {
+                ...message,
+                _property: property
+            }
         },
-        applicant_uid: null
+        onSuccess
     })
 
     return (
         <WriteYourReplyHereInputForm
+            disableChoices={auth.isAgent}
             placeholder="Write your message here..." 
-            onSubmit={handleSubmit} 
+            onSubmit={sendMessage.mutateAsync} 
         />
     )
 }

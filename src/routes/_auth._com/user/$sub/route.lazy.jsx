@@ -28,13 +28,13 @@ function RouteComponent() {
         })
     }
 
-    const handleDealingAgentFirstMessage = (message, variables) => {
+    const handleDealingAgentFirstMessage = (message) => {
         queryClient.setQueryData(listQuery.queryKey, (prev) => {
             return produce(prev, (draft) => {
-                const row = draft.results.find((row) => row.pid === variables.property.id)
+                const item = draft.results.find((row) => row.pid === message._property.id)
 
-                if (row) {
-                    row.dealing_agents_chat_id = message.chat_id
+                if (item) {
+                    item.dealing_agents_chat_id = message.chat_id
                 }  
             })
         })

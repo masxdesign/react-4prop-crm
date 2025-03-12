@@ -10,27 +10,29 @@ const WriteYourReplyHereInput = ({ chat_id, property }) => {
     const replyTo = useMessagesLastNList(auth.bzUserId, chat_id, (state) => selectReplyTo(state, auth.bzUserId))
 
     const sendReply = useMutation({
-        mutationFn: (variables) => 
-            replyBizchatEnquiryMessage({ 
+        mutationFn: (variables) => {
+            return replyBizchatEnquiryMessage({ 
                 chat_id, 
                 from: auth.bzUserId, 
                 recipients: replyTo, 
                 message: variables.message,
                 attachments: variables.files,
+                choices: variables.choices,
                 property
-            }),
+            })
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ 
                 queryKey: ["bizchatMessagesLastN", auth.bzUserId, chat_id] 
             })
         }
     })
-    
-    const handleSubmit = (values) => sendReply.mutateAsync(values)
-    
+
     return (
         <WriteYourReplyHereInputForm 
-            onSubmit={handleSubmit} 
+            disableChoices={auth.isAgent}
+            choicesDisableOptions={property.enquiry_choices} 
+            onSubmit={sendReply.mutateAsync} 
         />
     )
 }

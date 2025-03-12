@@ -1,3 +1,4 @@
+import { authUserCompactOneEmail } from '@/components/Auth/Auth'
 import GradingWidget from '@/components/GradingWidget'
 import PropertyDetail from '@/components/PropertyDetail'
 import { Button } from '@/components/ui/button'
@@ -7,8 +8,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
 import { useGradeSharingInfoSelector, useGradeSharingStore } from '@/hooks/useGradeSharing'
-import { getUidByImportId, sendBizchatPropertyEnquiry, sendBizchatPropertyGradeShare } from '@/services/bizchat'
-import useListing, { resolveAllPropertiesQuerySelector } from '@/store/use-listing'
+import { getUidByImportId, propertyGradeShareOneEmailAsync, sendBizchatPropertyEnquiry, sendBizchatPropertyGradeShare } from '@/services/bizchat'
+import { FOURPROP_BASEURL } from '@/services/fourPropClient'
+import useListing, { propertyCompactCombiner, resolveAllPropertiesQuerySelector } from '@/store/use-listing'
 import delay from '@/utils/delay'
 import { postMessage } from '@/utils/iframeHelpers'
 import { createImmer } from '@/utils/zustand-extras'
@@ -16,9 +18,11 @@ import { ErrorMessage } from '@hookform/error-message'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { useLocalStorage } from '@uidotdev/usehooks'
 import { cx } from 'class-variance-authority'
-import _, { countBy, find, isEmpty } from 'lodash'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { produce } from 'immer'
+import _, { countBy, find, findIndex, isEmpty, set } from 'lodash'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import * as yup from "yup"
 
@@ -26,7 +30,54 @@ export const Route = createFileRoute('/_auth/grade-sharing/setup-email')({
   component: SetupEmailComponent
 })
 
-const initialSent = []
+const initialSentState = {
+    generalMessage: "",
+    pids: {},
+    notes: {}
+}
+
+const markSent = (pid) => ({
+    type: "MARK_SENT",
+    meta: { pid }
+})
+
+const resetSent = () => ({
+    type: "RESET_SENT"
+})
+
+const saveMessage = (message) => ({
+    type: "SAVE_MESSAGE",
+    payload: message
+})
+
+const saveNotes = (notes) => ({
+    type: "SAVE_NOTES",
+    payload: notes
+})
+
+const sentReducer = (state, action) => {
+    switch (action.type) {
+        case "SAVE_MESSAGE": 
+            return produce(state, draft => {
+                draft.generalMessage = action.payload
+            })
+        case "SAVE_NOTES": 
+            return produce(state, draft => {
+                draft.notes = {
+                    ...action.payload
+                }
+            })
+        case "MARK_SENT": 
+            return produce(state, draft => {
+                draft.pids[action.meta.pid] = true
+            })
+        case "RESET_SENT":
+            return initialSentState
+        default:
+            return state
+    }
+}
+
 const initialErrors = {}
 
 const schema = yup.object({
@@ -34,111 +85,197 @@ const schema = yup.object({
 })
 
 function SetupEmailComponent () {
+    
+    const { data } = useSuspenseQuery(useListing(resolveAllPropertiesQuerySelector))  
 
     const { auth } = Route.useRouteContext()
-    const [sent, setSent] = useState(initialSent)
-    const [errors, setErrors] = useState(initialErrors)
     
     const { tag, selected, pidGrades } = useGradeSharingInfoSelector()
     const upsertPidGrade = useGradeSharingStore.use.upsertPidGrade()
+    
+    const storageKey = `grade-sharing-sent-${auth.user.id}.${selected.id}`
 
-    const { data } = useSuspenseQuery(useListing(resolveAllPropertiesQuerySelector))  
+    const [sent, dispatch] = useReducer(
+        sentReducer, 
+        initialSentState,
+        (initial) => {
+            const store = JSON.parse(localStorage.getItem(storageKey)) || initial
+
+            const initialNotes = data.map((row) => ([row.id, store.notes[row.id] || ""]))
+
+            return {
+                ...store,
+                notes: Object.fromEntries(initialNotes)
+            }
+        }
+    )
+
+    useEffect(() => {
+        localStorage.setItem(storageKey, JSON.stringify(sent))
+    }, [sent])
+
     
     const graded = useMemo(
         () => pidGrades.filter((item) => item.grade !== 1), 
         [pidGrades]
     )
 
-    // const pidGradesMutation = usePidGradesMutation()
+    
+    const [pausing, setPausing] = useState(false)
+    const [errors, setErrors] = useState(initialErrors)
+
+    const {
+        sent_count,
+        percentage,
+        isResume
+    } = useMemo(() => {
+        const pidSent = graded.filter((row) => sent.pids[row.pid]).map((row) => row.pid)
+        const sent_count = Object.keys(pidSent).length
+        const percentage = Math.round(sent_count / graded.length * 100)
+        const isResume = percentage > 0 && percentage < 100
+
+        return {
+            sent_count,
+            percentage,
+            isResume
+        }
+    }, [graded, sent])
+    
+    const controller = useRef()
 
     const sendPropertyEnquiry = useMutation({ 
-        mutationFn: ({ uid, pid, grade, message, property }) => {            
-            return sendBizchatPropertyGradeShare({ 
-                uid, 
-                pid, 
-                grade, 
-                from: auth.bzUserId,
-                from_uid: auth.user.id, 
-                tag, 
-                message,
-                property
-            })
+        mutationFn: async (values) => {
+
+            let errors_sending = {}
+
+            let _tag = { ...tag }
+
+            controller.current = new AbortController()
+
+            const generalMessage = values.message
+
+            const { uid, hash } = await getUidByImportId(auth.authUserId, selected.id, true)
+
+            try {
+
+                let properties_compact = []
+
+                for(let i = 0; i < graded.length; i++) {
+                    if (controller.current.signal.aborted) {
+                        setPausing(false)
+                        return
+                    }
+
+                    const { pid, grade } = graded[i]
+
+                    if (sent.pids[pid]) continue
+
+                    const specificMessage = values.notes[pid] 
+
+                    const property = find(data, { id: pid })
+                    const propertyCompact = propertyCompactCombiner(property)
+
+                    properties_compact = produce(properties_compact, (draft) => {
+                        draft.push({
+                            ...propertyCompact,
+                            grade,
+                            specificMessage
+                        })
+                    })
+
+                    try {
+
+                        const {
+                            gradeShareResult
+                        } = await sendBizchatPropertyGradeShare({ 
+                            uid, 
+                            pid, 
+                            grade, 
+                            from: auth.bzUserId,
+                            from_uid: auth.user.id, 
+                            tag: _tag, 
+                            message: isEmpty(specificMessage) 
+                                ? generalMessage
+                                : `${generalMessage}\n\n${specificMessage}`,
+                            property
+                        })
+
+                        if (_tag.id === -1) {
+                            _tag = {
+                                ..._tag,
+                                id: gradeShareResult.tag.id
+                            }
+                        }
+
+                    } catch (e) {
+
+                        if (e.message === 'Already graded') {
+                            dispatch(markSent(pid))
+                        }
+
+                        errors_sending = { ...errors_sending, [pid]: e.message }
+                        continue
+                    }
+
+                    dispatch(markSent(pid))
+                    await delay(2500)
+
+                }
+
+                if (Object.keys(errors_sending).length > 0) {
+                    setErrors(errors_sending)
+                }
+
+                const n = 5
+                const top_n_properties = properties_compact.slice(0, n)
+
+                return propertyGradeShareOneEmailAsync({
+                    tag: _tag,
+                    applicant: {
+                        uid,
+                        hash
+                    },
+                    properties_count: properties_compact.length,
+                    sharing_agent: authUserCompactOneEmail(auth),
+                    generalMessage,
+                    properties: top_n_properties
+                })
+
+            } catch (e) {
+                console.log(e)
+            } finally {
+                controller.current = null
+            }
+
         } 
     })
 
     const form = useForm({
         defaultValues: {
-            message: "",
-            notes: Array(data.length).fill("")
+            message: sent.generalMessage,
+            notes: sent.notes
         },
         resolver: yupResolver(schema)
     })
 
-    const controller = useRef()
+    useEffect(() => {
+        const { unsubscribe } = form.watch((value) => {
+            dispatch(saveMessage(value.message))
+            dispatch(saveNotes(value.notes))
+        })
+        return () => unsubscribe()
+    }, [form.watch])
 
-    const onSubmit = async (values) => {
-
-        let errors_sending = {}
-
-        controller.current = new AbortController()
-
-        const generalMessage = values.message
-
-        const uid = await getUidByImportId(auth.authUserId, selected.id, true)
-
-        try {
-
-            for(const row of graded) {
-
-                const { pid, grade } = row
-                const index = graded.indexOf(row)
-
-                if (controller.current.signal.aborted) break
-
-                const specificMessage = values.notes[index] 
-
-                const property = find(data, { id: pid })
-
-                try {
-
-                    await sendPropertyEnquiry.mutateAsync({
-                        uid,
-                        pid, 
-                        grade,
-                        message: isEmpty(specificMessage) 
-                            ? generalMessage
-                            : `${generalMessage}\n\n${specificMessage}`,
-                        property
-                    })
-
-                } catch (e) {
-                    errors_sending = { ...errors_sending, [pid]: e.message }
-                    continue
-                }
-
-                setSent(prev => [...prev, pid])
-                await delay(250)
-
-            }
-
-            postMessage({ type: "GRADE_SHARING_RESET" })
-
-            if (Object.keys(errors_sending).length > 0) {
-                setErrors(errors_sending)
-                return
-            }
-
-            postMessage({ type: "HIDE" })
-
-        } catch (e) {
-            console.log(e)
-        } finally {
-            controller.current = null
-        }
-        
+    const handleFinished = () => {
+        postMessage({ type: "GRADE_SHARING_RESET" })
+        postMessage({ type: "HIDE" })
+        dispatch(resetSent())
     }
 
-    const percentage = Math.round(sent.length / graded?.length * 100)
+    const handlePause = () => {
+        controller.current?.abort('cancelled reason')
+        setPausing(true)
+    }
 
     return (
         <>
@@ -146,27 +283,27 @@ function SetupEmailComponent () {
                 <div 
                 className='fixed inset-0 bg-black/20 flex z-50'>
                     <div className='flex flex-col m-auto bg-white shadow-xl px-8 py-4 rounded-md gap-2'>
-                    <strong className='mb-4 text-center'>Sending</strong>
+                    <strong className='mb-4 text-center'>{pausing ? 'Pausing...' : 'Sending'}</strong>
                     <div className='bg-blue-50 w-40 rounded-xl'>
                         <div 
                         className='relative transition-all h-3 flex bg-blue-500 min-w-1 rounded-xl shadow-md' 
                         style={{ width: `${percentage}%` }}
                         >
                         <span className='absolute flex gap-1 flex-nowrap -right-5 -top-5 m-auto drop-shadow-sm'>
-                            <span className='text-blue-500 text-xs font-bold'>{sent.length}</span>
+                            <span className='text-blue-500 text-xs font-bold'>{sent_count}</span>
                             <span className='text-slate-400 text-xs text-nowrap'>/ {graded?.length}</span> 
                         </span>
                         </div>
                     </div>
                     <div className='text-center text-xs text-slate-400'>Do not close this tab</div>
-                        <Button size="xs" onClick={() => controller.current?.abort('cancelled reason')} className="self-center">
+                        <Button size="xs" onClick={handlePause} disabled={pausing} className="self-center">
                             Pause
                         </Button>
                     </div>
                 </div>
             )}
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className='p-3'>
+                <form onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)} className='p-3'>
                     <label htmlFor="message" className='font-bold text-sm mb-2 block'>
                         General message (required)
                     </label>
@@ -186,14 +323,23 @@ function SetupEmailComponent () {
                     <div className='flex flex-col gap-2 relative z-0 min-h-[510px]'>
                         <EnquiryGradingMessagingList 
                             list={data}
-                            context={{ upsertPidGrade, pidGrades }}
+                            context={{ upsertPidGrade, pidGrades, sent }}
                             gradingComponent={Grading}
                             rowClassName="border rounded-lg"
-                            renderRightSide={(row, index) => {
+                            propertyTitleUrlLinkPath={`${FOURPROP_BASEURL}/mini/$pid`}
+                            renderStatus={(row) => {
+                                if (!sent.pids[row.id]) return null
+                                return (
+                                    <div className='text-center border border-green-500 text-green-500 text-xs p-2 rounded-lg'>
+                                        Sent
+                                    </div>
+                                )
+                            }}
+                            renderRightSide={(row) => {
                                 return (
                                     <div className='flex flex-col gap-3'>
                                         <CollapsibleSpecificNote 
-                                            name={`notes.${index}`}
+                                            name={`notes.${row.id}`}
                                             data={row} 
                                         />
                                         {errors[row.id] && (
@@ -204,51 +350,17 @@ function SetupEmailComponent () {
                                     </div>
                                 )
                             }}
-                        />
-                        {/* {data.map((item, index) => {
-
-                            const { grade } = find(pidGrades, { pid: item.id })
-
-                            const handleSelect = newGrade => {
-                                upsertPidGrade(item.id, newGrade)
-                                postMessage({
-                                    type: 'GRADE_SHARING_UPDATE_GRADE',
-                                    payload: {
-                                        pid: item.id, 
-                                        grade: newGrade
-                                    }
-                                })
-                            }
-
-                            return (
-                                <div key={item.id} className='max-w-[550px] w-full'>
-                                    <div                                 
-                                        className="flex gap-4 bg-white border p-4 rounded-lg shadow-md min-h-[160px]">
-                                        <div>
-                                            <GradingWidget 
-                                                size={20} 
-                                                value={grade}
-                                                className="grow"
-                                                onSelect={handleSelect}
-                                            />
-                                        </div>
-                                        <div className={cx('min-w-0', { 'opacity-40': grade === 1 })}>
-                                            <PropertyDetail data={item} />
-                                            <CollapsibleSpecificNote 
-                                                name={`notes.${index}`}
-                                                data={item} 
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })} */}
+                        />                       
                     </div>
                     <div className='bg-white border-t z-10 sticky bottom-0 p-3 flex gap-3 justify-center w-full'>
                         <Button type="button" variant="outline" onClick={() => postMessage({ type: "HIDE" })}>
                             Cancel
                         </Button>
-                        <Button>Share</Button>
+                        {percentage > 99 ? (
+                            <Button type="button" onClick={handleFinished}>Finished</Button>
+                        ) : (
+                            <Button>{isResume ? "Resume": "Share"}</Button>
+                        )}
                     </div>
                 </form>
             </Form>
@@ -256,10 +368,12 @@ function SetupEmailComponent () {
     )
 }
 
-function Grading ({ row, context: { upsertPidGrade, pidGrades } }) {
+function Grading ({ row, context: { sent, upsertPidGrade, pidGrades } }) {
     const { grade } = useMemo(() => find(pidGrades, { pid: row.id }), [row.id, pidGrades])
 
     const handleSelect = (newGrade) => {
+        if (sent.pids[row.id]) return 
+
         upsertPidGrade(row.id, newGrade)
         postMessage({
             type: 'GRADE_SHARING_UPDATE_GRADE',
@@ -275,6 +389,7 @@ function Grading ({ row, context: { upsertPidGrade, pidGrades } }) {
             size={20} 
             value={grade}
             onSelect={handleSelect}
+            className="pointer-events-none"
         />
     )
 }

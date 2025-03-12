@@ -29,6 +29,17 @@ export const authCombiner = (user) => {
     }
 }
 
+export const authUserCompactOneEmail = (auth) => {
+    const { first, last, company, hash } = auth.user
+    return {
+        firstname: first,
+        surname: last,
+        companyLogo: company.logo,
+        companyName: company.name,
+        hash
+    }
+}
+
 // const userReceived = (user) => ({
 //     type: "USER_RECEIVED",
 //     payload: user

@@ -45,8 +45,8 @@ export const PROPERTY_STATUS_COLORS = {
 }
 
 const defaultPropertyDetailsSetting = {
-    addressShowMore: false,
-    addressShowBuilding: false
+    addressShowMore: true,
+    addressShowBuilding: true
 }
 
 const defaultUserInfo = {
@@ -60,14 +60,16 @@ const enquiredUserInfo = (auth, enquired) => {
         return {
             ...defaultUserInfo,
             agent: auth.user.id,
-            gradeShare: enquired.client?.isGradeShare
+            gradeShare: enquired.client?.isGradeShare,
+            client_bz_id: `U${enquired.gradinguid}`
         }
     } 
     
     return {
         ...defaultUserInfo,
         client: auth.user.id,
-        gradeShare: !!enquired.from_uid
+        gradeShare: !!enquired?.from_uid,
+        client_bz_id: `U${enquired.gradinguid}`
     }
 }
 
@@ -149,6 +151,7 @@ const propertyEnquiredVariablesCombiner = (original, companies_pool, companies, 
         company,
         client,
         from_uid,
+        applicant_uid: original.grade_from_uid ? original.gradinguid: null,
         isEnquiry: client?.id ?? from_uid?.id ?? original.gradinguid,
         need_reply: original.last_sender !== null,
         gradinguid: original.gradinguid ? parseInt(original.gradinguid): undefined
@@ -160,9 +163,22 @@ const propertyEnquiredVariablesCombiner = (original, companies_pool, companies, 
     }
 }
 
+export const propertyCompactCombiner = (property) => {
+    const { id, sizeText, tenureText, title, content, thumbnail } = property
+
+    return {
+        pid: id,
+        title, 
+        teaser: content.teaser,
+        thumb: thumbnail?.replace(/^https:\/\/4prop.com/, ''),
+        sizeText, 
+        tenureText,
+    }
+}
+
 const propertyCombiner = (pid, original, propertyTypes, content = [], companies_pool, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
     const { addressShowMore, addressShowBuilding } = setting
-    
+
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
     const tenure = propertyParse.tenure(original)
 
@@ -185,9 +201,9 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
 
     const content_ = propertyParse.content({
         ...original,
-        description: content[0] ?? "", 
-        locationdesc: content[1] ?? "",  
-        amenities: content[2] ?? ""
+        description:  content[0] ?? original.description ?? "", 
+        locationdesc: content[1] ?? original.locationdesc ?? "",  
+        amenities: content[2] ?? original.amenities ?? ""
     })
     
     const companies = propertyParse.companies(companies_pool)(original)
@@ -195,8 +211,15 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
 
     const { grade, gradingupdated, grade_from_uid, chat_id, tag_name, tag_id, enquiry_choices } = original
 
-    const enquired = propertyEnquiredVariablesCombiner(original, companies_pool, companies, clientsFromUids, auth)
+    let enquired = null
+
+    if (auth) {
+        enquired = propertyEnquiredVariablesCombiner(original, companies_pool, companies, clientsFromUids, auth)
+    }
     
+    console.log(enquired);
+    
+
     return {
         id: pid,
         enquired,
@@ -600,7 +623,7 @@ export const useListing = createImmer((set, get) => ({
     resolveAllProperties: async () => {
         try {
             const { missing, missingContents } = missingSelector(get())
-    
+
             await get().resolvePids(missing, missingContents)
     
             return selectedDetailsSelector(get())

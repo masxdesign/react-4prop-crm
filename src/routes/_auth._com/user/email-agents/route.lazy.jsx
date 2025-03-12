@@ -62,63 +62,78 @@ function Component () {
   const controller = useRef()
 
   const sendPropertyEnquiry = useMutation({ 
-    mutationFn: sendBizchatPropertyEnquiry 
+    mutationFn: async (values) => {
+
+      // if (process.env.NODE_ENV !== 'production') {
+        
+      //   console.log(values.map((form) => ({
+      //     from: auth.bzUserId, 
+      //     recipients: form.property.agents,
+      //     message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
+      //     property: form.property,
+      //     choices: {
+      //       pdf: form.pdf,
+      //       viewing: form.viewing
+      //     },
+      //     applicant_uid: null
+      //   })));
+        
+      //   return 
+      // }
+      
+      controller.current = new AbortController()
+
+      try {
+  
+        for(const form of values.items) {
+  
+          if (controller.current.signal.aborted) break
+  
+          const pid = form.property.id
+          if (sent.includes(pid)) continue
+  
+          await delay(150)
+  
+          console.log(form);
+          
+          // if (process.env.NODE_ENV === 'production') {
+  
+          if (form.property.agents.length < 1) {
+            throw new Error("property.agents empty")
+          }
+  
+          await sendBizchatPropertyEnquiry({
+            from: auth.bzUserId, 
+            recipients: form.property.agents,
+            message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
+            property: form.property,
+            choices: {
+              pdf: form.pdf,
+              viewing: form.viewing
+            },
+            applicant_uid: null
+          })
+  
+          // }
+  
+          setSent(prev => ([...prev, pid]))
+          await delay(250)
+          
+        }
+      
+      } catch (e) {
+        
+        console.log(e)
+  
+      } finally {
+  
+        controller.current = null
+  
+      }
+  
+    } 
   })
 
-  const onSubmit = async (values) => {
-    
-    controller.current = new AbortController()
-
-    try {
-
-      for(const form of values.items) {
-
-        if (controller.current.signal.aborted) break
-
-        const pid = form.property.id
-        if (sent.includes(pid)) continue
-
-        await delay(150)
-
-        console.log(form);
-        
-        // if (process.env.NODE_ENV === 'production') {
-
-        if (form.property.agents.length < 1) {
-          throw new Error("property.agents empty")
-        }
-
-        await sendPropertyEnquiry.mutateAsync({
-          from: auth.bzUserId, 
-          recipients: form.property.agents,
-          message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
-          property: form.property,
-          choices: {
-            pdf: form.pdf,
-            viewing: form.viewing
-          },
-          applicant_uid: null
-        })
-
-        // }
-
-        setSent(prev => ([...prev, pid]))
-        await delay(250)
-        
-      }
-    
-    } catch (e) {
-      
-      console.log(e)
-
-    } finally {
-
-      controller.current = null
-
-    }
-
-  }
-  
   const handleHide = () => {
     postMessage({ type: "HIDE" })
   }
@@ -157,7 +172,11 @@ function Component () {
           </div>
       )}
       <FormProvider {...form}>
-        <form ref={ref} className="relative z-10 flex flex-col py-8" onSubmit={form.handleSubmit(onSubmit)}>
+        <form 
+          ref={ref} 
+          className="relative z-10 flex flex-col py-8" 
+          onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)}
+        >
           
           <div className='space-y-2 mb-4'>
             <h1 className='text-3xl font-bold'>
