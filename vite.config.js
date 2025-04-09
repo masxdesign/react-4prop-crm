@@ -3,6 +3,7 @@ import path from 'path'
 import react from '@vitejs/plugin-react'
 import jsconfigPaths from 'vite-jsconfig-paths'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
+import screens from "./tailwind.screens"
 import svgr from "vite-plugin-svgr"
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
@@ -23,6 +24,9 @@ export default defineConfig(({ command, mode }) => {
   
     return {
       base: "/crm",
+      theme: {
+        screens
+      },
       plugins: [...shared.plugins]
     }
     
@@ -37,6 +41,9 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         input: 'src/main.jsx'
       }
+    },
+    theme: {
+      screens
     },
     plugins: [...shared.plugins],
     experimental: {

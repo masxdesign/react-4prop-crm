@@ -81,7 +81,7 @@ const sentReducer = (state, action) => {
 const initialErrors = {}
 
 const schema = yup.object({
-    message: yup.string().required().label("General message")
+    message: yup.string().max(200).required().label("General message")
 })
 
 function SetupEmailComponent () {
@@ -154,7 +154,7 @@ function SetupEmailComponent () {
 
             const generalMessage = values.message
 
-            const { uid, hash } = await getUidByImportId(auth.authUserId, selected.id, true)
+            const { uid } = await getUidByImportId(auth.authUserId, selected.id, true)
 
             try {
 
@@ -218,7 +218,7 @@ function SetupEmailComponent () {
                     }
 
                     dispatch(markSent(pid))
-                    await delay(2500)
+                    await delay(250)
 
                 }
 
@@ -226,15 +226,12 @@ function SetupEmailComponent () {
                     setErrors(errors_sending)
                 }
 
-                const n = 5
+                const n = 1
                 const top_n_properties = properties_compact.slice(0, n)
 
                 return propertyGradeShareOneEmailAsync({
                     tag: _tag,
-                    applicant: {
-                        uid,
-                        hash
-                    },
+                    applicant_uid: uid,
                     properties_count: properties_compact.length,
                     sharing_agent: authUserCompactOneEmail(auth),
                     generalMessage,
@@ -247,7 +244,10 @@ function SetupEmailComponent () {
                 controller.current = null
             }
 
-        } 
+        },
+        onSuccess: () => {
+            postMessage({ type: "GRADE_SHARING_RESET" })
+        }
     })
 
     const form = useForm({
@@ -267,9 +267,8 @@ function SetupEmailComponent () {
     }, [form.watch])
 
     const handleFinished = () => {
-        postMessage({ type: "GRADE_SHARING_RESET" })
-        postMessage({ type: "HIDE" })
         dispatch(resetSent())
+        postMessage({ type: "HIDE" })
     }
 
     const handlePause = () => {
@@ -291,7 +290,7 @@ function SetupEmailComponent () {
                         >
                         <span className='absolute flex gap-1 flex-nowrap -right-5 -top-5 m-auto drop-shadow-sm'>
                             <span className='text-blue-500 text-xs font-bold'>{sent_count}</span>
-                            <span className='text-slate-400 text-xs text-nowrap'>/ {graded?.length}</span> 
+                            <span className='text-slate-400 text-xs text-nowrap'>/ {graded.length}</span> 
                         </span>
                         </div>
                     </div>
@@ -304,8 +303,8 @@ function SetupEmailComponent () {
             )}
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)} className='p-3'>
-                    <label htmlFor="message" className='font-bold text-sm mb-2 block'>
-                        General message (required)
+                    <label htmlFor="message" className='text-sm mb-2 block'>
+                        General message <span className='text-xs text-muted-foreground'>(required)</span>
                     </label>
                     <div className='space-y-2'>
                         <Textarea
@@ -319,13 +318,13 @@ function SetupEmailComponent () {
                         />
                     </div>
                     <div className="h-4"></div>
-                    <h3 className='font-bold text-sm mb-2'>Graded properties ({graded.length})</h3>
-                    <div className='flex flex-col gap-2 relative z-0 min-h-[510px]'>
+                    <h3 className='font-bold text-sm mb-2'>{graded.length} properties you graded</h3>
+                    <div className='flex flex-col gap-4 sm:gap-2 relative z-0'>
                         <EnquiryGradingMessagingList 
                             list={data}
                             context={{ upsertPidGrade, pidGrades, sent }}
                             gradingComponent={Grading}
-                            rowClassName="border rounded-lg"
+                            rowClassName="border-4 shadow-md rounded-lg pb-3"
                             propertyTitleUrlLinkPath={`${FOURPROP_BASEURL}/mini/$pid`}
                             renderStatus={(row) => {
                                 if (!sent.pids[row.id]) return null
@@ -337,7 +336,7 @@ function SetupEmailComponent () {
                             }}
                             renderRightSide={(row) => {
                                 return (
-                                    <div className='flex flex-col gap-3'>
+                                    <div className='flex flex-col sm:items-start items-center gap-3'>
                                         <CollapsibleSpecificNote 
                                             name={`notes.${row.id}`}
                                             data={row} 
@@ -352,7 +351,8 @@ function SetupEmailComponent () {
                             }}
                         />                       
                     </div>
-                    <div className='bg-white border-t z-10 sticky bottom-0 p-3 flex gap-3 justify-center w-full'>
+                    <div className='h-[65px]'></div>
+                    <div className='bg-white border-t-2 shadow-xl z-10 fixed inset-x-0 bottom-0 p-3 flex gap-3 justify-center w-full'>
                         <Button type="button" variant="outline" onClick={() => postMessage({ type: "HIDE" })}>
                             Cancel
                         </Button>
@@ -414,25 +414,26 @@ function CollapsibleSpecificNote ({ data, name }) {
         open={isOpen}
         onOpenChange={setIsOpen}
       >
-        <div className='flex justify-start'>
+        <div className='flex justify-center'>
             <CollapsibleTrigger className='text-sky-700 hover:underline text-sm'>
                 specific message
             </CollapsibleTrigger>
         </div>
-        <CollapsibleContent className='py-3'>
-        <FormField
-            control={form.control}
-            name={name}
-            render={({ field }) => (
-                <Textarea 
-                    placeholder={`Specific message for ${title}`} 
-                    className="mb-1"
-                    {...field}
-                    ref={fieldRef}
-                />
-            )}
-        />
-            <span className='text-xs opacity-50'>This text will appear below the general message</span>
+        <CollapsibleContent className='p-2'>
+            <FormField
+                control={form.control}
+                name={name}
+                render={({ field }) => (
+                    <Textarea 
+                        placeholder={`Specific message for ${title}`} 
+                        className="mb-1"
+                        {...field}
+                        maxLength={200}
+                        ref={fieldRef}
+                    />
+                )}
+            />
+            <span className='block text-center text-xs opacity-50'>This text will appear below the general message. 200 characters max.</span>
         </CollapsibleContent>
       </Collapsible>
     )

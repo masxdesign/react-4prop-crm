@@ -578,10 +578,6 @@ export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, pr
 export const sendBizchatPropertyGradeShare = async (variables) => {
     const { uid, pid, grade, from_uid, tag, from, message, property } = variables
 
-    console.log(variables);
-    return { gradeShareResult: { tag: { id: 1234 } } }
-    
-
     const result = await propertyGradeShareAsync(uid, pid, grade, from_uid, tag)
 
     if (result.error) throw new Error(result.error)

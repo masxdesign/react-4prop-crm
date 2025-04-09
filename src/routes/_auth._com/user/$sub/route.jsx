@@ -10,10 +10,10 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
         queryClient.ensureQueryData(subtypesQuery)
       ])
   },
-  beforeLoad: ({ params, context: { auth, queryClient, page, filters, perpage } }) => {
+  beforeLoad: ({ params, search, context: { auth, queryClient, page, filters, perpage } }) => {
 
-    const activeListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters })
-    const inactiveListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters, inactive: true })
+    const activeListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters, hash: search.i })
+    const inactiveListQuery = suitablePropertiesEnquiriedQuery({ page, perpage, filters, inactive: true, hash: search.i })
 
     switch (params.sub) {
       case "inactive": {

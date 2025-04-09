@@ -24,6 +24,8 @@ export const getFrameHeight = (element) => {
 export function postMessage (action) {
     if (!inIframe()) return
     window.parent.postMessage(action, "*")
+    console.log(action);
+    
 }
 
 export function onMessage (event) {

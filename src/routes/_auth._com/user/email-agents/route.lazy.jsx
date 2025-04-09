@@ -63,24 +63,6 @@ function Component () {
 
   const sendPropertyEnquiry = useMutation({ 
     mutationFn: async (values) => {
-
-      // if (process.env.NODE_ENV !== 'production') {
-        
-      //   console.log(values.map((form) => ({
-      //     from: auth.bzUserId, 
-      //     recipients: form.property.agents,
-      //     message: isEmpty(values.message) ? form.message: `${values.message}\n\n${form.message}`,
-      //     property: form.property,
-      //     choices: {
-      //       pdf: form.pdf,
-      //       viewing: form.viewing
-      //     },
-      //     applicant_uid: null
-      //   })));
-        
-      //   return 
-      // }
-      
       controller.current = new AbortController()
 
       try {
@@ -174,48 +156,49 @@ function Component () {
       <FormProvider {...form}>
         <form 
           ref={ref} 
-          className="relative z-10 flex flex-col py-8" 
+          className="relative z-10 flex flex-col py-0 sm:py-8" 
           onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)}
         >
           
-          <div className='space-y-2 mb-4'>
-            <h1 className='text-3xl font-bold'>
+          <div className='space-y-1 sm:space-y-2 mb-4 px-2 sm:px-0'>
+            <h1 className='font-bold text-base sm:text-xl'>
               Email agents
             </h1>
             <TogglableTruncateContent 
-              className="text-muted-foreground"
+              className="text-muted-foreground text-sm sm:text-base"
               content="This page starts your conversations with agents for Properties you have considered suitable (1-3 stars). Email for one or many 'Search References’ at the same time (unless you want to differentiate between one SearchRef and another). The conversations will then move into the 'Active’ tab, until you reject a Property x, when it will move into 'Inactive'. You can regrade Properties at any time to bring your list to the most suitable Property you want to rent or buy."
             />
           </div>
 
-          <div className='space-y-8'>
+          <div className='space-y-4'>
 
-            <div className='space-y-2'>
-              <label htmlFor="message" className='font-bold text-sm'>Dear agents</label>
+            <div className='space-y-2 px-2 sm:px-0'>
+              <label htmlFor="message" className='sm:font-bold text-sm'>Dear agents</label>
               <Textarea 
                 {...form.register("message")} 
                 disabled={finished}
                 placeholder="Write here a universal message that applies to every property below.&#10;eg. your proposed use for the property, asking if it would be suitable, or preferred viewing dates.&#10;The 'specific message' is for each individual property." 
                 id="message" 
+                className="sm:h-auto h-[160px]"
               />
             </div>
 
-            <div className='space-y-2 rounded'>
-              <div className='text-sm flex gap-2 items-center'>
+            <div className='space-y-2 rounded -mx-2 sm:-mx-0'>
+              <div className='text-sm flex flex-wrap sm:gap-2 justify-center sm:justify-start items-center'>
                 <span className='font-bold'>Enquire on {data.length} properties</span>
                 <span className='text-center text-xs font-normal text-muted-foreground'>scroll right if more 'Search References'</span>
               </div>
-              <div className='border shadow-sm space-y-0 w-11/12 lg:w-full'>
+              <div className='border shadow-sm space-y-0 sm:w-11/12 lg:w-full'>
                 
                 <div className='flex flex-col gap-2 px-2 py-2 bg-gray-100'>
                   {tags.length > 0 && <FilterByTag tags={tags} />}
                 </div>
 
-                <div className="space-y-0 max-h-[450px] overflow-y-auto">
+                <div className="space-y-4 p-1 sm:p-4 bg-slate-200 sm:overflow-y-auto">
                   <EnquiryGradingMessagingList 
                     list={data}
                     gradingComponent={Grading}
-                    rowClassName="even:bg-sky-50"
+                    rowClassName="border-2 border-slate-400 p-4 sm:p-0 sm:border-none bg-white rounded-md shadow-xl sm:shadow-md"
                     renderRightSide={(row, index) => {
                       return filteredSent.includes(row.id) ? (
                         <div className='flex gap-2 items-center'>
@@ -235,46 +218,49 @@ function Component () {
                 </div>
               </div>
 
+              <div className='h-[120px] sm:h-[70px]'></div>
             </div>
 
-            <div className='flex'>
-              <div className='space-y-1 text-sm px-4'>
-                  <div>{auth.displayName}</div>
-                  <div className='text-slate-500 italic'>CompanyName</div>
-                  <ul className="flex gap-3">
-                    <li className='text-slate-500 italic'>DDI</li> 
-                    <li className='text-slate-500 italic'>Mobile</li>
-                    <li className='text-slate-500 italic'>Branch address</li>
-                  </ul>
-              </div>
-              <div className='self-end ml-auto flex gap-4'>
-                {finished ? (
-                  <Button asChild>
-                    <Link to="enquiries">
-                      Finish
-                    </Link>
-                  </Button>
-                ) : form.formState.isSubmitting ? (
-                  <>
-                    <Button className="mx-auto" disabled>Sending...</Button>
-                  </>
-                ) : (
-                  <>
-                    {origin && (
-                      <Button variant="outline" asChild>
-                        <a href={origin}>
-                          Cancel
-                        </a>
-                      </Button>
-                    )}
-                    <Button className="space-x-2" type="submit" disabled={disable_email_button}>
-                      <span>
-                        Email
-                      </span>
-                      {left > 0 && <span className='text-xs bg-amber-600 px-1 rounded'>{left}</span>}
+            <div className='fixed bottom-0 bg-white inset-x-0 border-t-2 shadow-xl'>
+              <div className='flex max-w-4xl mx-auto p-4'>
+                <div className='space-y-1 text-sm sm:px-4'>
+                    <div>{auth.displayName}</div>
+                    {/* <div className='text-slate-500 italic'>CompanyName</div>
+                    <ul className="flex flex-col sm:flex-row gap-0 sm:gap-3">
+                      <li className='text-slate-500 italic'>DDI</li> 
+                      <li className='text-slate-500 italic'>Mobile</li>
+                      <li className='text-slate-500 italic'>Branch address</li>
+                    </ul> */}
+                </div>
+                <div className='self-end ml-auto flex flex-col sm:flex-row gap-2 sm:gap-4'>
+                  {finished ? (
+                    <Button asChild>
+                      <Link to="enquiries">
+                        Finish
+                      </Link>
                     </Button>
-                  </>
-                )}
+                  ) : form.formState.isSubmitting ? (
+                    <>
+                      <Button className="mx-auto" disabled>Sending...</Button>
+                    </>
+                  ) : (
+                    <>
+                      {origin && (
+                        <Button variant="outline" asChild>
+                          <a href={origin}>
+                            Cancel
+                          </a>
+                        </Button>
+                      )}
+                      <Button className="space-x-2" type="submit" disabled={disable_email_button}>
+                        <span>
+                          Email
+                        </span>
+                        {left > 0 && <span className='text-xs bg-amber-600 px-1 rounded'>{left}</span>}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -355,13 +341,15 @@ function PdfViewSpecifyMessage ({ index, item, isAgent }) {
       open={isOpen}
       onOpenChange={setIsOpen}
     >
-      <div className='flex flex-col sm:flex-row text-sm gap-2 sm:gap-5'>
-        <FormItemsCheckbox index={index} name="pdf" label="PDF" />
-        <FormItemsCheckbox index={index} name="viewing" label="View" />
+      <div className='flex flex-col sm:flex-row text-sm gap-5'>
+        <SearchReferenceEmailAgents row={item} isAgent={isAgent} />
+        <div className='flex gap-5 self-center'>
+          <FormItemsCheckbox index={index} name="pdf" label="PDF" />
+          <FormItemsCheckbox index={index} name="viewing" label="View" />
+        </div>
         <CollapsibleTrigger className='text-sky-700 hover:underline'>
           specific message
         </CollapsibleTrigger>
-        <SearchReferenceEmailAgents row={item} isAgent={isAgent} />
       </div>
       <CollapsibleContent className='py-3'>
         <FormField

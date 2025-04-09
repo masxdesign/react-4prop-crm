@@ -23,7 +23,7 @@ export const fetchEnquiredPropertyByPid = (pid, hash, gradingUid = null) => fetc
     gradingUid
 })
 
-export const fetchSuitableProperties = ({ enquiryChoicesIsNotNull, inactive = false, page = 1, perpage = 15, filters = {} }) => {
+export const fetchSuitableProperties = ({ hash, enquiryChoicesIsNotNull, inactive = false, page = 1, perpage = 15, filters = {} }) => {
     try {
 
         const { searchRef, choice } = filters
@@ -35,6 +35,7 @@ export const fetchSuitableProperties = ({ enquiryChoicesIsNotNull, inactive = fa
             isSuitable: true,
             perpage,
             orderby: 9,
+            i: hash,
             grade: inactive ? "1": "2,3,4",
             filterByTagId: searchRef
         }

@@ -9,6 +9,7 @@ import { routeTree } from './routeTree.gen'
 import { BASEPATH } from './constants'
 import { Loader2 } from 'lucide-react'
 import './App.css'
+import { BIZCHAT_BASEURL } from './services/bizchatClient'
 
 const router = createRouter({ 
   routeTree,
@@ -20,7 +21,8 @@ const router = createRouter({
   context: {
     queryClient,
     perpage: 8,
-    auth: initialAuthState
+    auth: initialAuthState,
+    isBizchatUk: window.location.origin === BIZCHAT_BASEURL
   }
 })
 

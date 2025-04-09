@@ -8,9 +8,15 @@ import { Slot } from '@radix-ui/react-slot'
 import { ArrowLeft, CrossIcon, MoreHorizontal, X } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { MagnifyingGlassIcon, StarFilledIcon } from '@radix-ui/react-icons'
+import { retainSearchParams } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_auth/_com/user')({
-  component: RouteComponent
+    component: RouteComponent,
+    search: {
+        middlewares: [
+          retainSearchParams(['i'])
+        ]
+    },
 })
 
 const menuShared = [
@@ -29,34 +35,38 @@ const menuAgent = [
 ]
 
 const menuClient = [
-    ...menuShared,
     { id: "email", to: 'email-agents', label: "Email agents" },
+    ...menuShared,
 ]
 
 function RouteComponent() {
-    const { origin, auth } = Route.useRouteContext()
+    const { origin, auth, isBizchatUk } = Route.useRouteContext()
     const menu = auth.isAgent ? menuAgent: menuClient
 
     return (
         <>
-            <div className='sticky top-0 inset-x-0 bg-slate-50 z-20 flex items-center px-4'>
-                <a href={FOURPROP_BASEURL} className='mr-4'>
-                    <Logo className="w-7" />
-                </a>
+            <div className='sticky top-0 inset-x-0 bg-slate-50 z-20 flex items-center sm:px-4 px-0 flex-wrap'>
+                {!isBizchatUk && (
+                    <a href={FOURPROP_BASEURL} className='ml-2 ms:ml-0 mr-4 sm:p-0 pt-2'>
+                        <Logo className="w-7" />
+                    </a>
+                )}
                 {origin && (
                     <Button variant="link" size="sm" className="self-center">
                         <a href={origin} className='flex gap-1 items-center'>
                             <ArrowLeft className='size-4' />
-                            <span>back to listing</span>
+                            <span className='text-xs'>back to listing</span>
                         </a>
                     </Button>
                 )}
-                <nav className='ml-auto flex gap-4 items-center justify-center'>
-                    <NavItem asChild>
-                        <a href={`${FOURPROP_BASEURL}/property-search`}>
-                            <MagnifyingGlassIcon className='size-5 scale-x-[-1]' />
-                        </a>
-                    </NavItem>
+                <nav className='sm:ml-auto px-2 md:px-0 flex gap-4 items-center overflow-x-auto'>
+                    {!isBizchatUk && (
+                        <NavItem asChild>
+                            <a href={`${FOURPROP_BASEURL}/property-search`}>
+                                <MagnifyingGlassIcon className='size-5 scale-x-[-1]' />
+                            </a>
+                        </NavItem>
+                    )}
                     {origin && (
                         <NavItem asChild>
                             <a href={origin}>
@@ -71,6 +81,7 @@ function RouteComponent() {
                             to={link.to}
                             mask={link.mask}
                             search={link.search}
+                            className="text-nowrap"
                             activeOptions={{ exact: true, includeSearch: link.includeSearch ?? false }}
                         >
                             {link.label}
@@ -81,7 +92,7 @@ function RouteComponent() {
                     <MoreOptionsMenuItem />
                 </nav>
             </div>
-            <div className='px-4 py-4 max-w-4xl mx-auto overflow-hidden'>
+            <div className='sm:px-4 px-2 py-4 max-w-4xl mx-auto overflow-hidden'>
                 <Outlet />
             </div>
         </>

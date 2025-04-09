@@ -148,165 +148,169 @@ function EnquiriesPage({
   const activeKey = useMap(list.map((row) => ([row.key, 0])))
   
   return (
-    <>
-      <div className='flex items-center gap-4'>
+    <div className='space-y-8 sm:space-y-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-2 sm:px-0'>
         <div className='flex gap-2 items-center'>
-          <h2 className='text-xs text-slate-500'>Search ref</h2>
+          <h2 className='text-xs text-slate-500 w-[6em]'>Search ref</h2>
           <FilterSearchRefEnquired 
             value={filters.searchRef} 
             onValueChange={handleFilterSearchRefChange} 
           />
         </div>
         <div className='flex gap-2 items-center'>
-          <h2 className='text-xs text-slate-500'>Choice</h2>
+          <h2 className='text-xs text-slate-500 w-[6em] sm:w-auto'>Choice</h2>
           <FilterEnquiryChoice  
            value={filters.choice}
            onValueChange={handleFilterChoiceChange}
           />
         </div>
         {isFiltersDirty && (
-          <LinkClearFilters>
+          <LinkClearFilters className="py-2 px-3 sm:p-0 flex self-start sm:self-auto items-center gap-2 bg-slate-100 rounded-sm sm:bg-transparent">
             <XIcon className='size-4' />
+            <span className='text-xs sm:hidden'>Clear filters</span>
           </LinkClearFilters>
         )}
       </div>
 
-      {data.pages > 0 ? (
-        <>
-          <div className="flex justify-between">
-            <div className='flex gap-8'>
-              <Pagination 
-                page={page} 
-                pages={data.pages}
+      <div className='space-y-4'>
+        {data.pages > 0 ? (
+          <>
+            <div className="flex flex-wrap gap-2 justify-center sm:justify-between">
+              <div className='flex gap-8'>
+                <Pagination 
+                  page={page} 
+                  pages={data.pages}
+                />
+              </div>
+
+              <div className='flex gap-2'>
+                <div 
+                  className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
+                >
+                  <EnvelopeClosedIcon />
+                  <span className='text-slate-900 text-sm font-bold'>{data.count}</span>
+                </div>             
+                {data.need_reply > 0 ? (
+                  <div 
+                    className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
+                  >
+                    <span>Replies</span>
+                    <span className='flex items-center justify-center bg-red-500 rounded-sm size-4 text-white text-xs'>
+                      {data.need_reply}
+                    </span>
+                  </div>
+                ) : (
+                  <div 
+                    className='py-1 px-2 flex gap-1 items-center border rounded text-sm shadow-sm text-muted-foreground'
+                  >
+                    <span>No replies</span>
+                  </div>
+                )}
+                {isFetched && (
+                  <Link 
+                    to="."
+                    key="dd"
+                    search={{ page: 1 }}
+                    onClick={() => {
+                      refetch()
+                    }}
+                    className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
+                  >
+                    <span>{isRefetching ? "refetching...": "Refresh"}</span>
+                    <ReloadIcon />
+                  </Link>
+                )} 
+              </div>  
+            </div>
+            <div className='space-y-8'>
+              <EnquiryGradingMessagingList 
+                list={list} 
+                isAgent={isAgent}
+                rowClassName="border-2 rounded-xl overflow-hidden shadow-xl md:shadow-none"
+                onGradeChange={onGradeChange}
+                gradingComponent={Grading}
+                renderLeftSide={(row) => {
+                  const handleClick = (selected) => {
+                    handleFilterSearchRefChange(selected ? selected.id: "NULL")
+                  }
+                  const currActivekey = activeKey.get(row.key)
+                  const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
+
+                  return (
+                    <>
+                      <Suspense fallback={<Loader2Icon className="animate-spin" />}>
+                        <SearchReferenceSelect 
+                          tag_id={row.tag_id} 
+                          pid={row.id} 
+                          onClick={handleClick}
+                          isAgent={data.auth.isAgent}
+                        />
+                      </Suspense>
+                      <Choices choices={row.enquiry_choices} className="md:flex-col gap-4 md:gap-2" />
+                      {row.enquired.client?.isGradeShare && (
+                        <div className='flex md:flex-col gap-1'>
+                          {["Applicant", "Property agents"].map((label, index) => (
+                            <Button 
+                              key={index}
+                              variant="outline" 
+                              className={cn("text-xs", { [activeClassName]: currActivekey === index })}
+                              onClick={() => {
+                                activeKey.set(row.key, index)
+                              }}
+                            >
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )
+                }}
+                renderRightSide={(row) => {
+                  if (!row.chat_id) return null
+
+                  return activeKey.get(row.key) === 1 ? (
+                    <EnquiryMessagingWidgetInView 
+                      key={1}
+                      bz_hash={bz_hash}
+                      property={row}
+                      chat_id={row.original.dealing_agents_chat_id}
+                      onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
+                      recipientLabel="property agent"
+                    />
+                  ) : (
+                    <EnquiryMessagingWidgetInView 
+                      key={2}
+                      bz_hash={bz_hash}
+                      property={row}
+                      chat_id={row.chat_id} 
+                      recipientLabel={
+                        row.isGradeShare 
+                          ? "applicant"
+                          : "client"
+                      }
+                    />
+                  )
+                }}
               />
             </div>
-
-            <div className='flex gap-2'>
-              <div 
-                className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
-              >
-                <EnvelopeClosedIcon />
-                <span className='text-slate-900 text-sm font-bold'>{data.count}</span>
-              </div>             
-              {data.need_reply > 0 ? (
-                <div 
-                  className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
-                >
-                  <span>Replies</span>
-                  <span className='flex items-center justify-center bg-red-500 rounded-sm size-4 text-white text-xs'>
-                    {data.need_reply}
-                  </span>
-                </div>
-              ) : (
-                <div 
-                  className='py-1 px-2 flex gap-1 items-center border rounded text-sm shadow-sm text-muted-foreground'
-                >
-                  <span>No replies</span>
-                </div>
-              )}
-              {isFetched && (
-                <Link 
-                  to="."
-                  key="dd"
-                  search={{ page: 1 }}
-                  onClick={() => {
-                    refetch()
-                  }}
-                  className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
-                >
-                  <span>{isRefetching ? "refetching...": "Refresh"}</span>
-                  <ReloadIcon />
-                </Link>
-              )} 
-            </div>  
+            <Pagination page={page} pages={data.pages} />
+          </>
+        ) : (
+          <div className='min-h-[400px] flex flex-col items-center justify-center text-muted-foreground'>
+            <h2 className='text-lg font-bold'>Currently no listing for this search</h2>
+            <p>Make an another search or <LinkClearFilters className="text-slate-900 underline">clear selected filters</LinkClearFilters></p>
           </div>
+        )}
+      </div>
 
-          <EnquiryGradingMessagingList 
-            list={list} 
-            isAgent={isAgent}
-            rowClassName="border rounded-lg"
-            onGradeChange={onGradeChange}
-            gradingComponent={Grading}
-            renderLeftSide={(row) => {
-              const handleClick = (selected) => {
-                handleFilterSearchRefChange(selected ? selected.id: "NULL")
-              }
-              const currActivekey = activeKey.get(row.key)
-              const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
-
-              return (
-                <>
-                  <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-                    <SearchReferenceSelect 
-                      tag_id={row.tag_id} 
-                      pid={row.id} 
-                      onClick={handleClick}
-                      isAgent={data.auth.isAgent}
-                    />
-                  </Suspense>
-                  {row.enquired.client?.isGradeShare && (
-                    <div className='flex flex-col gap-1'>
-                      {["Applicant", "Property agents"].map((label, index) => (
-                        <Button 
-                          key={index}
-                          variant="outline" 
-                          className={cn("text-xs", { [activeClassName]: currActivekey === index })}
-                          onClick={() => {
-                            activeKey.set(row.key, index)
-                          }}
-                        >
-                          {label}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                  <Choices choices={row.enquiry_choices} className="flex-col gap-2" />
-                </>
-              )
-            }}
-            renderRightSide={(row) => {
-              if (!row.chat_id) return null
-
-              return activeKey.get(row.key) === 1 ? (
-                <EnquiryMessagingWidgetInView 
-                  key={1}
-                  bz_hash={bz_hash}
-                  property={row}
-                  chat_id={row.original.dealing_agents_chat_id}
-                  onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
-                  recipientLabel="property agent"
-                />
-              ) : (
-                <EnquiryMessagingWidgetInView 
-                  key={2}
-                  bz_hash={bz_hash}
-                  property={row}
-                  chat_id={row.chat_id} 
-                  recipientLabel={
-                    row.isGradeShare 
-                      ? "applicant"
-                      : "client"
-                  }
-                />
-              )
-            }}
-          />
-          <Pagination page={page} pages={data.pages} />
-        </>
-      ) : (
-        <div className='min-h-[400px] flex flex-col items-center justify-center text-muted-foreground'>
-          <h2 className='text-lg font-bold'>Currently no listing for this search</h2>
-          <p>Make an another search or <LinkClearFilters className="text-slate-900 underline">clear selected filters</LinkClearFilters></p>
-        </div>
-      )}
-
-    </>
+    </div>
   )
 }
 
 function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   return chat_id ? (
-    <div className='flex flex-col gap-2 bg-cyan-400 rounded-xl'>
+    <div className='flex flex-col gap-2 bg-cyan-400 rounded-lg'>
       <ViewAllMessagesLink chat_id={chat_id} bz_hash={bz_hash} />
       <div className='flex flex-col-reverse gap-4 px-3'>
         <LastMessagesList 
@@ -314,7 +318,7 @@ function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, on
           recipientLabel={recipientLabel}
         />
       </div>
-      <div className='p-3'>
+      <div className='p-1 sm:p-3'>
         <WriteYourReplyHereInput 
           chat_id={chat_id} 
           property={property} 
@@ -429,7 +433,7 @@ function ViewAllMessagesLink({ chat_id, bz_hash }) {
           <span className='text-sm hover:underline text-white'>open messages</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] h-[800px] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:-right-0">
+      <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:-right-0 rounded-lg">
         <iframe src={conversation_url} className='h-full w-full rounded-lg'></iframe>
       </DialogContent>
     </Dialog>

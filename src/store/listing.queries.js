@@ -9,9 +9,9 @@ export const fetchEnquiredPropertyByPidQuery = (pid, hash, gradingUid = null) =>
     staleTime: 1000 * 20
 })
 
-export const suitablePropertiesEnquiriedQuery = ({ page = 1, perpage = 10, inactive = false, filters }) => queryOptions({
-    queryKey: ['suitablePropertiesEnquiried', inactive, filters, page, perpage],
-    queryFn: () => fetchSuitablePropertiesEnquiried({ page, perpage, inactive, filters }),
+export const suitablePropertiesEnquiriedQuery = ({ hash, page = 1, perpage = 10, inactive = false, filters }) => queryOptions({
+    queryKey: ['suitablePropertiesEnquiried', hash, inactive, filters, page, perpage],
+    queryFn: () => fetchSuitablePropertiesEnquiried({ page, perpage, inactive, filters, hash }),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 20
 })

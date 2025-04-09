@@ -1,7 +1,6 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import EnquiriesPage, { useEnquiryList } from '../../-ui/enquiriesPage'
 import { produce } from 'immer'
-import { useAuth } from '@/components/Auth/Auth-context'
 
 export const Route = createLazyFileRoute('/_auth/_com/user/$sub')({
     component: RouteComponent
@@ -11,7 +10,7 @@ function RouteComponent() {
     const { auth, page, filters, isFiltersDirty, listQuery, pageTitle, pageDescription, queryClient, onGradeChange } = Route.useRouteContext()
 
     const navigate = Route.useNavigate()
-
+    
     const { list, data, refetch, isFetched, isRefetching } = useEnquiryList(listQuery)
 
     const handleFiltersChange = (filterValues) => {
@@ -42,18 +41,20 @@ function RouteComponent() {
     }
     
     return (
-        <div className="space-y-4 pt-8">
-            {document.getElementById('menu_enquiries') && data.count > 0 && createPortal(
-                <span className='font-normal ml-2 text-xs'>{data.count}</span>, 
-                document.getElementById('menu_enquiries')
-            )}
-            <div className='space-y-2'>
-                <h1 className='text-3xl space-x-2'>
-                    <span className='font-bold'>{pageTitle}</span>
-                </h1>
-                <p className='text-muted-foreground'>
-                    {pageDescription}
-                </p>
+        <div className="space-y-6 sm:space-y-4 sm:pt-8">
+            <div className='space-y-4'>
+                {document.getElementById('menu_enquiries') && data.count > 0 && createPortal(
+                    <span className='font-normal ml-2 text-xs'>{data.count}</span>, 
+                    document.getElementById('menu_enquiries')
+                )}
+                <div className='space-y-1 px-3 sm:px-0'>
+                    <h1 className='font-bold text-base sm:text-xl'>
+                        {pageTitle}
+                    </h1>
+                    <p className='text-muted-foreground text-sm sm:text-base'>
+                        {pageDescription}
+                    </p>
+                </div>
             </div>
             <EnquiriesPage 
                 page={page} 

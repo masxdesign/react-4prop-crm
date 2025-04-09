@@ -10,7 +10,7 @@ import { useGradeUpdater } from '../searchReference.mutation'
 import useSearchReferenceListingEnquired from '../searchReference.hooks'
 import SearchReferenceButton from './SearchReferenceButton'
 
-function SearchReferenceSelect({ tag_id, pid, onSelect, isAgent, onClick }) {
+function SearchReferenceSelect({ tag_id, pid, onSelect, isAgent, onClick, className }) {
     const inputRef = useRef(null)
     const [open, setOpen] = useState(false)
 
@@ -61,7 +61,7 @@ function SearchReferenceSelect({ tag_id, pid, onSelect, isAgent, onClick }) {
   
     return (
       <>
-        <SearchReferenceButton>
+        <SearchReferenceButton className={className}>
           <div className='px-2 py-1 flex-1 hover:underline' onClick={handleClick}>
               {selected ? selected.name: "Unnamed"}
           </div>

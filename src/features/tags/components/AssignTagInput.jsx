@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, CheckIcon, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent } from '@/components/ui/popover'
-import React, { useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import { PopoverAnchor } from '@radix-ui/react-popover'
 import Selection from '@/components/Selection'
 import { Slot } from '@radix-ui/react-slot'
@@ -19,7 +19,7 @@ const AssignTagInput = React.forwardRef(({ placeholder, list, selected, onSelect
     const inputRef = useRef(null)
   
     const [open, setOpen] = useState(false)
-    const [value, setValue] = useState("")
+    const [value, setValue] = useState(selected?.name ?? "")
   
     const debouncedValue = useDebounce(value, 400)
   
@@ -54,13 +54,27 @@ const AssignTagInput = React.forwardRef(({ placeholder, list, selected, onSelect
         }
       }
     }, [setOpen])
+
+    const getAutoSelect = useCallback((input) => {
+      
+      const toSelect = list.find(item => equalsCombiner(item, input))
+
+      if (toSelect) return toSelect
+      
+      if (input.length > 0) {
+        return { id: -1, name: input }
+      }
+
+      return null
+
+    }, [list])
   
     const handleSelect = item => {
       onSelect(item)
-      setValue(item.name)
+      setValue(item?.name ?? "")
       setOpen(false)
     }
-  
+
     const handleOutside = (e) => {
       if (e.target.closest('.anchor')) {
         e.preventDefault()
@@ -79,15 +93,17 @@ const AssignTagInput = React.forwardRef(({ placeholder, list, selected, onSelect
   
       if (open) {
         inputRef.current?.focus()
+      } else {
+        handleSelect(getAutoSelect(value))
       }
   
-    }, [open])
+    }, [open, value])
   
     const handleKeyPress = (e) => {
       if (e.key === "Enter") {
-          setOpen(false)
+          handleSelect(getAutoSelect(value))
       }
-  }
+    }
   
     const getVariant = (item, prefix = '') => {
       return (!prefix ? '': `${prefix}-`) + (

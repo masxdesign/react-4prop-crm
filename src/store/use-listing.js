@@ -299,11 +299,7 @@ export const propertyTypescombiner = (types, subtypes) => {
 const propertyTypesSelector = createSelector(
     (state) => state.types,
     (state) => state.subtypes,
-    (types, subtypes) => {
-        const subtypesKeyValue = propertySubtypesKeyValueCombiner(subtypes)
-        const propertyTypes = propertyTypesCombiner(types, subtypesKeyValue)
-        return propertyTypes
-    }
+    propertyTypescombiner
 )
 
 export const detailsCombiner = (propertyTypes, propertiesArray, contents, companies, clientsFromUids = [], settings = defaultPropertyDetailsSetting, auth = null) => (

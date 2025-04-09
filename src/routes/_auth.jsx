@@ -3,10 +3,8 @@ import PendingComponent from '@/components/PendingComponent';
 import { WINDOWN_NAMES } from '@/constants';
 
 export const Route = createFileRoute('/_auth')({
-    beforeLoad: ({ context, location, ...r }) => {
-        console.log(context.auth, r);
-        
-        if (!context.auth.isAuthenticated || context.auth.user?.need_to_login) {
+    beforeLoad: ({ context, location }) => {
+        if (!context.auth.isAuthenticated /*|| context.auth.user?.need_to_login*/) {
           throw redirect({
             to: '/crm/login',
             search: {

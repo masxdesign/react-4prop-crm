@@ -27,11 +27,11 @@ const schema = yup.object().shape({
     selected: yup.object().shape({
         id: yup.number(),
         email: yup.string().email()
-    }).required(),
+    }).required().label('Client email address'),
     tag: yup.object().shape({
         id: yup.number(),
         name: yup.string().required()
-    }).required()
+    }).required().label('Search ref/name')
 })
 
 function GradeSharingConfirmComponent () {
@@ -59,6 +59,8 @@ function GradeSharingConfirmComponent () {
 
     }, [])
 
+    const [errors, setErrors] = useState({})
+    
     const openedPid = useGradeSharingStore.use.openedPid()
     const openedGrade = useGradeSharingStore.use.openedGrade()
     const setOpenedGrade = useGradeSharingStore.use.setOpenedGrade()
@@ -70,25 +72,6 @@ function GradeSharingConfirmComponent () {
         postMessage({ type: "HIDE" })
     }
 
-    const validate = useCallback((selected, tag) => {
-
-        try {
-
-            return schema.validateSync({
-                selected,
-                tag
-            })
-            
-        } catch (e) {
-
-            return null
-        
-        }
-
-    }, [])
-
-    const validated = useMemo(() => validate(selected, tag), [selected, tag])
-
     const applyClientTag = useCallback(({ selected, tag }) => {
 
         const data = [selected.id, selected.email, tag.id, tag.name, openedPid, openedGrade]
@@ -99,8 +82,39 @@ function GradeSharingConfirmComponent () {
 
     }, [openedPid, openedGrade])
 
+    useEffect(() => {
+
+        setErrors({})
+
+    }, [selected, tag])
+
     const handleApply = () => {
-        applyClientTag({ selected, tag })
+
+        try {
+
+            const form = { selected, tag }
+            const values = schema.validateSync(form, { abortEarly: false })
+
+            setErrors({})
+
+            applyClientTag(values)
+            
+            
+        } catch (e) {
+
+            e.inner.forEach(error => {
+                setErrors((prev) => ({ 
+                    ...prev, 
+                    [error.path]: (
+                        <span className="text-red-500 bg-red-50 rounded-md text-xs px-2 py-1">{error.message }</span>
+                    )
+                }))
+            })
+
+            return null
+        
+        }
+
     }
     
     return (
@@ -137,6 +151,7 @@ function GradeSharingConfirmComponent () {
                                 </Selection>
                             )}
                         </Link>
+                        <p>{errors.selected}</p>
                     </div>
                     {selected && (
                         <div className='space-y-2'>
@@ -151,6 +166,7 @@ function GradeSharingConfirmComponent () {
                                     onSelect={setTag}
                                 />
                             </Suspense>
+                            <p>{errors.tag}</p>
                         </div>     
                     )}
                 </div>       
@@ -168,7 +184,7 @@ function GradeSharingConfirmComponent () {
                     <Button variant="outline" onClick={handleCancel}>
                         Cancel
                     </Button>
-                    <Button onClick={handleApply} disabled={!validated}>
+                    <Button onClick={handleApply}>
                         Start grading
                     </Button>
                 </div>

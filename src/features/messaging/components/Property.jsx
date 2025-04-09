@@ -15,24 +15,24 @@ import { Button } from "@/components/ui/button"
 import { useSet } from "@uidotdev/usehooks"
 import { EnquiryMessagingWidgetInView } from "@/routes/_auth._com/-ui/EnquiriesPage"
 import SearchReferenceButton from "@/features/searchReference/component/SearchReferenceButton"
+import useBreakpoint from "@/hooks/use-TailwindBreakpoint"
 
 const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
 
 const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMessage }) => {
 
-    console.log(row);
-    
+    const breakpoint = useBreakpoint()
 
     const [active, setActive] = useState(0)
 
     const position = [row.lat, row.lng]
     
     return (
-        <div className="pb-10">
+        <div className="pb-0 sm:pb-10">
             {row.enquired.isEnquiry && (
                 <div className="bg-sky-100">
-                    <div className="flex justify-center gap-2 mx-auto max-w-7xl px-16 py-4">
-                        <p className="text-sky-800 text-sm">
+                    <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mx-auto max-w-7xl px-2 sm:px-16 py-2 sm:py-4">
+                        <p className="text-sky-800 text-xs sm:text-sm">
                             <b>Welcome {isAgent ? "Agent": "visitor"}, </b>
                             {row.enquired?.from_uid ? (  
                                 `an agent shared this property with you`
@@ -45,7 +45,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                             )}
                         </p>
                         {row.enquired.client && (
-                            <div className='flex gap-2 items-center text-sm'>
+                            <div className='flex gap-2 items-center text-xs sm:text-sm'>
                                 <div>{row.enquired.client.display_name}</div>
                                 <div 
                                     className='bg-slate-50 size-5 rounded-full overflow-hidden flex justify-center items-center self-start'
@@ -60,29 +60,33 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     </div>
                 </div>
             )}
-            <div className="px-16 max-w-7xl mx-auto my-4 flex gap-4">
+            <div className="sm:px-16 px-2 max-w-7xl mx-auto sm:my-4 my-1 flex gap-4">
                 <div className="mr-auto flex gap-2 items-center">
                     <CompanyLogo logo={row.enquired.brand.logo} />
                     <span className="text-nowrap font-bold text-sm">{row.enquired.brand.name}</span>
                 </div>
             </div>
-            <div className="px-16 max-w-7xl mx-auto relative">
+            <div className="sm:px-16 px-2 max-w-7xl mx-auto relative">
                 <Carousel>
                     <CarouselContent>
                         {row.pictures.full.map((source, index) => (
                             <CarouselItem key={index}>
-                                <div className="relative h-[450px] overflow-hidden rounded-xl">
+                                <div className="relative h-[250px] sm:h-[450px] overflow-hidden rounded-xl">
                                     <img src={source} className="object-contain w-full h-full z-10 relative" />
                                     <img src={source} className="object-cover w-full h-full scale-[2] absolute left-0 top-0 z-0 blur-3xl" />
                                 </div>
                             </CarouselItem>
                         ))}
                     </CarouselContent>
-                    <CarouselPrevious />
-                    <CarouselNext />
+                    {breakpoint !== "sm" && (
+                        <>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                        </>
+                    )}
                 </Carousel>
                 {row.grade && (
-                    <div className="absolute top-4 left-20 p-4 bg-white rounded-md shadow-lg">
+                    <div className="absolute top-2 sm:top-4 left-4 sm:left-20 p-2 sm:p-4 bg-white rounded-md shadow-lg">
                         <Grading 
                             row={row} 
                             isAgent={isAgent} 
@@ -91,7 +95,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     </div>
                 )}
                 {row.enquired.isEnquiry && (
-                    <div className="absolute top-4 right-20 p-1 bg-gray-900/40 rounded-md shadow-lg">
+                    <div className="absolute top-2 right-4 sm:top-4 sm:right-20 p-1 bg-gray-900/40 rounded-md shadow-lg">
                         {isAgent ? (
                             <SearchReferenceButton>
                                 <div className='px-2 py-1 flex-1 hover:underline'>
@@ -110,27 +114,27 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     </div>
                 )}
             </div>
-            <div className="bg-slate-100 pb-12 -mt-20 py-28 mb-16">
-                <div className="max-w-3xl mx-auto flex items-center flex-col gap-8 bg-slate-100">
-                    <h1 className="text-4xl leading-snug text-center font-thin max-w-xl">
+            <div className="bg-slate-100 sm:pb-12 -mt-4 sm:-mt-20 py-10 sm:py-28 mb-4 sm:mb-16 px-4 sm:px-0">
+                <div className="max-w-3xl mx-auto flex items-center flex-col gap-4 sm:gap-8 bg-slate-100">
+                    <h1 className="text-2xl sm:text-4xl leading-snug text-center font-thin max-w-xl">
                         {row.title}
                     </h1>
-                    <div className='text-lg font-normal flex flex-col sm:flex-row gap-0 sm:gap-10'>                  
+                    <div className='text-sm sm:text-lg font-normal flex gap-8 sm:gap-10'>                  
                         <div className="flex gap-4 items-center">
-                            <RulerSquareIcon strokeWidth={1} className="text-red-500 size-8 opacity-50"/> 
+                            <RulerSquareIcon strokeWidth={1} className="text-red-500 size-4 sm:size-8 opacity-50"/> 
                             <span>{row.sizeText}</span>
                         </div>
                         <div className="flex gap-4 items-center">
-                            <BadgePoundSterlingIcon strokeWidth={1} className="text-amber-500 size-12"/> 
+                            <BadgePoundSterlingIcon strokeWidth={1} className="text-amber-500 size-6 sm:size-12"/> 
                             <span>{row.tenureText}</span>
                         </div>
                     </div>
                 </div>
             </div>
             {row.enquired.client ? (
-                <div className="max-w-5xl mx-auto mb-8 border rounded-lg shadow-sm">
+                <div className="sm:mx-auto mx-2 max-w-5xl mb-8 border rounded-lg shadow-sm">
                     {row.enquired.client.isGradeShare && (
-                        <div className='flex gap-4 justify-stretch px-4 pt-4'>
+                        <div className='flex gap-1 sm:gap-4 justify-stretch px-2 sm:px-4 pt-2 sm:pt-4'>
                             {["Applicant messages", "Letting agent messages"].filter((_, index) => {
                                 if (row.enquired.client.isGradeShare) return true
                                 return index !== 1 
@@ -138,7 +142,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                                 <Button 
                                     key={index}
                                     variant="outline" 
-                                    className={cn("text-sm p-6 w-full", { [activeClassName]: active === index })}
+                                    className={cn("text-xs sm:text-sm p-2 sm:p-6 w-full", { [activeClassName]: active === index })}
                                     onClick={() => {
                                         setActive(index)
                                     }}
@@ -148,10 +152,10 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                             ))}
                         </div>
                     )}
-                    <div className="p-4">
+                    <div className="p-2 sm:p-4">
                         {row.enquired.client.isGradeShare && active === 1 ? (
-                            <div className="flex gap-8">                           
-                                <div className="w-1/3 p-8 rounded-lg">
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8">                           
+                                <div className="sm:w-1/3 sm:p-8 rounded-lg">
                                     <div className="space-y-1">
                                         <CompanyLogo logo={row.enquired.company.logo.original} />
                                         <div className='text-base text-center'>{row.enquired.company.name}</div>
@@ -169,8 +173,8 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex gap-8">                            
-                                <div className="w-1/3 p-4 rounded-lg space-y-4">
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-8">                            
+                                <div className="sm:w-1/3 p-4 rounded-lg space-y-2 sm:space-y-4">
                                     <div className="text-lg font-thin">
                                         {row.enquired.client.isGradeShare 
                                             ? "Message applicant"
@@ -212,8 +216,8 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     </div>
                 </div>
             ) : (
-                <div className="max-w-5xl flex gap-8 mx-auto p-4 mb-8 border rounded-lg shadow-sm">
-                    <div className="p-4 space-y-2 w-1/3">
+                <div className="max-w-5xl flex flex-col sm:flex-row gap-2 sm:gap-8 mx-2 sm:mx-auto px-2 sm:px-4 sm:py-4 pb-2 mb-8 border rounded-lg shadow-sm">
+                    <div className="p-4 space-y-2 sm:w-1/3">
                         <div className="text-lg font-thin">
                             Message agent
                         </div>
@@ -237,8 +241,8 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                 </div>
             )}
 
-            <main className="flex items-start gap-16 max-w-5xl mx-auto border p-8">
-                <article className="space-y-8 w-full p-8">
+            <main className="flex flex-col-reverse sm:flex-row sm:items-start gap-8 sm:gap-16 max-w-5xl sm:mx-auto mx-2 border p-8">
+                <article className="space-y-8 w-full sm:p-8">
                     <div className="space-y-3">
                         <h2 className="text-lg font-thin">
                             Property description
@@ -256,7 +260,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                         </div>
                     )}
                 </article>
-                <aside className="w-1/2 border-l px-8 py-4">
+                <aside className="sm:w-1/2 sm:border-l sm:px-8 sm:py-4">
                     <div className="space-y-1">
                         <CompanyLogo logo={row.enquired.brand.logo} />
                         <div className='text-base text-center'>{row.enquired.brand.name}</div>
@@ -264,18 +268,18 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     </div>
                 </aside>
             </main>
-            <div className="h-20"></div>
-            <section className="flex max-w-7xl mx-auto bg-blue-900 text-white shadow-lg rounded-md overflow-hidden">
-                <div className="space-y-4 w-2/3 p-14">
-                    <h3 className="font-bold text-2xl">
+            <div className="h-4 sm:h-20"></div>
+            <section className="flex flex-col-reverse sm:flex-row max-w-7xl mx-auto bg-blue-900 text-white sm:shadow-lg sm:rounded-md overflow-hidden">
+                <div className="space-y-4 sm:w-2/3 p-4 sm:p-14">
+                    <h3 className="font-bold text-lg leading-tight sm:text-2xl">
                         {row.addressText}
                     </h3>
                     <p className="leading-relaxed">
                         <Nl2br text={row.content.location} fallbackText={row.enquired.brand.name} />
                     </p>
                 </div>
-                <div className="w-1/3 relative z-0">
-                    <MapContainer center={position} zoom={13} scrollWheelZoom={false} className="h-96 w-full">
+                <div className="sm:w-1/3 relative z-0">
+                    <MapContainer center={position} zoom={13} scrollWheelZoom={false} className="h-64 sm:h-96 w-full">
                         <TileLayer
                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
