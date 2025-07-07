@@ -4,10 +4,11 @@ import ColumnLinkable from "@/components/CRMTable/components/ColumnLinkable"
 import ColumnViewButton from "@/components/CRMTable/components/ColumnViewButton"
 import { Checkbox } from "@/components/ui/checkbox"
 import ColumnNextContactMyList from "@/components/CRMTable/components/ColumnNextContactMyList"
+import ColumnEnquiries from "@/components/CRMTable/components/ColumnEnquiries"
 
 const columnHelper = createColumnHelper()
 
-export const version = "1.0.2"
+export const version = "1.1"
 
 export const columns = [
     columnHelper.display({
@@ -70,10 +71,10 @@ export const columns = [
             />
         ),
     }),
-    columnHelper.accessor("gradesharecount", {
-        id: "gradesharecount",
+    columnHelper.accessor((row) => `${row.owner_first} ${row.owner_last}`, {
+        id: "owner_fullname",
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Share count" />
+            <DataTableColumnHeader column={column} title="Added by" />
         ),
         cell: (info) => (
             <ColumnLinkable
@@ -81,6 +82,32 @@ export const columns = [
                 className="w-full truncate font-medium"
             />
         ),
+        meta: { label: "Added by" },
+    }),
+    columnHelper.accessor("new_message", {
+        id: "new_message",
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Unread" />
+        ),
+        cell: (info) => (
+            <ColumnLinkable
+                info={info}
+                className="w-full truncate font-medium"
+            />
+        ),
+        meta: { label: "Unread" }
+    }),
+    // all_enquiries,shared_properties,new_message,pdf,view,none
+    columnHelper.accessor("all_enquiries", {
+        id: "all_enquiries",
+        header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Enquiries" />
+        ),
+        cell: (info) => (
+            <ColumnEnquiries info={info}/>
+        ),
+        size: 240,
+        meta: { label: "Enquiries" }
     }),
     columnHelper.accessor("hash", {
         id: "hash",

@@ -73,7 +73,6 @@ function GradeSharingConfirmComponent () {
     }
 
     const applyClientTag = useCallback(({ selected, tag }) => {
-
         const data = [selected.id, selected.email, tag.id, tag.name, openedPid, openedGrade]
         const bin = encodeToBinary(JSON.stringify(data))
 
@@ -137,8 +136,13 @@ function GradeSharingConfirmComponent () {
 
                 <div className="sticky top-0 bg-white space-y-4 px-3 py-3 shadow-sm">                
                     <div className='space-y-2'>
-                        <h3 className="text-sm font-bold">
-                            Select client to receive graded Properties
+                        {selected && (
+                            <div className="mb-4 p-2 rounded-md border border-red-300 text-red-500 text-xs bg-red-50">
+                                Changing Client/ SearchName deletes selected Properties 
+                            </div>
+                        )}
+                        <h3 className="text-sm">
+                            <span className="font-bold">Client</span> +new or change/select 
                         </h3>
                         <Link to="select-client" search={{ pid: openedPid }} className='block'>
                             {selected ? (
@@ -155,8 +159,8 @@ function GradeSharingConfirmComponent () {
                     </div>
                     {selected && (
                         <div className='space-y-2'>
-                            <h3 className="text-sm font-bold">
-                                Enter a search ref/name for you & your Client
+                            <h3 className="text-sm">
+                                <span className="font-bold">SearchName</span> +new or change/select 
                             </h3>
                             <Suspense fallback={<Loader2 className="animate-spin" />}>
                                 <AssignTagControl 
@@ -182,10 +186,10 @@ function GradeSharingConfirmComponent () {
             <div className='flex gap-3 justify-center bg-white sticky inset-x-0  bottom-0 p-3 border-t'>
                 <div className='space-x-3 text-center'>
                     <Button variant="outline" onClick={handleCancel}>
-                        Cancel
+                        Back
                     </Button>
                     <Button onClick={handleApply}>
-                        Start grading
+                        Apply
                     </Button>
                 </div>
             </div>

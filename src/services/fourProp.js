@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
-import { find, isEmpty, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
+import { find, isEmpty, isObject, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
 import { getAllMailShots, getBizchatLastMessage, getListUnreadTotal, sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
@@ -8,10 +8,11 @@ import propertyParse from "@/utils/propertyParse";
 import propertySubtypesKeyValueCombiner from "./propertySubtypesKeyValueCombiner";
 import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
-import useListing from "@/store/use-listing";
+import useListing, { propertyCombiner, propertyTypescombiner } from "@/store/use-listing";
 import { getTime } from "date-fns";
 import { fourPropClient, FOURPROP_BASEURL } from "./fourPropClient";
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "@/store/listing.queries";
+import delay from "@/utils/delay";
 
 const grantAccess = async () => {
 
@@ -416,6 +417,56 @@ export const searchPropertiesQuery = pids => queryOptions({
     queryKey: ['searchProperties', pids],
     queryFn: () => fetchSearchProperties(pids)
 })
+
+export const propertyEnquiriesQuery = stats => {
+    const pids = map(stats, 'pid')
+
+    return queryOptions({
+        queryKey: ['propertiesDetailsByPids', pids],
+        queryFn: async () => {
+            if (pids.length < 1) return []
+
+            const [{ results, companies }, contents, types, subtypes] = await Promise.all([
+                queryClient.ensureQueryData(searchPropertiesQuery(pids)),
+                queryClient.ensureQueryData(propReqContentsQuery(pids)),
+                queryClient.ensureQueryData(typesQuery),
+                queryClient.ensureQueryData(subtypesQuery)
+            ])
+
+            
+            const properties_ = results.map(property => lowerKeyObject(property))
+
+            const d = stats.map((item) => {
+                let property = find(properties_, { pid: item.pid })
+                
+                if (!property) return null
+
+                return {
+                    ...property,
+                    ...item
+                }
+            })
+
+             console.log({d});
+
+            const propertiesDetails = d.filter(p => p).map((property) => {
+
+                return propertyCombiner(
+                    property.pid, 
+                    property, 
+                    propertyTypescombiner(
+                        types, 
+                        subtypes,
+                    ),
+                    contents[property.pid], 
+                    Object.values(companies).map(companyCombiner)
+                )
+            })
+
+            return propertiesDetails
+        }
+    })
+}
 
 export const propertiesDetailsSearchQuery = pids => queryOptions({
     queryKey: ['searchPropertiesDetails', pids],

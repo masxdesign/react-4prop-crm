@@ -1,20 +1,22 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react"
 import { queryOptions, useQueryClient } from "@tanstack/react-query"
 import { functionalUpdate, makeStateUpdater } from "@tanstack/react-table"
 import useTableSS, { useLoadData } from "@/components/DataTableSS/use-TableSS"
 import useRouteSearchStateUpdater from "./use-RouteSearchStateUpdater"
 import { useSearch } from "@tanstack/react-router"
-import { fetchNegotiator } from "@/services/fourProp"
+import { fetchNegotiator, fetchSearchProperties } from "@/services/fourProp"
 import { LOCALSTOR_TABLEMODAL_SELECTED } from "@/constants"
 import numberWithCommas from "@/utils/numberWithCommas"
 import isEqual from "lodash/isEqual"
 import { util_pagin_update } from "@/utils/localStorageController"
+import { map } from "lodash"
+import { getCrmEnquiries } from "@/services/bizchat"
 
 const defaultSelected = []
 
 export const defaultTableModelState = {
     tableState: {
-        pagination: { pageIndex: 0, pageSize: 10 },
+        pagination: { pageIndex: 0, pageSize: 20 },
         sorting: [{ id: "created", desc: true }],
         columnFilters: [],
         globalFilter: { search: "", column: "email" }
@@ -551,6 +553,7 @@ useTableModel.use = {
         services: {  
             tableDialog: { 
                 getInfoById, 
+                // getEnquiries,
                 noteList, 
                 addNote, 
                 deleteNote,
@@ -559,6 +562,9 @@ useTableModel.use = {
         }
     }) {
         const queryClient = useQueryClient()
+
+        const [tabValue, setTabValue] = useState("info")
+        const [openEnquiry, onOpenEnquiry] = useState(null)
 
         const { table } = tableSSModal
         const { authUserId, dialogModel = null } = table.options.meta
@@ -578,20 +584,25 @@ useTableModel.use = {
 
         }, [table.options.data])
 
-        const id = dialogModel?.state.info
+        const import_id = dialogModel?.state.info
+
+        const enquiriesQueryOptions = (ownerUid, filterBy) => queryOptions({
+            queryKey: ['getEnquiries', import_id, ownerUid, filterBy],
+            queryFn: () => getCrmEnquiries(import_id, ownerUid, filterBy)
+        })
 
         const infoQueryOptions = queryOptions({
-            queryKey: ['infoById', id],
-            queryFn: () => getInfoById(id)
+            queryKey: ['infoById', import_id],
+            queryFn: () => getInfoById(import_id)
         })
 
         const chatboxQueryOptions = queryOptions({
-            queryKey: ['chatboxNoteList', authUserId, id],
-            queryFn: () => noteList(id)
+            queryKey: ['chatboxNoteList', authUserId, import_id],
+            queryFn: () => noteList(import_id)
         })
 
         const addMutationOptions =  {
-            mutationFn: (variables) => addNote(variables, id),
+            mutationFn: (variables) => addNote(variables, import_id),
             onSuccess: (_, variables) => {
                 const { _button } = variables
                 
@@ -604,7 +615,7 @@ useTableModel.use = {
         }
 
         const updateMutationOptions = {
-            mutationFn: (variables) => listUpdateDetails(authUserId, id, variables.name, variables.newValue),
+            mutationFn: (variables) => listUpdateDetails(authUserId, import_id, variables.name, variables.newValue),
             onSuccess (_, variables) {
                 try {
 
@@ -621,7 +632,7 @@ useTableModel.use = {
                     queryClient.setQueryData(
                         tableQueryOptions.queryKey, 
                         util_pagin_update(
-                            { id }, 
+                            { id: import_id }, 
                             { [variables.name]: variables.newValue }
                         )
                     )
@@ -642,10 +653,11 @@ useTableModel.use = {
         }
 
         return {
-            id,
+            id: import_id,
             enableBizchat,
             authUserId,
             infoQueryOptions,
+            enquiriesQueryOptions,
             chatboxQueryOptions,
             addMutationOptions,
             deleteMutationOptions,
@@ -655,7 +667,11 @@ useTableModel.use = {
             metricsComponent,
             table: tableSSModal.table,
             dialogModel: tableSSModal.table.options.meta.dialogModel,
-            tableSSModal
+            tableSSModal,
+            tabValue, 
+            onTabValueChange: setTabValue,
+            openEnquiry,
+            onOpenEnquiry
         }
     }
 }

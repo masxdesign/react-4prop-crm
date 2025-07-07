@@ -176,9 +176,9 @@ export const propertyCompactCombiner = (property) => {
     }
 }
 
-const propertyCombiner = (pid, original, propertyTypes, content = [], companies_pool, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
+export const propertyCombiner = (pid, original, propertyTypes, content = [], companies_pool, clientsFromUids = [], setting = defaultPropertyDetailsSetting, auth = null) => {
     const { addressShowMore, addressShowBuilding } = setting
-
+    
     const parseTypes = propertyParse.types(propertyTypes, 'id')(original)
     const tenure = propertyParse.tenure(original)
 
@@ -216,9 +216,6 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
     if (auth) {
         enquired = propertyEnquiredVariablesCombiner(original, companies_pool, companies, clientsFromUids, auth)
     }
-    
-    console.log(enquired);
-    
 
     return {
         id: pid,
@@ -229,11 +226,13 @@ const propertyCombiner = (pid, original, propertyTypes, content = [], companies_
         title,
         grade,
         chat_id,
+        typesText,
         subtypesText,
         addressText,
         pictures,
         thumbnail: pictures.thumbs[0],
         types: parseTypes.types,
+        firstSubtype: parseTypes.subtypes[0].label,
         subtypes: parseTypes.subtypes,
         grade_from_uid,
         grade_updated: gradingupdated ? myDateTimeFormat(gradingupdated): null,

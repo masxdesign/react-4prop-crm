@@ -8,10 +8,11 @@ import ProgressCircle from '@/components/ProgressCircle';
 import { Ddd, Dd, Dddl, Ddl } from '@/components/DisplayData/components'
 import { AlertEmailClick, ColumnNextContactEach, LastContact } from '@/components/CRMTable/components';
 import { COMPANY_TYPE_NAMES } from '@/constants';
+import { cn } from '@/lib/utils';
 
-function TableDialogMetricsEach({ info, model }) {
+function TableDialogMetricsEach({ info, model, className }) {
     return (
-        <div className="text-sm space-y-2">
+        <div className={cn("px-4 text-sm space-y-2", className)}>
             <Dddl
                 items={[
                     { label: "Email", name: "email" },

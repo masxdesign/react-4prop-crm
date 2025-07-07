@@ -20,8 +20,10 @@ const ColumnLinkable = React.memo(({ info, names, className, dateFormat, ...prop
           className={cn(
             "inline-flex items-center",
             "text-xs h-7 px-2.5 py-0.5",
-            "rounded-sm text-left font-normal space-x-1"
+            "rounded-sm text-left font-normal space-x-1",
+            className
           )} 
+          {...props}
         >
           <span className='text-muted-foreground font-thin'>
             {isToday(value) 
@@ -35,6 +37,7 @@ const ColumnLinkable = React.memo(({ info, names, className, dateFormat, ...prop
           </span>
         </div>
       )
+
     }
   
     return (

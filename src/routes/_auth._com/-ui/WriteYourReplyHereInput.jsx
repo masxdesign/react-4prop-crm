@@ -6,6 +6,7 @@ import WriteYourReplyHereInputForm from "./WriteYourReplyHereInputForm"
 
 const WriteYourReplyHereInput = ({ chat_id, property }) => {
     const auth = useAuth()
+    
     const queryClient = useQueryClient()
     const replyTo = useMessagesLastNList(auth.bzUserId, chat_id, (state) => selectReplyTo(state, auth.bzUserId))
 

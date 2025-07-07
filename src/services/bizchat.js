@@ -10,7 +10,8 @@ import { propertyCompactCombiner } from "@/store/use-listing";
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
 
-const defaultCrmInclude = 'id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,hash,gradesharecount'
+const defaultCrmStatsIncludes = `all_enquiries,shared_properties,new_message,pdf,view,none,suitable`
+const defaultCrmInclude = `id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,hash,u_hash,hash_bz,ownerNid,owner_first,owner_last,${defaultCrmStatsIncludes}`
 
 export const fetchTagsByUserId = async (user_id) => {
     const { data } = await bizchatClient.get(`/api/crm/v2/${user_id}/tags`)
@@ -390,7 +391,7 @@ export async function crmSharedTagPids (from_uid) {
 }
 
 export async function crmRecentGradeShares (from_uid) {
-    const { data } = await bizchatClient.get(`/api/crm/geRecentGradeShares/${from_uid}`)
+    const { data } = await bizchatClient.get(`/api/crm/getRecentGradeShares/${from_uid}`)
     return data
 }
 
@@ -402,6 +403,11 @@ export async function crmListUpdateDetails (ownerUid, import_id, name, newValue)
 export async function crmListById (id, authUserId) {
     const rows = await crmListByIds([id], authUserId)
     return rows[0]
+}
+
+export async function getCrmEnquiries(import_id, ownerUid, filterBy) {
+    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/list/${import_id}/enquiries`, { params: filterBy })
+    return data
 }
 
 export async function crmFetchNotes (import_id, authUserId) {

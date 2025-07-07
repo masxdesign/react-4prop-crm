@@ -276,6 +276,8 @@ function SetupEmailComponent () {
         setPausing(true)
     }
 
+    const generalMessagePlaceholder = `Write your general message here for all these Properties\nthen add a specific message below at a Property\nthen click 'Share'`
+
     return (
         <>
             {form.formState.isSubmitting && (
@@ -302,13 +304,10 @@ function SetupEmailComponent () {
                 </div>
             )}
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)} className='p-3'>
-                    <label htmlFor="message" className='text-sm mb-2 block'>
-                        General message <span className='text-xs text-muted-foreground'>(required)</span>
-                    </label>
-                    <div className='space-y-2'>
+                <form onSubmit={form.handleSubmit(sendPropertyEnquiry.mutateAsync)} className='flex flex-col gap-3 px-3'>
+                    <div className='space-y-2 sticky top-0 bg-white z-40 shadow-md -mx-3 px-3 py-3'>
                         <Textarea
-                            placeholder="Write message..."
+                            placeholder={generalMessagePlaceholder}
                             {...form.register('message')}
                         />
                         <ErrorMessage 
@@ -317,23 +316,14 @@ function SetupEmailComponent () {
                             render={({ message }) => <p className='text-xs p-2 bg-red-50 text-red-500'>{message}</p>}
                         />
                     </div>
-                    <div className="h-4"></div>
-                    <h3 className='font-bold text-sm mb-2'>{graded.length} properties you graded</h3>
                     <div className='flex flex-col gap-4 sm:gap-2 relative z-0'>
                         <EnquiryGradingMessagingList 
                             list={data}
                             context={{ upsertPidGrade, pidGrades, sent }}
                             gradingComponent={Grading}
-                            rowClassName="border-4 shadow-md rounded-lg pb-3"
+                            rowClassName="border-4 shadow-md rounded-lg"
                             propertyTitleUrlLinkPath={`${FOURPROP_BASEURL}/mini/$pid`}
-                            renderStatus={(row) => {
-                                if (!sent.pids[row.id]) return null
-                                return (
-                                    <div className='text-center border border-green-500 text-green-500 text-xs p-2 rounded-lg'>
-                                        Sent
-                                    </div>
-                                )
-                            }}
+                            sentPidsArray={sent.pids}
                             renderRightSide={(row) => {
                                 return (
                                     <div className='flex flex-col sm:items-start items-center gap-3'>
@@ -354,7 +344,7 @@ function SetupEmailComponent () {
                     <div className='h-[65px]'></div>
                     <div className='bg-white border-t-2 shadow-xl z-10 fixed inset-x-0 bottom-0 p-3 flex gap-3 justify-center w-full'>
                         <Button type="button" variant="outline" onClick={() => postMessage({ type: "HIDE" })}>
-                            Cancel
+                            Back
                         </Button>
                         {percentage > 99 ? (
                             <Button type="button" onClick={handleFinished}>Finished</Button>

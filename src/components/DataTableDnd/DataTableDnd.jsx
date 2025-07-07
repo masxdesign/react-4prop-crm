@@ -22,7 +22,7 @@ const ResizeHandler = ({ header }) => (
     />
 )
 
-const DraggableTableHeader = ({ header }) => {
+const DraggableTableHeader = ({ header, className }) => {
     const { 
         attributes, 
         isDragging, 
@@ -37,6 +37,7 @@ const DraggableTableHeader = ({ header }) => {
             className={cn(
                 'group relative flex items-center whitespace-nowrap', 
                 header.column.columnDef.meta?.className ?? "", 
+                className,
                 isDragging ? "opacity-80 z-10": "opacity-100 z-0"
             )} 
             colSpan={header.colSpan}
@@ -152,7 +153,7 @@ const MemoizedTableBody = memo(
     (prev, next) => prev.table.options.data === next.table.options.data
 )
 
-const DataTableDnd = ({ table }) => {
+const DataTableDnd = ({ table, style, containerClassName, ...props }) => {
     const columnSizeVars = useMemo(() => {
         const headers = table.getFlatHeaders()
         const colSizes = {}
@@ -189,21 +190,28 @@ const DataTableDnd = ({ table }) => {
             onDragEnd={handleDragEnd}
             sensors={sensors}
         > 
-            <Table 
+            <Table
+                containerClassName={containerClassName}
                 style={{
                     ...columnSizeVars,
-                    width: table.getTotalSize()
+                    width: table.getTotalSize(),
+                    ...style
                 }}
+                {...props}
             >
-                <TableHeader>
+                <TableHeader className="z-40 sticky top-0">
                     {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id} className="flex items-center w-[fit-content]">
+                        <TableRow key={headerGroup.id} className="flex items-center w-[fit-content] bg-gradient-to-b to-blue-100 from-sky-100">
                             <SortableContext
                                 items={table.getState().columnOrder}
                                 strategy={horizontalListSortingStrategy}
                             >                                
                                 {headerGroup.headers.map((header) => (
-                                    <DraggableTableHeader key={header.id} header={header} />
+                                    <DraggableTableHeader 
+                                        key={header.id} 
+                                        className="text-sky-900"
+                                        header={header} 
+                                    />
                                 ))}
                             </SortableContext>
                         </TableRow>

@@ -81,6 +81,16 @@ const propertyParse = {
         const hasStreet = !isEmpty(street) && (hideidentity & 2) === 0
         
         let title = ''
+        const parts = {
+            buildingNumber: "",
+            building: "",
+            estate: "",
+            streetNumber: "",
+            street: "",
+            suburblocality: "",
+            towncity: "",
+            matchpostcode: ""
+        }
 
 		if (showMore) {
 
@@ -89,24 +99,51 @@ const propertyParse = {
                 const hasBuildingNumber = !isEmpty(buildingnumber) && (hideidentity & 128) === 0
                 const hasBuilding = !isEmpty(building) && (hideidentity & 64) === 0
     
-                if (hasBuildingNumber) title += buildingnumber + (hasBuilding ? " ": ", ")
-    
-                title += hasBuilding ? `${building}, `: ''
+                if (hasBuildingNumber) {
+                    parts.buildingNumber = buildingnumber
+                    title += buildingnumber + (hasBuilding ? " ": ", ")
+                }
+
+                if (hasBuilding) {
+                    parts.building = building
+                    title += `${building}, `
+                }
+
             }
         }
 
-        title += (hideidentity & 32) > 0 || isEmpty(centreestate) ? '': `${centreestate}, `
+        if ((hideidentity & 32) < 1 && !isEmpty(centreestate)) {
+            parts.estate = centreestate
+            title += `${centreestate}, `
+        }
 
         if (showMore) {
-			title += (hideidentity & 4) > 0 || isEmpty(streetnumber) ? '': (streetnumber + (hasStreet ? " ": ", "))
+            if ((hideidentity & 4) < 1 && !isEmpty(streetnumber)) {
+                parts.streetNumber = streetnumber
+                title += streetnumber + (hasStreet ? " ": ", ")
+            }
 		}
 
-		title += hasStreet ? `${street}, `: ''
+        if (hasStreet) {
+            title += `${street}, `
+            parts.street = street
+        }
 
-		if(!isEmpty(suburblocality)) title += `${suburblocality}, `
-		if(!isEmpty(towncity)) title += `${towncity}, `
+		if (!isEmpty(suburblocality)) {
+            title += `${suburblocality}, `
+            parts.suburblocality = suburblocality
+        }
 
-		if(showPostcode) title += matchpostcode
+		if (!isEmpty(towncity)) {
+            title += `${towncity}, `
+            parts.towncity = towncity
+        }
+
+		if (showPostcode) {
+            title += matchpostcode
+            parts.matchpostcode = matchpostcode
+        }
+
 		title = trim(title)
 		title = trim(title, ',')
 

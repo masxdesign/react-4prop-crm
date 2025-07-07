@@ -175,8 +175,11 @@ export default function CRMTable ({
             <DataTableViewOptions table={table} />
           </div>
         </div>
-        <div className='rounded-md border'>
-            <DataTableDnd table={table} />
+        <div className='border border-sky-200 rounded-lg overflow-hidden shadow-sm bg-white'>
+          <DataTableDnd 
+            table={table} 
+            containerClassName="h-[calc(100vh-170px)]"
+          />
         </div>
         <DataTablePagination table={table} />
       </div>

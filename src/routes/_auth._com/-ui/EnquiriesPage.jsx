@@ -308,12 +308,13 @@ function EnquiriesPage({
   )
 }
 
-function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
+function EnquiryMessagingWidget({ ownerNid, className, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   return chat_id ? (
-    <div className='flex flex-col gap-2 bg-cyan-400 rounded-lg'>
+    <div className={cn('flex flex-col gap-2 bg-cyan-400 rounded-lg', className)}>
       <ViewAllMessagesLink chat_id={chat_id} bz_hash={bz_hash} />
       <div className='flex flex-col-reverse gap-4 px-3'>
         <LastMessagesList 
+          ownerNid={ownerNid}
           chat_id={chat_id}
           recipientLabel={recipientLabel}
         />
@@ -326,7 +327,7 @@ function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, on
       </div>
     </div>
   ) : (
-    <div className='bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4'>
+    <div className={cn('bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4', className)}>
       <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
         There are no messages yet <br/>Start conversation with <b>property agents</b>
       </div>
@@ -338,7 +339,7 @@ function EnquiryMessagingWidget({ bz_hash, chat_id, property, recipientLabel, on
   )
 }
 
-export function EnquiryMessagingWidgetInView({ bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
+export function EnquiryMessagingWidgetInView({ ownerNid, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage, className, widgetClassName }) {
   const { ref: inViewRef, inView } = useInView({ triggerOnce: true })
 
   let child = null
@@ -347,16 +348,18 @@ export function EnquiryMessagingWidgetInView({ bz_hash, chat_id, property, recip
     child = (
       <EnquiryMessagingWidget 
         bz_hash={bz_hash}
+        ownerNid={ownerNid}
         chat_id={chat_id} 
         property={property} 
         recipientLabel={recipientLabel} 
         onDealingAgentFirstMessage={onDealingAgentFirstMessage}
+        className={widgetClassName}
       />
     ) 
   }
 
   return (
-      <div ref={inViewRef}>
+      <div ref={inViewRef} className={className}>
         <Suspense fallback={<Loader2 className="animate-spin" />}>
           {child}
         </Suspense>
@@ -364,12 +367,15 @@ export function EnquiryMessagingWidgetInView({ bz_hash, chat_id, property, recip
   )
 }
 
-function LastMessagesList({ chat_id, recipientLabel }) {
+function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
   const auth = useAuth()
-  const data = useMessagesLastNList(auth.bzUserId, chat_id)
+
+  const bzUserId = ownerNid ?? auth.bzUserId
+
+  const data = useMessagesLastNList(bzUserId, chat_id)
 
   return data.map(row => {
-    const isSender = row.from === auth.bzUserId
+    const isSender = row.from === bzUserId
     
     return (
       <ChatboxBubbleBzStyle key={row.id} variant={isSender ? "sender": "recipient"} 

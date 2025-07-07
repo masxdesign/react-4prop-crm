@@ -14,19 +14,37 @@ function EnquiryGradingMessagingList({
     isAgent,
     renderLeftSide,
     renderRightSide,
-    renderStatus,
+    sentPidsArray,
     rowClassName,
     onGradeChange,
     gradingComponent: Grading,
     propertyTitleUrlLinkPath,
     context
 }) {
-
+  
     const breakpoint = useBreakpoint()
     // todo: my enquiry on 4prop
 
     return list.map((row, index) => {
       const { key, id, title, enquired, statusColor, statusText, sizeText, tenureText, thumbnail, content, grade_updated } = row
+
+      const isSent = sentPidsArray?.[id]
+
+      const rightSidebarChildren = [
+        isSent && (
+          <div className='text-center border border-green-500 text-green-500 text-xs p-2 rounded-lg'>
+            Sent
+          </div>
+        ),
+        !!enquired?.company && (
+          <div className='flex flex-col items-center px-2'>
+            <PropertyCompany
+              logo={enquired.company.logo.original}
+              name={enquired.company.name}
+            />
+          </div>
+        )
+      ].filter(d => d)
 
       return (
         <div key={key} className={cn("relative", rowClassName)}>
@@ -96,9 +114,14 @@ function EnquiryGradingMessagingList({
                 </div>
               </div>
             ) : (
-              <div className="flex-1 space-y-3 sm:space-y-2 text-sm p-4 grow">
+              <div className="flex-1 space-y-3 sm:space-y-2 text-sm p-4 grow min-w-0">
                 <div className='flex gap-2'>
-                  <div className='flex flex-col gap-2 grow max-w-[450px]'>
+                  <div 
+                    className={cn(
+                      'flex flex-col gap-1 min-w-0 grow',
+                      rightSidebarChildren.length > 0 && 'max-w-[450px]'
+                    )}
+                  >
                     <PropertyTitle 
                       isAgent={isAgent} 
                       url_link_path={propertyTitleUrlLinkPath}
@@ -114,21 +137,11 @@ function EnquiryGradingMessagingList({
                       {content.description}
                     </div>            
                   </div>
-                  <div className='flex items-end flex-col ml-auto'>
-                    {renderStatus && (
-                      <div>
-                        {renderStatus(row, index, context)}
-                      </div>
-                    )}
-                    {enquired?.company && (
-                      <div className='flex flex-col items-center px-2'>
-                        <PropertyCompany
-                          logo={enquired.company.logo.original}
-                          name={enquired.company.name}
-                        />
-                      </div>
-                    )}
-                  </div>
+                  {rightSidebarChildren.length > 0 && (
+                    <div className='flex items-end flex-col ml-auto'>
+                      {rightSidebarChildren}
+                    </div>
+                  )}
                 </div>
                 {renderRightSide?.(row, index, context)}
               </div>
@@ -165,7 +178,7 @@ const PropertyTitle = React.memo(({ isAgent, row, url_link_path = `/crm/view-det
         href={url_link} 
         target='_blank' 
         rel='noreferrer' 
-        className='md:text-lg text-sm font-bold hover:underline leading-snug'
+        className='text-xs md:text-sm font-bold hover:underline leading-snug'
       >
         {row.title}
       </a>

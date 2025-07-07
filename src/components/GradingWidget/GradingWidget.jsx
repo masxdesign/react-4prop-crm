@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import { cx } from "class-variance-authority"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip"
 import { Slot } from "@radix-ui/react-slot"
+import { cn } from "@/lib/utils"
 
 const STAR = 'star'
 const REJECT = 'close'
@@ -58,7 +59,7 @@ const GradingWidget = ({
 
     return (
         <div 
-            className={cx("flex flex-col-reverse gap-3", className)} 
+            className={cn("flex flex-col-reverse gap-3", className)} 
             style={{ ...style, width: size }} 
             {...props}
         >

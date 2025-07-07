@@ -84,7 +84,7 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
               </>
             ) : (
               <>
-                View and reply to messages sent back from the agent. By selecting the {X} enquiries are placed in the inactive listing
+                View and reply to messages sent back from the agent. If you select {X} that Property is regraded unsuitable and stored in the inactive listing.
               </>
             ),
             onGradeChange,
