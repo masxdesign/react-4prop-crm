@@ -1,7 +1,7 @@
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import { Cross2Icon, EnvelopeClosedIcon, ExternalLinkIcon, MagnifyingGlassIcon } from '@radix-ui/react-icons';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { PhoneCallIcon, User } from 'lucide-react';
+import { PhoneCallIcon, User, User2 } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { useMap } from '@uidotdev/usehooks';
 import _ from 'lodash';
@@ -23,8 +23,14 @@ import { SelectionControl, SendBizchatDialog } from '@/components/CRMTable/compo
 import TableDialog from './components/TableDialog';
 import { FOURPROP_BASEURL } from '@/services/fourPropClient';
 
+const defaultDialogTabs = [
+    { icon: <User2 className='size-4' />, name: 'Info', id: 'info' }
+]
+
 export default function CRMTable ({ 
   tableName, 
+  dialogTabs = defaultDialogTabs,
+  defaultDialogActiveTab = defaultDialogTabs[0],
   tableVersion,
   facets, 
   services, 
@@ -37,8 +43,7 @@ export default function CRMTable ({
   tableDialogRenderMessages,
   tableDialogMetricsComponent,
   eachEmailCompaignsLink,
-  enableMassBizchat,
-  enableTableDialogBizchat
+  enableMassBizchat
 }) {
   
   const dataPool = useMap()
@@ -84,12 +89,13 @@ export default function CRMTable ({
 
   const tableDialogModal = useTableModel.use.tableDialog({
     tableSSModal,
+    dialogTabs,
+    defaultDialogActiveTab,
     facetsModal,
     renderMessages: tableDialogRenderMessages,
     metricsComponent: tableDialogMetricsComponent,
     tableQueryOptions,
-    services,
-    enableBizchat: enableTableDialogBizchat
+    services
   })
 
   const selectionControl = useSelectionControl({ 
@@ -109,9 +115,9 @@ export default function CRMTable ({
 
   return (
     <>
-      <div className='overflow-hidden p-4 space-y-4'>
-        <div className='flex flex-row gap-3'>
-          <div className='flex gap-4 w-64'>
+      <div className='grid grid-rows-[4rem_1fr_4rem] h-full'>
+        <div className='flex flex-row items-center gap-3 overflow-auto'>
+          <div className='flex gap-4 w-1/3'>
             <Badge variant="secondary">{tableSSModal.countFormatted}</Badge>
             {tableSSModal.selected.length > 0 && (
               <Popover 
@@ -148,7 +154,7 @@ export default function CRMTable ({
             )}
             {enableMassBizchat && <SendBizchatDialog.ButtonSm model={sendBizchatDialog} />}
           </div>
-          <div className='flex flex-grow items-center justify-center gap-4'>
+          <div className='flex flex-grow items-center justify-center gap-4 w-1/3'>
             <GlobalFilter 
               table={table} 
               globalFilter={tableModel.tableState.globalFilter}  
@@ -171,16 +177,14 @@ export default function CRMTable ({
               </Button>
             )}
           </div>
-          <div className='flex w-64 justify-end'>
+          <div className='flex w-1/3 justify-end'>
             <DataTableViewOptions table={table} />
           </div>
         </div>
-        <div className='border border-sky-200 rounded-lg overflow-hidden shadow-sm bg-white'>
-          <DataTableDnd 
-            table={table} 
-            containerClassName="h-[calc(100vh-170px)]"
-          />
-        </div>
+        <DataTableDnd 
+          table={table} 
+          containerClassName="border border-sky-200 rounded-lg shadow-sm bg-white"
+        />
         <DataTablePagination table={table} />
       </div>
       <TableDialog model={tableDialogModal} />

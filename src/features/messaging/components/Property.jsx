@@ -19,7 +19,7 @@ import useBreakpoint from "@/hooks/use-TailwindBreakpoint"
 
 const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
 
-const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMessage }) => {
+const Property = ({ row, isAgent, bz_hash, dteam, onGradeChange, onDealingAgentFirstMessage }) => {
 
     const breakpoint = useBreakpoint()
 
@@ -165,6 +165,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                                 <div className="grow">
                                     <EnquiryMessagingWidgetInView 
                                         bz_hash={bz_hash}
+                                        dteam={dteam}
                                         property={row}
                                         chat_id={row.original.dealing_agents_chat_id}
                                         onDealingAgentFirstMessage={onDealingAgentFirstMessage}
@@ -200,6 +201,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                                 <div className="grow">
                                     <EnquiryMessagingWidgetInView 
                                         bz_hash={bz_hash}
+                                        dteam={dteam}
                                         property={row}
                                         chat_id={row.chat_id} 
                                         recipientLabel={
@@ -233,6 +235,7 @@ const Property = ({ row, isAgent, bz_hash, onGradeChange, onDealingAgentFirstMes
                     <div className="grow">
                         <EnquiryMessagingWidgetInView 
                             bz_hash={bz_hash}
+                            dteam={dteam}
                             property={row}
                             chat_id={row.chat_id} 
                             recipientLabel={row.enquired.agent_to_agent ? "agent": "client"}

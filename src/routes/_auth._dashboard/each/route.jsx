@@ -12,16 +12,17 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
   beforeLoad: async ({ context: { auth } }) => {
     const { columns, version } = await import('./-columns')
 
-    const authUserId = auth.user.neg_id
+    const getBzId = (info) => info.id
 
     const services = {
-      tableSSList: variables => fetchNegotiators(variables, authUserId),
+      tableSSList: variables => fetchNegotiators(variables, auth.user.neg_id),
       selectedDataPool: fetchNegotiatorByNids,
       facetList: fetchFacets,
       tableDialog: {
         getInfoById: id => fetchNegotiator(id),
+        getBzId,
         noteList: id => fetchNotes(id, auth),
-        addNote: (variables, id) => addNote(variables, id, authUserId),
+        addNote: (variables) => addNote(variables, auth),
         deleteNote: () => {}
       },
       massBizchat: {
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
     ]
 
     return {
+      title: "Manage agents on EACH",
       tableName:  `d.${version}.each`,
       facets,
       services,
@@ -58,7 +60,7 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
           message: <ChatBoxEachSingleMessage {...item} />
         }
       }),
-      authUserId,
+      authUserId: auth.user.neg_id,
       userCardComponent: UserCard,
       enableHoverCard: true
     }

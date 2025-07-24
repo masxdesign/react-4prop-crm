@@ -11,6 +11,7 @@ export default function TableHoverCard ({ cell, hideView }) {
         data={cell.row.original}
         onView={handleShowDialog}
         hideView={hideView}
+        clickable
       />
     )
 }

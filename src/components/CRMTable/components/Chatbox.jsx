@@ -46,7 +46,7 @@ const Chatbox = ({
       messageBoxProps,
       submit,
       error
-    } = useChatbox({ deleteMutationOptions, addMutationOptions })
+    } = useChatbox({ deleteMutationOptions, addMutationOptions, info })
 
     const handleMinimise = () => {
       setExpand(false)

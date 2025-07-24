@@ -76,7 +76,7 @@ const DragAlongCell = ({ cell }) => {
         <TableCell  
             ref={setNodeRef}
             className={cn(
-                "relative flex items-center cursor-pointer", 
+                "relative flex items-center cursor-pointer p-0", 
                 cell.column.columnDef.meta?.className ?? "", 
                 isDragging ? "opacity-80 z-10": "opacity-100 z-0"
             )}
@@ -100,12 +100,15 @@ const DragAlongCell = ({ cell }) => {
 
     return (
         <HoverCard>
-            <HoverCardTrigger asChild>{tableCell}</HoverCardTrigger>
+            <HoverCardTrigger asChild>
+                {tableCell}
+            </HoverCardTrigger>
             <HoverCardPortal container={document.body}>
                 <HoverCardContent 
-                    side="right" 
-                    align="start" 
-                    className="min-w-[250px] max-w-[350px] w-auto"
+                    side="bottom" 
+                    align="top" 
+                    className="w-auto p-0 border-none bg-transparent"
+                    sideOffset={-3}
                 >
                     <TableHoverCard cell={cell} />
                 </HoverCardContent>

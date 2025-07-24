@@ -1,7 +1,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, FileCheckIcon, HomeIcon, Loader2, Loader2Icon, MessagesSquareIcon, XIcon } from 'lucide-react'
-import { map } from 'lodash'
+import { chain, flatten, map, uniq } from 'lodash'
 import PendingComponent from '@/components/PendingComponent'
 import FilterEnquiryChoice from '@/features/enquiryChoice/FilterEnquiryChoice'
 import FilterSearchRefEnquired from '@/features/searchReference/component/FilterSearchRefEnquired'
@@ -32,6 +32,7 @@ import { useMap } from '@uidotdev/usehooks'
 import WriteYourMessageHereInput from './WriteYourMessageHereInput'
 import Grading from '@/features/messaging/components/Grading'
 import Choices from '@/features/messaging/components/Choices'
+import { getUsersByIdsAsync } from '@/services/bizchat'
 
 function combineQueries(result, pauth) {
   const [ { data: dtypes }, { data: dsubtypes }, { data: pdata } ] = result
@@ -308,10 +309,14 @@ function EnquiriesPage({
   )
 }
 
-function EnquiryMessagingWidget({ ownerNid, className, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
+function EnquiryMessagingWidget({ dteam, ownerNid, className, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   return chat_id ? (
     <div className={cn('flex flex-col gap-2 bg-cyan-400 rounded-lg', className)}>
-      <ViewAllMessagesLink chat_id={chat_id} bz_hash={bz_hash} />
+      <ViewAllMessagesLink 
+        chat_id={chat_id} 
+        bz_hash={bz_hash} 
+        dteam={dteam}
+      />
       <div className='flex flex-col-reverse gap-4 px-3'>
         <LastMessagesList 
           ownerNid={ownerNid}
@@ -339,7 +344,7 @@ function EnquiryMessagingWidget({ ownerNid, className, bz_hash, chat_id, propert
   )
 }
 
-export function EnquiryMessagingWidgetInView({ ownerNid, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage, className, widgetClassName }) {
+export function EnquiryMessagingWidgetInView({ dteam, ownerNid, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage, className, widgetClassName }) {
   const { ref: inViewRef, inView } = useInView({ triggerOnce: true })
 
   let child = null
@@ -348,6 +353,7 @@ export function EnquiryMessagingWidgetInView({ ownerNid, bz_hash, chat_id, prope
     child = (
       <EnquiryMessagingWidget 
         bz_hash={bz_hash}
+        dteam={dteam}
         ownerNid={ownerNid}
         chat_id={chat_id} 
         property={property} 
@@ -367,26 +373,73 @@ export function EnquiryMessagingWidgetInView({ ownerNid, bz_hash, chat_id, prope
   )
 }
 
-function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
+const findBzUser = (bz_id, users) => {
+  if (!users) return null
+  return users.find((user) => {
+    if (!bz_id) return false
+    return user._t === 'N' 
+      ? user.id === bz_id.replace('N', '')
+      : user._i === bz_id
+  })
+}
+
+export function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
   const auth = useAuth()
 
-  const bzUserId = ownerNid ?? auth.bzUserId
+  const data = useMessagesLastNList(ownerNid ?? auth.bzUserId, chat_id)
 
-  const data = useMessagesLastNList(bzUserId, chat_id)
+  const bz_ids =  chain([
+        map(data, 'from'),
+        map(data, 'dteamNid'),
+        // map(data, 'recipients').map((item) => item.split(','))
+      ]).flatten().uniq().value()
+  
+  const { data: users, isLoading } = useQuery({
+    queryKey: ['LastMessagesListUsers', bz_ids],
+    queryFn: () => getUsersByIdsAsync(bz_ids)
+  })
+
+  if (isLoading) return <p>Loading...</p>
 
   return data.map(row => {
-    const isSender = row.from === bzUserId
+    const isSender = [auth.bzUserId, ownerNid].includes(row.from)
+
+    const fromUser = findBzUser(row.from, users)
+    const dteamNidUser = findBzUser(row.dteamNid, users)
+    // const recipientUsers = row.recipients.split(',').map((recipient) => findBzUser(recipient, users))
     
     return (
-      <ChatboxBubbleBzStyle key={row.id} variant={isSender ? "sender": "recipient"} 
-        className="relative min-w-64 shadow-sm">
-        {isSender ? (
-          <strong className='text-xs'>Message you sent</strong>
-        ) : auth.isAgent ? (
-          <strong className='text-xs'>Message from {recipientLabel}</strong>
-        ) : (
-          <strong className='text-xs'>Message from agent</strong>
-        )}
+      <ChatboxBubbleBzStyle 
+        key={row.id} 
+        variant={isSender ? "sender": "recipient"} 
+        className="relative min-w-64 shadow-sm"
+      >
+        <div className='space-y-1'>
+          {isSender ? (
+            row.from === auth.bzUserId ? (
+              <strong className='text-xs'>Message you sent</strong>
+            ) : (
+              <strong className='text-xs'>{fromUser.firstname} {fromUser.surname}</strong>
+            )
+          ) : (
+            auth.isAgent ? (
+              <strong className='text-xs'>Message from {recipientLabel}</strong>
+            ) : (
+              <strong className='text-xs'>Message from agent</strong>
+            )
+          )}
+          {dteamNidUser && (
+            dteamNidUser.id === auth.bzUserId.replace('N', '') ? (
+              <div className='bg-white rounded-md py-1 px-2 -ml-1 mr-10 text-xs italic'>
+                You messaged on the agent's behalf
+              </div>
+            ) : (
+              <div className='text-xs opacity-60'>
+                {dteamNidUser.firstname} {dteamNidUser.surname} messaged on your behalf
+              </div>
+            )
+          )}
+        </div>
         <ChatboxBubbleBzMessage 
           type={row.type}
           body={!row.body ? '*no message*': row.body}
@@ -426,14 +479,18 @@ const ChatboxBubbleBzMessage = ({ type, body, from, chat_id, className }) => {
   )
 }
 
-function ViewAllMessagesLink({ chat_id, bz_hash }) {
-  const conversation_url = `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}?hide_top_bar=1&i=${bz_hash}`
+export function ViewAllMessagesLink({ chat_id, bz_hash, dteam, className }) {
+  const conversation_url = `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}?${new URLSearchParams({
+    hide_top_bar: 1,
+    i: bz_hash,
+    dteam: dteam
+  })}`
 
   return (
     <Dialog>
       <DialogTrigger asChild>        
         <button
-          className='flex gap-2 items-center justify-center font-normal px-2 py-4'
+          className={cn('flex gap-2 items-center justify-center font-normal px-2 py-4', className)}
         >
           <MessagesSquareIcon className='size-4 text-cyan-100' />
           <span className='text-sm hover:underline text-white'>open messages</span>

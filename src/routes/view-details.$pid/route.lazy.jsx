@@ -40,6 +40,7 @@ function RouteComponent () {
         row={row} 
         isAgent={auth.isAgent} 
         bz_hash={auth.user.bz_hash} 
+        dteam={auth.bzUserId} 
         onGradeChange={onGradeChange} 
         onDealingAgentFirstMessage={handleDealingAgentFirstMessage}
       />

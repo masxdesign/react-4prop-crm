@@ -1,12 +1,8 @@
 import React from "react"
 import { cn } from "@/lib/utils"
-import { format, isToday, isYesterday } from "date-fns"
-import { isNumber, isString } from "lodash"
-import { Badge } from "@/components/ui/badge"
-import { EnvelopeClosedIcon, Share2Icon } from "@radix-ui/react-icons"
 import { Share2, StarIcon, X } from "lucide-react"
 
-const ColumnEnquiries = React.memo(({ info, className, dateFormat, ...props }) => {
+const ColumnEnquiries = React.memo(({ info, onClick, className, ...props }) => {
     const {
       all_enquiries,
       shared_properties,
@@ -16,22 +12,25 @@ const ColumnEnquiries = React.memo(({ info, className, dateFormat, ...props }) =
       suitable,
       new_message
     } = info.row.original
-  
-    const handleClick = () => {
-      info.table.options.meta.dialogModel.showDialog(info.row.original.id)
-    }
 
     if (all_enquiries < 1) {
-      return null
+      return (
+        <div 
+          onClick={onClick}
+          className="p-4 italic font-normal opacity-50 w-full hover:underline"
+        >
+          No data yet
+        </div>
+      )
     }
   
     return (
       <div 
-        onClick={handleClick} 
         className={cn(
-          "w-full truncate cursor-pointer whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary underline-offset-4",
+          "px-4 py-2 w-full truncate cursor-pointer whitespace-nowrap text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-primary underline-offset-4",
           className
         )} 
+        onClick={onClick}
         {...props}
       >
         <div className="flex flex-row items-start gap-3">
@@ -40,7 +39,7 @@ const ColumnEnquiries = React.memo(({ info, className, dateFormat, ...props }) =
               <span className="min-w-4 inline-block">
                 {new_message} 
               </span>
-              <span className="text-slate-500">Unread</span>
+              <span className="text-slate-500">Unanswered</span>
             </div>
             <div className="text-nowrap">
               <span className="min-w-4 inline-block">

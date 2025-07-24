@@ -35,7 +35,6 @@ function ClientsListComponent() {
       tableDialogMetricsComponent={TableDialogMetricsEach}
       eachEmailCompaignsLink
       enableMassBizchat
-      enableTableDialogBizchat
     />
   )
 }

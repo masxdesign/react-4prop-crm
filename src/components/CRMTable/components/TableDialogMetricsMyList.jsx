@@ -25,12 +25,16 @@ import { searchReferenceListingQuery } from '@/features/searchReference/searchRe
 function TableDialogMetricsMyList({ info, model, className }) {
     const {
         tabValue,
-        onTabValueChange
+        onTabValueChange,
+        dialogTabs,
     } = model 
+
+    const enableBizchat = model.getBzId(info)
+
     return (
         <Tabs 
-            value={tabValue} 
-            onValueChange={onTabValueChange}
+            value={tabValue.id} 
+            onValueChange={(active) => onTabValueChange(dialogTabs.find((item) => active === item.id))}
             className={cn('flex flex-col', className)}
         >
             <TabsContent value="info" className="px-4 text-sm space-y-3 flex-1">
@@ -69,7 +73,7 @@ function TableDialogMetricsMyList({ info, model, className }) {
                         />
                     </>
                 )}
-                {model.enableBizchat && (
+                {enableBizchat && (
                     <Suspense fallback={<p>Loading...</p>}>
                         <TableDialogChatLinks
                             chatboxQueryOptions={model.chatboxQueryOptions}
@@ -91,17 +95,6 @@ function TableDialogMetricsMyList({ info, model, className }) {
                 </p>    
                 <Enquiries info={info} model={model} shared />
             </TabsContent>
-            <TabsList className="flex flex-row gap-3">
-                <TabsTrigger value="info">
-                    Info
-                </TabsTrigger>
-                <TabsTrigger value="enquiries">
-                    Enquiries
-                </TabsTrigger>
-                <TabsTrigger value="shared">
-                    Shared
-                </TabsTrigger>
-            </TabsList>
         </Tabs>
     )
 }
@@ -182,6 +175,9 @@ const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => 
 
     const { data } = useSuspenseQuery(propertyEnquiriesQuery(stats.data))
 
+    console.log(model.openEnquiry);
+    
+
     const handleOpen = (pid) => {
         model.onOpenEnquiry({ pid, suitables, shared })
         // window.open(`/crm/view-details/${pid}?a=${info.bz_id.substring(1)}`)
@@ -240,7 +236,12 @@ const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => 
                 {filtered.map(({ id, addressText, tenure, firstSubtype, pictures, original, sizeText, tenureText, companies }) => (
                     <div 
                         key={id} 
-                        className='text-xs flex gap-3 border-b py-3 cursor-pointer hover:bg-slate-50 px-4'
+                        className={cn(
+                            'text-xs flex gap-3 border-b py-3 cursor-pointer hover:bg-slate-50 px-4',
+                            {
+                                'bg-slate-200 hover:bg-slate-200': model.openEnquiry?.pid === id
+                            }
+                        )}
                         onClick={() => handleOpen(id)}
                     >
                         <div>
@@ -349,7 +350,7 @@ const Enquiries = ({ info, model, shared }) => {
     }, [tag, suitables, model.tabValue])
 
     return (
-        <div className='flex flex-col gap-3 h-[500px]'>
+        <div className='flex flex-col gap-3 h-[580px]'>
             <div className='flex gap-6 justify-center'>
                 {enquiriesTabsButtons.map(({ label, value }) => (
                     <Button 

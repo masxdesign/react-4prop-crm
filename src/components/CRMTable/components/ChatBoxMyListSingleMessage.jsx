@@ -9,11 +9,12 @@ const NO_NEXT = 4
 const LAST = 1
 const MESSAGE_ONLY = 0
 
-const ChatBoxMyListSingleMessage = React.memo(({ body, dt, id, import_id, ownerUid, type, created }) => {
+const ChatBoxMyListSingleMessage = React.memo(({ body, dt, id, import_id, ownerUid, owner_name, type, created }) => {
     switch (true) {
         case ![MESSAGE_ONLY].includes(type) : {
             return (
                 <>
+                    <span className="text-xs opacity-50">{owner_name}</span>
                     {[NEXT, LAST, NO_NEXT].includes(type) &&
                         body !== "" && (
                             <div className="border-b pb-2 font-thin">
@@ -56,7 +57,8 @@ const ChatBoxMyListSingleMessage = React.memo(({ body, dt, id, import_id, ownerU
         default:
             return (
                 <>
-                    <span className="font-thin mb-1">{body}</span>
+                    <span className="text-xs opacity-50">{owner_name}</span>
+                    <span className="mb-1">{body}</span>
                     <ChatboxSentdate sentdate={created} />
                 </>
             )

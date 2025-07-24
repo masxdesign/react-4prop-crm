@@ -2,7 +2,7 @@ import * as yup from "yup"
 import delay from "@/utils/delay";
 import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
-import _, { isFunction, values } from "lodash";
+import _, { isEmpty, isFunction, values } from "lodash";
 import { fetchUser } from "./fourProp";
 import bizchatClient from "./bizchatClient";
 import { propertyCompactCombiner } from "@/store/use-listing";
@@ -92,13 +92,13 @@ export const formDataFilesMergeAsync = async (formData, { files = [], message, f
         
     }
     
-    form.append('type', message_type)
-    form.append('message', message_text)
+    formData.append('type', message_type)
+    formData.append('message', message_text)
 
-    return form
+    return formData
 }
 
-export const sendBizchatMessage = async ({ files = [], from, recipient, message, context }) => {
+export const sendBizchatMessage = async ({ files = [], from, recipient, message, dteamNid = null, context }) => {
     try {
 
         if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
@@ -113,6 +113,10 @@ export const sendBizchatMessage = async ({ files = [], from, recipient, message,
 
         formData.append('from', from)
         formData.append('recipient', recipient)
+        
+        if (dteamNid) {
+            formData.append('dteamNid', dteamNid)
+        }
 
         if (context) formData.append('context', JSON.stringify(context))
         
@@ -364,6 +368,12 @@ export async function crmValidateEmail (authUserId, email, pid = null) {
 
 }
 
+export const getUsersByIdsAsync = async (userIds) => {
+	const body = { ids: `${userIds}` }
+	const { data } = await bizchatClient.post('/api/users', body, { withCredentials: true })
+	return data
+}
+
 export async function crmListByIds (ids, authUserId) {
     const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids } })
     return data
@@ -427,31 +437,34 @@ export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
     return data
 }
 
-export async function crmAddNote (variables, import_id, authUserId) {
-    const { message = '', files, _button } = variables
+export async function crmAddNote (variables, auth) {
+    const { message = '', files, _button, info } = variables
+    const bzId = info.bz_id
+    const import_id = info.id
 
     if (_button === "bizchat") {
 
         if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
 
-        if(!authUserId) throw new Error('authUserId is not defined')
+        if(!auth.bzUserId) throw new Error('bzUserId is not defined')
 
-        alert('bizchat coming soon')
+        const from = info.ownerNid ?? auth.bzUserId
 
-        return null
-
-        // return sendBizchatMessage({ 
-        //     files,
-        //     message,
-        //     from: authUserId,
-        //     recipient: id
-        // })
+        return sendBizchatMessage({ 
+            files,
+            message,
+            from,
+            recipient: bzId,
+            dteamNid: auth.bzUserId === from.replace('N', '')
+                ? null
+                : auth.bzUserId,
+        })
 
     }
 
     if (_.isEmpty(message)) throw new Error('message is empty')
 
-    return addNoteAsync(authUserId, import_id, {
+    return addNoteAsync(auth.authUserId, import_id, {
         type: 0,
         body: message,
         dt: null
@@ -562,7 +575,7 @@ export const getUidByImportId = async (ownerUid, import_id, createUser = false) 
     return data
 }
 
-export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices, applicant_uid = null, attachments = [] }) => {
+export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, property, choices, dteamNid = null, applicant_uid = null, attachments = [] }) => {
     if (recipients.includes(from)) throw new Error('[from] is in [recipients]')
 
     const enquiryRoom = await addEnquiryRoomAsync(property.title, from, "P", property.id, 'E', applicant_uid)
@@ -578,7 +591,16 @@ export const sendBizchatPropertyEnquiry = async ({ from, recipients, message, pr
         applicant_uid
     )
 
-    return replyBizchatMessage({ from, chat_id, recipients, message, choices, attachments, contextObject })
+    return replyBizchatMessage({ 
+        from, 
+        chat_id, 
+        recipients, 
+        message, 
+        choices, 
+        dteamNid, 
+        attachments, 
+        contextObject 
+    })
 }
 
 export const sendBizchatPropertyGradeShare = async (variables) => {
@@ -606,7 +628,8 @@ export const replyBizchatEnquiryMessage = async ({
     recipients,
     attachments,
     choices,
-    message
+    message,
+    dteamNid = null
 }) => {
     const contextObject = createPropertyEnquiryContextObject(property.title, property, false)
     return replyBizchatMessage({ 
@@ -615,13 +638,14 @@ export const replyBizchatEnquiryMessage = async ({
         recipients, 
         message,
         choices,
+        dteamNid,
         attachments,
         contextObject
     })
 }
 
-export const replyBizchatMessage = async ({ from, chat_id, recipients, message, choices, attachments = [], contextObject = null }) => {
-    const messageDataObject = createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choices)
+export const replyBizchatMessage = async ({ from, chat_id, recipients, message, choices, dteamNid = null, attachments = [], contextObject = null }) => {
+    const messageDataObject = createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choices, dteamNid)
 
     let formData
     
@@ -684,7 +708,7 @@ const defaultChoicesBool = {
     pdf: false
 }
 
-function createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choicesBool = defaultChoicesBool) {
+function createEnquiryPropertyMessageDataObject(from, chat_id, recipients, message, choicesBool = defaultChoicesBool, dteamNid = null) {
     const { viewing, pdf } = choicesBool
 
 	let choices = 0
@@ -711,6 +735,7 @@ function createEnquiryPropertyMessageDataObject(from, chat_id, recipients, messa
 		recipients: `${recipients}`,
 		chat_id,
 		choices,
-		type: 'M'
+		type: 'M',
+        dteamNid
 	}
 }

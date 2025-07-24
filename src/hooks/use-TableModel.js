@@ -549,10 +549,12 @@ useTableModel.use = {
         renderMessages,
         metricsComponent,
         tableQueryOptions,
-        enableBizchat,
+        dialogTabs,
+        defaultDialogActiveTab,
         services: {  
             tableDialog: { 
-                getInfoById, 
+                getInfoById,
+                getBzId, 
                 // getEnquiries,
                 noteList, 
                 addNote, 
@@ -563,7 +565,7 @@ useTableModel.use = {
     }) {
         const queryClient = useQueryClient()
 
-        const [tabValue, setTabValue] = useState("info")
+        const [tabValue, setTabValue] = useState(defaultDialogActiveTab)
         const [openEnquiry, onOpenEnquiry] = useState(null)
 
         const { table } = tableSSModal
@@ -593,7 +595,15 @@ useTableModel.use = {
 
         const infoQueryOptions = queryOptions({
             queryKey: ['infoById', import_id],
-            queryFn: () => getInfoById(import_id)
+            queryFn: async () => {
+                let info = getResultFromTable(import_id)?.row.original
+
+                if (!info) {
+                    return getInfoById(import_id)
+                }
+
+                return info
+            }
         })
 
         const chatboxQueryOptions = queryOptions({
@@ -602,7 +612,8 @@ useTableModel.use = {
         })
 
         const addMutationOptions =  {
-            mutationFn: (variables) => addNote(variables, import_id),
+            mutationFn: addNote,
+            onError: console.log,
             onSuccess: (_, variables) => {
                 const { _button } = variables
                 
@@ -654,7 +665,7 @@ useTableModel.use = {
 
         return {
             id: import_id,
-            enableBizchat,
+            getBzId,
             authUserId,
             infoQueryOptions,
             enquiriesQueryOptions,
@@ -668,6 +679,7 @@ useTableModel.use = {
             table: tableSSModal.table,
             dialogModel: tableSSModal.table.options.meta.dialogModel,
             tableSSModal,
+            dialogTabs,
             tabValue, 
             onTabValueChange: setTabValue,
             openEnquiry,

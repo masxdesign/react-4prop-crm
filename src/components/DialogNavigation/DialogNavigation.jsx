@@ -9,20 +9,20 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/h
 import TableHoverCard from '../CRMTable/components/TableHoverCard';
 import { Table2Icon } from 'lucide-react';
 
-function DialogNavigation ({ info, ...props }) {
+function DialogNavigation ({ fromTableInfo, ...props }) {
     const [dropdownOpen, setDropdownOpen] = useState(false)
     
-    const { dialogModel } = info.table.options.meta
-    const { rows } = info.table.getRowModel()
+    const { dialogModel } = fromTableInfo.table.options.meta
+    const { rows } = fromTableInfo.table.getRowModel()
   
     const getInfoByIndex = useCallback((index) => {
       const visibleCells = rows[index]?.getVisibleCells()
       return visibleCells?.[0]?.getContext()
-    }, [info.table.options.data])
+    }, [fromTableInfo.table.options.data])
   
     const getInfoByOffset = useCallback(
-      (offset) => getInfoByIndex(info.row.index + offset), 
-      [info.row.index, getInfoByIndex]
+      (offset) => getInfoByIndex(fromTableInfo.row.index + offset), 
+      [fromTableInfo.row.index, getInfoByIndex]
     )
   
     const nextInfo = useMemo(() => getInfoByOffset(1), [getInfoByOffset])
@@ -34,7 +34,24 @@ function DialogNavigation ({ info, ...props }) {
     }
   
     return (
-      <div className='flex flex-nowrap' {...props}>
+      <div className='flex flex-col-reverse gap-3 items-center flex-nowrap' {...props}>
+        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+                <Button
+                    variant="link"
+                    className="size-8 p-0 text-emerald-300"
+                    size="sm"
+                >
+                  <Table2Icon className="size-4" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DialogNavigationDropdownContent 
+              open={dropdownOpen} 
+              currentIndex={fromTableInfo.row.index} 
+              rows={rows} 
+              onSelect={handleJump} 
+            />
+        </DropdownMenu>
         {[
           { id: 'prev', info: prevInfo, icon: ChevronLeftIcon },
           { id: 'next', info: nextInfo, icon: ChevronRightIcon }
@@ -43,19 +60,22 @@ function DialogNavigation ({ info, ...props }) {
             <HoverCardTrigger asChild>
               <Button
                   variant="link"
-                  className="h-8 w-8 p-0"
+                  className="bg-emerald-500 hover:bg-emerald-400 rounded-full size-6 p-0"
                   size="sm"
                   onClick={() => dialogModel.showDialog(info.row.original.id)}
                   disabled={!info}
                   tabIndex={-1}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="size-4 text-emerald-950" />
               </Button>
             </HoverCardTrigger>
             {info && (
               <HoverCardPortal container={document.body}>
                   <HoverCardContent  
-                    className="min-w-[250px] max-w-[350px] w-auto"
+                    className="w-auto p-0 border-none bg-transparent"
+                    side="left"
+                    align="center"
+                    sideOffset={5}
                   >
                     <TableHoverCard cell={info} hideView />
                   </HoverCardContent>
@@ -63,30 +83,13 @@ function DialogNavigation ({ info, ...props }) {
             )}
           </HoverCard>
         ))}
-        <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-            <DropdownMenuTrigger asChild>
-                <Button
-                    variant="link"
-                    className="h-8 w-8 p-0"
-                    size="sm"
-                >
-                  <Table2Icon className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DialogNavigationDropdownContent 
-                open={dropdownOpen} 
-                currentIndex={info.row.index} 
-                rows={rows} 
-                onSelect={handleJump} 
-            />
-        </DropdownMenu>
       </div>
     )
-}
-
-function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }) {
-    const ref = useRef()
+  }
   
+  function DialogNavigationDropdownContent ({ open, currentIndex, rows, onSelect }) {
+    const ref = useRef()
+    
     const handleSelect = (e) => {
         const { dataset } = e.target
         onSelect(dataset.index, dataset.id)

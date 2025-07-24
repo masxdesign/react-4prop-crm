@@ -10,17 +10,18 @@ export const Route = createFileRoute('/_auth/_dashboard/list')({
   beforeLoad: async ({ context: { auth } }) => {
     const { columns, version } = await import('./-columns')
 
-    const authUserId = `U${auth.user.id}`
+    const getBzId = (info) => info.bz_id
 
     const services = {
-      tableSSList: variables => crmList(variables, authUserId),
-      selectedDataPool: ids => crmListByIds(ids, authUserId),
-      facetList: column => crmFacetList(column, authUserId),
+      tableSSList: variables => crmList(variables, auth.authUserId),
+      selectedDataPool: ids => crmListByIds(ids, auth.authUserId),
+      facetList: column => crmFacetList(column, auth.authUserId),
       tableDialog: {
-        getInfoById: import_id => crmListById(import_id, authUserId),
-        getEnquiries: (import_id, filterBy) => getCrmEnquiries(import_id, authUserId, filterBy),
-        noteList: import_id => crmFetchNotes(import_id, authUserId),
-        addNote: (variables, import_id) => crmAddNote(variables, import_id, authUserId),
+        getInfoById: import_id => crmListById(import_id, auth.authUserId),
+        getBzId,
+        getEnquiries: (import_id, filterBy) => getCrmEnquiries(import_id, auth.authUserId, filterBy),
+        noteList: import_id => crmFetchNotes(import_id, auth.authUserId),
+        addNote: (variables) => crmAddNote(variables, auth),
         deleteNote: () => {},
         listUpdateDetails: crmListUpdateDetails
       },
@@ -37,6 +38,7 @@ export const Route = createFileRoute('/_auth/_dashboard/list')({
     ]
 
     return {
+      title: "Manage clients and applicants",
       tableName:  `list`,
       tableVersion: version,
       facets,
@@ -56,7 +58,7 @@ export const Route = createFileRoute('/_auth/_dashboard/list')({
           message: <ChatBoxMyListSingleMessage {...item} />
         }
       }),
-      authUserId,
+      authUserId: auth.authUserId,
       userCardComponent: UserCard,
       enableHoverCard: true
     }

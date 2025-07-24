@@ -7,7 +7,7 @@ const ColumnViewButton = ({ info }) => {
     }
   
     return (
-      <Button size="xs" variant="secondary" onClick={handleClick}>
+      <Button size="xs" className="bg-emerald-600 hover:bg-emerald-500" onClick={handleClick}>
         view
       </Button>
     )

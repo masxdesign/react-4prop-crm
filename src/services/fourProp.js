@@ -292,27 +292,33 @@ export const updateGrade = async (pid, { grade, autoSearchReference, tag_id }) =
     return data
 }
 
-export const addNote = async (variables, id, authUserId) => {
-    const { message = '', files, _button } = variables
+export const addNote = async (variables, auth) => {
+    const { message = '', files, _button, info } = variables
+    const nid = info.id
 
     if (_button === "bizchat") {
 
         if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
 
-        if(!authUserId) throw new Error('authUserId is not defined')
+        if(!auth.bzUserId) throw new Error('authUserId is not defined')
+
+        const from = info.ownerNid ?? auth.bzUserId
 
         return sendBizchatMessage({ 
             files,
             message,
-            from: authUserId,
-            recipient: id
+            from,
+            recipient: nid,
+            dteamNid: auth.bzUserId === from.replace('N', '')
+                ? null
+                : auth.bzUserId,
         })
 
     }
 
     if (isEmpty(message)) throw new Error('message is empty')
 
-    const { data } = await fourPropClient.post(`api/crud/CRM--EACH_db/__createNote/${id}`, {
+    const { data } = await fourPropClient.post(`api/crud/CRM--EACH_db/__createNote/${nid}`, {
         type: '0',
         note: message
     })

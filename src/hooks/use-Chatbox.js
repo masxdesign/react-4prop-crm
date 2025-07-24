@@ -14,7 +14,7 @@ export const filesSelector = createSelector(
   (files) => Object.entries(files)
 )
 
-const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
+const useChatbox = ({ deleteMutationOptions, addMutationOptions, info }) => {
     const [uppy] = useState(() => new Uppy({
       restrictions: {
         maxNumberOfFiles: 3,
@@ -65,7 +65,7 @@ const useChatbox = ({ deleteMutationOptions, addMutationOptions }) => {
         }
 
         setError(null)
-        addMutation.mutate({ message: value, files, _button: buttonName })
+        addMutation.mutate({ message: value, files, _button: buttonName, info })
   
       } catch (e) {
         setError(e.message)

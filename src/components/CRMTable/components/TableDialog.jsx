@@ -11,11 +11,16 @@ import DialogNavigation from '@/components/DialogNavigation';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { DotsHorizontalIcon } from '@radix-ui/react-icons';
-import { Trash2Icon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ExternalLinkIcon, ImageIcon, Loader2, Trash2Icon, User2, X } from 'lucide-react';
 import { propertyEnquiriesQuery } from '@/services/fourProp';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { EnquiryMessagingWidgetInView } from '@/routes/_auth._com/-ui/EnquiriesPage';
-import { useAuth } from '@/components/Auth/Auth';
+import { EnquiryMessagingWidgetInView, LastMessagesList, ViewAllMessagesLink } from '@/routes/_auth._com/-ui/EnquiriesPage';
+import TabsClipPath from '@/components/TabsClipPath';
+import WriteYourReplyHereInput from '@/routes/_auth._com/-ui/WriteYourReplyHereInput';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/components/Auth/Auth-context';
+import { FOURPROP_BASEURL } from '@/services/fourPropClient';
 
 function TableDialog({ model, ...props }) {
     return (
@@ -24,9 +29,18 @@ function TableDialog({ model, ...props }) {
             onOpenChange={model.dialogModel.onOpenChange}
             {...props}
         >
-            <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0 overflow-hidden">
+            <DialogContent className="transition-all sm:max-w-[900px] min-h-[600px] p-0">
+                <DialogTopNavigation model={model} />
                 {model.id ? (
-                    <TableDialogContentRenderer model={model} />
+                    <Suspense
+                        fallback={
+                            <p className="inset-0 absolute flex items-center justify-center text-lg opacity-40 font-bold">
+                                Loading...
+                            </p>
+                        }
+                    >                    
+                        <TableDialogContentRenderer model={model} />
+                    </Suspense>
                 ) : (
                     <p>Loading...</p>
                 )}
@@ -35,31 +49,83 @@ function TableDialog({ model, ...props }) {
     )
 }
 
-function TableDialogContentRenderer ({ model }) {
+function DialogTopNavigation({ model }) {
+    // const { data: info } = useSuspenseQuery(model.infoQueryOptions)
     const resultFromTable = useTableModel.use.getResultFromTable(model)
+    const info = resultFromTable?.row.original
+    const { authUserId } = resultFromTable?.table.options.meta ?? {}
+    const isYou = info?.owneruid === authUserId
 
-    return resultFromTable ? (
-        <TableDialogContent
-            info={resultFromTable.row.original}
-            fromTable={resultFromTable}
-            model={model}
-        />
-    ) : (
-        <Suspense
-            fallback={
-                <p className="inset-0 absolute flex items-center justify-center text-lg opacity-40 font-bold">
-                    Loading...
-                </p>
-            }
-        >
-            <TableDialogContentFetcher model={model} />
-        </Suspense>
+    return (
+        <>
+            <div className='absolute -translate-y-[calc(100%+1rem)] w-full flex items-end gap-8'>
+                {info && (
+                    <div className='flex flex-col items-start gap-1 w-1/3'>
+                        {info?.owneruid && (
+                            isYou ? (
+                                <span className='text-white/80 text-xs'>
+                                    Your client
+                                </span>
+                            ) : (
+                                <span className='text-white/80 text-xs'>
+                                    Client of {info.owner_first} {info.owner_last}
+                                </span>
+                            )
+                        )}
+                        <div className='flex items-center gap-3'>
+                            <div className='font-bold text-lg text-white capitalize text-nowrap truncate'>
+                                {info.first} {info.last}
+                            </div>
+                            <div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className="size-5 p-0 rounded-full bg-emerald-500 text-emerald-950"
+                                            size="sm"
+                                            >
+                                            <DotsHorizontalIcon className="size-3" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start">
+                                        <DropdownMenuItem className="group cursor-pointer focus:hover:bg-red-100">
+                                            <Trash2Icon className="h-4 w-4 mr-2 group-hover:text-red-500" /> 
+                                            <span className='text-muted-foreground group-hover:text-red-500'>
+                                                Move to bin
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {model.dialogTabs && (
+                    <div className='flex justify-center w-1/3'>
+                        <TabsClipPath 
+                            tabs={model.dialogTabs} 
+                            activeTab={model.tabValue} 
+                            onSelect={model.onTabValueChange}
+                        />
+                    </div>
+                    
+                )}
+            </div>
+            <div className='absolute top-0 -right-10 h-full flex flex-col justify-between items-center gap-4'>
+                <X 
+                    className='size-5 text-white cursor-pointer' 
+                    onClick={() => model.dialogModel.onOpenChange(false)} 
+                />
+                {resultFromTable && (
+                    <DialogNavigation fromTableInfo={resultFromTable} />
+                )}
+            </div>
+        </>
     )
 }
 
-function TableDialogContentFetcher ({ model }) {
+function TableDialogContentRenderer ({ model }) {
     const { data } = useSuspenseQuery(model.infoQueryOptions)
-
     return <TableDialogContent info={data} model={model} />
 }
 
@@ -68,47 +134,18 @@ const panelDefaultSize = {
     other: 50
 }
 
-const ResizeableLeftSide = ({ info, model, fromTable }) => {
+const ResizeableLeftSide = ({ info, model }) => {
     const { metricsComponent: MetricsComponent } = model
     return (
-        <>
-            <DialogHeader className="pt-4 px-4">
-                <DialogTitle className="flex gap-4 items-center capitalize">
-                    <span className='mr-auto'>{`${info.first} ${info.last}`}</span>
-                    {fromTable && (
-                        <DialogNavigation info={fromTable} />
-                    )}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button
-                                variant="link"
-                                className="h-8 w-8 p-0"
-                                size="sm"
-                            >
-                                <DotsHorizontalIcon className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                            <DropdownMenuItem className="group cursor-pointer focus:hover:bg-red-100">
-                                <Trash2Icon className="h-4 w-4 mr-2 group-hover:text-red-500" /> 
-                                <span className='text-muted-foreground group-hover:text-red-500'>
-                                    Move to bin
-                                </span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </DialogTitle>
-            </DialogHeader>
-            <MetricsComponent 
-                info={info} 
-                model={model} 
-                className="flex-grow" 
-            />
-        </>
+        <MetricsComponent 
+            info={info} 
+            model={model} 
+            className="flex-grow" 
+        />
     )
 }
 
-const TwoColumnResizeable = ({ autoSaveId, info, model, fromTable, rightsideContent }) => {
+const TwoColumnResizeable = ({ autoSaveId, info, model, rightsideContent }) => {
     const refA = useRef()
     const leftDefaultSize = panelDefaultSize[autoSaveId]
 
@@ -129,7 +166,7 @@ const TwoColumnResizeable = ({ autoSaveId, info, model, fromTable, rightsideCont
                     autoSaveId={autoSaveId}
                     direction="horizontal"
                     className={cx(
-                        "transition-opacity ease-in duration-700",
+                        "transition-opacity ease-in duration-700 rounded-lg",
                         isMount ? "opacity-100" : "opacity-0"
                     )}
                     onLayout={handleLayoutChange}
@@ -139,12 +176,11 @@ const TwoColumnResizeable = ({ autoSaveId, info, model, fromTable, rightsideCont
                         defaultSize={leftDefaultSize}
                         minSize={40}
                         maxSize={60}
-                        className="flex flex-col gap-4"
+                        className="flex flex-col gap-4 py-2"
                     >
                         <ResizeableLeftSide 
                             info={info}
                             model={model}
-                            fromTable={fromTable}
                         />
                     </ResizablePanel>
                     <ResizableHandle withHandle />
@@ -160,10 +196,13 @@ const TwoColumnResizeable = ({ autoSaveId, info, model, fromTable, rightsideCont
 }
 
 const EnquiriesSharedRightSide = ({ model, info }) => {
+    const auth = useAuth()
     const stats = useSuspenseQuery(model.enquiriesQueryOptions(info.owneruid, {
         suitables: model.openEnquiry.suitables,
         shared: model.openEnquiry.shared
     }))
+
+    const [carouselApi, setCarouselApi] = React.useState(null)
     
     const { data } = useSuspenseQuery(propertyEnquiriesQuery(stats.data))
 
@@ -172,66 +211,105 @@ const EnquiriesSharedRightSide = ({ model, info }) => {
     if (!row) return null
 
     return (
-        <div className='p-4 flex flex-col justify-between gap-4 h-full'>
-            <div className='flex-shrink max-w-[360px] bg-white mx-auto overflow-hidden rounded-sm shadow-md'>
-                <div className='relative'>
-                    <Carousel className="overflow-hidden">
-                        <CarouselContent>
-                            {row.pictures.full.map((source, index) => (
-                                <CarouselItem key={index}>
-                                    <div className="relative h-[280px] overflow-hidden">
-                                        <img src={source} className="object-contain w-full h-full z-10 relative" />
-                                        <img src={source} className="object-cover w-full h-full scale-[2] absolute left-0 top-0 z-0 blur-3xl" />
-                                    </div>
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                    </Carousel>
-                    <div className='flex flex-col absolute bottom-0 left-0 w-full px-4 pb-4 pt-12 bg-gradient-to-t from-black to-transparent'>
-                        <span className='font-bold text-sm text-white'>
-                            {row.firstSubtype} for {row.tenure.text}
-                        </span>
-                        <span className='text-xs text-white'>
-                            {row.addressText}
-                        </span>
-                    </div>
-                </div>
-                <div className='flex flex-row gap-1 p-4'>
-                    <Button size="xs" variant="secondary">
-                        <a href={`/crm/view-details/${row.id}?i=${info.u_hash}&a=${info.bz_id.substring(1)}`} target="__blank">
-                            More info
+        <div className='flex flex-col gap-2 h-full bg-cyan-400'>
+            <div>
+                <div className='flex items-center justify-between gap-3 p-3 bg-white shadow-xl relative z-10'>
+                    <Button 
+                        variant="secondary" 
+                        size="xs"
+                    >
+                        <a 
+                            href={`${FOURPROP_BASEURL}/view-details/${row.id}`} 
+                            target="__blank"
+                        >
+                            <span className='align-middle mr-1'>View details</span>
+                            <ExternalLinkIcon className='size-3 inline opacity-40'/>
                         </a>
                     </Button>
+                    <div className='flex items-center gap-1'>
+                        <Button 
+                            onClick={() => carouselApi?.scrollPrev()} 
+                            variant="outline" 
+                            size="xs" 
+                            className="rounded-full p-0 size-8"
+                        >
+                            <ChevronLeft className="size-4" />
+                            <span className="sr-only">Next slide</span>
+                        </Button>
+                        <Button 
+                            onClick={() => carouselApi?.scrollNext()} 
+                            variant="outline" 
+                            size="xs"
+                            className="rounded-full p-0 size-8"
+                        >
+                            <ChevronRight className="size-4" />
+                            <span className="sr-only">Next slide</span>
+                        </Button>
+                    </div>
                 </div>
+                <Carousel setApi={setCarouselApi} className="overflow-hidden">
+                    <CarouselContent>
+                        {row.pictures.full.map((source, index) => (
+                            <CarouselItem key={index}>
+                                <div className="relative overflow-hidden h-64">
+                                    <img src={source} className="object-contain w-full h-full z-10 relative" />
+                                    <img src={source} className="object-cover w-full h-full scale-[2] absolute left-0 top-0 z-0 blur-3xl" />
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                </Carousel>
             </div>
-            <EnquiryMessagingWidgetInView 
-                bz_hash={info.hash_bz}
-                property={row}
-                ownerNid={info.ownernid}
-                chat_id={row.chat_id} 
-                recipientLabel="client"
-            />
+            <Suspense fallback={<p className='text-white opacity-50 text-sm p-3'>Loading...</p>}>
+                <div className='flex flex-col flex-1 gap-0'>
+                    <ViewAllMessagesLink 
+                        chat_id={row.chat_id} 
+                        bz_hash={info.hash_bz} 
+                        dteam={auth.bzUserId}
+                        className="py-1"
+                    />
+                    <div className='flex flex-col-reverse gap-4 px-3 mt-auto'>
+                        <LastMessagesList 
+                            ownerNid={info.ownernid}
+                            chat_id={row.chat_id}
+                            recipientLabel="client"
+                        />
+                    </div>
+                    <div className='p-1 sm:p-3'>
+                        <WriteYourReplyHereInput 
+                            chat_id={row.chat_id}
+                            ownerNid={info.ownernid}
+                            property={row} 
+                        />
+                    </div>
+                    {info.ownernid !== auth.bzUserId.replace('N', '') && (
+                        <div className="text-center bg-sky-200 text-sky-800 text-sm px-3 py-2">
+                            <b>Resume chat for</b> {info.owner_first} {info.owner_last}
+                        </div>
+                    )}
+                </div>
+            </Suspense>
         </div>
     )
 }
 
-function TableDialogContent({ info, model, fromTable = null }) {
+function TableDialogContent({ info, model }) {
     const {
         authUserId,
         chatboxQueryOptions,
         renderMessages,
         addMutationOptions,
         deleteMutationOptions,
-        enableBizchat,
         tabValue
     } = model
 
-    return tabValue === "info" ? (
+    const enableBizchat = model.getBzId(info)
+
+    return tabValue?.id === "info" ? (
         <TwoColumnResizeable 
-            autoSaveId="info"
+            autoSaveId={tabValue.id}
             info={info}
             model={model}
-            fromTable={fromTable}
             rightsideContent={
                 authUserId === info.id ? (
                     <div className="h-full">
@@ -257,7 +335,6 @@ function TableDialogContent({ info, model, fromTable = null }) {
             autoSaveId="other"
             info={info}
             model={model}
-            fromTable={fromTable}
             rightsideContent={
                 model.openEnquiry && (
                     <EnquiriesSharedRightSide model={model} info={info} />
