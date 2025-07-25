@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
       tableDialog: {
         getInfoById: id => fetchNegotiator(id),
         getBzId,
-        noteList: id => fetchNotes(id, auth),
+        noteList: (info) => fetchNotes(info, auth),
         addNote: (variables) => addNote(variables, auth),
         deleteNote: () => {}
       },
@@ -54,10 +54,10 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
         }
       },
       columns,
-      tableDialogRenderMessages: ([messages]) => messages.map(item => {
+      tableDialogRenderMessages: ([messages], info) => messages.map(item => {
         return {
           id: item.id,
-          message: <ChatBoxEachSingleMessage {...item} />
+          message: <ChatBoxEachSingleMessage info={info} {...item} />
         }
       }),
       authUserId: auth.user.neg_id,

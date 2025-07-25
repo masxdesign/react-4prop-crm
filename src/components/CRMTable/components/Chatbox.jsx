@@ -10,10 +10,10 @@ import '@uppy/core/dist/style.min.css';
 import '@uppy/dashboard/dist/style.min.css';
 import { SizeIcon } from '@radix-ui/react-icons';
 
-const ChatboxMessagesFetcher = ({ chatboxQueryOptions, renderMessages, enableDelete, ...props }) => {
+const ChatboxMessagesFetcher = ({ info, chatboxQueryOptions, renderMessages, enableDelete, ...props }) => {
   const { data } = useSuspenseQuery({
     ...chatboxQueryOptions,
-    select: renderMessages
+    select: (messages) => renderMessages(messages, info)
   })
 
   return data.length > 0 ? (
@@ -67,6 +67,7 @@ const Chatbox = ({
         <div className="bg-slate-100 shadow-inner grow min-h-[420px] max-h-[600px]">
           <Suspense fallback={<p className='opacity-50 text-sm p-3'>Loading...</p>}>
             <ChatboxMessagesFetcher 
+              info={info}
               chatboxQueryOptions={chatboxQueryOptions}
               renderMessages={renderMessages}
               className="h-full"

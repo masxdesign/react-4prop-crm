@@ -2,10 +2,11 @@ import * as yup from "yup"
 import delay from "@/utils/delay";
 import nanoid from "@/utils/nanoid";
 import skaler from "@/utils/skaler";
-import _, { isEmpty, isFunction, values } from "lodash";
+import _, { isEmpty, isFunction, orderBy, values } from "lodash";
 import { fetchUser } from "./fourProp";
 import bizchatClient from "./bizchatClient";
 import { propertyCompactCombiner } from "@/store/use-listing";
+import { getTime } from "date-fns";
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
@@ -164,8 +165,8 @@ export const getBizchatMessagesLastN = async ({ bzUserId, chatId, limit }) => {
     return data
 }
 
-export const getBizchatMessagesLast5 = async ({ chatId, authUserId }) => {
-    const { data } = await bizchatClient.get(`/api/messages_last_5/${chatId}/${authUserId}`)
+export const getBizchatMessagesLast5 = async ({ chatId, authBzId }) => {
+    const { data } = await bizchatClient.get(`/api/messages_last_5/${chatId}/${authBzId}`)
     return data
 }
 
@@ -420,10 +421,36 @@ export async function getCrmEnquiries(import_id, ownerUid, filterBy) {
     return data
 }
 
-export async function crmFetchNotes (import_id, authUserId) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/${import_id}/notes`)
+export const lastMessageForNotes = (lastMessage) => {
+    return {
+        id: `bz:${lastMessage.id}`,
+        lastMessage,
+        created: lastMessage.sent,
+        created_time: getTime(lastMessage.sent.replace(/[Z,T]/g, ' ').trim())
+    }
+}
 
-    return [data, {}, null, null, []]
+export async function crmFetchNotes (info, auth) {
+
+    const from = info.ownernid ?? auth.bzUserId
+
+    let [{ data: notes }, lastMessage] = await Promise.all([
+        bizchatClient.get(`/api/crm/${auth.authUserId}/${info.id}/notes`),
+        getBizchatLastMessage({ from, recipient: info.bz_id })
+    ])
+
+    notes = notes.map((message) => ({
+        ...message,
+        created_time: getTime(message.created)
+    }))
+
+    if (lastMessage) {
+        notes.push(lastMessageForNotes(lastMessage))
+    }
+
+    notes = orderBy(notes, ['created_time'], ['asc'])
+
+    return [notes, {}, null, lastMessage, []]
 }
 
 export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
@@ -448,7 +475,7 @@ export async function crmAddNote (variables, auth) {
 
         if(!auth.bzUserId) throw new Error('bzUserId is not defined')
 
-        const from = info.ownerNid ?? auth.bzUserId
+        const from = info.ownernid ?? auth.bzUserId
 
         return sendBizchatMessage({ 
             files,

@@ -2,9 +2,10 @@ import React from "react"
 import { format } from "date-fns"
 import { ExternalLinkIcon } from "lucide-react"
 import { EnvelopeClosedIcon, EnvelopeOpenIcon } from "@radix-ui/react-icons"
-import { ChatboxBizchatMessage, ChatboxSentdate } from "@/components/CRMTable/components"
+import { ChatboxSentdate } from "@/components/CRMTable/components"
 import { Dddl } from "@/components/DisplayData/components"
 import { Button } from "@/components/ui/button"
+import ChatboxBizchatMessage from "./ChatboxBizchatMessage"
 
 const NEXT = "2"
 const LAST = "1"
@@ -57,7 +58,7 @@ const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, 
         }
         case !!lastMessage:
             return (
-                <ChatboxBizchatMessage 
+                <ChatboxBizchatMessage
                     chatId={lastMessage.chat_id}
                     created={lastMessage.sent}
                     type={lastMessage.type}
@@ -67,7 +68,7 @@ const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, 
             )
         case resource_name.includes(":bz"): { // remove later
             return (
-                <ChatboxBizchatMessage 
+                <ChatboxBizchatMessage
                     chatId={item.i}
                     created={item.created}
                     body={item.body}

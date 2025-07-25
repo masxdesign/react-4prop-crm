@@ -4,7 +4,7 @@ import { cx } from "class-variance-authority"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { CollapsibleTrigger } from "@radix-ui/react-collapsible"
 import { ReloadIcon } from "@radix-ui/react-icons"
-import { reverse, truncate } from "lodash"
+import { chain, map, reverse, truncate } from "lodash"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible"
 import { useAuth } from "@/components/Auth/Auth"
@@ -15,6 +15,7 @@ import { attachmentCombiner } from "@/components/Uppy/utils"
 import { Attachment } from "@/components/Uppy/components"
 import { bizchatMessagesLast5Query } from "@/features/messaging/messaging.queries"
 import ReactMarkdown from "@/features/messaging/components/ReactMarkdown"
+import { authorCombiner, DteamNidUserBadge, useFetchUsersFromMessages, utilsConversationLink, ViewAllMessagesButton } from "@/routes/_auth._com/-ui/EnquiriesPage"
 
 const messageCombiner = (type, body, from, chatId) => {
     if (type === 'A') {
@@ -59,11 +60,16 @@ const BizchatMessagePreview = memo(({ type = 'M', body, chatId, from, className,
     )
 })
 
-const BizchatMessage = ({ type = 'M', body, chatId, authUserId, bz_hash, created, from }) => {
+const ChatboxBizchatMessage = ({ info, type = 'M', body, chatId, authBzId, bz_hash, created, dteamNid, from }) => {
     const ref = useRef()
 
+    const auth = useAuth()
+
+    const isSender = [auth.bzUserId, info.ownernid].includes(from)
+
+    const { getUser, isLoading } = useFetchUsersFromMessages([{ from, dteamNid }])
+
     const [open, setOpen] = useState(false)
-    const link = `/bizchat/rooms/${chatId}?i=${bz_hash}`
 
     useEffect(() => {
 
@@ -84,22 +90,42 @@ const BizchatMessage = ({ type = 'M', body, chatId, authUserId, bz_hash, created
                     Bizchat message
                 </span>
                 {!open && (
-                    <BizchatMessagePreview 
-                        type={type} 
-                        body={body} 
-                        chatId={chatId} 
-                        from={from} 
-                        className="min-w-[180px]"
-                        itemClassName="w-[250px]"
-                        showMessage
-                    />
+                    <>
+                        {!isLoading && (
+                            <>
+                                <strong className='text-xs -mb-1'>
+                                    {authorCombiner({ isSender, from, fromUser: getUser(from), recipientLabel: 'client', auth })}
+                                </strong>
+                                {dteamNid && (
+                                    <DteamNidUserBadge 
+                                        data={getUser(dteamNid)} 
+                                        auth={auth} 
+                                        className="border"
+                                    />
+                                )}
+                            </>
+                        )}
+                        <BizchatMessagePreview 
+                            type={type} 
+                            body={body} 
+                            chatId={chatId} 
+                            from={from} 
+                            className="min-w-[180px] mb-1"
+                            itemClassName="w-[250px]"
+                            isSender={isSender}
+                            showMessage
+                        />
+                    </>
                 )}
                 <Collapsible open={open} onOpenChange={setOpen} className="space-y-3">
                     <CollapsibleContent>
                         <Suspense fallback={<p>Loading...</p>}>
                             <LoadBizchatMessagesLast5
-                                authUserId={authUserId}
-                                chatId={chatId}
+                                authBzId={authBzId}
+                                chat_id={chatId}
+                                bz_hash={bz_hash}
+                                dteam={auth.bzUserId}
+                                info={info}
                             />
                         </Suspense>
                     </CollapsibleContent>
@@ -109,49 +135,48 @@ const BizchatMessage = ({ type = 'M', body, chatId, authUserId, bz_hash, created
                         </Button>
                     </CollapsibleTrigger>
                 </Collapsible>
-                <Button variant="link" size="sm" className="w-full" asChild>
-                    <a
-                        target="_blank"
-                        className="flex bg-green-600 hover:bg-green-500 text-white items-center gap-2"
-                        href={link}
-                    >
-                        View all messages <ExternalLinkIcon className="w-3 h-3" />
-                    </a>
-                </Button>
+                <ViewAllMessagesButton 
+                    chat_id={chatId}
+                    bz_hash={bz_hash}
+                    dteam={auth.bzUserId}
+                    size="sm" 
+                    className="w-full"
+                    asChild
+                >
+                    <Button className="flex bg-green-600 hover:bg-green-500 text-white items-center gap-2">
+                        View all messages
+                    </Button>
+                </ViewAllMessagesButton>                
             </span>
             <ChatboxSentdate sentdate={created} />
         </>
     )
 }
 
-const ChatboxBizchatMessage = ({ type = 'A', chatId, body, created, from }) => {
+function LoadBizchatMessagesLast5 ({ authBzId, chat_id, bz_hash, dteam, info }) {
     const auth = useAuth()
-
-    return (
-        <BizchatMessage 
-            body={body}
-            type={type}
-            chatId={chatId}
-            from={from}
-            authUserId={auth.user.neg_id}
-            bz_hash={auth.user.bz_hash}
-            created={created}
-        />
-    )
-}
-
-function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
-    const { data, refetch } = useSuspenseQuery(bizchatMessagesLast5Query(authUserId, chatId))
+    const { data, refetch } = useSuspenseQuery(bizchatMessagesLast5Query(authBzId, chat_id))
+    const { getUser, isLoading } = useFetchUsersFromMessages(data)
 
     const messages = useMemo(() => {
-        return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id }) => {
+        if (isLoading) return null
+
+        return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id, dteamNid: dteamNidOfMessage }) => {
             const messageData = messageCombiner(type, body, from, chat_id)
 
+            const isSender = [auth.bzUserId, info.ownernid].includes(from)
+
+            const fromUser = getUser(from)
+            const dteamNidUser = getUser(dteamNidOfMessage)
+
+            console.log(dteamNidUser);
+            
+            
             const handleClick = () => {
-                window.open(`https://4prop.com/bizchat/rooms/${chat_id}?message=${id}`, "bizchat")
+                window.open(utilsConversationLink({ chat_id, bz_hash, dteam, hide_top_bar: 1, message: id }), "bizchat")
             }
 
-            const sideAlignOptions = from === authUserId 
+            const sideAlignOptions = from === authBzId 
                 ? { side: "left", align: "center" }
                 : { side: "right", align: "center" }
 
@@ -160,6 +185,12 @@ function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
                 message: (
                     <>
                         <div className="relative space-y-2 mb-2">
+                            <strong className='text-xs -mb-1'>
+                                {authorCombiner({ isSender, from, fromUser, recipientLabel: 'client', auth })}
+                            </strong>
+                            {dteamNidUser && (
+                                <DteamNidUserBadge data={dteamNidUser} auth={auth} />
+                            )}
                             {['A'].includes(type) && (
                                 <HoverCard openDelay={100} closeDelay={100}>
                                     <HoverCardTrigger asChild>
@@ -172,7 +203,7 @@ function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
                                         <BizchatMessagePreview 
                                             type={type} 
                                             body={body} 
-                                            chatId={chatId} 
+                                            chatId={chat_id} 
                                             from={from} 
                                             className="w-[150px]"
                                         />
@@ -191,11 +222,13 @@ function LoadBizchatMessagesLast5 ({ authUserId, chatId }) {
                         <ChatboxSentdate sentdate={sent} className="text-[10px]" />
                     </>
                 ), 
-                variant: from === authUserId ? 'sender' : 'recipient',
+                variant: from === authBzId ? 'sender' : 'recipient',
                 size: 'sm'
             }
         }))
-    }, [data])
+    }, [data, getUser, isLoading])
+
+    if (isLoading) return <p>Loading...</p>
 
     return (
         <div className="flex flex-col items-start gap-2">

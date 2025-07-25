@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronFirst, ChevronLast, ChevronLeft, ChevronRight, FileCheckIcon, HomeIcon, Loader2, Loader2Icon, MessagesSquareIcon, XIcon } from 'lucide-react'
 import { chain, flatten, map, uniq } from 'lodash'
@@ -10,7 +10,7 @@ import { FOURPROP_BASEURL } from '@/services/fourPropClient'
 import { propReqContentsQuery, subtypesQuery, typesQuery } from '@/store/listing.queries'
 import { detailsCombiner, propertyTypescombiner } from '@/store/use-listing'
 import { EnvelopeClosedIcon, ReloadIcon } from '@radix-ui/react-icons'
-import { useQuery, useSuspenseQueries } from '@tanstack/react-query'
+import { queryOptions, useQuery, useSuspenseQueries } from '@tanstack/react-query'
 import { createLazyFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/react-router'
 import companyCombiner from '@/services/companyCombiner'
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
@@ -383,30 +383,68 @@ const findBzUser = (bz_id, users) => {
   })
 }
 
+export const authorCombiner = ({ isSender, from, fromUser, recipientLabel,  auth }) => {
+  return isSender 
+    ? from === auth.bzUserId 
+      ? "Message you sent" 
+      : `${fromUser.firstname} ${fromUser.surname}`
+        : auth.isAgent 
+          ? `Message from ${recipientLabel}` 
+          : 'Message from agent'
+}
+
+export const fetchUsersQueryOptions = (bz_ids) => {
+  return queryOptions({
+    queryKey: ['LastMessagesListUsers', bz_ids],
+    queryFn: () => getUsersByIdsAsync(bz_ids)
+  })
+}
+
+export const useFetchUsersFromMessages = (data) => {
+  const bz_ids = useMemo(
+    () => chain([
+      map(data, 'from'),
+      map(data, 'dteamNid')
+    ]).flatten().uniq().value(),
+    [data]
+  )
+  
+  const { data: users, isLoading } = useQuery(fetchUsersQueryOptions(bz_ids))
+    
+  const getUser = useCallback((bz_id) => {
+    return findBzUser(bz_id, users)
+  }, [users])
+
+  return { getUser, isLoading }
+}
+
+export const DteamNidUserBadge = ({ data, auth, className }) => {
+  return data.id === auth.bzUserId.replace('N', '') ? (
+    <div className={cn('bg-white rounded-md py-1 px-2 -ml-1 mr-10 text-xs italic', className)}>
+      You messaged on the agent's behalf
+    </div>
+  ) : (
+    <div className={cn('bg-white rounded-md py-1 px-2 -ml-1 mr-10 text-xs italic', className)}>
+      {data.firstname} {data.surname} messaged on your behalf
+    </div>
+  )
+}
+
+// debug: last5
 export function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
   const auth = useAuth()
 
   const data = useMessagesLastNList(ownerNid ?? auth.bzUserId, chat_id)
 
-  const bz_ids =  chain([
-        map(data, 'from'),
-        map(data, 'dteamNid'),
-        // map(data, 'recipients').map((item) => item.split(','))
-      ]).flatten().uniq().value()
-  
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['LastMessagesListUsers', bz_ids],
-    queryFn: () => getUsersByIdsAsync(bz_ids)
-  })
+  const { getUser, isLoading } = useFetchUsersFromMessages(data)
 
   if (isLoading) return <p>Loading...</p>
 
   return data.map(row => {
     const isSender = [auth.bzUserId, ownerNid].includes(row.from)
 
-    const fromUser = findBzUser(row.from, users)
-    const dteamNidUser = findBzUser(row.dteamNid, users)
-    // const recipientUsers = row.recipients.split(',').map((recipient) => findBzUser(recipient, users))
+    const fromUser = getUser(row.from)
+    const dteamNidUser = getUser(row.dteamNid)
     
     return (
       <ChatboxBubbleBzStyle 
@@ -415,29 +453,11 @@ export function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
         className="relative min-w-64 shadow-sm"
       >
         <div className='space-y-1'>
-          {isSender ? (
-            row.from === auth.bzUserId ? (
-              <strong className='text-xs'>Message you sent</strong>
-            ) : (
-              <strong className='text-xs'>{fromUser.firstname} {fromUser.surname}</strong>
-            )
-          ) : (
-            auth.isAgent ? (
-              <strong className='text-xs'>Message from {recipientLabel}</strong>
-            ) : (
-              <strong className='text-xs'>Message from agent</strong>
-            )
-          )}
+          <strong className='text-xs'>
+            {authorCombiner({ isSender, from: row.from, fromUser, recipientLabel, auth })}
+          </strong>
           {dteamNidUser && (
-            dteamNidUser.id === auth.bzUserId.replace('N', '') ? (
-              <div className='bg-white rounded-md py-1 px-2 -ml-1 mr-10 text-xs italic'>
-                You messaged on the agent's behalf
-              </div>
-            ) : (
-              <div className='text-xs opacity-60'>
-                {dteamNidUser.firstname} {dteamNidUser.surname} messaged on your behalf
-              </div>
-            )
+            <DteamNidUserBadge data={dteamNidUser} auth={auth} />
           )}
         </div>
         <ChatboxBubbleBzMessage 
@@ -479,27 +499,60 @@ const ChatboxBubbleBzMessage = ({ type, body, from, chat_id, className }) => {
   )
 }
 
-export function ViewAllMessagesLink({ chat_id, bz_hash, dteam, className }) {
-  const conversation_url = `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}?${new URLSearchParams({
+export const utilsConversationLink = ({ chat_id, bz_hash, dteam, hide_top_bar = 1, message = null }) => {
+  const search = new URLSearchParams({
+    hide_top_bar,
+    i: bz_hash
+  })
+
+  if (dteam) {
+    search.set("dteam", dteam)
+  }
+
+  if (message) {
+    search.set("message", message)
+  }
+
+  return `${FOURPROP_BASEURL}/bizchat/rooms/${chat_id}?${search}`
+}
+
+export const useConversationLink = ({ chat_id, bz_hash, dteam, hide_top_bar = 1 }) => {
+  return utilsConversationLink({ chat_id, bz_hash, dteam, hide_top_bar })
+}
+
+export function ViewAllMessagesButton({ chat_id, bz_hash, dteam, ...props }) {
+  const conversation_url = useConversationLink({
+    chat_id,
     hide_top_bar: 1,
-    i: bz_hash,
-    dteam: dteam
-  })}`
+    bz_hash,
+    dteam
+  })
 
   return (
     <Dialog>
-      <DialogTrigger asChild>        
-        <button
-          className={cn('flex gap-2 items-center justify-center font-normal px-2 py-4', className)}
-        >
-          <MessagesSquareIcon className='size-4 text-cyan-100' />
-          <span className='text-sm hover:underline text-white'>open messages</span>
-        </button>
-      </DialogTrigger>
+      <DialogTrigger {...props}/>
       <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:-right-0 rounded-lg">
         <iframe src={conversation_url} className='h-full w-full rounded-lg'></iframe>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export function ViewAllMessagesLink({ chat_id, bz_hash, dteam, className }) {
+  return (
+    <ViewAllMessagesButton 
+      chat_id={chat_id}
+      bz_hash={bz_hash}
+      dteam={dteam}
+      asChild
+    >
+      <button
+        className={cn('flex gap-2 items-center justify-center font-normal px-2 py-4', className)}
+      >
+        <MessagesSquareIcon className='size-4 text-cyan-100' />
+        <span className='text-sm hover:underline text-white'>open messages</span>
+      </button>
+    </ViewAllMessagesButton>
   )
 }
 

@@ -17,10 +17,10 @@ export const Route = createFileRoute('/_auth/_dashboard/list')({
       selectedDataPool: ids => crmListByIds(ids, auth.authUserId),
       facetList: column => crmFacetList(column, auth.authUserId),
       tableDialog: {
-        getInfoById: import_id => crmListById(import_id, auth.authUserId),
+        getInfoById: (import_id) => crmListById(import_id, auth.authUserId),
         getBzId,
         getEnquiries: (import_id, filterBy) => getCrmEnquiries(import_id, auth.authUserId, filterBy),
-        noteList: import_id => crmFetchNotes(import_id, auth.authUserId),
+        noteList: (info) => crmFetchNotes(info, auth),
         addNote: (variables) => crmAddNote(variables, auth),
         deleteNote: () => {},
         listUpdateDetails: crmListUpdateDetails
@@ -52,10 +52,10 @@ export const Route = createFileRoute('/_auth/_dashboard/list')({
         }
       },
       columns,
-      tableDialogRenderMessages: ([messages]) => messages.map(item => {
+      tableDialogRenderMessages: ([messages], info) => messages.map(item => {
         return {
           id: item.id,
-          message: <ChatBoxMyListSingleMessage {...item} />
+          message: <ChatBoxMyListSingleMessage info={info} {...item} />
         }
       }),
       authUserId: auth.authUserId,

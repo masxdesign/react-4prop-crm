@@ -1,6 +1,7 @@
 import React from "react"
 import { format } from "date-fns"
 import { ChatboxSentdate } from "@/components/CRMTable/components"
+import ChatboxBizchatMessage from "./ChatboxBizchatMessage"
 
 const NEXT = 2
 const NEXT_ONLY = 3
@@ -9,8 +10,25 @@ const NO_NEXT = 4
 const LAST = 1
 const MESSAGE_ONLY = 0
 
-const ChatBoxMyListSingleMessage = React.memo(({ body, dt, id, import_id, ownerUid, owner_name, type, created }) => {
+const ChatBoxMyListSingleMessage = React.memo(({ info, body, dt, id, import_id, ownerUid, lastMessage, owner_name, type, created }) => {
     switch (true) {
+        case id.includes("bz:") : {
+            console.log(info);
+            
+            return (
+                <ChatboxBizchatMessage 
+                    info={info}
+                    chatId={lastMessage.chat_id}
+                    created={lastMessage.sent}
+                    type={lastMessage.type}
+                    body={lastMessage.body}
+                    from={lastMessage.from}
+                    dteamNid={lastMessage.dteamNid}
+                    bz_hash={info.hash_bz}
+                    authBzId={info.ownernid}
+                />
+            )
+        }
         case ![MESSAGE_ONLY].includes(type) : {
             return (
                 <>

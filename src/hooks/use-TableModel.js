@@ -589,12 +589,12 @@ useTableModel.use = {
         const import_id = dialogModel?.state.info
 
         const enquiriesQueryOptions = (ownerUid, filterBy) => queryOptions({
-            queryKey: ['getEnquiries', import_id, ownerUid, filterBy],
+            queryKey: ['getEnquiries', authUserId, import_id, ownerUid, filterBy],
             queryFn: () => getCrmEnquiries(import_id, ownerUid, filterBy)
         })
 
         const infoQueryOptions = queryOptions({
-            queryKey: ['infoById', import_id],
+            queryKey: ['infoById', authUserId, import_id],
             queryFn: async () => {
                 let info = getResultFromTable(import_id)?.row.original
 
@@ -608,7 +608,10 @@ useTableModel.use = {
 
         const chatboxQueryOptions = queryOptions({
             queryKey: ['chatboxNoteList', authUserId, import_id],
-            queryFn: () => noteList(import_id)
+            queryFn: async () => {
+                const info = await queryClient.ensureQueryData(infoQueryOptions)
+                return noteList(info)
+            }
         })
 
         const addMutationOptions =  {

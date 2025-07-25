@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import axios from "axios";
 import { find, isEmpty, isObject, map, memoize, orderBy, result, truncate, union, zipObject } from "lodash";
-import { getAllMailShots, getBizchatLastMessage, getListUnreadTotal, sendBizchatMessage } from "./bizchat";
+import { getAllMailShots, getBizchatLastMessage, getListUnreadTotal, lastMessageForNotes, sendBizchatMessage } from "./bizchat";
 import queryClient from "@/queryClient";
 import lowerKeyObject from "@/utils/lowerKeyObject";
 import propertyParse from "@/utils/propertyParse";
@@ -302,7 +302,7 @@ export const addNote = async (variables, auth) => {
 
         if(!auth.bzUserId) throw new Error('authUserId is not defined')
 
-        const from = info.ownerNid ?? auth.bzUserId
+        const from = info.ownernid ?? auth.bzUserId
 
         return sendBizchatMessage({ 
             files,
@@ -327,11 +327,11 @@ export const addNote = async (variables, auth) => {
 
 }
 
-export const fetchNotes = async (recipient, auth) => {
+export const fetchNotes = async (info, auth) => {
     let [notes, lastMessage, mailshots] = await Promise.all([
-        fourPropClient.get(`api/crud/CRM--EACH_db/__notes/${recipient}`, { withCredentials: true }),
-        getBizchatLastMessage({ from: auth.user.neg_id, recipient }),
-        getAllMailShots(recipient, auth.id)
+        fourPropClient.get(`api/crud/CRM--EACH_db/__notes/${info.id}`, { withCredentials: true }),
+        getBizchatLastMessage({ from: auth.user.neg_id, recipient: info.id }),
+        getAllMailShots(info.id, auth.id)
     ])
 
     const [branch, [privateNotes, messages, users]] = notes.data
@@ -343,12 +343,7 @@ export const fetchNotes = async (recipient, auth) => {
     }))
 
     if (lastMessage) {
-        messages_.push({
-            id: `bz:${lastMessage.id}`,
-            lastMessage,
-            created: lastMessage.sent,
-            created_time: getTime(lastMessage.sent.replace(/[Z,T]/g, ' ').trim())
-        })
+        messages_.push(lastMessageForNotes(lastMessage))
     }
 
     if (mailshots.length > 0) {
