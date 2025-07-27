@@ -57,7 +57,7 @@ export const Route = createFileRoute('/_auth/_dashboard/each')({
       tableDialogRenderMessages: ([messages], info) => messages.map(item => {
         return {
           id: item.id,
-          message: <ChatBoxEachSingleMessage info={info} {...item} />
+          message: <ChatBoxEachSingleMessage info={info} auth={auth} {...item} />
         }
       }),
       authUserId: auth.user.neg_id,

@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { TooltipProvider } from '@radix-ui/react-tooltip'
@@ -10,6 +10,7 @@ import { BASEPATH } from './constants'
 import { Loader2 } from 'lucide-react'
 import './App.css'
 import { BIZCHAT_BASEURL } from './services/bizchatClient'
+import { useDevMode } from './utils/use-DevMode'
 
 const router = createRouter({ 
   routeTree,
@@ -28,6 +29,14 @@ const router = createRouter({
 
 const InnerAuth = () => {
   const auth = useAuth()
+
+  useEffect(() => {
+
+    if (import.meta.env.DEV) {
+      console.log('auth:', auth);
+    }
+
+  }, [auth])
 
   return (
     <RouterProvider router={router} context={{ auth }} />

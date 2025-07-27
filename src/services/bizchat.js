@@ -7,6 +7,8 @@ import { fetchUser } from "./fourProp";
 import bizchatClient from "./bizchatClient";
 import { propertyCompactCombiner } from "@/store/use-listing";
 import { getTime } from "date-fns";
+import queryClient from "@/queryClient";
+import { util_pagin_update, util_update } from "@/utils/localStorageController";
 
 const emailErrorMessage = "Enter a valid email"
 const schemaEmail = yup.string().email(emailErrorMessage).required()
@@ -100,34 +102,28 @@ export const formDataFilesMergeAsync = async (formData, { files = [], message, f
 }
 
 export const sendBizchatMessage = async ({ files = [], from, recipient, message, dteamNid = null, context }) => {
-    try {
+    if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
 
-        if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
+    const formData = new FormData
 
-        const formData = new FormData
+    await formDataFilesMergeAsync(formData, {
+        files, 
+        message, 
+        filename: () => `${from}-${recipient}crm-${nanoid()}`
+    })
 
-        await formDataFilesMergeAsync(formData, {
-            files, 
-            message, 
-            filename: () => `${from}-${recipient}crm-${nanoid()}`
-        })
-
-        formData.append('from', from)
-        formData.append('recipient', recipient)
-        
-        if (dteamNid) {
-            formData.append('dteamNid', dteamNid)
-        }
-
-        if (context) formData.append('context', JSON.stringify(context))
-        
-        const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, formData)
-
-        return data
+    formData.append('from', from)
+    formData.append('recipient', recipient)
     
-    } catch (e) {
-        console.error(e);
+    if (dteamNid) {
+        formData.append('dteamNid', dteamNid)
     }
+
+    if (context) formData.append('context', JSON.stringify(context))
+    
+    const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, formData)
+
+    return data
 }
 
 export const sendMassBizchat = async ({ files = [], from, recipients, subjectLine, message }) => {
@@ -436,7 +432,9 @@ export async function crmFetchNotes (info, auth) {
 
     let [{ data: notes }, lastMessage] = await Promise.all([
         bizchatClient.get(`/api/crm/${auth.authUserId}/${info.id}/notes`),
-        getBizchatLastMessage({ from, recipient: info.bz_id })
+        info.bz_id 
+            ? getBizchatLastMessage({ from, recipient: info.bz_id })
+            : Promise.resolve(false)
     ])
 
     notes = notes.map((message) => ({
@@ -466,14 +464,63 @@ export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
 
 export async function crmAddNote (variables, auth) {
     const { message = '', files, _button, info } = variables
-    const bzId = info.bz_id
     const import_id = info.id
-
+    
     if (_button === "bizchat") {
+        
+        if (files.length < 1 && isEmpty(message)) throw new Error('Attachment(s) and/or message are required')
+            
+        if(!auth.bzUserId) throw new Error('Your account is not set up correctly contact admin')
+                
+        let bzId = info.bz_id
 
-        if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
+        if (!bzId) {
+            const { uid, nid }  = await getUidByImportId(info.owneruid, import_id, true)
 
-        if(!auth.bzUserId) throw new Error('bzUserId is not defined')
+            if (!uid) {
+                throw new Error(`Failed to generate bz_id for id: ${import_id} `)
+            }    
+
+            bzId = nid ? `${nid}`: `U${uid}`
+            
+            queryClient
+                .getQueriesData()
+                .filter(([queryKey]) => {
+                    return (
+                        Array.isArray(queryKey) &&
+                        queryKey[0] === 'list' &&
+                        queryKey[1] === 'table'
+                    )
+                })
+                .forEach(([queryKey]) => {
+                    queryClient.setQueryData(
+                        queryKey, 
+                        util_pagin_update(
+                            { id: import_id }, 
+                            { bz_id: bzId }
+                        )
+                    )
+                })
+
+            queryClient
+                .getQueriesData()
+                .filter(([queryKey]) => {
+                    return (
+                        Array.isArray(queryKey) &&
+                        queryKey[0] === 'infoById'
+                    )
+                })
+                .forEach(([queryKey]) => {
+                    queryClient.setQueryData(
+                        queryKey, 
+                        (data) => ({
+                            ...data,
+                            bz_id: bzId
+                        })
+                    )
+                })
+
+        }
 
         const from = info.ownernid ?? auth.bzUserId
 
@@ -489,7 +536,7 @@ export async function crmAddNote (variables, auth) {
 
     }
 
-    if (_.isEmpty(message)) throw new Error('message is empty')
+    if (_.isEmpty(message)) throw new Error('Message is required')
 
     return addNoteAsync(auth.authUserId, import_id, {
         type: 0,
@@ -596,9 +643,9 @@ export const propertyGradeShareOneEmailAsync = async (variables) => {
     return data
 }
 
-export const getUidByImportId = async (ownerUid, import_id, createUser = false) => {
+export const getUidByImportId = async (authUserId, import_id, createUser = false) => {
     const params = { createUser }
-    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/uidByImportId/${import_id}`, { params })
+    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/uidByImportId/${import_id}`, { params })
     return data
 }
 

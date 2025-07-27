@@ -407,7 +407,7 @@ useTableModel.use = {
         const { tableState } = tableModel
     
         const queryOptions_ = useMemo(() => queryOptions({ 
-            queryKey: [tableName, tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
+            queryKey: [tableName, 'table', tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
             queryFn: () => services.tableSSList(tableState), 
             staleTime
         }), [tableName, tableState, staleTime])
@@ -616,7 +616,15 @@ useTableModel.use = {
 
         const addMutationOptions =  {
             mutationFn: addNote,
-            onError: console.log,
+            onError: (err) => {
+                switch (err.name) {
+                    case 'AxiosError':
+                        console.log(err.response.data)
+                        break
+                    default:
+                        console.log(err.message)                        
+                }
+            },
             onSuccess: (_, variables) => {
                 const { _button } = variables
                 

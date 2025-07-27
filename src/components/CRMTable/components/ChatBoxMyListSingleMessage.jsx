@@ -13,8 +13,6 @@ const MESSAGE_ONLY = 0
 const ChatBoxMyListSingleMessage = React.memo(({ info, body, dt, id, import_id, ownerUid, lastMessage, owner_name, type, created }) => {
     switch (true) {
         case id.includes("bz:") : {
-            console.log(info);
-            
             return (
                 <ChatboxBizchatMessage 
                     info={info}

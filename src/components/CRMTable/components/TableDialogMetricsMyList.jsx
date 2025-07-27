@@ -28,9 +28,7 @@ function TableDialogMetricsMyList({ info, model, className }) {
         onTabValueChange,
         dialogTabs,
     } = model 
-
-    const enableBizchat = model.getBzId(info)
-
+    
     return (
         <Tabs 
             value={tabValue.id} 
@@ -72,13 +70,6 @@ function TableDialogMetricsMyList({ info, model, className }) {
                             labelClassName="min-w-[90px]"
                         />
                     </>
-                )}
-                {enableBizchat && (
-                    <Suspense fallback={<p>Loading...</p>}>
-                        <TableDialogChatLinks
-                            chatboxQueryOptions={model.chatboxQueryOptions}
-                        />
-                    </Suspense>
                 )}
             </TabsContent>
             <TabsContent value="enquiries" className="px-4 text-sm space-y-3 flex-1">
@@ -180,7 +171,6 @@ const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => 
 
     const handleOpen = (pid) => {
         model.onOpenEnquiry({ pid, suitables, shared })
-        // window.open(`/crm/view-details/${pid}?a=${info.bz_id.substring(1)}`)
     }
 
     const selectedTag = useMemo(() => {

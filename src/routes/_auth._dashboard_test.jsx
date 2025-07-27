@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { Link, Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 
-export const Route = createFileRoute('/_auth/_dashboard')({
+export const Route = createFileRoute('/_auth/_dashboard_test')({
     component: dashboardComponent,
 })
 

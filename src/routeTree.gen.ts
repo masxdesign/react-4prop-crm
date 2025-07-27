@@ -15,6 +15,7 @@ import { Route as AuthImport } from './routes/_auth'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
+import { Route as AuthDashboardtestImport } from './routes/_auth._dashboard_test'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthComImport } from './routes/_auth._com'
 import { Route as ViewDetailsPidRouteImport } from './routes/view-details.$pid/route'
@@ -32,9 +33,9 @@ import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
 import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
-import { Route as AuthComUserRenameSearchReferenceRouteImport } from './routes/_auth._com/user/rename-search-reference/route'
-import { Route as AuthComUserEmailAgentsRouteImport } from './routes/_auth._com/user/email-agents/route'
-import { Route as AuthComUserSubRouteImport } from './routes/_auth._com/user/$sub/route'
+import { Route as AuthComUserRenameSearchReferenceRouteImport } from './routes/_auth._com.user/rename-search-reference/route'
+import { Route as AuthComUserEmailAgentsRouteImport } from './routes/_auth._com.user/email-agents/route'
+import { Route as AuthComUserSubRouteImport } from './routes/_auth._com.user/$sub/route'
 import { Route as AccessHashOwnerUidSharedIndexImport } from './routes/access.$hash.$ownerUid.shared.index'
 import { Route as AccessHashOwnerUidSharedTagidImport } from './routes/access.$hash.$ownerUid.shared.$tag_id'
 import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade._gradeWidget/$pid_.share'
@@ -64,6 +65,11 @@ const IndexRoute = IndexImport.update({
 
 const AuthGradeRoute = AuthGradeImport.update({
   path: '/grade',
+  getParentRoute: () => AuthRoute,
+} as any)
+
+const AuthDashboardtestRoute = AuthDashboardtestImport.update({
+  id: '/_dashboard_test',
   getParentRoute: () => AuthRoute,
 } as any)
 
@@ -176,7 +182,7 @@ const AuthComUserRenameSearchReferenceRouteRoute =
     path: '/rename-search-reference',
     getParentRoute: () => AuthComUserRoute,
   } as any).lazy(() =>
-    import('./routes/_auth._com/user/rename-search-reference/route.lazy').then(
+    import('./routes/_auth._com.user/rename-search-reference/route.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -186,7 +192,7 @@ const AuthComUserEmailAgentsRouteRoute =
     path: '/email-agents',
     getParentRoute: () => AuthComUserRoute,
   } as any).lazy(() =>
-    import('./routes/_auth._com/user/email-agents/route.lazy').then(
+    import('./routes/_auth._com.user/email-agents/route.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -195,7 +201,7 @@ const AuthComUserSubRouteRoute = AuthComUserSubRouteImport.update({
   path: '/$sub',
   getParentRoute: () => AuthComUserRoute,
 } as any).lazy(() =>
-  import('./routes/_auth._com/user/$sub/route.lazy').then((d) => d.Route),
+  import('./routes/_auth._com.user/$sub/route.lazy').then((d) => d.Route),
 )
 
 const AccessHashOwnerUidSharedIndexRoute =
@@ -282,6 +288,10 @@ declare module '@tanstack/react-router' {
     }
     '/_auth/_dashboard': {
       preLoaderRoute: typeof AuthDashboardImport
+      parentRoute: typeof AuthImport
+    }
+    '/_auth/_dashboard_test': {
+      preLoaderRoute: typeof AuthDashboardtestImport
       parentRoute: typeof AuthImport
     }
     '/_auth/grade': {

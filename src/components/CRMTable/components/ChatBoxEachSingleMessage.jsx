@@ -12,7 +12,7 @@ const LAST = "1"
 const NEXT_ONLY = "3"
 const NO_NEXT = "4"
 
-const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, created, lastMessage, mailshot }) => {
+const ChatBoxEachSingleMessage = React.memo(({ auth, resource_name = '', d, body, i2, created, lastMessage, mailshot }) => {
     switch (true) {
         case resource_name.includes(":c"): {
             return (
@@ -64,14 +64,20 @@ const ChatBoxEachSingleMessage = React.memo(({ resource_name = '', d, body, i2, 
                     type={lastMessage.type}
                     body={lastMessage.body}
                     from={lastMessage.from}
+                    authBzId={auth.user.neg_id}
+                    bz_hash={auth.user.bz_hash}
                 />
             )
         case resource_name.includes(":bz"): { // remove later
             return (
                 <ChatboxBizchatMessage
-                    chatId={item.i}
-                    created={item.created}
-                    body={item.body}
+                    chatId={lastMessage.chat_id}
+                    created={lastMessage.sent}
+                    type={lastMessage.type}
+                    body={lastMessage.body}
+                    from={lastMessage.from}
+                    authBzId={auth.user.neg_id}
+                    bz_hash={auth.user.bz_hash}
                 />
             )
         }

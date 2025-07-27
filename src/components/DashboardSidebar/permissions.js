@@ -1,0 +1,1 @@
+export const RESTRICTED_NEG_IDS = ['45500', '120620', '45074'] // Add all restricted NEG IDs here

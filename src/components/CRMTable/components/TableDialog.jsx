@@ -50,7 +50,6 @@ function TableDialog({ model, ...props }) {
 }
 
 function DialogTopNavigation({ model }) {
-    // const { data: info } = useSuspenseQuery(model.infoQueryOptions)
     const resultFromTable = useTableModel.use.getResultFromTable(model)
     const info = resultFromTable?.row.original
     const { authUserId } = resultFromTable?.table.options.meta ?? {}
@@ -126,6 +125,15 @@ function DialogTopNavigation({ model }) {
 
 function TableDialogContentRenderer ({ model }) {
     const { data } = useSuspenseQuery(model.infoQueryOptions)
+
+    useEffect(() => {
+
+        if (import.meta.env.DEV) {
+            console.log('Card (info):', data);
+        }
+
+    }, [data])
+
     return <TableDialogContent info={data} model={model} />
 }
 
@@ -303,8 +311,6 @@ function TableDialogContent({ info, model }) {
         tabValue
     } = model
 
-    const enableBizchat = model.getBzId(info)
-
     return tabValue?.id === "info" ? (
         <TwoColumnResizeable 
             autoSaveId={tabValue.id}
@@ -325,7 +331,7 @@ function TableDialogContent({ info, model }) {
                         deleteMutationOptions={deleteMutationOptions}
                         renderMessages={renderMessages}
                         enableDelete={false}
-                        enableBizchat={enableBizchat}
+                        enableBizchat
                     />
                 )
             }

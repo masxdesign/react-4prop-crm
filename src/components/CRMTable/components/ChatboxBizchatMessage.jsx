@@ -64,8 +64,8 @@ const ChatboxBizchatMessage = ({ info, type = 'M', body, chatId, authBzId, bz_ha
     const ref = useRef()
 
     const auth = useAuth()
-
-    const isSender = [auth.bzUserId, info.ownernid].includes(from)
+    
+    const isSender = [auth.bzUserId, info?.ownernid].includes(from)
 
     const { getUser, isLoading } = useFetchUsersFromMessages([{ from, dteamNid }])
 
@@ -164,14 +164,11 @@ function LoadBizchatMessagesLast5 ({ authBzId, chat_id, bz_hash, dteam, info }) 
         return reverse(data.map(({ id, body, from, recipients, sent, type, chat_id, dteamNid: dteamNidOfMessage }) => {
             const messageData = messageCombiner(type, body, from, chat_id)
 
-            const isSender = [auth.bzUserId, info.ownernid].includes(from)
+            const isSender = [auth.bzUserId, info?.ownernid].includes(from)
 
             const fromUser = getUser(from)
             const dteamNidUser = getUser(dteamNidOfMessage)
 
-            console.log(dteamNidUser);
-            
-            
             const handleClick = () => {
                 window.open(utilsConversationLink({ chat_id, bz_hash, dteam, hide_top_bar: 1, message: id }), "bizchat")
             }
