@@ -8,15 +8,9 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import bizchatClient from '@/services/bizchatClient';
+import { fetchAgentProperties } from '../api';
 import PropertyDetails from './PropertyDetails';
 import PropertySchedulesSummary from './PropertySchedulesSummary';
-
-// API functions
-const fetchAgentProperties = async (agentId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/agent/${agentId}`);
-  return response.data;
-};
 
 // Column helper
 const columnHelper = createColumnHelper();

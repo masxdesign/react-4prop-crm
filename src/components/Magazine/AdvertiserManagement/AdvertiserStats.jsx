@@ -1,12 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import bizchatClient from '@/services/bizchatClient';
-
-// API function
-const fetchAllAdvertisers = async () => {
-  const response = await bizchatClient.get('/api/crm/mag/advertisers');
-  return response.data;
-};
+import { fetchAllAdvertisers } from '../api';
 
 // Quick Stats Component - Updated for week-based system
 const AdvertiserStats = () => {

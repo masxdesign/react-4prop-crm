@@ -1,19 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import bizchatClient from '@/services/bizchatClient';
+import { fetchAdvertisersByPstids, createSchedule } from '../api';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleModal from './ScheduleModal';
-
-// API functions
-const fetchAdvertisersByPstids = async (pstids) => {
-  const response = await bizchatClient.get(`/api/crm/mag/advertisers_by_pstids?pstids=${pstids}`);
-  return response.data;
-};
-
-const createSchedule = async (agentId, scheduleData) => {
-  const response = await bizchatClient.post(`/api/crm/mag/agent/${agentId}/schedule`, scheduleData);
-  return response.data;
-};
 
 // Property Details Component - Updated for week-based system
 const PropertyDetails = ({ property, agentId }) => {
@@ -37,9 +26,29 @@ const PropertyDetails = ({ property, agentId }) => {
   // Schedule mutation
   const scheduleMutation = useMutation({
     mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['agent-properties', agentId]);
-      queryClient.invalidateQueries(['property-schedules', property.id]);
+    onSuccess: (newScheduleData) => {
+      // Update the property schedules cache with the new schedule
+      queryClient.setQueryData(['property-schedules', property.id], (oldData) => {
+        if (!oldData) return { data: [newScheduleData.data] };
+        return {
+          ...oldData,
+          data: [...oldData.data, newScheduleData.data]
+        };
+      });
+      
+      // Update the agent properties cache to reflect the new schedule
+      queryClient.setQueryData(['agent-properties', agentId], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map(prop => 
+            prop.id === property.id 
+              ? { ...prop, schedulesCount: (prop.schedulesCount || 0) + 1 }
+              : prop
+          )
+        };
+      });
+      
       setIsScheduleModalOpen(false);
     },
   });

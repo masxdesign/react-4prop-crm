@@ -1,13 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { isAfter, parseISO } from 'date-fns';
-import bizchatClient from '@/services/bizchatClient';
-
-// API function to fetch advertiser's scheduled properties
-const fetchAdvertiserProperties = async (advertiserId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/advertiser/${advertiserId}`);
-  return response.data;
-};
+import { fetchAdvertiserProperties } from '../api';
 
 // Summary Component for Dashboard - Updated for week-based system
 const ScheduleSummary = ({ advertiserId }) => {

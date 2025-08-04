@@ -1,14 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
-import bizchatClient from '@/services/bizchatClient';
+import { fetchPropertySchedules } from '../api';
 import ScheduleStatus from './ScheduleStatus';
-
-// API function
-const fetchPropertySchedules = async (propertyId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/property/${propertyId}/schedules`);
-  return response.data;
-};
 
 // Current Schedules Component - Updated for week-based system
 const CurrentSchedules = ({ propertyId }) => {
@@ -35,8 +29,12 @@ const CurrentSchedules = ({ propertyId }) => {
       return total + (schedule.fixed_week_rate * schedule.week_no);
     }
     // Legacy day-based calculation for old data
-    const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
-    return total + (schedule.fixed_day_rate * days);
+    if (schedule.end_date && schedule.start_date && 
+        typeof schedule.end_date === 'string' && typeof schedule.start_date === 'string') {
+      const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
+      return total + (schedule.fixed_day_rate * days);
+    }
+    return total;
   }, 0);
 
   if (schedulesLoading) {
@@ -80,10 +78,17 @@ const CurrentSchedules = ({ propertyId }) => {
             totalPrice = schedule.total_revenue || (schedule.fixed_week_rate * schedule.week_no);
           } else {
             // Legacy day-based data
-            const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
-            duration = `${days} days`;
-            rate = `£${schedule.fixed_day_rate}/day`;
-            totalPrice = schedule.fixed_day_rate * days;
+            if (schedule.end_date && schedule.start_date && 
+                typeof schedule.end_date === 'string' && typeof schedule.start_date === 'string') {
+              const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
+              duration = `${days} days`;
+              rate = `£${schedule.fixed_day_rate}/day`;
+              totalPrice = schedule.fixed_day_rate * days;
+            } else {
+              duration = 'N/A';
+              rate = 'N/A';
+              totalPrice = 0;
+            }
           }
           
           return (
@@ -100,7 +105,11 @@ const CurrentSchedules = ({ propertyId }) => {
                 <div>
                   <span className="text-gray-500">Period:</span>
                   <div className="font-medium">
-                    {format(parseISO(schedule.start_date), 'MMM dd, yyyy')} - {format(parseISO(schedule.end_date), 'MMM dd, yyyy')}
+                    {schedule.start_date && schedule.end_date && 
+                     typeof schedule.start_date === 'string' && typeof schedule.end_date === 'string'
+                      ? `${format(parseISO(schedule.start_date), 'MMM dd, yyyy')} - ${format(parseISO(schedule.end_date), 'MMM dd, yyyy')}`
+                      : 'N/A'
+                    }
                   </div>
                 </div>
                 <div>

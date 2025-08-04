@@ -1,41 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchMagazineListingData } from '../api';
 
 // Magazine Listing Page Component (for advertiser's public page) - Updated for week-based system
 const MagazineListingPage = ({ advertiserId }) => {
-  const [loading, setLoading] = useState(true);
-  const [properties, setProperties] = useState([]);
-  const [advertiserInfo, setAdvertiserInfo] = useState(null);
+  const {
+    data,
+    isLoading,
+    error
+  } = useQuery({
+    queryKey: ['magazine-listing', advertiserId],
+    queryFn: () => fetchMagazineListingData(advertiserId),
+    enabled: !!advertiserId,
+  });
 
-  useEffect(() => {
-    const fetchListingData = async () => {
-      try {
-        const response = await fetch(`/api/crm/mag/advertiser/${advertiserId}`);
-        const data = await response.json();
-        
-        if (data.success) {
-          setProperties(data.data);
-          if (data.data.length > 0) {
-            setAdvertiserInfo({
-              company: data.data[0].advertiser_company
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching listing data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const properties = data?.success ? data.data : [];
+  const advertiserInfo = properties.length > 0 ? {
+    company: properties[0].advertiser_company
+  } : null;
 
-    if (advertiserId) {
-      fetchListingData();
-    }
-  }, [advertiserId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-lg">Loading magazine...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-lg mb-4">Error loading magazine</div>
+          <p className="text-gray-600">Please try again later.</p>
+        </div>
       </div>
     );
   }

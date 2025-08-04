@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { isAfter, isBefore, parseISO } from 'date-fns';
-import bizchatClient from '@/services/bizchatClient';
+import { fetchAdvertiserProperties } from '../api';
 import ScheduleCard from './ScheduleCard';
 import ScheduleFilterButtons from './ScheduleFilterButtons';
-
-// API function to fetch advertiser's scheduled properties
-const fetchAdvertiserProperties = async (advertiserId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/advertiser/${advertiserId}`);
-  return response.data;
-};
 
 // Schedule Management Component for Advertisers - Updated for week-based system
 const ScheduleManagement = ({ advertiserId }) => {

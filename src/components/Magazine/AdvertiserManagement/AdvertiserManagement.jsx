@@ -1,29 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import bizchatClient from '@/services/bizchatClient';
+import { fetchAllAdvertisers, createAdvertiser, updateAdvertiser, deleteAdvertiser } from '../api';
 import AdvertiserForm from './AdvertiserForm';
 import AdvertiserCard from './AdvertiserCard';
-
-// API functions for advertiser management
-const fetchAllAdvertisers = async () => {
-  const response = await bizchatClient.get('/api/crm/mag/advertisers');
-  return response.data;
-};
-
-const createAdvertiser = async (advertiserData) => {
-  const response = await bizchatClient.post('/api/crm/mag/advertisers', advertiserData);
-  return response.data;
-};
-
-const updateAdvertiser = async ({ id, ...advertiserData }) => {
-  const response = await bizchatClient.put(`/api/crm/mag/advertisers/${id}`, advertiserData);
-  return response.data;
-};
-
-const deleteAdvertiser = async (id) => {
-  const response = await bizchatClient.delete(`/api/crm/mag/advertisers/${id}`);
-  return response.data;
-};
 
 // Main Advertiser Management Component - Updated for week-based system
 const AdvertiserManagement = () => {
