@@ -45,7 +45,7 @@ function dashboardComponent() {
                 </span>
               </div>
           </div>
-          <div className='rounded-tl-2xl rounded-bl-2xl bg-white shadow-lg min-h-0 px-4 overflow-hidden'>
+          <div className='relative rounded-tl-2xl rounded-bl-2xl bg-white shadow-lg min-h-0 px-4 overflow-hidden'>
             <Outlet />
           </div>
         </div>

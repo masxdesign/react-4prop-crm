@@ -29,8 +29,10 @@ import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard
 import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
 import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
 import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
+import { Route as AuthDashboardMagIndexImport } from './routes/_auth._dashboard.mag.index'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
+import { Route as AuthDashboardMagManageAdvertisersImport } from './routes/_auth._dashboard.mag.manage-advertisers'
 import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
 import { Route as AuthComUserRenameSearchReferenceRouteImport } from './routes/_auth._com.user/rename-search-reference/route'
@@ -40,6 +42,7 @@ import { Route as AccessHashOwnerUidSharedIndexImport } from './routes/access.$h
 import { Route as AccessHashOwnerUidSharedTagidImport } from './routes/access.$hash.$ownerUid.shared.$tag_id'
 import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade._gradeWidget/$pid_.share'
 import { Route as AuthGradeGradeWidgetPidCrmPromoImport } from './routes/_auth.grade._gradeWidget/$pid_.crm-promo'
+import { Route as AuthDashboardMagManageScheduleAdvertiserIdImport } from './routes/_auth._dashboard.mag.manage-schedule.$advertiserId'
 import { Route as AuthDashboardListImportidSharedImport } from './routes/_auth._dashboard/list_.$import_id.shared'
 import { Route as AuthDashboardListImportidSharedIndexImport } from './routes/_auth._dashboard/list_.$import_id.shared.index'
 import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade._gradeWidget/$pid_.share/confirm'
@@ -151,6 +154,11 @@ const AuthComAgentRouteRoute = AuthComAgentRouteImport.update({
   import('./routes/_auth._com/agent/route.lazy').then((d) => d.Route),
 )
 
+const AuthDashboardMagIndexRoute = AuthDashboardMagIndexImport.update({
+  path: '/mag/',
+  getParentRoute: () => AuthDashboardRoute,
+} as any)
+
 const AccessHashOwnerUidSharedRoute = AccessHashOwnerUidSharedImport.update({
   path: '/shared',
   getParentRoute: () => AccessHashOwnerUidRoute,
@@ -160,6 +168,12 @@ const AuthGradeGradeWidgetPidRoute = AuthGradeGradeWidgetPidImport.update({
   path: '/$pid',
   getParentRoute: () => AuthGradeGradeWidgetRoute,
 } as any)
+
+const AuthDashboardMagManageAdvertisersRoute =
+  AuthDashboardMagManageAdvertisersImport.update({
+    path: '/mag/manage-advertisers',
+    getParentRoute: () => AuthDashboardRoute,
+  } as any)
 
 const AuthDashboardListImportidRoute = AuthDashboardListImportidImport.update({
   path: '/list/$import_id',
@@ -226,6 +240,12 @@ const AuthGradeGradeWidgetPidCrmPromoRoute =
   AuthGradeGradeWidgetPidCrmPromoImport.update({
     path: '/$pid/crm-promo',
     getParentRoute: () => AuthGradeGradeWidgetRoute,
+  } as any)
+
+const AuthDashboardMagManageScheduleAdvertiserIdRoute =
+  AuthDashboardMagManageScheduleAdvertiserIdImport.update({
+    path: '/mag/manage-schedule/$advertiserId',
+    getParentRoute: () => AuthDashboardRoute,
   } as any)
 
 const AuthDashboardListImportidSharedRoute =
@@ -358,6 +378,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardListImportidImport
       parentRoute: typeof AuthDashboardImport
     }
+    '/_auth/_dashboard/mag/manage-advertisers': {
+      preLoaderRoute: typeof AuthDashboardMagManageAdvertisersImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/grade/_gradeWidget/$pid': {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidImport
       parentRoute: typeof AuthGradeGradeWidgetImport
@@ -366,9 +390,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccessHashOwnerUidSharedImport
       parentRoute: typeof AccessHashOwnerUidImport
     }
+    '/_auth/_dashboard/mag/': {
+      preLoaderRoute: typeof AuthDashboardMagIndexImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/_dashboard/list/$import_id/shared': {
       preLoaderRoute: typeof AuthDashboardListImportidSharedImport
       parentRoute: typeof AuthDashboardListImportidImport
+    }
+    '/_auth/_dashboard/mag/manage-schedule/$advertiserId': {
+      preLoaderRoute: typeof AuthDashboardMagManageScheduleAdvertiserIdImport
+      parentRoute: typeof AuthDashboardImport
     }
     '/_auth/grade/_gradeWidget/$pid/crm-promo': {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidCrmPromoImport
@@ -429,6 +461,9 @@ export const routeTree = rootRoute.addChildren([
           AuthDashboardListImportidSharedIndexRoute,
         ]),
       ]),
+      AuthDashboardMagManageAdvertisersRoute,
+      AuthDashboardMagIndexRoute,
+      AuthDashboardMagManageScheduleAdvertiserIdRoute,
     ]),
     AuthGradeRoute.addChildren([
       AuthGradeGradeWidgetRoute.addChildren([
