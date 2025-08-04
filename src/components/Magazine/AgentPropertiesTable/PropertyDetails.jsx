@@ -141,16 +141,15 @@ const PropertyDetails = ({ property, agentId }) => {
       </div>
 
       {/* Schedule Modal */}
-      {isScheduleModalOpen && (
-        <ScheduleModal
-          property={property}
-          advertisers={advertisers}
-          onClose={() => setIsScheduleModalOpen(false)}
-          onSubmit={(data) => scheduleMutation.mutate(data)}
-          isLoading={scheduleMutation.isPending}
-          error={scheduleMutation.error}
-        />
-      )}
+      <ScheduleModal
+        open={isScheduleModalOpen}
+        property={property}
+        advertisers={advertisers}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSubmit={(data) => scheduleMutation.mutate(data)}
+        isLoading={scheduleMutation.isPending}
+        error={scheduleMutation.error}
+      />
     </div>
   );
 };

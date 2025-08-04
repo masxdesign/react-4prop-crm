@@ -1,10 +1,18 @@
-import React from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
+import DatePicker from '../ui/DatePicker';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
-// Schedule Modal Component - Updated for week-based system
-const ScheduleModal = ({ property, advertisers, onClose, onSubmit, isLoading, error }) => {
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
+// Schedule Modal Component - Updated for week-based system with Shadcn Dialog
+const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoading, error }) => {
+  const { register, handleSubmit, formState: { errors }, watch, control } = useForm();
   
   const watchedAdvertiserId = watch('advertiser_id');
   const watchedStartDate = watch('start_date');
@@ -39,19 +47,13 @@ const ScheduleModal = ({ property, advertisers, onClose, onSubmit, isLoading, er
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Schedule Advertiser</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ✕
-          </button>
-        </div>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Schedule Advertiser</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+        <form id="schedule-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Property</label>
             <input
@@ -82,19 +84,28 @@ const ScheduleModal = ({ property, advertisers, onClose, onSubmit, isLoading, er
 
           <div>
             <label className="block text-sm font-medium mb-1">Start Date *</label>
-            <input
-              type="date"
-              {...register('start_date', { required: 'Start date is required' })}
-              min={format(new Date(), 'yyyy-MM-dd')}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <DatePicker
+              control={control}
+              name="start_date"
+              rules={{ required: 'Start date is required' }}
+              placeholder="Select start date"
+              minDate={format(new Date(), 'yyyy-MM-dd')}
+              portalled={false}
             />
-            {errors.start_date && (
-              <p className="text-red-500 text-sm mt-1">{errors.start_date.message}</p>
-            )}
           </div>
 
-          <div>
+
+          <div className='space-y-4'>
             <label className="block text-sm font-medium mb-1">Number of Weeks *</label>
+            <div className='flex justify-center flex-wrap gap-2'>
+              <Button>1 week</Button>
+              <Button>2 weeks</Button>
+              <Button>3 weeks</Button>
+              <Button>4 weeks</Button>
+              <Button>6 weeks</Button>
+              <Button>8 weeks</Button>
+              <Button>12 weeks</Button>
+            </div>
             <input
               type="number"
               min="1"
@@ -151,25 +162,27 @@ const ScheduleModal = ({ property, advertisers, onClose, onSubmit, isLoading, er
             </div>
           )}
 
-          <div className="flex gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !totalPrice}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-            >
-              {isLoading ? 'Scheduling...' : `Schedule for £${totalPrice.toFixed(2)}`}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            form="schedule-form"
+            disabled={isLoading || !totalPrice}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            {isLoading ? 'Scheduling...' : `Schedule for £${totalPrice.toFixed(2)}`}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
