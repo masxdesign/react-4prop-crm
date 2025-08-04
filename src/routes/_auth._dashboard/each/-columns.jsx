@@ -57,6 +57,7 @@ export const columns = [
         defaultValue={info.row.original.next_contact}
         table={info.table}
         tableDataQueryKey={info.table.options.meta.dataQueryKey}
+        portalled
       />
     ),
     meta: { label: 'Contact next date' }

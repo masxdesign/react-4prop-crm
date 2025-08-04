@@ -62,7 +62,7 @@ const CurrentSchedules = ({ propertyId }) => {
       <div className="flex justify-between items-center mb-3">
         <h5 className="font-medium text-gray-900">Current Schedules ({schedules.length})</h5>
         <div className="text-sm font-semibold text-green-600">
-          Total Revenue: £{totalRevenue.toFixed(2)}
+          Total spent: £{totalRevenue.toFixed(2)}
         </div>
       </div>
       

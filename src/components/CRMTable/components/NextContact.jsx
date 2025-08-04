@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { enGB } from "date-fns/locale";
 import { fromZonedTime } from 'date-fns-tz';
 
-const NextContact = ({ open, value, placeholder = "Pick a date", onClear, onSelect, onOpenChange }) => {
+const NextContact = ({ open, value, placeholder = "Pick a date", onClear, onSelect, onOpenChange, portalled }) => {
   const handleDateSelect = (selected) => {
     onSelect(fromZonedTime(selected).toISOString())
   }
@@ -42,10 +42,10 @@ const NextContact = ({ open, value, placeholder = "Pick a date", onClear, onSele
             )}
           </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0" align="start">
+      <PopoverContent className="w-auto p-0 z-[999]" align="start" portalled={portalled}>
         <Calendar
           mode="single"
-          locale={enGB}
+          // locale={enGB}
           selected={value}
           onSelect={handleDateSelect}
           disabled={(date) => date < subDays(new Date(), 1)}

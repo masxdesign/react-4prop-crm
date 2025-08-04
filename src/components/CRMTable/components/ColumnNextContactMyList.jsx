@@ -11,7 +11,8 @@ const ColumnNextContactMyList = ({
     defaultValue = null,
     tableDataQueryKey = null,
     onSuccess, 
-    message
+    message,
+    portalled
 }) => {
     const mutationOptions = useContactDateMyListMutationOptions({
         importId,
@@ -30,6 +31,7 @@ const ColumnNextContactMyList = ({
             message={message}
             placeholder={placeholder}
             mutationOptions={mutationOptions}
+            portalled={portalled}
         />
     )
 }

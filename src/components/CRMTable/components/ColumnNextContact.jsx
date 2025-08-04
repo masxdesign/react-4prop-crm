@@ -11,6 +11,7 @@ const ColumnNextContact = ({
     table = null,
     mutationOptions,
     message = "",
+    portalled
 }) => {
     const [open, setOpen] = useState(false)
 
@@ -55,6 +56,7 @@ const ColumnNextContact = ({
             onSelect={handleSelect}
             onClear={handleClear}
             onOpenChange={setOpen}
+            portalled={portalled}
         />
       </>
     )

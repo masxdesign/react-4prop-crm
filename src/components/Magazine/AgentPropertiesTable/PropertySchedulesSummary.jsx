@@ -61,7 +61,7 @@ const PropertySchedulesSummary = ({ propertyId }) => {
   }).length;
 
   return (
-    <div className="text-xs">
+    <div class="flex gap-2">
       <div className="font-medium">{schedules.length} total</div>
       <div className="text-green-600">{activeSchedules} active</div>
       <div className="text-green-600 font-semibold">£{totalRevenue.toFixed(0)}</div>

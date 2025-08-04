@@ -12,6 +12,7 @@ const ColumnNextContactEach = ({
     tableDataQueryKey = null,
     onSuccess, 
     message,
+    portalled
 }) => {
     const auth = useAuth()
     const mutationOptions = useContactDateEachMutationOptions({
@@ -32,6 +33,8 @@ const ColumnNextContactEach = ({
             message={message}
             placeholder={placeholder}
             mutationOptions={mutationOptions}
+            ColumnNextContact
+            portalled={portalled}
         />
     )
 }

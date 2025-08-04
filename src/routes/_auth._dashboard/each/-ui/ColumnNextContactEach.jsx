@@ -12,6 +12,7 @@ const ColumnNextContactEach = ({
     defaultValue = null,
     onSuccess, 
     message,
+    portalled
 }) => {
     const auth = useAuth()
     const mutationOptions = useContactDateMutationOptions({
@@ -32,6 +33,7 @@ const ColumnNextContactEach = ({
             message={message}
             placeholder={placeholder}
             mutationOptions={mutationOptions}
+            portalled={portalled}
         />
     )
 }

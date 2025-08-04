@@ -63,6 +63,7 @@ function TableDialogMetricsMyList({ info, model, className }) {
                                             defaultValue={info.next_contact}
                                             table={model.table}
                                             tableDataQueryKey={model.table.options.meta.dataQueryKey}
+                                            portalled={false}
                                         />
                                     ),
                                 }

@@ -47,6 +47,7 @@ function TableDialogMetricsEach({ info, model, className }) {
                                     <ColumnNextContactEach
                                         id={info.id}
                                         defaultValue={info.next_contact}
+                                        portalled={false}
                                     />
                                 ),
                             },
