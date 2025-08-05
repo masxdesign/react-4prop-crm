@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { pluralizeWeeks } from '../util/pluralize';
+
+// AutoFocusInput component for handling input focus when revealed
+const AutoFocusInput = ({ autoFocus = false, ...props }) => {
+  const inputRef = useRef(null);
+  
+  useEffect(() => {
+    if (autoFocus && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [autoFocus]);
+  
+  return <Input ref={inputRef} {...props} />;
+};
 
 const WeekPicker = ({
   // Form integration
@@ -41,6 +54,7 @@ const WeekPicker = ({
   // Internal state for mutual exclusivity
   const [selectedButton, setSelectedButton] = useState(null);
   const [inputValue, setInputValue] = useState('');
+  const [showInput, setShowInput] = useState(false);
   return (
     <div className={cn("space-y-4", className)} {...props}>
       {label && (
@@ -55,6 +69,7 @@ const WeekPicker = ({
           const handleButtonClick = (weekCount) => {
             setSelectedButton(weekCount);
             setInputValue('');
+            setShowInput(false)
             onChange(weekCount);
           };
           
@@ -106,21 +121,34 @@ const WeekPicker = ({
                     </Button>
                   );
                 })}
+                <Button
+                  type="button"
+                  variant={buttonVariant}
+                  size={buttonSize}
+                  onClick={() => setShowInput(!showInput)}
+                  className={buttonClassName}
+                  {...buttonProps}
+                >
+                  Other
+                </Button>
               </div>
               
               {/* Number Input */}
-              <Input
-                type="number"
-                value={inputValue}
-                onChange={handleInputChange}
-                onBlur={onBlur}
-                placeholder={placeholder}
-                className={cn(
-                  "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500",
-                  inputClassName
-                )}
-                {...inputProps}
-              />
+              {showInput && (    
+                <AutoFocusInput
+                  type="number"
+                  autoFocus={showInput}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onBlur={onBlur}
+                  placeholder={placeholder}
+                  className={cn(
+                    "w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    inputClassName
+                  )}
+                  {...inputProps}
+                />
+              )}
               
               {/* Error Message */}
               {error && (

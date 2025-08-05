@@ -1,7 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
-import DatePicker from '../ui/DatePicker';
+import InlineCalendar from '../ui/InlineCalendar';
 import WeekPicker from '../ui/WeekPicker';
+import AdvertiserPicker from '../ui/AdvertiserPicker';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import {
 
 // Schedule Modal Component - Updated for week-based system with Shadcn Dialog
 const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoading, error }) => {
-  const { register, handleSubmit, formState: { errors }, watch, control } = useForm();
+  const { handleSubmit, watch, control } = useForm();
   
   const watchedAdvertiserId = watch('advertiser_id');
   const watchedStartDate = watch('start_date');
@@ -64,35 +65,21 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Advertiser *</label>
-            <select
-              {...register('advertiser_id', { required: 'Please select an advertiser' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Select an advertiser...</option>
-              {advertisers.map((advertiser) => (
-                <option key={advertiser.id} value={advertiser.id}>
-                  {advertiser.company} - £{advertiser.week_rate}/week
-                </option>
-              ))}
-            </select>
-            {errors.advertiser_id && (
-              <p className="text-red-500 text-sm mt-1">{errors.advertiser_id.message}</p>
-            )}
-          </div>
+          <AdvertiserPicker
+            name="advertiser_id"
+            control={control}
+            rules={{ required: 'Please select an advertiser' }}
+            advertisers={advertisers}
+            containerHeight="240px"
+          />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Start Date *</label>
-            <DatePicker
-              control={control}
-              name="start_date"
-              rules={{ required: 'Start date is required' }}
-              placeholder="Select start date"
-              minDate={format(new Date(), 'yyyy-MM-dd')}
-              portalled={false}
-            />
-          </div>
+          <InlineCalendar
+            control={control}
+            name="start_date"
+            rules={{ required: 'Start date is required' }}
+            label="Start Date"
+            minDate={format(new Date(), 'yyyy-MM-dd')}
+          />
 
 
           <WeekPicker
