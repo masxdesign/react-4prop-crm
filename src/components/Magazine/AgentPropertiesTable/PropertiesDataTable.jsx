@@ -8,16 +8,15 @@ const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }
   const expanded = expandedRows.has(row.id)
   useEffect(() => {
     if (expanded && topBarRef.current) {
-      setTimeout(() => {
-        topBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 200)
+        topBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [expanded]);
   return (
     <React.Fragment>
-      <tr ref={topBarRef} className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.id)}>
+      <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.id)}>
         {row.getVisibleCells().map((cell) => (
-          <td key={cell.id} className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+          <td key={cell.id} className="relative px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+            <div ref={topBarRef} className='absolute -top-10'></div>
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
         ))}
@@ -53,7 +52,7 @@ const PropertiesDataTable = ({
     <>
       <div ref={containerRef} className={cn("overflow-x-auto", className)}>
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="sticky top-0 shadow-sm bg-gray-50">
+          <thead className="sticky top-0 z-40 shadow-sm bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
@@ -82,6 +81,7 @@ const PropertiesDataTable = ({
             {table.getRowModel().rows.map((row) => {
               return (
                 <PropertyRow 
+                  key={row.id}
                   expandedRows={expandedRows} 
                   toggleRowExpansion={toggleRowExpansion}
                   row={row} 

@@ -9,9 +9,9 @@ import {
 } from '@tanstack/react-table';
 import { fetchAgentProperties } from '../api';
 import PropertySchedulesSummary from './PropertySchedulesSummary';
-import PropertiesTableHeader from './PropertiesTableHeader';
 import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
+import { Button } from '@/components/ui/button';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -45,10 +45,9 @@ const AgentPropertiesTable = ({ agentId }) => {
     setExpandedRows(newExpanded);
   };
 
-  // Action handlers
-  const handleViewProperty = (propertyId) => {
-    console.log('View property:', propertyId);
-    // Implement view property logic
+  const handleRefresh = () => {
+    refetch();
+    setExpandedRows(new Set);
   };
 
   // Table columns
@@ -140,11 +139,18 @@ const AgentPropertiesTable = ({ agentId }) => {
               <span className='text-xl font-bold'>
                   My properties
               </span>
-              <PropertiesTableHeader 
-                departmentName={data?.departmentName}
-                propertyCount={data?.data?.length}
-                onRefresh={() => refetch()}
-              />
+              <div className="flex justify-between items-center">
+                <p className="text-gray-600">
+                  Department: {data?.departmentName || 'N/A'} | 
+                  Total Properties: {data?.data?.length || 0}
+                </p>
+                <Button 
+                  size="sm"
+                  onClick={handleRefresh}
+                >
+                  Refresh
+                </Button>
+              </div>
             </div>
               <PropertiesTableFilters table={table} />
         </div>
