@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
 import DatePicker from '../ui/DatePicker';
+import WeekPicker from '../ui/WeekPicker';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +9,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 
 // Schedule Modal Component - Updated for week-based system with Shadcn Dialog
 const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoading, error }) => {
@@ -95,33 +95,16 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
           </div>
 
 
-          <div className='space-y-4'>
-            <label className="block text-sm font-medium mb-1">Number of Weeks *</label>
-            <div className='flex justify-center flex-wrap gap-2'>
-              <Button>1 week</Button>
-              <Button>2 weeks</Button>
-              <Button>3 weeks</Button>
-              <Button>4 weeks</Button>
-              <Button>6 weeks</Button>
-              <Button>8 weeks</Button>
-              <Button>12 weeks</Button>
-            </div>
-            <input
-              type="number"
-              min="1"
-              max="52"
-              {...register('week_no', { 
-                required: 'Number of weeks is required',
-                min: { value: 1, message: 'Must be at least 1 week' },
-                max: { value: 52, message: 'Cannot exceed 52 weeks' }
-              })}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter number of weeks"
-            />
-            {errors.week_no && (
-              <p className="text-red-500 text-sm mt-1">{errors.week_no.message}</p>
-            )}
-          </div>
+          <WeekPicker
+            name="week_no"
+            control={control}
+            rules={{
+              required: 'Number of weeks is required',
+              min: { value: 1, message: 'Must be at least 1 week' },
+              max: { value: 52, message: 'Cannot exceed 52 weeks' }
+            }}
+            presetWeeks={[1, 2, 3, 4, 6, 8, 12]}
+          />
 
           {/* Price Calculation Preview */}
           {selectedAdvertiser && weeks > 0 && watchedStartDate && (
