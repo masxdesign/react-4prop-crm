@@ -55,6 +55,7 @@ const WeekPicker = ({
   const [selectedButton, setSelectedButton] = useState(null);
   const [inputValue, setInputValue] = useState('');
   const [showInput, setShowInput] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   return (
     <div className={cn("space-y-4", className)} {...props}>
       {label && (
@@ -66,6 +67,37 @@ const WeekPicker = ({
         control={control}
         rules={rules}
         render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => {
+          // Initialize state based on current form value
+          useEffect(() => {
+            // Skip auto-selection if user is actively typing
+            if (isTyping) return;
+            
+            if (value && presetWeeks.includes(parseInt(value))) {
+              // Form value matches a preset button
+              setSelectedButton(parseInt(value));
+              setInputValue('');
+              setShowInput(false);
+            } else if (value && !presetWeeks.includes(parseInt(value))) {
+              // Form value is custom (not in presets)
+              setSelectedButton(null);
+              setInputValue(value);
+              setShowInput(true);
+            } else {
+              // No form value
+              setSelectedButton(null);
+              setInputValue('');
+              setShowInput(false);
+            }
+          }, [value, presetWeeks, isTyping]);
+
+          // Clear typing flag after user stops typing
+          useEffect(() => {
+            if (isTyping) {
+              const timer = setTimeout(() => setIsTyping(false), 1000);
+              return () => clearTimeout(timer);
+            }
+          }, [isTyping]);
+
           const handleButtonClick = (weekCount) => {
             setSelectedButton(weekCount);
             setInputValue('');
@@ -75,6 +107,7 @@ const WeekPicker = ({
           
           const handleInputChange = (e) => {
             const newInputValue = e.target.value;
+            setIsTyping(true);
             setSelectedButton(null);
             setInputValue(newInputValue);
             onChange(newInputValue);
