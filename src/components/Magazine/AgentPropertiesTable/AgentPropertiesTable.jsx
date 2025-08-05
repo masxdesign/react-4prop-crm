@@ -93,27 +93,7 @@ const AgentPropertiesTable = ({ agentId }) => {
       id: 'schedules',
       header: 'Schedules',
       cell: (info) => <PropertySchedulesSummary propertyId={info.row.original.id} />,
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: (info) => (
-        <div className="flex gap-2">
-          <button 
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-            onClick={() => handleViewProperty(info.row.original.id)}
-          >
-            View
-          </button>
-          <button 
-            className="px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={() => toggleRowExpansion(info.row.id)}
-          >
-            {expandedRows.has(info.row.id) ? 'Hide' : 'Details'}
-          </button>
-        </div>
-      ),
-    }),
+    })
   ];
 
   // Table instance
@@ -154,7 +134,7 @@ const AgentPropertiesTable = ({ agentId }) => {
   }
 
   return (
-    <div className='grid grid-rows-[3rem_1fr] min-h-0 py-4'>
+    <div className='grid grid-rows-[5rem_1fr] min-h-0 py-4'>
         <div className='flex items-end py-4 gap-0 text-white px-3'>
             <div className='flex-1'>  
               <span className='text-xl font-bold'>

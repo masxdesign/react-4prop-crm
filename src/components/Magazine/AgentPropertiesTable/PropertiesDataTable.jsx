@@ -1,7 +1,42 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { flexRender } from '@tanstack/react-table';
 import PropertyDetails from './PropertyDetails';
 import { cn } from '@/lib/utils';
+
+const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }) => {
+  const topBarRef = useRef()
+  const expanded = expandedRows.has(row.id)
+  useEffect(() => {
+    if (expanded && topBarRef.current) {
+      setTimeout(() => {
+        topBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200)
+    }
+  }, [expanded]);
+  return (
+    <React.Fragment>
+      <tr ref={topBarRef} className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.id)}>
+        {row.getVisibleCells().map((cell) => (
+          <td key={cell.id} className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </td>
+        ))}
+      </tr>
+      {expanded && (
+        <tr>
+          <td colSpan={columns.length} className="p-0">
+            <div className="max-h-[800px] overflow-y-auto">
+              <PropertyDetails 
+                property={row.original} 
+                agentId={agentId}
+              />
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  )
+}
 
 const PropertiesDataTable = ({ 
   table, 
@@ -12,9 +47,11 @@ const PropertiesDataTable = ({
   isEmpty,
   className
 }) => {
+  const containerRef = useRef()
+
   return (
     <>
-      <div className={cn("overflow-x-auto", className)}>
+      <div ref={containerRef} className={cn("overflow-x-auto", className)}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="sticky top-0 shadow-sm bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -41,30 +78,18 @@ const PropertiesDataTable = ({
               </tr>
             ))}
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <React.Fragment key={row.id}>
-                <tr className="hover:bg-gray-50 cursor-pointer">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-1 whitespace-nowrap text-xs text-gray-900">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-                {expandedRows.has(row.id) && (
-                  <tr>
-                    <td colSpan={columns.length} className="p-0">
-                      <div className="max-h-[800px] overflow-y-auto">
-                        <PropertyDetails 
-                          property={row.original} 
-                          agentId={agentId}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
+          <tbody className="bg-white divide-y divide-slate-200">
+            {table.getRowModel().rows.map((row) => {
+              return (
+                <PropertyRow 
+                  expandedRows={expandedRows} 
+                  toggleRowExpansion={toggleRowExpansion}
+                  row={row} 
+                  columns={columns} 
+                  agentId={agentId}
+                />
+              )
+            })}
           </tbody>
         </table>
       </div>

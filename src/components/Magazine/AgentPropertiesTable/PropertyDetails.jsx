@@ -63,7 +63,7 @@ const PropertyDetails = ({ property, agentId }) => {
   const advertisers = advertisersData?.data || [];
 
   return (
-    <div className="bg-gray-50 p-6 border-t">
+    <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Property Information */}
         <div>
@@ -120,7 +120,7 @@ const PropertyDetails = ({ property, agentId }) => {
         )}
         
         {advertisers.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {advertisers.map((advertiser) => (
               <div key={advertiser.id} className="bg-white p-4 rounded border border-gray-200 hover:border-blue-300 transition-colors">
                 <div className="flex justify-between items-start mb-2">
