@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule } from '../api';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleModal from './ScheduleModal';
+import ScheduleWizardModal from './ScheduleWizardModal';
 
 // Property Details Component - Updated for week-based system
 const PropertyDetails = ({ property, agentId }) => {
@@ -141,7 +142,7 @@ const PropertyDetails = ({ property, agentId }) => {
       </div>
 
       {/* Schedule Modal */}
-      <ScheduleModal
+      <ScheduleWizardModal
         open={isScheduleModalOpen}
         property={property}
         advertisers={advertisers}
