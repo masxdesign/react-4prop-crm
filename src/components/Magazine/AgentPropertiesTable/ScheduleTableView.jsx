@@ -99,9 +99,9 @@ const ScheduleTableView = ({ schedules }) => {
   });
 
   return (
-    <div className="max-h-64 overflow-auto border rounded-md">
+    <div className="max-h-80 overflow-auto border rounded-md">
       <table className="w-full">
-        <thead className="bg-gray-50 sticky top-0">
+        <thead className="bg-gray-50 sticky top-0 shadow-sm">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
@@ -126,7 +126,7 @@ const ScheduleTableView = ({ schedules }) => {
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-2 text-sm">
+                <td key={cell.id} className="px-2 py-2 text-xs">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

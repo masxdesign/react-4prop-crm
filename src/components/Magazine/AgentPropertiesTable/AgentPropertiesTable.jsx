@@ -5,12 +5,13 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
 import { fetchAgentProperties } from '../api';
-import PropertyDetails from './PropertyDetails';
 import PropertySchedulesSummary from './PropertySchedulesSummary';
+import PropertiesTableHeader from './PropertiesTableHeader';
+import PropertiesTableFilters from './PropertiesTableFilters';
+import PropertiesDataTable from './PropertiesDataTable';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -153,103 +154,29 @@ const AgentPropertiesTable = ({ agentId }) => {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <p className="text-gray-600">
-          Department: {data?.departmentName || 'N/A'} | 
-          Total Properties: {data?.data?.length || 0}
-        </p>
-        <button 
-          onClick={() => refetch()}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Refresh
-        </button>
-      </div>
-
-      {/* Filter Input */}
-      <div className="flex gap-4">
-        <input
-          placeholder="Filter by Property ID..."
-          value={(table.getColumn('id')?.getFilterValue()) ?? ''}
-          onChange={(event) =>
-            table.getColumn('id')?.setFilterValue(event.target.value)
-          }
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <input
-          placeholder="Filter by Department..."
-          value={(table.getColumn('departmentName')?.getFilterValue()) ?? ''}
-          onChange={(event) =>
-            table.getColumn('departmentName')?.setFilterValue(event.target.value)
-          }
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <div className="flex items-center gap-2">
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(header.column.columnDef.header, header.getContext())}
-                      <span>
-                        {{
-                          asc: '↑',
-                          desc: '↓',
-                        }[header.column.getIsSorted()] ?? null}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <React.Fragment key={row.id}>
-                <tr className="hover:bg-gray-50 cursor-pointer">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-3 py-1 whitespace-nowrap text-xs text-gray-900">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-                {expandedRows.has(row.id) && (
-                  <tr>
-                    <td colSpan={columns.length} className="p-0">
-                      <div className="max-h-[500px] overflow-y-auto">
-                        <PropertyDetails 
-                          property={row.original} 
-                          agentId={agentId}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Empty state */}
-      {data?.data?.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No properties found for your department.</p>
+    <div className='grid grid-rows-[3rem_1fr] min-h-0 py-4'>
+        <div className='flex items-end py-4 gap-0 text-white px-3'>
+            <div className='flex-1'>  
+              <span className='text-xl font-bold'>
+                  My properties
+              </span>
+              <PropertiesTableHeader 
+                departmentName={data?.departmentName}
+                propertyCount={data?.data?.length}
+                onRefresh={() => refetch()}
+              />
+            </div>
+              <PropertiesTableFilters table={table} />
         </div>
-      )}
+        <PropertiesDataTable 
+          table={table}
+          columns={columns}
+          expandedRows={expandedRows}
+          toggleRowExpansion={toggleRowExpansion}
+          agentId={agentId}
+          isEmpty={data?.data?.length === 0}
+          className="bg-gray-100 rounded-lg"
+        />
     </div>
   );
 };
