@@ -4,11 +4,11 @@ import PropertyDetails from './PropertyDetails';
 import { cn } from '@/lib/utils';
 
 const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }) => {
-  const topBarRef = useRef()
+  const scrollAnchorRef = useRef()
   const expanded = expandedRows.has(row.id)
   useEffect(() => {
-    if (expanded && topBarRef.current) {
-        topBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    if (expanded && scrollAnchorRef.current) {
+        scrollAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
   }, [expanded]);
   return (
@@ -16,14 +16,14 @@ const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }
       <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.id)}>
         {row.getVisibleCells().map((cell) => (
           <td key={cell.id} className="relative px-3 py-2 whitespace-nowrap text-xs text-gray-900">
-            <div ref={topBarRef} className='absolute -top-10'></div>
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
           </td>
         ))}
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={columns.length} className="p-0">
+          <td colSpan={columns.length} className="relative p-0">
+            <div ref={scrollAnchorRef} className='absolute -top-20'></div>
             <div className="max-h-[800px] overflow-y-auto">
               <PropertyDetails 
                 property={row.original} 

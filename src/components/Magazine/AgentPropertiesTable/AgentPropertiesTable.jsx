@@ -140,7 +140,7 @@ const AgentPropertiesTable = ({ agentId }) => {
                   My properties
               </span>
               <div className="flex justify-between items-center">
-                <p className="text-gray-600">
+                <p className="text-white mix-blend-overlay">
                   Department: {data?.departmentName || 'N/A'} | 
                   Total Properties: {data?.data?.length || 0}
                 </p>
