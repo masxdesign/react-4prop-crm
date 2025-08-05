@@ -1,5 +1,5 @@
-import React from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import React, { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -38,6 +38,9 @@ const WeekPicker = ({
   className,
   ...props
 }) => {
+  // Internal state for mutual exclusivity
+  const [selectedButton, setSelectedButton] = useState(null);
+  const [inputValue, setInputValue] = useState('');
   return (
     <div className={cn("space-y-4", className)} {...props}>
       {label && (
@@ -49,19 +52,21 @@ const WeekPicker = ({
         control={control}
         rules={rules}
         render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => {
-          const currentValue = parseInt(value) || null;
-          
           const handleButtonClick = (weekCount) => {
+            setSelectedButton(weekCount);
+            setInputValue('');
             onChange(weekCount);
           };
           
           const handleInputChange = (e) => {
-            const inputValue = e.target.value;
-            onChange(inputValue);
+            const newInputValue = e.target.value;
+            setSelectedButton(null);
+            setInputValue(newInputValue);
+            onChange(newInputValue);
           };
           
           const isButtonSelected = (weekCount) => {
-            return value === weekCount;
+            return selectedButton === weekCount;
           };
           
           return (
@@ -106,7 +111,7 @@ const WeekPicker = ({
               {/* Number Input */}
               <Input
                 type="number"
-                value={value || ''}
+                value={inputValue}
                 onChange={handleInputChange}
                 onBlur={onBlur}
                 placeholder={placeholder}
