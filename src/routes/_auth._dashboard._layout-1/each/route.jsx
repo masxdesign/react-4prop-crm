@@ -7,7 +7,7 @@ import { getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendM
 import { UserCard } from '@/components/CRMTable/components'
 import ChatBoxEachSingleMessage from '@/components/CRMTable/components/ChatBoxEachSingleMessage'
 
-export const Route = createFileRoute('/_auth/_dashboard/each')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/each')({
   pendingComponent: PendingComponent,
   beforeLoad: async ({ context: { auth } }) => {
     const { columns, version } = await import('./-columns')

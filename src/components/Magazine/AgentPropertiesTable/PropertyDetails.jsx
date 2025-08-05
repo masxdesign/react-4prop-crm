@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAdvertisersByPstids, createSchedule } from '../api';
+import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleModal from './ScheduleModal';
 import ScheduleWizardModal from './ScheduleWizardModal';
@@ -28,14 +28,20 @@ const PropertyDetails = ({ property, agentId }) => {
   const scheduleMutation = useMutation({
     mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
     onSuccess: (newScheduleData) => {
-      // Update the property schedules cache with the new schedule
+      // Normalize the schedule data before adding to cache
+      const normalizedSchedule = normalizeScheduleData(newScheduleData, advertisers);
+      
+      // Update the property schedules cache with the normalized schedule
       queryClient.setQueryData(['property-schedules', property.id], (oldData) => {
-        if (!oldData) return { data: [newScheduleData.data] };
+        if (!oldData) return { data: [normalizedSchedule] };
         return {
           ...oldData,
-          data: [...oldData.data, newScheduleData.data]
+          data: [...oldData.data, normalizedSchedule]
         };
       });
+      
+      // Also invalidate the query to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.id] });
       
       // Update the agent properties cache to reflect the new schedule
       queryClient.setQueryData(['agent-properties', agentId], (oldData) => {

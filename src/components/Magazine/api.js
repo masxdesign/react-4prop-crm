@@ -55,3 +55,27 @@ export const fetchMagazineListingData = async (advertiserId) => {
   const response = await fetch(`/api/crm/mag/advertiser/${advertiserId}`);
   return response.json();
 };
+
+// Data normalization utilities
+export const normalizeScheduleData = (scheduleData, advertisers = []) => {
+  // Handle the case where scheduleData might be nested in a response object
+  const schedule = scheduleData.data || scheduleData;
+  
+  // Find the advertiser company name
+  const advertiser = advertisers.find(adv => adv.id === parseInt(schedule.advertiser_id));
+  const advertiser_company = advertiser?.company || `Advertiser ${schedule.advertiser_id}`;
+  
+  // Normalize end_date - handle both array and string formats
+  let end_date = schedule.end_date;
+  if (Array.isArray(end_date) && end_date.length > 0) {
+    // Take the first element if it's an array
+    end_date = end_date[0];
+  }
+  
+  // Return normalized schedule data
+  return {
+    ...schedule,
+    advertiser_company,
+    end_date
+  };
+};

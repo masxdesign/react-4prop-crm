@@ -7,7 +7,7 @@ import { createFileRoute, Link, Outlet, useLoaderData, useRouteContext, useRoute
 import { cx } from 'class-variance-authority'
 import { ArrowLeftCircleIcon } from 'lucide-react'
 
-export const Route = createFileRoute('/_auth/_dashboard/list/$import_id')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_id')({
   component: ListImportIdComponent,
   pendingComponent: PendingComponent,
   loader: ({ context }) => queryClient.ensureQueryData(context.resolveContactDetails),

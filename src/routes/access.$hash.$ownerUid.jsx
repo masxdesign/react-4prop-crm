@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useRouteContext } from '@tanstack/react-router
 import { crmContactByHash, crmOwnerUidInfo } from '@/services/bizchat'
 import queryClient from '@/queryClient'
 import PendingComponent from '@/components/PendingComponent'
-import { ContactUserCard } from '@/routes/_auth._dashboard/list_.$import_id.shared'
+import { ContactUserCard } from '@/routes/_auth._dashboard._layout-1/list_.$import_id.shared'
 import { Suspense } from 'react'
 import { Loader2 } from 'lucide-react'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'

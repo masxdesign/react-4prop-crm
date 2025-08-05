@@ -6,7 +6,7 @@ import PendingComponent from '@/components/PendingComponent';
 import { Mailbox, Share2Icon, User2 } from 'lucide-react';
 import { EnvelopeClosedIcon } from '@radix-ui/react-icons';
 
-export const Route = createLazyFileRoute('/_auth/_dashboard/list')({
+export const Route = createLazyFileRoute('/_auth/_dashboard/_layout-1/list')({
     component: ListComponent,
     pendingComponent: PendingComponent,
 })

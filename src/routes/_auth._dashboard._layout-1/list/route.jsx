@@ -5,7 +5,7 @@ import { crmAddNote, crmFacetList, crmFetchNotes, crmList, crmListById, crmListB
 import { UserCard } from '@/components/CRMTable/components'
 import ChatBoxMyListSingleMessage from '@/components/CRMTable/components/ChatBoxMyListSingleMessage'
 
-export const Route = createFileRoute('/_auth/_dashboard/list')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list')({
   pendingComponent: PendingComponent,
   beforeLoad: async ({ context: { auth } }) => {
     const { columns, version } = await import('./-columns')

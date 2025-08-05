@@ -9,13 +9,13 @@ import { Suspense } from 'react'
 import { FilterIcon, Loader2, TagIcon, User } from 'lucide-react'
 import { cx } from 'class-variance-authority'
 import { UserCard } from '@/components/CRMTable/components'
-import { Route as AuthDashboardListRouteImport } from '@/routes/_auth._dashboard/list/route'
+import { Route as AuthDashboardListRouteImport } from '@/routes/_auth._dashboard._layout-1/list/route'
 import { find } from 'lodash'
-import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth._dashboard/list_.$import_id'
+import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth._dashboard._layout-1/list_.$import_id'
 import { BASEPATH, WINDOWN_NAMES } from '@/constants'
 import { sharedTagListQueryOptions } from '@/features/tags/queryOptions'
 
-export const Route = createFileRoute('/_auth/_dashboard/list/$import_id/shared')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_id/shared')({
   component: ShareListComponent,
   pendingComponent: PendingComponent,
   beforeLoad () {

@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useLoaderData } from '@tanstack/react-router'
-import { SharedListPage } from '@/routes/_auth._dashboard/list_.$import_id.shared'
+import { SharedListPage } from '@/routes/_auth._dashboard._layout-1/list_.$import_id.shared'
 import PendingComponent from '@/components/PendingComponent'
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query'
 import { Suspense } from 'react'

@@ -24,17 +24,17 @@ import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerU
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
 import { Route as AuthGradeSharingSetupEmailImport } from './routes/_auth.grade-sharing_.setup-email'
 import { Route as AuthGradeSharingSelectClientImport } from './routes/_auth.grade-sharing.select-client'
+import { Route as AuthDashboardLayout1Import } from './routes/_auth._dashboard._layout-1'
 import { Route as AuthComUserImport } from './routes/_auth._com/user'
-import { Route as AuthDashboardListRouteImport } from './routes/_auth._dashboard/list/route'
-import { Route as AuthDashboardImportRouteImport } from './routes/_auth._dashboard/import/route'
-import { Route as AuthDashboardEachRouteImport } from './routes/_auth._dashboard/each/route'
 import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
 import { Route as AuthDashboardMagIndexImport } from './routes/_auth._dashboard.mag.index'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
 import { Route as AuthDashboardMagManageAdvertisersImport } from './routes/_auth._dashboard.mag.manage-advertisers'
-import { Route as AuthDashboardListImportidImport } from './routes/_auth._dashboard/list_.$import_id'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
+import { Route as AuthDashboardLayout1ListRouteImport } from './routes/_auth._dashboard._layout-1/list/route'
+import { Route as AuthDashboardLayout1ImportRouteImport } from './routes/_auth._dashboard._layout-1/import/route'
+import { Route as AuthDashboardLayout1EachRouteImport } from './routes/_auth._dashboard._layout-1/each/route'
 import { Route as AuthComUserRenameSearchReferenceRouteImport } from './routes/_auth._com.user/rename-search-reference/route'
 import { Route as AuthComUserEmailAgentsRouteImport } from './routes/_auth._com.user/email-agents/route'
 import { Route as AuthComUserSubRouteImport } from './routes/_auth._com.user/$sub/route'
@@ -43,11 +43,12 @@ import { Route as AccessHashOwnerUidSharedTagidImport } from './routes/access.$h
 import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade._gradeWidget/$pid_.share'
 import { Route as AuthGradeGradeWidgetPidCrmPromoImport } from './routes/_auth.grade._gradeWidget/$pid_.crm-promo'
 import { Route as AuthDashboardMagManageScheduleAdvertiserIdImport } from './routes/_auth._dashboard.mag.manage-schedule.$advertiserId'
-import { Route as AuthDashboardListImportidSharedImport } from './routes/_auth._dashboard/list_.$import_id.shared'
-import { Route as AuthDashboardListImportidSharedIndexImport } from './routes/_auth._dashboard/list_.$import_id.shared.index'
+import { Route as AuthDashboardLayout1ListImportidImport } from './routes/_auth._dashboard._layout-1/list_.$import_id'
 import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade._gradeWidget/$pid_.share/confirm'
-import { Route as AuthDashboardListImportidSharedTagidImport } from './routes/_auth._dashboard/list_.$import_id.shared.$tag_id'
+import { Route as AuthDashboardLayout1ListImportidSharedImport } from './routes/_auth._dashboard._layout-1/list_.$import_id.shared'
 import { Route as AuthGradeGradeWidgetPidShareIndexRouteImport } from './routes/_auth.grade._gradeWidget/$pid_.share/index/route'
+import { Route as AuthDashboardLayout1ListImportidSharedIndexImport } from './routes/_auth._dashboard._layout-1/list_.$import_id.shared.index'
+import { Route as AuthDashboardLayout1ListImportidSharedTagidImport } from './routes/_auth._dashboard._layout-1/list_.$import_id.shared.$tag_id'
 
 // Create/Update Routes
 
@@ -121,31 +122,15 @@ const AuthGradeSharingSelectClientRoute =
     getParentRoute: () => AuthRoute,
   } as any)
 
+const AuthDashboardLayout1Route = AuthDashboardLayout1Import.update({
+  id: '/_layout-1',
+  getParentRoute: () => AuthDashboardRoute,
+} as any)
+
 const AuthComUserRoute = AuthComUserImport.update({
   path: '/user',
   getParentRoute: () => AuthComRoute,
 } as any)
-
-const AuthDashboardListRouteRoute = AuthDashboardListRouteImport.update({
-  path: '/list',
-  getParentRoute: () => AuthDashboardRoute,
-} as any).lazy(() =>
-  import('./routes/_auth._dashboard/list/route.lazy').then((d) => d.Route),
-)
-
-const AuthDashboardImportRouteRoute = AuthDashboardImportRouteImport.update({
-  path: '/import',
-  getParentRoute: () => AuthDashboardRoute,
-} as any).lazy(() =>
-  import('./routes/_auth._dashboard/import/route.lazy').then((d) => d.Route),
-)
-
-const AuthDashboardEachRouteRoute = AuthDashboardEachRouteImport.update({
-  path: '/each',
-  getParentRoute: () => AuthDashboardRoute,
-} as any).lazy(() =>
-  import('./routes/_auth._dashboard/each/route.lazy').then((d) => d.Route),
-)
 
 const AuthComAgentRouteRoute = AuthComAgentRouteImport.update({
   path: '/agent',
@@ -175,11 +160,6 @@ const AuthDashboardMagManageAdvertisersRoute =
     getParentRoute: () => AuthDashboardRoute,
   } as any)
 
-const AuthDashboardListImportidRoute = AuthDashboardListImportidImport.update({
-  path: '/list/$import_id',
-  getParentRoute: () => AuthDashboardRoute,
-} as any)
-
 const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   {
     path: '/grade/share/success',
@@ -190,6 +170,36 @@ const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
     (d) => d.Route,
   ),
 )
+
+const AuthDashboardLayout1ListRouteRoute =
+  AuthDashboardLayout1ListRouteImport.update({
+    path: '/list',
+    getParentRoute: () => AuthDashboardLayout1Route,
+  } as any).lazy(() =>
+    import('./routes/_auth._dashboard._layout-1/list/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthDashboardLayout1ImportRouteRoute =
+  AuthDashboardLayout1ImportRouteImport.update({
+    path: '/import',
+    getParentRoute: () => AuthDashboardLayout1Route,
+  } as any).lazy(() =>
+    import('./routes/_auth._dashboard._layout-1/import/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const AuthDashboardLayout1EachRouteRoute =
+  AuthDashboardLayout1EachRouteImport.update({
+    path: '/each',
+    getParentRoute: () => AuthDashboardLayout1Route,
+  } as any).lazy(() =>
+    import('./routes/_auth._dashboard._layout-1/each/route.lazy').then(
+      (d) => d.Route,
+    ),
+  )
 
 const AuthComUserRenameSearchReferenceRouteRoute =
   AuthComUserRenameSearchReferenceRouteImport.update({
@@ -248,16 +258,10 @@ const AuthDashboardMagManageScheduleAdvertiserIdRoute =
     getParentRoute: () => AuthDashboardRoute,
   } as any)
 
-const AuthDashboardListImportidSharedRoute =
-  AuthDashboardListImportidSharedImport.update({
-    path: '/shared',
-    getParentRoute: () => AuthDashboardListImportidRoute,
-  } as any)
-
-const AuthDashboardListImportidSharedIndexRoute =
-  AuthDashboardListImportidSharedIndexImport.update({
-    path: '/',
-    getParentRoute: () => AuthDashboardListImportidSharedRoute,
+const AuthDashboardLayout1ListImportidRoute =
+  AuthDashboardLayout1ListImportidImport.update({
+    path: '/list/$import_id',
+    getParentRoute: () => AuthDashboardLayout1Route,
   } as any)
 
 const AuthGradeGradeWidgetPidShareConfirmRoute =
@@ -266,10 +270,10 @@ const AuthGradeGradeWidgetPidShareConfirmRoute =
     getParentRoute: () => AuthGradeGradeWidgetPidShareRoute,
   } as any)
 
-const AuthDashboardListImportidSharedTagidRoute =
-  AuthDashboardListImportidSharedTagidImport.update({
-    path: '/$tag_id',
-    getParentRoute: () => AuthDashboardListImportidSharedRoute,
+const AuthDashboardLayout1ListImportidSharedRoute =
+  AuthDashboardLayout1ListImportidSharedImport.update({
+    path: '/shared',
+    getParentRoute: () => AuthDashboardLayout1ListImportidRoute,
   } as any)
 
 const AuthGradeGradeWidgetPidShareIndexRouteRoute =
@@ -281,6 +285,18 @@ const AuthGradeGradeWidgetPidShareIndexRouteRoute =
       './routes/_auth.grade._gradeWidget/$pid_.share/index/route.lazy'
     ).then((d) => d.Route),
   )
+
+const AuthDashboardLayout1ListImportidSharedIndexRoute =
+  AuthDashboardLayout1ListImportidSharedIndexImport.update({
+    path: '/',
+    getParentRoute: () => AuthDashboardLayout1ListImportidSharedRoute,
+  } as any)
+
+const AuthDashboardLayout1ListImportidSharedTagidRoute =
+  AuthDashboardLayout1ListImportidSharedTagidImport.update({
+    path: '/$tag_id',
+    getParentRoute: () => AuthDashboardLayout1ListImportidSharedRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -322,21 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthComAgentRouteImport
       parentRoute: typeof AuthComImport
     }
-    '/_auth/_dashboard/each': {
-      preLoaderRoute: typeof AuthDashboardEachRouteImport
-      parentRoute: typeof AuthDashboardImport
-    }
-    '/_auth/_dashboard/import': {
-      preLoaderRoute: typeof AuthDashboardImportRouteImport
-      parentRoute: typeof AuthDashboardImport
-    }
-    '/_auth/_dashboard/list': {
-      preLoaderRoute: typeof AuthDashboardListRouteImport
-      parentRoute: typeof AuthDashboardImport
-    }
     '/_auth/_com/user': {
       preLoaderRoute: typeof AuthComUserImport
       parentRoute: typeof AuthComImport
+    }
+    '/_auth/_dashboard/_layout-1': {
+      preLoaderRoute: typeof AuthDashboardLayout1Import
+      parentRoute: typeof AuthDashboardImport
     }
     '/_auth/grade-sharing/select-client': {
       preLoaderRoute: typeof AuthGradeSharingSelectClientImport
@@ -370,13 +378,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthComUserRenameSearchReferenceRouteImport
       parentRoute: typeof AuthComUserImport
     }
+    '/_auth/_dashboard/_layout-1/each': {
+      preLoaderRoute: typeof AuthDashboardLayout1EachRouteImport
+      parentRoute: typeof AuthDashboardLayout1Import
+    }
+    '/_auth/_dashboard/_layout-1/import': {
+      preLoaderRoute: typeof AuthDashboardLayout1ImportRouteImport
+      parentRoute: typeof AuthDashboardLayout1Import
+    }
+    '/_auth/_dashboard/_layout-1/list': {
+      preLoaderRoute: typeof AuthDashboardLayout1ListRouteImport
+      parentRoute: typeof AuthDashboardLayout1Import
+    }
     '/_auth/grade/share/success': {
       preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
       parentRoute: typeof AuthImport
-    }
-    '/_auth/_dashboard/list/$import_id': {
-      preLoaderRoute: typeof AuthDashboardListImportidImport
-      parentRoute: typeof AuthDashboardImport
     }
     '/_auth/_dashboard/mag/manage-advertisers': {
       preLoaderRoute: typeof AuthDashboardMagManageAdvertisersImport
@@ -394,9 +410,9 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardMagIndexImport
       parentRoute: typeof AuthDashboardImport
     }
-    '/_auth/_dashboard/list/$import_id/shared': {
-      preLoaderRoute: typeof AuthDashboardListImportidSharedImport
-      parentRoute: typeof AuthDashboardListImportidImport
+    '/_auth/_dashboard/_layout-1/list/$import_id': {
+      preLoaderRoute: typeof AuthDashboardLayout1ListImportidImport
+      parentRoute: typeof AuthDashboardLayout1Import
     }
     '/_auth/_dashboard/mag/manage-schedule/$advertiserId': {
       preLoaderRoute: typeof AuthDashboardMagManageScheduleAdvertiserIdImport
@@ -422,17 +438,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidShareIndexRouteImport
       parentRoute: typeof AuthGradeGradeWidgetPidShareImport
     }
-    '/_auth/_dashboard/list/$import_id/shared/$tag_id': {
-      preLoaderRoute: typeof AuthDashboardListImportidSharedTagidImport
-      parentRoute: typeof AuthDashboardListImportidSharedImport
+    '/_auth/_dashboard/_layout-1/list/$import_id/shared': {
+      preLoaderRoute: typeof AuthDashboardLayout1ListImportidSharedImport
+      parentRoute: typeof AuthDashboardLayout1ListImportidImport
     }
     '/_auth/grade/_gradeWidget/$pid/share/confirm': {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidShareConfirmImport
       parentRoute: typeof AuthGradeGradeWidgetPidShareImport
     }
-    '/_auth/_dashboard/list/$import_id/shared/': {
-      preLoaderRoute: typeof AuthDashboardListImportidSharedIndexImport
-      parentRoute: typeof AuthDashboardListImportidSharedImport
+    '/_auth/_dashboard/_layout-1/list/$import_id/shared/$tag_id': {
+      preLoaderRoute: typeof AuthDashboardLayout1ListImportidSharedTagidImport
+      parentRoute: typeof AuthDashboardLayout1ListImportidSharedImport
+    }
+    '/_auth/_dashboard/_layout-1/list/$import_id/shared/': {
+      preLoaderRoute: typeof AuthDashboardLayout1ListImportidSharedIndexImport
+      parentRoute: typeof AuthDashboardLayout1ListImportidSharedImport
     }
   }
 }
@@ -452,13 +472,15 @@ export const routeTree = rootRoute.addChildren([
       ]),
     ]),
     AuthDashboardRoute.addChildren([
-      AuthDashboardEachRouteRoute,
-      AuthDashboardImportRouteRoute,
-      AuthDashboardListRouteRoute,
-      AuthDashboardListImportidRoute.addChildren([
-        AuthDashboardListImportidSharedRoute.addChildren([
-          AuthDashboardListImportidSharedTagidRoute,
-          AuthDashboardListImportidSharedIndexRoute,
+      AuthDashboardLayout1Route.addChildren([
+        AuthDashboardLayout1EachRouteRoute,
+        AuthDashboardLayout1ImportRouteRoute,
+        AuthDashboardLayout1ListRouteRoute,
+        AuthDashboardLayout1ListImportidRoute.addChildren([
+          AuthDashboardLayout1ListImportidSharedRoute.addChildren([
+            AuthDashboardLayout1ListImportidSharedTagidRoute,
+            AuthDashboardLayout1ListImportidSharedIndexRoute,
+          ]),
         ]),
       ]),
       AuthDashboardMagManageAdvertisersRoute,

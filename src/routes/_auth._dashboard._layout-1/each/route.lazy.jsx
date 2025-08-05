@@ -3,7 +3,7 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import CRMTable from '@/components/CRMTable/CRMTable';
 import TableDialogMetricsEach from '@/components/CRMTable/components/TableDialogMetricsEach';
 
-export const Route = createLazyFileRoute('/_auth/_dashboard/each')({
+export const Route = createLazyFileRoute('/_auth/_dashboard/_layout-1/each')({
     component: ClientsListComponent
 })
 

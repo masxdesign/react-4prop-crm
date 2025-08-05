@@ -156,13 +156,10 @@ const AgentPropertiesTable = ({ agentId }) => {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">My Properties</h2>
-          <p className="text-gray-600">
-            Department: {data?.departmentName || 'N/A'} | 
-            Total Properties: {data?.data?.length || 0}
-          </p>
-        </div>
+        <p className="text-gray-600">
+          Department: {data?.departmentName || 'N/A'} | 
+          Total Properties: {data?.data?.length || 0}
+        </p>
         <button 
           onClick={() => refetch()}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"

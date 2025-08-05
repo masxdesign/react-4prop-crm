@@ -7,7 +7,7 @@ import { useState } from 'react';
 import useImportList from '@/hooks/useImportList';
 import ImportSingleContactForm from '@/components/ImportSingleContactForm';
 
-export const Route = createLazyFileRoute('/_auth/_dashboard/import')({
+export const Route = createLazyFileRoute('/_auth/_dashboard/_layout-1/import')({
   component: ImportComponent
 })
 

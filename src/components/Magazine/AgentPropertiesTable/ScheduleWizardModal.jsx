@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
-import InlineCalendar from '../ui/InlineCalendar';
+import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
 import {
@@ -114,12 +114,14 @@ const ScheduleWizardModal = ({
 
       case 2:
         return (
-          <InlineCalendar
+          <MagazineCalendar
             control={control}
             name="start_date"
             rules={{ required: 'Start date is required' }}
             label="Start Date"
             minDate={format(new Date(), 'yyyy-MM-dd')}
+            propertyId={property.id}
+            advertiserId={watchedValues.advertiser_id}
           />
         );
 

@@ -7,7 +7,7 @@ import ColumnNextContactMyList from './ColumnNextContactMyList';
 import { Button } from '@/components/ui/button';
 import { CheckCircleIcon, CheckIcon, CheckSquare2, CopyIcon, ExternalLinkIcon, HomeIcon, Loader2, Loader2Icon, Star, X } from 'lucide-react';
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { Route as AuthDashboardListImportidSharedImport } from '@/routes//_auth._dashboard/list_.$import_id.shared'
+import { Route as AuthDashboardListImportidSharedImport } from '@/routes/_auth._dashboard._layout-1/list_.$import_id.shared'
 import { crmGenHash } from '@/services/bizchat';
 import queryClient from '@/queryClient';
 import { util_pagin_update } from '@/utils/localStorageController';
