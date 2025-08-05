@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
+import { LayoutGrid, Table2 } from 'lucide-react';
 import { fetchPropertySchedules } from '../api';
-import ScheduleItem from './ScheduleItem';
+import { Button } from '@/components/ui/button';
+import ScheduleCardView from './ScheduleCardView';
+import ScheduleTableView from './ScheduleTableView';
 
 // Current Schedules Component - Updated for week-based system
 const CurrentSchedules = ({ propertyId }) => {
+  const [viewMode, setViewMode] = useState('table');
   const {
     data: schedulesData,
     isLoading: schedulesLoading,
@@ -14,6 +18,7 @@ const CurrentSchedules = ({ propertyId }) => {
     queryKey: ['property-schedules', propertyId],
     queryFn: () => fetchPropertySchedules(propertyId),
     enabled: !!propertyId,
+    refetchOnMount: false,
   });
 
   const schedules = schedulesData?.data || [];
@@ -61,16 +66,40 @@ const CurrentSchedules = ({ propertyId }) => {
     <div>
       <div className="flex justify-between items-center mb-3">
         <h5 className="font-medium text-gray-900">Current Schedules ({schedules.length})</h5>
-        <div className="text-sm font-semibold text-green-600">
-          Total spent: £{totalRevenue.toFixed(2)}
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-md border" role="radiogroup" aria-label="View options">
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="rounded-r-none border-r-0"
+              aria-pressed={viewMode === 'table'}
+              role="radio"
+            >
+              <Table2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('card')}
+              className="rounded-l-none"
+              aria-pressed={viewMode === 'card'}
+              role="radio"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="text-sm font-semibold text-green-600">
+            Total spent: £{totalRevenue.toFixed(2)}
+          </div>
         </div>
       </div>
       
-      <div className="space-y-3 max-h-64 overflow-y-auto">
-        {schedules.map((schedule) => (
-          <ScheduleItem key={schedule.id} schedule={schedule} />
-        ))}
-      </div>
+      {viewMode === 'card' ? (
+        <ScheduleCardView schedules={schedules} />
+      ) : (
+        <ScheduleTableView schedules={schedules} />
+      )}
     </div>
   );
 };

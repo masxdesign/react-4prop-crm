@@ -12,6 +12,7 @@ const PropertySchedulesSummary = ({ propertyId }) => {
     queryKey: ['property-schedules', propertyId],
     queryFn: () => fetchPropertySchedules(propertyId),
     enabled: !!propertyId,
+    refetchOnMount: false,
   });
 
   if (isLoading) {
