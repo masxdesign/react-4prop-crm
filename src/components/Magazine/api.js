@@ -1,8 +1,14 @@
 import bizchatClient from '@/services/bizchatClient';
 
 // Agent Properties API functions
-export const fetchAgentProperties = async (agentId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/agent/${agentId}`);
+export const fetchAgentProperties = async (nid) => {
+  const response = await bizchatClient.get(`/api/crm/mag/agent/properties/${nid}`);
+  return response.data;
+};
+
+// Agent Properties with Pagination API functions
+export const fetchAgentPropertiesPagination = async (nid) => {
+  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`);
   return response.data;
 };
 
@@ -29,24 +35,24 @@ export const deleteAdvertiser = async (id) => {
 
 // Property Details API functions
 export const fetchAdvertisersByPstids = async (pstids) => {
-  const response = await bizchatClient.get(`/api/crm/mag/advertisers_by_pstids?pstids=${pstids}`);
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/by_pstids?pstids=${pstids}`);
   return response.data;
 };
 
-export const createSchedule = async (agentId, scheduleData) => {
-  const response = await bizchatClient.post(`/api/crm/mag/agent/${agentId}/schedule`, scheduleData);
+export const createSchedule = async (nid, scheduleData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${nid}`, scheduleData);
   return response.data;
 };
 
 // Property Schedules API functions
 export const fetchPropertySchedules = async (propertyId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/property/${propertyId}/schedules`);
+  const response = await bizchatClient.get(`/api/crm/mag/schedules/${propertyId}`);
   return response.data;
 };
 
 // Advertiser Properties API functions
 export const fetchAdvertiserProperties = async (advertiserId) => {
-  const response = await bizchatClient.get(`/api/crm/mag/advertiser/${advertiserId}`);
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}/properties`);
   return response.data;
 };
 
