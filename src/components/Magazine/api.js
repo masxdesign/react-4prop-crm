@@ -7,7 +7,7 @@ export const fetchAgentProperties = async (nid) => {
 };
 
 // Agent Properties with Pagination API functions
-export const fetchAgentPropertiesPagination = async (nid) => {
+export const fetchAgentPaginatedProperties = async (nid) => {
   const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`);
   return response.data;
 };

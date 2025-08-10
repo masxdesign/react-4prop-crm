@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { useAuth } from "@/components/Auth/Auth"
 import AgentPropertiesTable from "@/components/Magazine/AgentPropertiesTable/AgentPropertiesTable"
+import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/")({
     component: () => {
@@ -26,7 +27,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/")({
         }
 
         return (
-            <AgentPropertiesTable agentId={auth.user.neg_id} />
+            <AgentPaginatedTable agentId={auth.user.neg_id} />
         )
     },
 })
