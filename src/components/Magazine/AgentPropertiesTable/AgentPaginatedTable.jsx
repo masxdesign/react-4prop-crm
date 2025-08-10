@@ -130,7 +130,7 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
   }
 
   return (
-    <div className='grid grid-rows-[5rem_1fr_auto] min-h-0 py-4'>
+    <div className='grid grid-rows-[5rem_1fr_auto] min-h-0 py-4 relative'>
         <div className='flex items-end py-4 gap-0 text-white px-3'>
             <div className='flex-1'>  
               <span className='text-xl font-bold'>
@@ -168,7 +168,18 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
             total={data.total}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
+            isLoading={isLoading}
           />
+        )}
+        
+        {/* Loading Overlay */}
+        {isLoading && data?.data && (
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="text-gray-700 font-medium">Loading...</span>
+            </div>
+          </div>
         )}
     </div>
   );

@@ -20,10 +20,11 @@ const TablePagination = ({
     pageSize, 
     total,
     onPageChange, 
-    onPageSizeChange 
+    onPageSizeChange,
+    isLoading = false
 }) => {
-    const canPreviousPage = currentPage > 1;
-    const canNextPage = currentPage < totalPages;
+    const canPreviousPage = currentPage > 1 && !isLoading;
+    const canNextPage = currentPage < totalPages && !isLoading;
 
     const pageSizeOptions = [10, 20, 30, 50, 100];
 
@@ -38,7 +39,8 @@ const TablePagination = ({
                     <p className="text-sm font-medium">Rows per page</p>
                     <Select
                         value={`${pageSize}`}
-                        onValueChange={(value) => onPageSizeChange(Number(value))}
+                        onValueChange={(value) => !isLoading && onPageSizeChange(Number(value))}
+                        disabled={isLoading}
                     >
                         <SelectTrigger className="h-8 w-[70px]">
                             <SelectValue placeholder={pageSize} />
@@ -54,7 +56,14 @@ const TablePagination = ({
                 </div>
                 
                 <div className="flex w-[150px] items-center justify-center text-sm font-medium">
-                    Page {currentPage} of {totalPages}
+                    {isLoading ? (
+                        <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span>Loading...</span>
+                        </div>
+                    ) : (
+                        <>Page {currentPage} of {totalPages}</>
+                    )}
                 </div>
                 
                 <div className="flex items-center space-x-2">
