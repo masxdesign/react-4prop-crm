@@ -11,13 +11,14 @@ import { fetchAgentPaginatedProperties, fetchAgentProperties } from '../api';
 import PropertySchedulesSummary from './PropertySchedulesSummary';
 import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
+import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 
 // Column helper
 const columnHelper = createColumnHelper();
 
 // Main Component
-const AgentPaginatedTable = ({ agentId }) => {
+const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSizeChange }) => {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -29,8 +30,8 @@ const AgentPaginatedTable = ({ agentId }) => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['agent-properties', agentId],
-    queryFn: () => fetchAgentPaginatedProperties(agentId),
+    queryKey: ['agent-properties-paginated', agentId, page, pageSize],
+    queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
     enabled: !!agentId,
   });
 
@@ -129,7 +130,7 @@ const AgentPaginatedTable = ({ agentId }) => {
   }
 
   return (
-    <div className='grid grid-rows-[5rem_1fr] min-h-0 py-4'>
+    <div className='grid grid-rows-[5rem_1fr_auto] min-h-0 py-4'>
         <div className='flex items-end py-4 gap-0 text-white px-3'>
             <div className='flex-1'>  
               <span className='text-xl font-bold'>
@@ -138,7 +139,7 @@ const AgentPaginatedTable = ({ agentId }) => {
               <div className="flex justify-between items-center">
                 <p className="text-white mix-blend-overlay">
                   Department: {data?.departmentName || 'N/A'} | 
-                  Total Properties: {data?.data?.length || 0}
+                  Total Properties: {data?.total || 0}
                 </p>
                 <Button 
                   size="sm"
@@ -159,6 +160,16 @@ const AgentPaginatedTable = ({ agentId }) => {
           isEmpty={data?.data?.length === 0}
           className="bg-gray-100 rounded-lg"
         />
+        {data?.data && data.data.length > 0 && (
+          <TablePagination
+            currentPage={data.page}
+            totalPages={data.totalPages}
+            pageSize={data.pageSize}
+            total={data.total}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        )}
     </div>
   );
 };
