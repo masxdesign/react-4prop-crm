@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import CurrentSchedules from './CurrentSchedules';
-import ScheduleModal from './ScheduleModal';
 import ScheduleWizardModal from './ScheduleWizardModal';
 
 // Property Details Component - Updated for week-based system
@@ -23,6 +22,8 @@ const PropertyDetails = ({ property, agentId }) => {
     queryFn: () => fetchAdvertisersByPstids(pstidsString),
     enabled: !!pstidsString,
   });
+
+   const advertisers = advertisersData?.data || [];
 
   // Schedule mutation
   const scheduleMutation = useMutation({
@@ -59,8 +60,6 @@ const PropertyDetails = ({ property, agentId }) => {
       setIsScheduleModalOpen(false);
     },
   });
-
-  const advertisers = advertisersData?.data || [];
 
   return (
     <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
