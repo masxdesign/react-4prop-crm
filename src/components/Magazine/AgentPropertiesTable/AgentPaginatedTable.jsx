@@ -7,17 +7,18 @@ import {
   getFilteredRowModel,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { fetchAgentProperties } from '../api';
+import { fetchAgentPaginatedProperties, fetchAgentProperties } from '../api';
 import PropertySchedulesSummary from './PropertySchedulesSummary';
 import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
+import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 
 // Column helper
 const columnHelper = createColumnHelper();
 
 // Main Component
-const AgentPropertiesTable = ({ agentId }) => {
+const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSizeChange }) => {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -29,8 +30,8 @@ const AgentPropertiesTable = ({ agentId }) => {
     error,
     refetch
   } = useQuery({
-    queryKey: ['agent-properties', agentId],
-    queryFn: () => fetchAgentProperties(agentId),
+    queryKey: ['agent-properties-paginated', agentId, page, pageSize],
+    queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
     enabled: !!agentId,
   });
 
@@ -52,7 +53,7 @@ const AgentPropertiesTable = ({ agentId }) => {
 
   // Table columns
   const columns = [
-    columnHelper.accessor('id', {
+    columnHelper.accessor('pid', {
       header: 'Property ID',
       cell: (info) => (
         <button
@@ -65,10 +66,6 @@ const AgentPropertiesTable = ({ agentId }) => {
           </span>
         </button>
       ),
-    }),
-    columnHelper.accessor('departmentName', {
-      header: 'Department',
-      cell: (info) => info.getValue(),
     }),
     columnHelper.accessor('pstids', {
       header: 'Property Subtypes',
@@ -133,7 +130,7 @@ const AgentPropertiesTable = ({ agentId }) => {
   }
 
   return (
-    <div className='grid grid-rows-[5rem_1fr] min-h-0 py-4'>
+    <div className='grid grid-rows-[5rem_1fr_auto] min-h-0 py-4 relative'>
         <div className='flex items-end py-4 gap-0 text-white px-3'>
             <div className='flex-1'>  
               <span className='text-xl font-bold'>
@@ -142,7 +139,7 @@ const AgentPropertiesTable = ({ agentId }) => {
               <div className="flex justify-between items-center">
                 <p className="text-white mix-blend-overlay">
                   Department: {data?.departmentName || 'N/A'} | 
-                  Total Properties: {data?.data?.length || 0}
+                  Total Properties: {data?.total || 0}
                 </p>
                 <Button 
                   size="sm"
@@ -163,8 +160,29 @@ const AgentPropertiesTable = ({ agentId }) => {
           isEmpty={data?.data?.length === 0}
           className="bg-gray-100 rounded-lg"
         />
+        {data?.data && data.data.length > 0 && (
+          <TablePagination
+            currentPage={data.page}
+            totalPages={data.totalPages}
+            pageSize={data.pageSize}
+            total={data.total}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+            isLoading={isLoading}
+          />
+        )}
+        
+        {/* Loading Overlay */}
+        {isLoading && data?.data && (
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="text-gray-700 font-medium">Loading...</span>
+            </div>
+          </div>
+        )}
     </div>
   );
 };
 
-export default AgentPropertiesTable;
+export default AgentPaginatedTable;
