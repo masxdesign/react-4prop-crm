@@ -70,7 +70,7 @@ const AgentPropertiesTable = ({ agentId }) => {
       header: 'Department',
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor('propertySubtypeIds', {
+    columnHelper.accessor('pstids', {
       header: 'Property Subtypes',
       cell: (info) => {
         const pstids = info.getValue();

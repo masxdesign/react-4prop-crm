@@ -10,7 +10,7 @@ const PropertyDetails = ({ property, agentId }) => {
   const queryClient = useQueryClient();
 
   // Extract property subtype IDs for fetching advertisers
-  const pstidsString = property.propertySubtypeIds?.replace(/^,|,$/g, '') || '';
+  const pstidsString = property.pstids?.replace(/^,|,$/g, '') || '';
   
   // Fetch advertisers based on property subtypes
   const {
@@ -76,7 +76,7 @@ const PropertyDetails = ({ property, agentId }) => {
             </div>
             <div>
               <span className="font-medium">Property Subtypes:</span>{' '}
-              {property.propertySubtypeIds?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
+              {property.pstids?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
             </div>
             <div>
               <span className="font-medium">Dealing Agents:</span>{' '}
