@@ -147,7 +147,7 @@ const ScheduleWizardModal = ({
             {/* Property Info */}
             <div className="bg-gray-50 p-4 rounded border">
               <h4 className="font-medium text-gray-900 mb-2">Property</h4>
-              <p className="text-sm text-gray-600">{property.id} - {property.departmentName}</p>
+              <p className="text-sm text-gray-600">{property.pid} - {property.pstids}</p>
             </div>
 
             {/* Booking Details */}

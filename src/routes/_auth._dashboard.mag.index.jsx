@@ -1,12 +1,28 @@
 import React, { useState } from "react"
-import { createFileRoute, useParams } from "@tanstack/react-router"
+import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router"
 import { useAuth } from "@/components/Auth/Auth"
 import AgentPropertiesTable from "@/components/Magazine/AgentPropertiesTable/AgentPropertiesTable"
+import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/")({
+    validateSearch: (search) => ({
+        page: search.page ? Number(search.page) : 1,
+        pageSize: search.pageSize ? Number(search.pageSize) : 10,
+    }),
     component: () => {
         // Get agent ID from URL params or however you're passing it
         const auth = useAuth()
+        const search = useSearch({ from: "/_auth/_dashboard/mag/" })
+        const navigate = useNavigate({ from: "/_auth/_dashboard/mag/" })
+
+        // Pagination handlers
+        const onPageChange = (page) => {
+            navigate({ search: { ...search, page } })
+        }
+
+        const onPageSizeChange = (pageSize) => {
+            navigate({ search: { ...search, pageSize, page: 1 } })
+        }
 
         // You can also get it from other sources based on your app structure:
         // const agentId = someGlobalState.currentAgentId;
@@ -26,7 +42,13 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/")({
         }
 
         return (
-            <AgentPropertiesTable agentId={auth.user.neg_id} />
+            <AgentPaginatedTable 
+                agentId={auth.user.neg_id}
+                page={search.page}
+                pageSize={search.pageSize}
+                onPageChange={onPageChange}
+                onPageSizeChange={onPageSizeChange}
+            />
         )
     },
 })
