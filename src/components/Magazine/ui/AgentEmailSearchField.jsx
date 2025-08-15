@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
-import { useDebounce } from '@uidotdev/usehooks';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { PopoverAnchor } from '@radix-ui/react-popover';
 import { Building, Briefcase, Check } from 'lucide-react';
-import { searchAgents } from '../api';
+import { useAgentSearch } from '@/hooks/useAgentSearch';
 
 // Helper function to get agent initials
 const getAgentInitials = (firstname, surname) => {
@@ -34,15 +32,7 @@ const AgentEmailSearchField = ({
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [failedImages, setFailedImages] = useState(new Set());
 
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  const { data: agents = [], isLoading } = useQuery({
-    queryKey: ['agents', 'search', debouncedSearchTerm],
-    queryFn: () => searchAgents(debouncedSearchTerm),
-    enabled: !!debouncedSearchTerm && debouncedSearchTerm.length >= 2,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
-  });
+  const { agents, isSearching, hasResults, debouncedSearchTerm } = useAgentSearch(searchTerm);
 
   const handleImageError = (agentNid) => {
     setFailedImages(prev => new Set(prev).add(agentNid));
@@ -139,13 +129,13 @@ const AgentEmailSearchField = ({
                 >
                   <Command>
                     <CommandList>
-                      {isLoading && (
+                      {isSearching && (
                         <CommandEmpty>Searching...</CommandEmpty>
                       )}
-                      {!isLoading && agents.length === 0 && searchTerm.length >= 2 && (
+                      {!isSearching && !hasResults && debouncedSearchTerm.length >= 2 && (
                         <CommandEmpty>{emptyMessage}</CommandEmpty>
                       )}
-                      {!isLoading && agents.length > 0 && (
+                      {!isSearching && hasResults && (
                         <CommandGroup>
                           {agents.map((agent) => (
                             <CommandItem
