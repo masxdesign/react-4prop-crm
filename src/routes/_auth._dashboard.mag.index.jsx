@@ -3,12 +3,45 @@ import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/re
 import { useAuth } from "@/components/Auth/Auth"
 import AgentPropertiesTable from "@/components/Magazine/AgentPropertiesTable/AgentPropertiesTable"
 import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
+import { fetchAgentPaginatedProperties } from "@/components/Magazine/api"
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/")({
     validateSearch: (search) => ({
         page: search.page ? Number(search.page) : 1,
         pageSize: search.pageSize ? Number(search.pageSize) : 10,
     }),
+    beforeLoad: ({ context, search }) => {
+        const { page = 1, pageSize = 10 } = search;
+        const auth = context.auth;
+        
+        // Create query options that can be used by child routes and components
+        const queryOptions = {
+            queryKey: ['agent-properties-paginated', auth.user?.neg_id, page, pageSize],
+            queryFn: () => fetchAgentPaginatedProperties(auth.user?.neg_id, { page, pageSize }),
+            enabled: !!auth.user?.neg_id,
+        };
+        
+        return {
+            ...context,
+            agentPropertiesQueryOptions: queryOptions,
+        };
+    },
+    loader: async ({ context }) => {
+        // Use the query options from context to preload data
+        if (context.agentPropertiesQueryOptions && context.agentPropertiesQueryOptions.enabled) {
+            return context.queryClient.ensureQueryData(context.agentPropertiesQueryOptions);
+        }
+        
+        return null;
+    },
+    pendingComponent: () => (
+        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span className="text-gray-700 font-medium">Loading...</span>
+            </div>
+        </div>
+    ),
     component: () => {
         // Get agent ID from URL params or however you're passing it
         const auth = useAuth()
