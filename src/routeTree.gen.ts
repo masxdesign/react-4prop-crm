@@ -11,6 +11,7 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as ExampleImport } from './routes/example'
 import { Route as AuthImport } from './routes/_auth'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
@@ -51,6 +52,11 @@ import { Route as AuthDashboardLayout1ListImportidSharedIndexImport } from './ro
 import { Route as AuthDashboardLayout1ListImportidSharedTagidImport } from './routes/_auth._dashboard._layout-1/list_.$import_id.shared.$tag_id'
 
 // Create/Update Routes
+
+const ExampleRoute = ExampleImport.update({
+  path: '/example',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AuthRoute = AuthImport.update({
   id: '/_auth',
@@ -314,6 +320,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
+    '/example': {
+      preLoaderRoute: typeof ExampleImport
+      parentRoute: typeof rootRoute
+    }
     '/view-details/$pid': {
       preLoaderRoute: typeof ViewDetailsPidRouteImport
       parentRoute: typeof rootRoute
@@ -502,6 +512,7 @@ export const routeTree = rootRoute.addChildren([
     AuthGradeSharingIndexRoute,
     AuthGradeShareSuccessRouteRoute,
   ]),
+  ExampleRoute,
   ViewDetailsPidRouteRoute,
   AccessHashOwnerUidRoute.addChildren([
     AccessHashOwnerUidSharedRoute.addChildren([

@@ -63,6 +63,18 @@ export const fetchMagazineListingData = async (advertiserId) => {
   return response.json();
 };
 
+// Agent Search API functions
+export const searchAgents = async (searchTerm) => {
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+  
+  const response = await bizchatClient.get('/api/crm/agents/search', {
+    params: { email: searchTerm }
+  });
+  return response.data || [];
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object

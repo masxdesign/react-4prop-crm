@@ -26,11 +26,11 @@ GET /api/crm/agents/search?email=john&limit=10
 
 | Field Name | Type | Required | Notes |
 |------------|------|----------|-------|
-| NID | varchar(20) | YES | Primary key - this is the value returned by the form field |
+| nid | varchar(20) | YES | Primary key - this is the value returned by the form field |
 | email | varchar(75) | YES | Used for search matching |
 | firstname | nvarchar(50) | YES | Agent's first name |
 | surname | nvarchar(50) | YES | Agent's last name |
-| Position | varchar(50) | NO | Job title/position (displayed as secondary info) |
+| position | varchar(50) | NO | Job title/position (displayed as secondary info) |
 
 **Search Logic**:
 - Perform case-insensitive partial match on the `email` field
@@ -40,7 +40,7 @@ GET /api/crm/agents/search?email=john&limit=10
 
 **SQL Example**:
 ```sql
-SELECT NID, email, firstname, surname, Position 
+SELECT nid, email, firstname, surname, position 
 FROM a_rpNegotiator 
 WHERE email LIKE '%{searchTerm}%' 
 ORDER BY email 
@@ -53,18 +53,18 @@ LIMIT 10;
 ```json
 [
   {
-    "NID": "12345",
+    "nid": "12345",
     "email": "john.doe@example.com",
     "firstname": "John",
     "surname": "Doe", 
-    "Position": "Senior Sales Agent"
+    "position": "Senior Sales Agent"
   },
   {
-    "NID": "12346",
+    "nid": "12346",
     "email": "john.smith@example.com",
     "firstname": "John",
     "surname": "Smith",
-    "Position": "Property Manager"
+    "position": "Property Manager"
   }
 ]
 ```
@@ -106,8 +106,8 @@ LIMIT 10;
 - The frontend component debounces search requests with a 300ms delay
 - Minimum search term length is 2 characters before API calls are made
 - The component expects the response to be a JSON array of agent objects
-- The `NID` field is used as the form field value when an agent is selected
-- Display format in dropdown: `{firstname} {surname}` (primary), `{email}` (secondary), `{Position}` (tertiary)
+- The `nid` field is used as the form field value when an agent is selected
+- Display format in dropdown: `{firstname} {surname}` (primary), `{email}` (secondary), `{position}` (tertiary)
 
 ## Testing
 
@@ -121,7 +121,7 @@ LIMIT 10;
 
 **Example Test Data**:
 ```sql
-INSERT INTO a_rpNegotiator (NID, email, firstname, surname, Position) VALUES
+INSERT INTO a_rpNegotiator (nid, email, firstname, surname, position) VALUES
 ('AG001', 'john.doe@4prop.com', 'John', 'Doe', 'Senior Agent'),
 ('AG002', 'jane.smith@4prop.com', 'Jane', 'Smith', 'Property Manager'),
 ('AG003', 'bob.johnson@4prop.com', 'Bob', 'Johnson', 'Sales Associate');
