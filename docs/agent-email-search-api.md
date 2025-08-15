@@ -30,7 +30,8 @@ GET /api/crm/agents/search?email=john&limit=10
 | email | varchar(75) | YES | Used for search matching |
 | firstname | nvarchar(50) | YES | Agent's first name |
 | surname | nvarchar(50) | YES | Agent's last name |
-| position | varchar(50) | NO | Job title/position (displayed as secondary info) |
+| company | varchar(100) | NO | Company name (displayed as secondary info) |
+| position | varchar(50) | NO | Job title/position (displayed as tertiary info) |
 
 **Search Logic**:
 - Perform case-insensitive partial match on the `email` field
@@ -40,7 +41,7 @@ GET /api/crm/agents/search?email=john&limit=10
 
 **SQL Example**:
 ```sql
-SELECT nid, email, firstname, surname, position 
+SELECT nid, email, firstname, surname, company, position 
 FROM a_rpNegotiator 
 WHERE email LIKE '%{searchTerm}%' 
 ORDER BY email 
@@ -56,7 +57,8 @@ LIMIT 10;
     "nid": "12345",
     "email": "john.doe@example.com",
     "firstname": "John",
-    "surname": "Doe", 
+    "surname": "Doe",
+    "company": "ABC Real Estate",
     "position": "Senior Sales Agent"
   },
   {
@@ -64,6 +66,7 @@ LIMIT 10;
     "email": "john.smith@example.com",
     "firstname": "John",
     "surname": "Smith",
+    "company": "XYZ Properties",
     "position": "Property Manager"
   }
 ]
@@ -107,7 +110,7 @@ LIMIT 10;
 - Minimum search term length is 2 characters before API calls are made
 - The component expects the response to be a JSON array of agent objects
 - The `nid` field is used as the form field value when an agent is selected
-- Display format in dropdown: `{firstname} {surname}` (primary), `{email}` (secondary), `{position}` (tertiary)
+- Display format in dropdown: `{firstname} {surname}` (primary), `{email}` (secondary), `{company}` (tertiary), `{position}` (quaternary)
 
 ## Testing
 
@@ -121,8 +124,8 @@ LIMIT 10;
 
 **Example Test Data**:
 ```sql
-INSERT INTO a_rpNegotiator (nid, email, firstname, surname, position) VALUES
-('AG001', 'john.doe@4prop.com', 'John', 'Doe', 'Senior Agent'),
-('AG002', 'jane.smith@4prop.com', 'Jane', 'Smith', 'Property Manager'),
-('AG003', 'bob.johnson@4prop.com', 'Bob', 'Johnson', 'Sales Associate');
+INSERT INTO a_rpNegotiator (nid, email, firstname, surname, company, position) VALUES
+('AG001', 'john.doe@4prop.com', 'John', 'Doe', 'ABC Real Estate', 'Senior Agent'),
+('AG002', 'jane.smith@4prop.com', 'Jane', 'Smith', 'XYZ Properties', 'Property Manager'),
+('AG003', 'bob.johnson@4prop.com', 'Bob', 'Johnson', '4Prop Company', 'Sales Associate');
 ```

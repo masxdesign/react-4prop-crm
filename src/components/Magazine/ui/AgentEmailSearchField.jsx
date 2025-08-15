@@ -149,6 +149,11 @@ const AgentEmailSearchField = ({
                                   <div className="text-sm text-gray-600">
                                     {agent.email}
                                   </div>
+                                  {agent.company && (
+                                    <div className="text-xs text-gray-500">
+                                      {agent.company}
+                                    </div>
+                                  )}
                                   {agent.position && (
                                     <div className="text-xs text-gray-500">
                                       {agent.position}
