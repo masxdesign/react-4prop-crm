@@ -1,4 +1,5 @@
 import bizchatClient from '@/services/bizchatClient';
+import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
 
 // Agent Properties API functions
 export const fetchAgentProperties = async (nid) => {
@@ -72,7 +73,14 @@ export const searchAgents = async (searchTerm) => {
   const response = await bizchatClient.get('/api/crm/agents/search', {
     params: { email: searchTerm }
   });
-  return response.data || [];
+  
+  const agents = response.data || [];
+  
+  // Process avatar URLs for each agent using the reusable utility
+  return agents.map(agent => ({
+    ...agent,
+    picture: getAvatarImageUrl(agent) // Will return null if no picture, or URL if picture exists
+  }));
 };
 
 // Data normalization utilities

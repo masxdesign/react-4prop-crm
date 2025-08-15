@@ -32,6 +32,7 @@ const AgentEmailSearchField = ({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [failedImages, setFailedImages] = useState(new Set());
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -42,6 +43,10 @@ const AgentEmailSearchField = ({
     staleTime: 5 * 60 * 1000, // 5 minutes
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
+
+  const handleImageError = (agentNid) => {
+    setFailedImages(prev => new Set(prev).add(agentNid));
+  };
 
   const handleAgentSelect = (agent, onChange) => {
     setSelectedAgent(agent);
@@ -154,8 +159,19 @@ const AgentEmailSearchField = ({
                               )}
                             >
                               {/* Avatar */}
-                              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
-                                {getAgentInitials(agent.firstname, agent.surname)}
+                              <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden">
+                                {agent.picture && !failedImages.has(agent.nid) ? (
+                                  <img
+                                    src={agent.picture}
+                                    alt={`${agent.firstname} ${agent.surname}`}
+                                    className="w-full h-full object-cover"
+                                    onError={() => handleImageError(agent.nid)}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                                    {getAgentInitials(agent.firstname, agent.surname)}
+                                  </div>
+                                )}
                               </div>
                               
                               {/* Content */}

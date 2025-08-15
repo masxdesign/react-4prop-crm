@@ -30,6 +30,7 @@ GET /api/crm/agents/search?email=john&limit=10
 | email | varchar(75) | YES | Used for search matching |
 | firstname | nvarchar(50) | YES | Agent's first name |
 | surname | nvarchar(50) | YES | Agent's last name |
+| picture | varchar(100) | NO | Profile picture filename (processed into full URL by frontend) |
 | company | varchar(100) | NO | Company name (displayed as secondary info) |
 | position | varchar(50) | NO | Job title/position (displayed as tertiary info) |
 
@@ -41,7 +42,7 @@ GET /api/crm/agents/search?email=john&limit=10
 
 **SQL Example**:
 ```sql
-SELECT nid, email, firstname, surname, company, position 
+SELECT nid, email, firstname, surname, picture, company, position 
 FROM a_rpNegotiator 
 WHERE email LIKE '%{searchTerm}%' 
 ORDER BY email 
@@ -58,6 +59,7 @@ LIMIT 10;
     "email": "john.doe@example.com",
     "firstname": "John",
     "surname": "Doe",
+    "picture": "profile_12345.jpg",
     "company": "ABC Real Estate",
     "position": "Senior Sales Agent"
   },
@@ -66,6 +68,7 @@ LIMIT 10;
     "email": "john.smith@example.com",
     "firstname": "John",
     "surname": "Smith",
+    "picture": null,
     "company": "XYZ Properties",
     "position": "Property Manager"
   }
@@ -124,8 +127,8 @@ LIMIT 10;
 
 **Example Test Data**:
 ```sql
-INSERT INTO a_rpNegotiator (nid, email, firstname, surname, company, position) VALUES
-('AG001', 'john.doe@4prop.com', 'John', 'Doe', 'ABC Real Estate', 'Senior Agent'),
-('AG002', 'jane.smith@4prop.com', 'Jane', 'Smith', 'XYZ Properties', 'Property Manager'),
-('AG003', 'bob.johnson@4prop.com', 'Bob', 'Johnson', '4Prop Company', 'Sales Associate');
+INSERT INTO a_rpNegotiator (nid, email, firstname, surname, picture, company, position) VALUES
+('AG001', 'john.doe@4prop.com', 'John', 'Doe', 'profile_ag001.jpg', 'ABC Real Estate', 'Senior Agent'),
+('AG002', 'jane.smith@4prop.com', 'Jane', 'Smith', NULL, 'XYZ Properties', 'Property Manager'),
+('AG003', 'bob.johnson@4prop.com', 'Bob', 'Johnson', 'avatar_bob.png', '4Prop Company', 'Sales Associate');
 ```
