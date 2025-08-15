@@ -55,6 +55,14 @@ This is a React CRM application built with:
 - Local state uses Zustand stores (no centralized store directory found)
 - Custom hooks for specific state patterns (e.g., use-sheetState.js, use-DialogModel.js)
 
+**TanStack Router Data Preloading Pattern**:
+When implementing data preloading at the route level with loading overlays:
+1. Use `beforeLoad` to create query options and add them to context - this makes them available to child routes and components
+2. Use `loader` to preload data using the query options from context via `context.queryClient.ensureQueryData()`
+3. Components can access preloaded data immediately via useQuery with the same query key
+4. Implement loading overlays at the route level to show spinner when data is refetching (page changes, etc.)
+5. This pattern ensures data is preloaded, cached, and components get immediate access with proper loading states
+
 **Data Layer**:
 - API calls primarily through axios
 - Custom utilities for data transformation (propertyTypesCombiner, lowerKeyObject, etc.)
