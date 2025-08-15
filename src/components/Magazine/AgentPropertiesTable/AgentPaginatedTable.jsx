@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   useReactTable,
   getCoreRowModel,
@@ -27,11 +27,14 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
   const {
     data,
     isLoading,
+    isFetching,
+    isPlaceholderData,
     error,
     refetch
   } = useQuery({
     queryKey: ['agent-properties-paginated', agentId, page, pageSize],
     queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
+    placeholderData: keepPreviousData,
     enabled: !!agentId,
   });
 
@@ -107,14 +110,6 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
     getFilteredRowModel: getFilteredRowModel(),
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-lg">Loading properties...</div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
@@ -172,8 +167,8 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
           />
         )}
         
-        {/* Loading Overlay */}
-        {isLoading && data?.data && (
+        {/* Loading Overlay - Show when refetching data and showing placeholder data */}
+        {isFetching && isPlaceholderData && (
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
