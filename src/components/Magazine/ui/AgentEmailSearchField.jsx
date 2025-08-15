@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Controller } from 'react-hook-form';
+import { cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
@@ -15,6 +16,190 @@ const getAgentInitials = (firstname, surname) => {
   return `${firstInitial}${lastInitial}`;
 };
 
+// CVA variants for different sizes
+const selectedTickIconVariants = cva(
+  "absolute text-green-500",
+  {
+    variants: {
+      size: {
+        default: "w-5 h-5 right-2 top-3",
+        sm: "w-2 h-2 right-5 top-2",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const inputVariants = cva(
+  "w-full",
+  {
+    variants: {
+      size: {
+        default: "",
+        sm: "h-8 text-xs px-2",
+      },
+      error: {
+        true: "border-red-500 focus-visible:ring-red-500",
+      }
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const agentSearchVariants = cva(
+  "space-y-2",
+  {
+    variants: {
+      size: {
+        default: "",
+        sm: "",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const labelVariants = cva(
+  "block font-medium mb-1",
+  {
+    variants: {
+      size: {
+        default: "text-sm",
+        sm: "text-xs",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const avatarVariants = cva(
+  "flex-shrink-0 rounded-full overflow-hidden",
+  {
+    variants: {
+      size: {
+        default: "w-10 h-10",
+        sm: "w-8 h-8",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const avatarTextVariants = cva(
+  "w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
+  {
+    variants: {
+      size: {
+        default: "text-sm",
+        sm: "text-xs",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const commandItemVariants = cva(
+  "flex items-start gap-3 cursor-pointer transition-colors hover:bg-gray-50 data-[selected=true]:bg-blue-50",
+  {
+    variants: {
+      size: {
+        default: "p-3",
+        sm: "p-2",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const nameVariants = cva(
+  "font-semibold text-gray-900 leading-tight",
+  {
+    variants: {
+      size: {
+        default: "text-base",
+        sm: "text-sm",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const emailVariants = cva(
+  "text-gray-600 truncate",
+  {
+    variants: {
+      size: {
+        default: "text-sm",
+        sm: "text-xs",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const tagVariants = cva(
+  "inline-flex items-center gap-1 px-2 py-1 rounded-md",
+  {
+    variants: {
+      size: {
+        default: "text-xs",
+        sm: "text-xs px-1.5 py-0.5",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const iconVariants = cva(
+  "",
+  {
+    variants: {
+      size: {
+        default: "w-3 h-3",
+        sm: "w-2.5 h-2.5",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
+const checkIconVariants = cva(
+  "",
+  {
+    variants: {
+      size: {
+        default: "w-5 h-5",
+        sm: "w-4 h-4",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+);
+
 const AgentEmailSearchField = ({
   name,
   control,
@@ -23,6 +208,7 @@ const AgentEmailSearchField = ({
   label = "Agent",
   placeholder = "Type agent email to search...",
   emptyMessage = "No agents found",
+  size = "default",
   
   className,
   ...props
@@ -69,9 +255,9 @@ const AgentEmailSearchField = ({
   };
 
   return (
-    <div className={cn("space-y-2", className)} {...props}>
+    <div className={cn(agentSearchVariants({ size }), className)} {...props}>
       {label && (
-        <label className="block text-sm font-medium mb-1">{label}</label>
+        <label className={cn(labelVariants({ size }))}>{label}</label>
       )}
       
       <Controller
@@ -90,13 +276,10 @@ const AgentEmailSearchField = ({
                       onChange={(e) => handleInputChange(e.target.value, onChange)}
                       onFocus={handleInputFocus}
                       onClick={handleInputClick}
-                      className={cn(
-                        "w-full",
-                        error && "border-red-500 focus-visible:ring-red-500"
-                      )}
+                      className={cn(inputVariants({ size, error }))}
                     />
                     {selectedAgent && (
-                      <div className="absolute right-2 top-2 text-green-500">
+                      <div className={cn(selectedTickIconVariants({ size }))}>
                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                           <path 
                             fillRule="evenodd" 
@@ -143,13 +326,12 @@ const AgentEmailSearchField = ({
                               value={agent.email}
                               onSelect={() => handleAgentSelect(agent, onChange)}
                               className={cn(
-                                "flex items-start gap-3 p-3 cursor-pointer transition-colors",
-                                "hover:bg-gray-50 data-[selected=true]:bg-blue-50",
+                                commandItemVariants({ size }),
                                 selectedAgent?.nid === agent.nid && "bg-blue-50 border-l-2 border-blue-500"
                               )}
                             >
                               {/* Avatar */}
-                              <div className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden">
+                              <div className={cn(avatarVariants({ size }))}>
                                 {agent.picture && !failedImages.has(agent.nid) ? (
                                   <img
                                     src={agent.picture}
@@ -158,7 +340,7 @@ const AgentEmailSearchField = ({
                                     onError={() => handleImageError(agent.nid)}
                                   />
                                 ) : (
-                                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-sm">
+                                  <div className={cn(avatarTextVariants({ size }))}>
                                     {getAgentInitials(agent.firstname, agent.surname)}
                                   </div>
                                 )}
@@ -167,28 +349,28 @@ const AgentEmailSearchField = ({
                               {/* Content */}
                               <div className="flex-1 min-w-0">
                                 {/* Name and Email */}
-                                <div className="space-y-1">
-                                  <div className="font-semibold text-gray-900 text-base leading-tight">
+                                <div className={cn("space-y-1", size === "sm" && "space-y-0.5")}>
+                                  <div className={cn(nameVariants({ size }))}>
                                     {agent.firstname} {agent.surname}
                                   </div>
-                                  <div className="text-sm text-gray-600 truncate">
+                                  <div className={cn(emailVariants({ size }))}>
                                     {agent.email}
                                   </div>
                                 </div>
                                 
                                 {/* Company and Position Tags */}
                                 {(agent.company || agent.position) && (
-                                  <div className="flex flex-wrap gap-2 mt-2">
+                                  <div className={cn("flex flex-wrap gap-2 mt-2", size === "sm" && "gap-1 mt-1")}>
                                     {agent.company && (
-                                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
-                                        <Building className="w-3 h-3" />
-                                        <span className="truncate max-w-[120px]">{agent.company}</span>
+                                      <div className={cn(tagVariants({ size }), "bg-gray-100 text-gray-700")}>
+                                        <Building className={cn(iconVariants({ size }))} />
+                                        <span className={cn("truncate", size === "default" ? "max-w-[120px]" : "max-w-[100px]")}>{agent.company}</span>
                                       </div>
                                     )}
                                     {agent.position && (
-                                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
-                                        <Briefcase className="w-3 h-3" />
-                                        <span className="truncate max-w-[120px]">{agent.position}</span>
+                                      <div className={cn(tagVariants({ size }), "bg-blue-100 text-blue-700")}>
+                                        <Briefcase className={cn(iconVariants({ size }))} />
+                                        <span className={cn("truncate", size === "default" ? "max-w-[120px]" : "max-w-[100px]")}>{agent.position}</span>
                                       </div>
                                     )}
                                   </div>
@@ -197,8 +379,8 @@ const AgentEmailSearchField = ({
                               
                               {/* Selection Indicator */}
                               {selectedAgent?.nid === agent.nid && (
-                                <div className="flex-shrink-0 text-blue-600 ml-2">
-                                  <Check className="w-5 h-5" />
+                                <div className={cn("flex-shrink-0 text-blue-600", size === "default" ? "ml-2" : "ml-1")}>
+                                  <Check className={cn(checkIconVariants({ size }))} />
                                 </div>
                               )}
                             </CommandItem>
