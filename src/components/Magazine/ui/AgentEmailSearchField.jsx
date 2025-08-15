@@ -7,7 +7,15 @@ import { Input } from '@/components/ui/input';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent } from '@/components/ui/popover';
 import { PopoverAnchor } from '@radix-ui/react-popover';
+import { Building, Briefcase, Check } from 'lucide-react';
 import { searchAgents } from '../api';
+
+// Helper function to get agent initials
+const getAgentInitials = (firstname, surname) => {
+  const firstInitial = firstname?.charAt(0)?.toUpperCase() || '';
+  const lastInitial = surname?.charAt(0)?.toUpperCase() || '';
+  return `${firstInitial}${lastInitial}`;
+};
 
 const AgentEmailSearchField = ({
   name,
@@ -139,39 +147,54 @@ const AgentEmailSearchField = ({
                               key={agent.nid}
                               value={agent.email}
                               onSelect={() => handleAgentSelect(agent, onChange)}
-                              className="flex flex-col items-start p-3 cursor-pointer"
+                              className={cn(
+                                "flex items-start gap-3 p-3 cursor-pointer transition-colors",
+                                "hover:bg-gray-50 data-[selected=true]:bg-blue-50",
+                                selectedAgent?.nid === agent.nid && "bg-blue-50 border-l-2 border-blue-500"
+                              )}
                             >
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex-1">
-                                  <div className="font-medium text-gray-900">
+                              {/* Avatar */}
+                              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                                {getAgentInitials(agent.firstname, agent.surname)}
+                              </div>
+                              
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                {/* Name and Email */}
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-gray-900 text-base leading-tight">
                                     {agent.firstname} {agent.surname}
                                   </div>
-                                  <div className="text-sm text-gray-600">
+                                  <div className="text-sm text-gray-600 truncate">
                                     {agent.email}
                                   </div>
-                                  {agent.company && (
-                                    <div className="text-xs text-gray-500">
-                                      {agent.company}
-                                    </div>
-                                  )}
-                                  {agent.position && (
-                                    <div className="text-xs text-gray-500">
-                                      {agent.position}
-                                    </div>
-                                  )}
                                 </div>
-                                {selectedAgent?.nid === agent.nid && (
-                                  <div className="text-blue-500 ml-2">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                      <path 
-                                        fillRule="evenodd" 
-                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" 
-                                        clipRule="evenodd" 
-                                      />
-                                    </svg>
+                                
+                                {/* Company and Position Tags */}
+                                {(agent.company || agent.position) && (
+                                  <div className="flex flex-wrap gap-2 mt-2">
+                                    {agent.company && (
+                                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md">
+                                        <Building className="w-3 h-3" />
+                                        <span className="truncate max-w-[120px]">{agent.company}</span>
+                                      </div>
+                                    )}
+                                    {agent.position && (
+                                      <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-md">
+                                        <Briefcase className="w-3 h-3" />
+                                        <span className="truncate max-w-[120px]">{agent.position}</span>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
+                              
+                              {/* Selection Indicator */}
+                              {selectedAgent?.nid === agent.nid && (
+                                <div className="flex-shrink-0 text-blue-600 ml-2">
+                                  <Check className="w-5 h-5" />
+                                </div>
+                              )}
                             </CommandItem>
                           ))}
                         </CommandGroup>
