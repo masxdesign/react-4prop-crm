@@ -236,6 +236,9 @@ const AgentEmailSearchField = ({
     if (!value) {
       setSelectedAgent(null);
       onChange(null);
+    } else if (selectedAgent && value !== selectedAgent.email) {
+      setSelectedAgent(null);
+      onChange(null);
     }
     if (value.length >= 2) {
       setOpen(true);
