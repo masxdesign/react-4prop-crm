@@ -8,7 +8,6 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table';
 import { fetchAgentPaginatedProperties, fetchAgentProperties } from '../api';
-import PropertySchedulesSummary from './PropertySchedulesSummary';
 import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
 import TablePagination from './TablePagination';
@@ -35,16 +34,16 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
     queryKey: ['agent-properties-paginated', agentId, page, pageSize],
     queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
     placeholderData: keepPreviousData,
-    enabled: !!agentId,
+    enabled: !!agentId
   });
 
   // Toggle row expansion
-  const toggleRowExpansion = (rowId) => {
+  const toggleRowExpansion = (pid) => {
     const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(rowId)) {
-      newExpanded.delete(rowId);
+    if (newExpanded.has(pid)) {
+      newExpanded.delete(pid);
     } else {
-      newExpanded.add(rowId);
+      newExpanded.add(pid);
     }
     setExpandedRows(newExpanded);
   };
@@ -60,12 +59,11 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
       header: 'Property ID',
       cell: (info) => (
         <button
-          onClick={() => toggleRowExpansion(info.row.id)}
           className="text-blue-600 hover:text-blue-800 font-medium"
         >
           {info.getValue()}
           <span className="ml-2">
-            {expandedRows.has(info.row.id) ? '▼' : '▶'}
+            {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
           </span>
         </button>
       ),
@@ -79,7 +77,7 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
         return ids.length > 3 ? `${ids.slice(0, 3).join(', ')}...` : ids.join(', ');
       },
     }),
-    columnHelper.accessor('dealsWith', {
+    columnHelper.accessor('dealswith', {
       header: 'Dealing Agents',
       cell: (info) => {
         const agents = info.getValue();
@@ -88,11 +86,18 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
         return agentIds.length > 2 ? `${agentIds.slice(0, 2).join(', ')}...` : agentIds.join(', ');
       },
     }),
-    columnHelper.display({
-      id: 'schedules',
-      header: 'Schedules',
-      cell: (info) => <PropertySchedulesSummary propertyId={info.row.original.id} />,
-    })
+    columnHelper.accessor('schedules_total', {
+      header: 'No. Schedules',
+      cell: (info) => info.getValue()
+    }),
+    columnHelper.accessor('schedules_to_approve', {
+      header: 'To approve',
+      cell: (info) => info.getValue()
+    }),
+    columnHelper.accessor('schedules_to_pay', {
+      header: 'To pay',
+      cell: (info) => info.getValue()
+    }),
   ];
 
   // Table instance

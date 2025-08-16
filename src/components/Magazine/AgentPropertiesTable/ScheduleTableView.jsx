@@ -9,6 +9,7 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table';
 import ScheduleStatus from './ScheduleStatus';
+import { pluralize } from '../util/pluralize';
 
 const columnHelper = createColumnHelper();
 
@@ -17,10 +18,7 @@ const ScheduleTableView = ({ schedules }) => {
     columnHelper.accessor('advertiser_company', {
       header: 'Advertiser',
       cell: (info) => (
-        <div>
-          <div className="font-medium text-gray-900">{info.getValue()}</div>
-          <div className="text-xs text-gray-500">ID: {info.row.original.advertiser_id}</div>
-        </div>
+        <div className="font-medium text-gray-900" title={`Advertiser ID: ${info.row.original.advertiser_id}`}>{info.getValue()}</div>
       ),
     }),
     columnHelper.accessor('period', {
@@ -39,17 +37,12 @@ const ScheduleTableView = ({ schedules }) => {
       cell: (info) => {
         const schedule = info.row.original;
         
-        if (schedule.week_no && schedule.fixed_week_rate) {
-          return `${schedule.week_no} week${schedule.week_no !== 1 ? 's' : ''}`;
+        if (schedule.week_no) {
+          return pluralize(schedule.week_no, 'week', 'weeks');
         } else {
-          if (schedule.end_date && schedule.start_date && 
-              typeof schedule.end_date === 'string' && typeof schedule.start_date === 'string') {
-            const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
-            return `${days} days`;
-          }
           return 'N/A';
         }
-      },
+      }
     }),
     columnHelper.accessor('rate', {
       header: 'Rate',
@@ -59,29 +52,15 @@ const ScheduleTableView = ({ schedules }) => {
         if (schedule.week_no && schedule.fixed_week_rate) {
           return `£${schedule.fixed_week_rate}/week`;
         } else {
-          return `£${schedule.fixed_day_rate}/day`;
+          return 'N/A';
         }
       },
     }),
-    columnHelper.accessor('total_price', {
-      header: 'Total Price',
+    columnHelper.accessor('quote', {
+      header: 'Quote',
       cell: (info) => {
         const schedule = info.row.original;
-        let totalPrice;
-        
-        if (schedule.week_no && schedule.fixed_week_rate) {
-          totalPrice = schedule.total_revenue || (schedule.fixed_week_rate * schedule.week_no);
-        } else {
-          if (schedule.end_date && schedule.start_date && 
-              typeof schedule.end_date === 'string' && typeof schedule.start_date === 'string') {
-            const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
-            totalPrice = schedule.fixed_day_rate * days;
-          } else {
-            totalPrice = 0;
-          }
-        }
-        
-        return <span className="font-semibold text-green-600">£{totalPrice.toFixed(2)}</span>;
+        return <span className="font-semibold text-green-600">£{schedule.quote.toFixed(2)}</span>;
       },
     }),
     columnHelper.accessor('status', {

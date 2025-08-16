@@ -82,6 +82,30 @@ export const fetchScheduleStatusOptions = async () => {
   return response.data;
 };
 
+// Property Schedules Summary API functions
+export const fetchPropertySchedulesSummary = async (propertyId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/schedules/${propertyId}/summary`);
+  return response.data;
+};
+
+// Schedule Update API functions
+export const updateSchedule = async (scheduleId, updateData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/update/${scheduleId}`, updateData);
+  return response.data;
+};
+
+// Schedule Approval API functions
+export const approveSchedule = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/approve`);
+  return response.data;
+};
+
+// Schedule Payment API functions
+export const paySchedule = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/pay`);
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object

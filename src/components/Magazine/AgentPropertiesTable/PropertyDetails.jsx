@@ -33,7 +33,7 @@ const PropertyDetails = ({ property, agentId }) => {
       const normalizedSchedule = normalizeScheduleData(newScheduleData, advertisers);
       
       // Update the property schedules cache with the normalized schedule
-      queryClient.setQueryData(['property-schedules', property.id], (oldData) => {
+      queryClient.setQueryData(['property-schedules', property.pid], (oldData) => {
         if (!oldData) return { data: [normalizedSchedule] };
         return {
           ...oldData,
@@ -42,7 +42,7 @@ const PropertyDetails = ({ property, agentId }) => {
       });
       
       // Also invalidate the query to ensure fresh data on next fetch
-      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.id] });
+      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.pid] });
       
       // Update the agent properties cache to reflect the new schedule
       queryClient.setQueryData(['agent-properties', agentId], (oldData) => {
@@ -50,7 +50,7 @@ const PropertyDetails = ({ property, agentId }) => {
         return {
           ...oldData,
           data: oldData.data.map(prop => 
-            prop.id === property.id 
+            prop.id === property.pid 
               ? { ...prop, schedulesCount: (prop.schedulesCount || 0) + 1 }
               : prop
           )
@@ -69,7 +69,7 @@ const PropertyDetails = ({ property, agentId }) => {
           <h4 className="font-semibold text-lg mb-3">Property Information</h4>
           <div className="space-y-2 text-sm">
             <div>
-              <span className="font-medium">Property ID:</span> {property.id}
+              <span className="font-medium">Property ID:</span> {property.pid}
             </div>
             <div>
               <span className="font-medium">Department:</span> {property.departmentName}
@@ -80,14 +80,14 @@ const PropertyDetails = ({ property, agentId }) => {
             </div>
             <div>
               <span className="font-medium">Dealing Agents:</span>{' '}
-              {property.dealsWith?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
+              {property.dealswith?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
             </div>
           </div>
         </div>
 
         {/* Current Schedules */}
         <div className="lg:col-span-2">
-          <CurrentSchedules propertyId={property.id} />
+          <CurrentSchedules propertyId={property.pid} />
         </div>
       </div>
 

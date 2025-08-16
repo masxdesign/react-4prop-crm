@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
+import { useAuth } from '@/components/Auth/Auth-context';
 import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
+import { AgentEmailSearchField } from '../ui';
 import {
   Dialog,
   DialogContent,
@@ -27,12 +29,17 @@ const ScheduleWizardModal = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   
+  const auth = useAuth();
+  
   // React Hook Form setup
-  const { control, watch, getValues, reset } = useForm({
+  const { control, watch, getValues, reset, setValue } = useForm({
     defaultValues: {
       advertiser_id: '',
       start_date: '',
-      week_no: ''
+      week_no: '',
+      approver_id: '',
+      self_assign: false,
+      payer_id: ''
     }
   });
 
@@ -64,32 +71,67 @@ const ScheduleWizardModal = ({
       case 1: return watchedValues.advertiser_id;
       case 2: return watchedValues.start_date;
       case 3: return watchedValues.week_no;
-      case 4: return true; // Summary step is always valid
+      case 4: return watchedValues.self_assign || watchedValues.approver_id;
+      case 5: return true; // Summary step is always valid
+      case 6: return true; // Checkout step is always valid
       default: return false;
     }
   };
 
   // Navigation handlers
   const goNext = () => {
-    if (currentStep < 4 && isStepValid(currentStep)) {
-      setCurrentStep(currentStep + 1);
+    const maxStep = watchedValues.self_assign ? 6 : 5;
+    if (currentStep < maxStep && isStepValid(currentStep)) {
+      // Skip to checkout if self-assigned from step 4
+      if (currentStep === 4 && watchedValues.self_assign) {
+        setCurrentStep(6);
+      } else {
+        setCurrentStep(currentStep + 1);
+      }
     }
   };
 
   const goBack = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      // If we're on checkout (step 6), go back to step 4 (approver selection)
+      if (currentStep === 6) {
+        setCurrentStep(4);
+      } else {
+        setCurrentStep(currentStep - 1);
+      }
     }
   };
 
   const handleSubmit = () => {
     const values = getValues();
-    onSubmit({
-      property_id: property.id,
-      advertiser_id: parseInt(values.advertiser_id),
-      start_date: values.start_date,
-      week_no: parseInt(values.week_no),
-    });
+    
+    // Ensure all required fields are present and valid
+    const advertiser_id = parseInt(values.advertiser_id);
+    const week_no = parseInt(values.week_no);
+    
+    const scheduleData = {
+      property_id: property.pid,
+      advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
+      start_date: values.start_date || null,
+      week_no: isNaN(week_no) ? null : week_no,
+      approver_id: values.approver_id || null,
+      payer_id: values.payer_id || values.approver_id || null,
+      self_assign: values.self_assign || false
+    };
+    
+    // Validate required fields
+    if (!scheduleData.property_id || !scheduleData.advertiser_id || 
+        !scheduleData.start_date || !scheduleData.week_no) {
+      console.error('Missing required fields:', {
+        property_id: scheduleData.property_id,
+        advertiser_id: scheduleData.advertiser_id,
+        start_date: scheduleData.start_date,
+        week_no: scheduleData.week_no
+      });
+      return;
+    }
+    
+    onSubmit(scheduleData);
   };
 
   const handleClose = () => {
@@ -120,7 +162,7 @@ const ScheduleWizardModal = ({
             rules={{ required: 'Start date is required' }}
             label="Start Date"
             minDate={format(new Date(), 'yyyy-MM-dd')}
-            propertyId={property.id}
+            propertyId={property.pid}
             advertiserId={watchedValues.advertiser_id}
           />
         );
@@ -140,6 +182,60 @@ const ScheduleWizardModal = ({
         );
 
       case 4:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Approver</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="self_assign"
+                  checked={watchedValues.self_assign}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    if (isChecked) {
+                      // Auto-assign current user as approver and payer
+                      setValue('approver_id', auth?.user?.neg_id || '');
+                      setValue('payer_id', auth?.user?.neg_id || '');
+                      setValue('self_assign', true);
+                    } else {
+                      setValue('approver_id', '');
+                      setValue('payer_id', '');
+                      setValue('self_assign', false);
+                    }
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="self_assign" className="text-sm font-medium text-gray-700">
+                  I will handle approval and payment myself
+                </label>
+              </div>
+              
+              {!watchedValues.self_assign && (
+                <AgentEmailSearchField
+                  name="approver_id"
+                  control={control}
+                  rules={{ required: 'Please select an approver' }}
+                  label="Select Approver"
+                  placeholder="Type agent email to search..."
+                  className="max-w-md"
+                />
+              )}
+              
+              {watchedValues.self_assign && (
+                <div className="bg-green-50 p-4 rounded border border-green-200">
+                  <p className="text-sm text-green-700">
+                    You will be assigned as both the approver and payer for this schedule.
+                    You'll proceed to checkout to complete the payment.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Summary</h3>
@@ -185,6 +281,41 @@ const ScheduleWizardModal = ({
           </div>
         );
 
+      case 6:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Checkout</h3>
+            
+            <div className="bg-blue-50 p-4 rounded border border-blue-200">
+              <h4 className="font-medium text-blue-900 mb-3">Payment Summary</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Total Amount:</span>
+                  <span className="font-bold text-green-600 text-lg">£{totalPrice.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-blue-700">Payment Method:</span>
+                  <span className="font-medium">Account Credit</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-green-50 p-4 rounded border border-green-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-800">Ready to Complete</p>
+                  <p className="text-xs text-green-700">
+                    By clicking "Complete Payment", the schedule will be automatically approved and marked as paid.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -195,7 +326,8 @@ const ScheduleWizardModal = ({
       case 1: return 'Select Advertiser';
       case 2: return 'Choose Start Date';
       case 3: return 'Number of Weeks';
-      case 4: return 'Confirm Booking';
+      case 4: return 'Select Approver';
+      case 5: return 'Confirm Booking';
       default: return 'Schedule Advertiser';
     }
   };
@@ -205,7 +337,7 @@ const ScheduleWizardModal = ({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {getStepTitle()} - Step {currentStep} of 4
+            {getStepTitle()} - Step {currentStep === 6 ? '6' : currentStep} of {watchedValues.self_assign && currentStep > 4 ? '6' : '5'}
           </DialogTitle>
         </DialogHeader>
 
@@ -255,7 +387,7 @@ const ScheduleWizardModal = ({
               </Button>
             )}
             
-            {currentStep < 4 ? (
+            {!((currentStep === 5 && !watchedValues.self_assign) || currentStep === 6) ? (
               <Button 
                 onClick={goNext} 
                 disabled={!isStepValid(currentStep)}
@@ -267,7 +399,7 @@ const ScheduleWizardModal = ({
                 onClick={handleSubmit}
                 disabled={isLoading || !totalPrice}
               >
-                {isLoading ? 'Scheduling...' : `Schedule for £${totalPrice.toFixed(2)}`}
+                {isLoading ? 'Processing...' : (currentStep === 6 ? 'Complete Payment' : `Schedule for £${totalPrice.toFixed(2)}`)}
               </Button>
             )}
           </div>

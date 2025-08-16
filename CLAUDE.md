@@ -100,3 +100,4 @@ When working with this codebase:
 - ES Modules throughout, no TypeScript or TDD
 - Backend: Node v20, Express.js, MSSQL 2017 compatibility level 100
 - when creating a ui form hook component always create a *.example.jsx to test it
+- property.pid is the property ID
