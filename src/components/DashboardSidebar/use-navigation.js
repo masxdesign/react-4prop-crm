@@ -19,5 +19,9 @@ export function useNavigation(negId) {
     return navigationConfig.portals.filter(hasAccess)
   }, [negId])
 
-  return { mainNavItems, portalItems }
+  const magazineItems = useMemo(() => {
+    return navigationConfig.magazine.filter(hasAccess)
+  }, [negId])
+
+  return { mainNavItems, portalItems, magazineItems }
 }
