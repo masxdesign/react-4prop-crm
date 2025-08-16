@@ -76,6 +76,12 @@ export const searchAgents = async (searchTerm) => {
   return response.data || [];
 };
 
+// Schedule Status API functions
+export const fetchScheduleStatusOptions = async () => {
+  const response = await bizchatClient.get('/data/mag_schedule_status.json');
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object
