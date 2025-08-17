@@ -7,7 +7,6 @@ import companyCombiner from '@/services/companyCombiner';
 import lowerKeyObject from '@/utils/lowerKeyObject';
 import displaySize from '@/utils/displaySize';
 import displayTenure from '@/utils/displayTenure';
-import myDateTimeFormat from '@/utils/myDateTimeFormat';
 import { escapetext, fallVals, strip_tags } from '@/utils/misc';
 import htmlEntities from '@/utils/htmlEntities';
 import Size from '@/utils/Size';
@@ -412,13 +411,13 @@ export const enhancedPropertyParse = {
  * @returns {Object} Enhanced property object
  */
 export const enhancedPropertyCombiner = (
-  pid,
   originalProperty,
   propertyTypes,
   contentArray = [],
   companiesPool = [],
   settings = { addressShowMore: true, addressShowBuilding: true }
 ) => {
+  const pid = originalProperty.pid
   // Input validation
   if (!pid || !originalProperty || typeof originalProperty !== 'object') {
     console.warn('Invalid property data provided to enhancedPropertyCombiner');
@@ -453,18 +452,10 @@ export const enhancedPropertyCombiner = (
 
     // Extract additional fields from original property
     const {
-      grade,
-      gradingupdated,
-      grade_from_uid,
-      chat_id,
-      tag_name,
-      tag_id,
-      enquiry_choices,
       status,
       dealswith = '',
       latitude,
-      longitude,
-      gradinguid
+      longitude
     } = originalProperty;
 
     // Parse agents list
@@ -480,15 +471,10 @@ export const enhancedPropertyCombiner = (
     const enhancedProperty = {
       // Core identifiers
       id: pid,
-      key: `${pid}.${gradinguid || ''}`,
+      key: pid,
 
       // Basic info
       title,
-      grade,
-      chat_id,
-      tag_name,
-      tag_id,
-      enquiry_choices,
 
       // Processed text fields
       typesText,
@@ -513,8 +499,6 @@ export const enhancedPropertyCombiner = (
       thumbnail: parsedPictures.thumbs[0] || null,
       statusText: PROPERTY_STATUS_NAMES[status] || 'Unknown',
       statusColor: PROPERTY_STATUS_COLORS[status] || 'gray',
-      grade_from_uid,
-      grade_updated: gradingupdated ? myDateTimeFormat(gradingupdated) : null,
 
       // Geographic data
       lat: latitude ? parseFloat(latitude) : null,
@@ -545,9 +529,82 @@ export const propertyUtils = {
       return false;
     }
 
-    // Check for required fields
-    const requiredFields = ['pid'];
-    return requiredFields.every(field => property[field] !== undefined);
+    // Core required fields - these are essential for transformation
+    const requiredFields = [
+      // Core identifiers
+      'pid', // Property ID (absolutely required)
+      
+      // Address fields (parseAddress)
+      'hideidentity', // Privacy/masking flags
+      'centreestate', // Estate/development name
+      'buildingnumber', // Building number
+      'building', // Building name
+      'streetnumber', // Street number
+      'street', // Street name
+      'towncity', // Town/city name
+      'suburblocality', // Suburb/locality name
+      'matchpostcode', // Postcode
+      
+      // Type classification (parseTypes)
+      'types', // Property type IDs
+      'pstids', // Property subtype IDs
+      
+      // Size information (parseSize)
+      'sizeunit', // Internal size unit
+      'sizemin', // Minimum internal size
+      'sizemax', // Maximum internal size
+      'sizeunitexternal', // External/land size unit
+      'minexternal', // Minimum external size
+      'maxexternal', // Maximum external size
+      
+      // Pricing & tenure (parseTenure)
+      'tenure', // Tenure type (bitfield)
+      'price', // Sale price
+      'rent', // Rental price
+      'rentperiod', // Rental period type
+      'minintsqft', // Minimum internal square footage
+      'maxintsqft', // Maximum internal square footage
+      'pricemin', // Minimum price range
+      'pricemax', // Maximum price range
+      'rentmin', // Minimum rent range
+      'rentmax', // Maximum rent range
+      
+      // Content fields (parseContent)
+      'description', // Property description
+      'locationdesc', // Location description
+      'amenities', // Property amenities
+      
+      // Images (parsePictures)
+      'images', // Image data string
+      
+      // Company information (parseCompanies)
+      'cids', // Company IDs
+      
+      // Additional metadata (direct extraction)
+      'status', // Property status code
+      'dealswith', // Dealing agent IDs
+      'latitude', // Geographic latitude
+      'longitude' // Geographic longitude
+    ];
+
+    // Only require 'pid' as absolutely essential, others can be undefined/null
+    // but should exist as properties for the transformation to work properly
+    const essentialFields = ['pid'];
+    
+    // Check essential fields are present and not undefined
+    const hasEssentialFields = essentialFields.every(field => 
+      property[field] !== undefined && property[field] !== null
+    );
+    
+    // Check that the property object has the expected structure
+    // (fields can be empty/null but should exist for transformation)
+    const hasExpectedStructure = requiredFields.every(field => 
+      property.hasOwnProperty(field)
+    );
+    
+    return hasEssentialFields; // For now, only require essential fields
+    // Uncomment the line below if you want to enforce full structure validation:
+    // return hasEssentialFields && hasExpectedStructure;
   },
 
   /**
@@ -715,7 +772,6 @@ export const usePropertyDetails = (rawPropertiesArray = [], options = {}) => {
             const contentArray = contents[pid] || [];
             
             return enhancedPropertyCombiner(
-              pid,
               property,
               propertyTypes,
               contentArray,
