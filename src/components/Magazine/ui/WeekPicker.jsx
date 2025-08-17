@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { pluralizeWeeks } from '../util/pluralize';
 
 // AutoFocusInput component for handling input focus when revealed
-const AutoFocusInput = ({ autoFocus = false, ...props }) => {
+const AutoFocusInput = ({ autoFocus = false, inputDescription, ...props }) => {
   const inputRef = useRef(null);
   
   useEffect(() => {
@@ -15,7 +15,12 @@ const AutoFocusInput = ({ autoFocus = false, ...props }) => {
     }
   }, [autoFocus]);
   
-  return <Input ref={inputRef} {...props} />;
+  return (
+    <div className='flex flex-col gap-2'>
+      <Input ref={inputRef} {...props} />
+      <span className='text-xs opacity-50'>{inputDescription}</span>
+    </div>
+  )
 };
 
 const WeekPicker = ({
@@ -162,7 +167,7 @@ const WeekPicker = ({
                   className={buttonClassName}
                   {...buttonProps}
                 >
-                  Other
+                  Specify
                 </Button>
               </div>
               

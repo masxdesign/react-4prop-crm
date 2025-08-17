@@ -14,6 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { pluralizeWeeks } from '../util/pluralize';
 
 const ScheduleWizardModal = ({ 
   open, 
@@ -147,6 +148,7 @@ const ScheduleWizardModal = ({
         return (
           <AdvertiserPicker
             name="advertiser_id"
+            label="Where should your property be advertised?"
             control={control}
             rules={{ required: 'Please select an advertiser' }}
             advertisers={advertisers}
@@ -160,7 +162,7 @@ const ScheduleWizardModal = ({
             control={control}
             name="start_date"
             rules={{ required: 'Start date is required' }}
-            label="Start Date"
+            label="When should your property be posted?"
             minDate={format(new Date(), 'yyyy-MM-dd')}
             propertyId={property.pid}
             advertiserId={watchedValues.advertiser_id}
@@ -171,13 +173,39 @@ const ScheduleWizardModal = ({
         return (
           <WeekPicker
             name="week_no"
+            label="How long should it be advertised?"
             control={control}
             rules={{
               required: 'Number of weeks is required',
               min: { value: 1, message: 'Must be at least 1 week' },
               max: { value: 52, message: 'Cannot exceed 52 weeks' }
             }}
-            presetWeeks={[1, 2, 3, 4, 6, 8, 12]}
+            presetWeeks={[1, 4, 12]}
+            inputProps={{
+              inputDescription: endDate 
+                ? `Calculated end date ${format(new Date(endDate), 'MMM dd, yyyy')}`
+                : null
+            }}
+            renderButton={({ isSelected, onClick, disabled, week }) => {
+              return (
+                <Button
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  disabled={disabled}
+                  onClick={onClick}
+                  className="flex flex-col gap-0 leading-none"
+                >
+                  <span>
+                    {pluralizeWeeks(week)}
+                  </span>
+                  {isSelected && endDate && (
+                    <span className='text-xs opacity-50'>
+                      {format(new Date(endDate), 'MMM dd, yyyy')}
+                    </span>
+                  )}
+                </Button>
+              )
+            }}
           />
         );
 
@@ -323,9 +351,9 @@ const ScheduleWizardModal = ({
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return 'Select Advertiser';
-      case 2: return 'Choose Start Date';
-      case 3: return 'Number of Weeks';
+      case 1: return 'Advertiser';
+      case 2: return 'Start Date';
+      case 3: return 'Duration';
       case 4: return 'Select Approver';
       case 5: return 'Confirm Booking';
       default: return 'Schedule Advertiser';
