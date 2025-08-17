@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import { format, parseISO } from 'date-fns';
 import {
   useReactTable,
   getCoreRowModel,
@@ -12,6 +11,7 @@ import ScheduleStatus from './ScheduleStatus';
 import ScheduleActionButtons from '../ui/ScheduleActionButtons';
 import WorkflowTimeline from '../ui/WorkflowTimeline';
 import useUsersByNids from '@/hooks/useUsersByNids';
+import { formatDateRange } from '../util/formatDateRange';
 import { pluralize } from '../util/pluralize';
 
 const columnHelper = createColumnHelper();
@@ -45,15 +45,14 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
       header: 'Period',
       cell: (info) => {
         const schedule = info.row.original;
-        if (schedule.start_date && schedule.end_date && 
-            typeof schedule.start_date === 'string' && typeof schedule.end_date === 'string') {
-          return `${format(parseISO(schedule.start_date), 'MMM dd, yyyy')} - ${format(parseISO(schedule.end_date), 'MMM dd, yyyy')}`;
+        if (schedule.start_date && schedule.end_date) {
+          return formatDateRange(schedule.start_date, schedule.end_date);
         }
         return 'N/A';
       },
-      size: 140,
-      minSize: 140,
-      maxSize: 140,
+      size: 120,
+      minSize: 120,
+      maxSize: 120,
     }),
     columnHelper.accessor('duration', {
       header: 'Duration',
@@ -66,9 +65,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
           return 'N/A';
         }
       },
-      size: 80,
-      minSize: 80,
-      maxSize: 80,
+      size: 40,
+      minSize: 40,
+      maxSize: 40,
     }),
     columnHelper.accessor('rate', {
       header: 'Rate',
@@ -81,9 +80,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
           return 'N/A';
         }
       },
-      size: 90,
-      minSize: 90,
-      maxSize: 90,
+      size: 40,
+      minSize: 40,
+      maxSize: 40,
     }),
     columnHelper.accessor('quote', {
       header: 'Quote',
@@ -99,9 +98,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
     columnHelper.accessor('status', {
       header: 'Status',
       cell: (info) => <ScheduleStatus schedule={info.row.original} />,
-      size: 100,
-      minSize: 100,
-      maxSize: 100,
+      size: 120,
+      minSize: 120,
+      maxSize: 120,
     }),
     columnHelper.accessor('workflow', {
       header: 'Workflow',
@@ -115,9 +114,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         );
       },
       enableSorting: false,
-      size: 160,
-      minSize: 160,
-      maxSize: 160,
+      size: 180,
+      minSize: 180,
+      maxSize: 180,
     }),
     columnHelper.accessor('actions', {
       header: 'Actions',
@@ -145,48 +144,46 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
   });
 
   return (
-    <div className="max-h-80 overflow-auto border rounded-md">
-      <div className="overflow-x-auto">
-        <table className="w-full" style={{ minWidth: '870px' }}>
-        <thead className="bg-gray-50 sticky top-0 shadow-sm">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <th
-                  key={header.id}
-                  className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={header.column.getToggleSortingHandler()}
-                  style={{ width: `${header.getSize()}px` }}
-                >
-                  <div className="flex items-center space-x-1">
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                    {{
-                      asc: ' ↑',
-                      desc: ' ↓',
-                    }[header.column.getIsSorted()] ?? null}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          ))}
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50">
-              {row.getVisibleCells().map((cell) => (
-                <td 
-                  key={cell.id} 
-                  className="px-2 py-2 text-xs"
-                  style={{ width: `${cell.column.getSize()}px` }}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-        </table>
-      </div>
+    <div className="max-h-96 overflow-auto border rounded-md">
+      <table className="w-full" style={{ minWidth: 1150 }}>
+        <thead className="bg-gray-50 sticky top-0 shadow-sm z-50">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 align-top"
+                    onClick={header.column.getToggleSortingHandler()}
+                    style={{ width: `${header.getSize()}px` }}
+                  >
+                    <div className="flex items-center space-x-1">
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: ' ↑',
+                        desc: ' ↓',
+                      }[header.column.getIsSorted()] ?? null}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id} className="hover:bg-gray-50">
+                {row.getVisibleCells().map((cell) => (
+                  <td 
+                    key={cell.id} 
+                    className="px-2 py-2 text-xs align-top"
+                    style={{ width: `${cell.column.getSize()}px` }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+      </table>
     </div>
   );
 };
