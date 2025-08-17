@@ -39,6 +39,7 @@ const ScheduleWizardModal = ({
       start_date: '',
       week_no: '',
       approver_id: '',
+      approver_email: '',
       self_assign: false,
       payer_id: ''
     }
@@ -66,6 +67,24 @@ const ScheduleWizardModal = ({
 
   const { totalPrice, weeks, endDate } = calculateBookingDetails();
 
+  // Get selected approver info
+  const getApproverInfo = () => {
+    if (watchedValues.self_assign) {
+      return {
+        type: 'self_assign',
+        name: auth?.user?.name || 'Current User',
+        email: auth?.user?.email || 'N/A'
+      };
+    } else if (watchedValues.approver_id) {
+      return {
+        type: 'approver',
+        name: 'Selected Approver',
+        email: watchedValues.approver_email || `Agent ID: ${watchedValues.approver_id}`
+      };
+    }
+    return null;
+  };
+
   // Step validation
   const isStepValid = (step) => {
     switch (step) {
@@ -74,32 +93,21 @@ const ScheduleWizardModal = ({
       case 3: return watchedValues.week_no;
       case 4: return watchedValues.self_assign || watchedValues.approver_id;
       case 5: return true; // Summary step is always valid
-      case 6: return true; // Checkout step is always valid
       default: return false;
     }
   };
 
   // Navigation handlers
   const goNext = () => {
-    const maxStep = watchedValues.self_assign ? 6 : 5;
+    const maxStep = 5;
     if (currentStep < maxStep && isStepValid(currentStep)) {
-      // Skip to checkout if self-assigned from step 4
-      if (currentStep === 4 && watchedValues.self_assign) {
-        setCurrentStep(6);
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const goBack = () => {
     if (currentStep > 1) {
-      // If we're on checkout (step 6), go back to step 4 (approver selection)
-      if (currentStep === 6) {
-        setCurrentStep(4);
-      } else {
-        setCurrentStep(currentStep - 1);
-      }
+      setCurrentStep(currentStep - 1);
     }
   };
 
@@ -115,10 +123,19 @@ const ScheduleWizardModal = ({
       advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
       start_date: values.start_date || null,
       week_no: isNaN(week_no) ? null : week_no,
-      approver_id: values.approver_id || null,
-      payer_id: values.payer_id || values.approver_id || null,
       self_assign: values.self_assign || false
     };
+    
+    // Include approver_id and payer_id based on self_assign status
+    if (values.self_assign) {
+      // For self_assign, set both approver_id and payer_id to current user
+      scheduleData.approver_id = values.approver_id || null;
+      scheduleData.payer_id = values.payer_id || null;
+    } else {
+      // For external approver, only send approver_id (payer_id will be set by approver later)
+      scheduleData.approver_id = values.approver_id || null;
+      scheduleData.payer_id = null;
+    }
     
     // Validate required fields
     if (!scheduleData.property_id || !scheduleData.advertiser_id || 
@@ -189,6 +206,7 @@ const ScheduleWizardModal = ({
             renderButton={({ isSelected, onClick, disabled, week }) => {
               return (
                 <Button
+                  key={week}
                   type="button"
                   variant={isSelected ? "default" : "outline"}
                   disabled={disabled}
@@ -229,6 +247,7 @@ const ScheduleWizardModal = ({
                       setValue('self_assign', true);
                     } else {
                       setValue('approver_id', '');
+                      setValue('approver_email', '');
                       setValue('payer_id', '');
                       setValue('self_assign', false);
                     }
@@ -248,6 +267,11 @@ const ScheduleWizardModal = ({
                   label="Select Approver"
                   placeholder="Type agent email to search..."
                   className="max-w-md"
+                  onAgentSelect={(agent) => {
+                    setValue('approver_id', agent.nid);
+                    setValue('approver_email', agent.email);
+                  }}
+                  selectedAgentEmail={watchedValues.approver_email}
                 />
               )}
               
@@ -273,6 +297,58 @@ const ScheduleWizardModal = ({
               <h4 className="font-medium text-gray-900 mb-2">Property</h4>
               <p className="text-sm text-gray-600">{property.pid} - {property.pstids}</p>
             </div>
+
+            {/* Approver Information */}
+            {(() => {
+              const approverInfo = getApproverInfo();
+              return approverInfo && (
+                <div className={`p-4 rounded border ${
+                  approverInfo.type === 'self_assign' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-purple-50 border-purple-200'
+                }`}>
+                  <h4 className={`font-medium mb-2 ${
+                    approverInfo.type === 'self_assign' 
+                      ? 'text-green-900' 
+                      : 'text-purple-900'
+                  }`}>
+                    {approverInfo.type === 'self_assign' ? 'Self-Assigned' : 'Approver Selected'}
+                  </h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className={
+                        approverInfo.type === 'self_assign' 
+                          ? 'text-green-700' 
+                          : 'text-purple-700'
+                      }>
+                        {approverInfo.type === 'self_assign' ? 'You will handle:' : 'Approver:'}
+                      </span>
+                      <span className="font-medium">{approverInfo.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={
+                        approverInfo.type === 'self_assign' 
+                          ? 'text-green-700' 
+                          : 'text-purple-700'
+                      }>
+                        Email:
+                      </span>
+                      <span className="font-medium">{approverInfo.email}</span>
+                    </div>
+                    {approverInfo.type === 'self_assign' && (
+                      <p className="text-xs text-green-600 mt-2">
+                        You will approve and pay for this schedule immediately.
+                      </p>
+                    )}
+                    {approverInfo.type === 'approver' && (
+                      <p className="text-xs text-purple-600 mt-2">
+                        This person will need to approve and arrange payment for the schedule.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Booking Details */}
             {selectedAdvertiser && weeks > 0 && watchedValues.start_date && (
@@ -309,40 +385,6 @@ const ScheduleWizardModal = ({
           </div>
         );
 
-      case 6:
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Checkout</h3>
-            
-            <div className="bg-blue-50 p-4 rounded border border-blue-200">
-              <h4 className="font-medium text-blue-900 mb-3">Payment Summary</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-blue-700">Total Amount:</span>
-                  <span className="font-bold text-green-600 text-lg">£{totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-blue-700">Payment Method:</span>
-                  <span className="font-medium">Account Credit</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-green-50 p-4 rounded border border-green-200">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">✓</span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-green-800">Ready to Complete</p>
-                  <p className="text-xs text-green-700">
-                    By clicking "Complete Payment", the schedule will be automatically approved and marked as paid.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
 
       default:
         return null;
@@ -355,7 +397,7 @@ const ScheduleWizardModal = ({
       case 2: return 'Start Date';
       case 3: return 'Duration';
       case 4: return 'Select Approver';
-      case 5: return 'Confirm Booking';
+      case 5: return 'Summary & Confirmation';
       default: return 'Schedule Advertiser';
     }
   };
@@ -365,7 +407,7 @@ const ScheduleWizardModal = ({
       <DialogContent className="max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            {getStepTitle()} - Step {currentStep === 6 ? '6' : currentStep} of {watchedValues.self_assign && currentStep > 4 ? '6' : '5'}
+            {getStepTitle()} - Step {currentStep} of 5
           </DialogTitle>
         </DialogHeader>
 
@@ -373,7 +415,7 @@ const ScheduleWizardModal = ({
           {/* Progress Indicator */}
           <div className="flex justify-center mb-6">
             <div className="flex space-x-2">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -415,7 +457,7 @@ const ScheduleWizardModal = ({
               </Button>
             )}
             
-            {!((currentStep === 5 && !watchedValues.self_assign) || currentStep === 6) ? (
+            {currentStep < 5 ? (
               <Button 
                 onClick={goNext} 
                 disabled={!isStepValid(currentStep)}
@@ -427,7 +469,7 @@ const ScheduleWizardModal = ({
                 onClick={handleSubmit}
                 disabled={isLoading || !totalPrice}
               >
-                {isLoading ? 'Processing...' : (currentStep === 6 ? 'Complete Payment' : `Schedule for £${totalPrice.toFixed(2)}`)}
+                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Make payment' : 'Create schedule')}
               </Button>
             )}
           </div>

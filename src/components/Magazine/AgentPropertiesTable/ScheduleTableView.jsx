@@ -60,7 +60,8 @@ const ScheduleTableView = ({ schedules }) => {
       header: 'Quote',
       cell: (info) => {
         const schedule = info.row.original;
-        return <span className="font-semibold text-green-600">£{schedule.quote.toFixed(2)}</span>;
+        const quote = schedule.quote || 0;
+        return <span className="font-semibold text-green-600">£{quote.toFixed(2)}</span>;
       },
     }),
     columnHelper.accessor('status', {

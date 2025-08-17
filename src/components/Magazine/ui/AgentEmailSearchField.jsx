@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { cva } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
@@ -209,6 +209,8 @@ const AgentEmailSearchField = ({
   placeholder = "Type agent email to search...",
   emptyMessage = "No agents found",
   size = "default",
+  onAgentSelect = null,
+  selectedAgentEmail = null,
   
   className,
   ...props
@@ -220,6 +222,14 @@ const AgentEmailSearchField = ({
 
   const { agents, isSearching, hasResults, debouncedSearchTerm } = useAgentSearch(searchTerm);
 
+  // Initialize search term from selectedAgentEmail prop (for navigation back scenario)
+  useEffect(() => {
+    if (selectedAgentEmail && !searchTerm && !selectedAgent) {
+      setSearchTerm(selectedAgentEmail);
+      setSelectedAgent({ email: selectedAgentEmail });
+    }
+  }, [selectedAgentEmail, searchTerm, selectedAgent]);
+
   const handleImageError = (agentNid) => {
     setFailedImages(prev => new Set(prev).add(agentNid));
   };
@@ -229,6 +239,11 @@ const AgentEmailSearchField = ({
     setSearchTerm(agent.email);
     setOpen(false);
     onChange(agent.nid); // Return the nid as the field value
+    
+    // Call optional callback with full agent data
+    if (onAgentSelect) {
+      onAgentSelect(agent);
+    }
   };
 
   const handleInputChange = (value, onChange) => {
@@ -267,7 +282,7 @@ const AgentEmailSearchField = ({
         name={name}
         control={control}
         rules={rules}
-        render={({ field: { onChange }, fieldState: { error } }) => {
+        render={({ field: { onChange, value }, fieldState: { error } }) => {
           return (
             <div className="relative">
               <Popover open={open} onOpenChange={setOpen}>
