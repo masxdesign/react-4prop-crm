@@ -312,6 +312,7 @@ const AgentEmailSearchField = ({
                     }
                   }}
                   style={{ width: "var(--radix-popper-anchor-width)" }}
+                  portalled={false}
                 >
                   <Command>
                     <CommandList>

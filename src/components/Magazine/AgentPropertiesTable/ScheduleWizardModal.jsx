@@ -334,7 +334,7 @@ const ScheduleWizardModal = ({
 
   return (
     <Dialog open={open} onOpenChange={showDialogClose ? handleClose : undefined}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {getStepTitle()} - Step {currentStep === 6 ? '6' : currentStep} of {watchedValues.self_assign && currentStep > 4 ? '6' : '5'}
