@@ -9,11 +9,28 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table';
 import ScheduleStatus from './ScheduleStatus';
+import ScheduleActionButtons from '../ui/ScheduleActionButtons';
+import WorkflowTimeline from '../ui/WorkflowTimeline';
+import useUsersByNids from '@/hooks/useUsersByNids';
 import { pluralize } from '../util/pluralize';
 
 const columnHelper = createColumnHelper();
 
-const ScheduleTableView = ({ schedules }) => {
+const ScheduleTableView = ({ schedules, propertyId }) => {
+  // Extract all unique NIDs for batch user fetching
+  const allNids = useMemo(() => {
+    const nids = [];
+    schedules.forEach(schedule => {
+      if (schedule.agent_id) nids.push(schedule.agent_id); // Creator
+      if (schedule.approver_id) nids.push(schedule.approver_id);
+      if (schedule.payer_id) nids.push(schedule.payer_id);
+    });
+    return [...new Set(nids)];
+  }, [schedules]);
+
+  // Fetch user data for all NIDs
+  const { getUserByNid, isLoading: usersLoading } = useUsersByNids(allNids);
+
   const columns = useMemo(() => [
     columnHelper.accessor('advertiser_company', {
       header: 'Advertiser',
@@ -67,8 +84,31 @@ const ScheduleTableView = ({ schedules }) => {
     columnHelper.accessor('status', {
       header: 'Status',
       cell: (info) => <ScheduleStatus schedule={info.row.original} />,
+    }),
+    columnHelper.accessor('workflow', {
+      header: 'Workflow',
+      cell: (info) => {
+        const schedule = info.row.original;
+        return (
+          <WorkflowTimeline 
+            schedule={schedule}
+            getUserByNid={getUserByNid}
+          />
+        );
+      },
+      enableSorting: false,
+    }),
+    columnHelper.accessor('actions', {
+      header: 'Actions',
+      cell: (info) => (
+        <ScheduleActionButtons 
+          schedule={info.row.original} 
+          propertyId={propertyId}
+        />
+      ),
+      enableSorting: false,
     })
-  ], []);
+  ], [propertyId, getUserByNid]);
 
   const table = useReactTable({
     data: schedules,

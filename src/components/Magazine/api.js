@@ -95,14 +95,31 @@ export const updateSchedule = async (scheduleId, updateData) => {
 };
 
 // Schedule Approval API functions
-export const approveSchedule = async (scheduleId) => {
-  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/approve`);
+export const approveSchedule = async (scheduleId, approvalData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/approve`, approvalData);
   return response.data;
 };
 
 // Schedule Payment API functions
 export const paySchedule = async (scheduleId) => {
   const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/pay`);
+  return response.data;
+};
+
+// Schedule Assign Approver API functions
+export const assignApprover = async (scheduleId, assignData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/${scheduleId}/assign-approver`, assignData);
+  return response.data;
+};
+
+// User Information API functions
+export const fetchUsersByNids = async (nids) => {
+  const filteredNids = nids.filter(Boolean);
+  if (filteredNids.length === 0) return [];
+  
+  const response = await bizchatClient.post('/api/users', {
+    ids: filteredNids.join(',')
+  });
   return response.data;
 };
 

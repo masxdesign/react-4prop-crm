@@ -3,7 +3,8 @@ import isEmpty from "lodash/isEmpty";
 
 const SIZES = {
     default: 1,
-    small: 2
+    small: 2,
+    sm: 2
 }
 
 const getAvatarImageUrl = (user, size = "default") => {

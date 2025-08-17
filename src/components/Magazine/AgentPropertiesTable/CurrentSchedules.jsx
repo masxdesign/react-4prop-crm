@@ -104,7 +104,7 @@ const CurrentSchedules = ({ propertyId }) => {
       {viewMode === 'card' ? (
         <ScheduleCardView schedules={schedules} />
       ) : (
-        <ScheduleTableView schedules={schedules} />
+        <ScheduleTableView schedules={schedules} propertyId={propertyId} />
       )}
     </div>
   );

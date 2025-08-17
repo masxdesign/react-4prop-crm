@@ -1,0 +1,217 @@
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import AgentProfile from './AgentProfile';
+
+// Helper component for individual timeline steps
+const TimelineStep = ({ 
+  step, 
+  isLast = false, 
+  isCollapsed = false 
+}) => {
+  const { agent, timestamp, isCompleted, label } = step;
+
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return null;
+    try {
+      const date = parseISO(timestamp);
+      const timeStr = format(date, 'h:mmaaa');
+      const relativeStr = formatDistanceToNow(date, { addSuffix: true });
+      return `@${timeStr} (${relativeStr})`;
+    } catch {
+      return null;
+    }
+  };
+
+  return (
+    <div className={cn(
+      "relative",
+      !isLast && !isCollapsed && "pb-3"
+    )}>
+      {/* Connecting line */}
+      {!isLast && !isCollapsed && (
+        <div className="absolute left-2.5 top-5 w-0.5 h-full bg-gray-200" />
+      )}
+      
+      <div className="flex items-start gap-2.5">
+        {/* Status indicator */}
+        <div className={cn(
+          "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-white relative z-10",
+          isCompleted 
+            ? "bg-green-500" 
+            : "bg-gray-300"
+        )}>
+          {isCompleted ? (
+            <CheckCircle className="w-3 h-3" />
+          ) : (
+            <Circle className="w-3 h-3" />
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Status label */}
+          <div className={cn(
+            "font-medium text-xs leading-tight",
+            isCompleted ? "text-gray-900" : "text-gray-600"
+          )}>
+            {label}
+          </div>
+          
+          {/* Agent name - only show if not collapsed */}
+          {agent && !isCollapsed && (
+            <div className="text-xs text-gray-700 mt-0.5">
+              {agent.firstname} {agent.surname}
+            </div>
+          )}
+
+          {/* Agent name - collapsed state (below status) */}
+          {agent && isCollapsed && (
+            <div className="text-xs text-gray-700 mt-0.5">
+              {agent.firstname} {agent.surname}
+            </div>
+          )}
+          
+          {/* Timestamp - only in expanded state */}
+          {timestamp && !isCollapsed && (
+            <div className="text-xs text-gray-500 mt-0.5">
+              {formatTimestamp(timestamp)}
+            </div>
+          )}
+          
+          {/* Profile picture - only in expanded state */}
+          {agent && !isCollapsed && (
+            <div className="mt-1.5">
+              <AgentProfile 
+                user={agent} 
+                role={step.role}
+                size="sm"
+                showRoleIcon={false}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WorkflowTimeline = ({ 
+  schedule, 
+  getUserByNid, 
+  className,
+  ...props 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Build timeline steps
+  const getTimelineSteps = () => {
+    const steps = [];
+
+    // 1. Created step (always present)
+    const creator = getUserByNid(schedule.agent_id);
+    if (creator) {
+      steps.push({
+        id: 'created',
+        agent: creator,
+        timestamp: schedule.created_at,
+        isCompleted: true,
+        label: 'Schedule Created',
+        role: 'creator'
+      });
+    }
+
+    // 2. Approval step (if approver assigned)
+    const approver = getUserByNid(schedule.approver_id);
+    if (approver) {
+      steps.push({
+        id: 'approved',
+        agent: approver,
+        timestamp: schedule.approved_at,
+        isCompleted: !!schedule.approved_at,
+        label: schedule.approved_at ? 'Schedule Approved' : 'Pending Approval',
+        role: 'approver'
+      });
+    }
+
+    // 3. Payment step (if payer assigned)
+    const payer = getUserByNid(schedule.payer_id);
+    if (payer) {
+      steps.push({
+        id: 'paid',
+        agent: payer,
+        timestamp: schedule.paid_at,
+        isCompleted: !!schedule.paid_at,
+        label: schedule.paid_at ? 'Payment Complete' : 'Pending Payment',
+        role: 'payer'
+      });
+    }
+
+    return steps;
+  };
+
+  const steps = getTimelineSteps();
+  
+  // Find the current/latest relevant step for collapsed view
+  const getCurrentStep = () => {
+    // Show the latest incomplete step, or the last completed step
+    const incompleteStep = steps.find(step => !step.isCompleted);
+    return incompleteStep || steps[steps.length - 1];
+  };
+
+  const currentStep = getCurrentStep();
+
+  if (steps.length === 0) {
+    return (
+      <div className="text-xs text-gray-500">No workflow</div>
+    );
+  }
+
+  return (
+    <div className={cn("", className)} {...props}>
+      {isExpanded ? (
+        // Expanded view - full timeline
+        <div className="space-y-0">
+          <button
+            onClick={() => setIsExpanded(false)}
+            className="flex items-center gap-2 text-xs text-gray-600 hover:text-gray-800 mb-3 transition-colors"
+          >
+            <ChevronUp className="w-3 h-3" />
+            <span className="font-medium">Workflow Timeline</span>
+          </button>
+          
+          <div className="ml-2">
+            {steps.map((step, index) => (
+              <TimelineStep
+                key={step.id}
+                step={step}
+                isLast={index === steps.length - 1}
+                isCollapsed={false}
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        // Collapsed view - current step only
+        <div>
+          <button
+            onClick={() => setIsExpanded(true)}
+            className="flex items-start gap-2 text-xs hover:bg-gray-50 transition-colors w-full p-1 rounded -ml-1"
+          >
+            <ChevronDown className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-400" />
+            <div className="flex-1 text-left">
+              <TimelineStep
+                step={currentStep}
+                isLast={true}
+                isCollapsed={true}
+              />
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WorkflowTimeline;
