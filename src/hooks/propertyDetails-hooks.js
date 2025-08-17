@@ -3,6 +3,7 @@ import { useSuspenseQueries, useQuery, keepPreviousData } from '@tanstack/react-
 import { chain, compact, isEmpty } from 'lodash';
 import { typesQuery, subtypesQuery, propReqContentsQuery } from '@/store/listing.queries';
 import { propertyTypescombiner, PROPERTY_STATUS_NAMES, PROPERTY_STATUS_COLORS } from '@/store/use-listing';
+import { fetchAgentPaginatedProperties } from '@/components/Magazine/api';
 import companyCombiner from '@/services/companyCombiner';
 import lowerKeyObject from '@/utils/lowerKeyObject';
 import displaySize from '@/utils/displaySize';
@@ -402,7 +403,6 @@ export const enhancedPropertyParse = {
 
 /**
  * Enhanced property combiner with improved error handling and validation
- * @param {string} pid - Property ID
  * @param {Object} originalProperty - Raw property data
  * @param {Array} propertyTypes - Property types collection
  * @param {Array} contentArray - Content array [description, location, amenities]
@@ -471,6 +471,7 @@ export const enhancedPropertyCombiner = (
     const enhancedProperty = {
       // Core identifiers
       id: pid,
+      pid,
       key: pid,
 
       // Basic info
@@ -596,15 +597,7 @@ export const propertyUtils = {
       property[field] !== undefined && property[field] !== null
     );
     
-    // Check that the property object has the expected structure
-    // (fields can be empty/null but should exist for transformation)
-    const hasExpectedStructure = requiredFields.every(field => 
-      property.hasOwnProperty(field)
-    );
-    
-    return hasEssentialFields; // For now, only require essential fields
-    // Uncomment the line below if you want to enforce full structure validation:
-    // return hasEssentialFields && hasExpectedStructure;
+    return hasEssentialFields;
   },
 
   /**
@@ -631,6 +624,7 @@ export const propertyUtils = {
   createPropertyDefaults(pid) {
     return {
       id: pid,
+      pid,
       title: 'Property information unavailable',
       addressText: 'Address unavailable',
       typesText: '',
@@ -873,17 +867,8 @@ export const useAgentPropertiesPaginated = (
     queryFn = null
   } = options;
 
-  // Import the API function dynamically to avoid circular dependencies
-  const defaultQueryFn = useMemo(() => {
-    if (queryFn) return queryFn;
-    
-    // This will be the default query function that matches the existing pattern
-    return async () => {
-      // Dynamic import to avoid dependency issues
-      const { fetchAgentPaginatedProperties } = await import('@/components/Magazine/api');
-      return fetchAgentPaginatedProperties(agentId, { page, pageSize });
-    };
-  }, [agentId, page, pageSize, queryFn]);
+  // Simple query function - no dynamic imports needed
+  const defaultQueryFn = queryFn || (() => fetchAgentPaginatedProperties(agentId, { page, pageSize }));
 
   // Main paginated query
   const paginatedQuery = useQuery({
@@ -991,7 +976,6 @@ export const useAgentPropertiesPaginated = (
             const contentArray = contents[pid] || [];
 
             return enhancedPropertyCombiner(
-              pid,
               normalizedProperty,
               propertyTypes,
               contentArray,

@@ -12,6 +12,7 @@ import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
+import { useAgentPropertiesPaginated } from '@/hooks/propertyDetails-hooks';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -23,19 +24,32 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
   const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Fetch data using React Query
-  const {
+  // const {
+  //   data,
+  //   isLoading,
+  //   isFetching,
+  //   isPlaceholderData,
+  //   error,
+  //   refetch
+  // } = useQuery({
+  //   queryKey: ['agent-properties-paginated', agentId, page, pageSize],
+  //   queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
+  //   placeholderData: keepPreviousData,
+  //   enabled: !!agentId
+  // });
+
+   const {
     data,
+    enhancedProperties,
     isLoading,
     isFetching,
     isPlaceholderData,
     error,
     refetch
-  } = useQuery({
-    queryKey: ['agent-properties-paginated', agentId, page, pageSize],
-    queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
-    placeholderData: keepPreviousData,
-    enabled: !!agentId
-  });
+  } = useAgentPropertiesPaginated(agentId, page, pageSize)
+
+  console.log(enhancedProperties);
+  
 
   // Toggle row expansion
   const toggleRowExpansion = (pid) => {
