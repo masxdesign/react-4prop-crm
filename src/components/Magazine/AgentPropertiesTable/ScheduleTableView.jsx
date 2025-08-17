@@ -37,6 +37,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
       cell: (info) => (
         <div className="font-medium text-gray-900" title={`Advertiser ID: ${info.row.original.advertiser_id}`}>{info.getValue()}</div>
       ),
+      size: 120,
+      minSize: 120,
+      maxSize: 120,
     }),
     columnHelper.accessor('period', {
       header: 'Period',
@@ -48,6 +51,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         }
         return 'N/A';
       },
+      size: 140,
+      minSize: 140,
+      maxSize: 140,
     }),
     columnHelper.accessor('duration', {
       header: 'Duration',
@@ -59,7 +65,10 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         } else {
           return 'N/A';
         }
-      }
+      },
+      size: 80,
+      minSize: 80,
+      maxSize: 80,
     }),
     columnHelper.accessor('rate', {
       header: 'Rate',
@@ -72,6 +81,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
           return 'N/A';
         }
       },
+      size: 90,
+      minSize: 90,
+      maxSize: 90,
     }),
     columnHelper.accessor('quote', {
       header: 'Quote',
@@ -80,10 +92,16 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         const quote = schedule.quote || 0;
         return <span className="font-semibold text-green-600">£{quote.toFixed(2)}</span>;
       },
+      size: 80,
+      minSize: 80,
+      maxSize: 80,
     }),
     columnHelper.accessor('status', {
       header: 'Status',
       cell: (info) => <ScheduleStatus schedule={info.row.original} />,
+      size: 100,
+      minSize: 100,
+      maxSize: 100,
     }),
     columnHelper.accessor('workflow', {
       header: 'Workflow',
@@ -97,6 +115,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         );
       },
       enableSorting: false,
+      size: 160,
+      minSize: 160,
+      maxSize: 160,
     }),
     columnHelper.accessor('actions', {
       header: 'Actions',
@@ -107,6 +128,9 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
         />
       ),
       enableSorting: false,
+      size: 120,
+      minSize: 120,
+      maxSize: 120,
     })
   ], [propertyId, getUserByNid]);
 
@@ -116,11 +140,14 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    columnResizeMode: 'onChange',
+    enableColumnResizing: false,
   });
 
   return (
     <div className="max-h-80 overflow-auto border rounded-md">
-      <table className="w-full">
+      <div className="overflow-x-auto">
+        <table className="w-full" style={{ minWidth: '870px' }}>
         <thead className="bg-gray-50 sticky top-0 shadow-sm">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -129,6 +156,7 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
                   key={header.id}
                   className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={header.column.getToggleSortingHandler()}
+                  style={{ width: `${header.getSize()}px` }}
                 >
                   <div className="flex items-center space-x-1">
                     {flexRender(header.column.columnDef.header, header.getContext())}
@@ -146,14 +174,19 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
           {table.getRowModel().rows.map((row) => (
             <tr key={row.id} className="hover:bg-gray-50">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-2 py-2 text-xs">
+                <td 
+                  key={cell.id} 
+                  className="px-2 py-2 text-xs"
+                  style={{ width: `${cell.column.getSize()}px` }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 };

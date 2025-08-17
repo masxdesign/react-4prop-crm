@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
-import AgentProfile from './AgentProfile';
+import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
 
 // Helper component for individual timeline steps
 const TimelineStep = ({ 
@@ -11,6 +11,7 @@ const TimelineStep = ({
   isCollapsed = false 
 }) => {
   const { agent, timestamp, isCompleted, label } = step;
+  const [imageError, setImageError] = useState(false);
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return null;
@@ -22,6 +23,20 @@ const TimelineStep = ({
     } catch {
       return null;
     }
+  };
+
+  // Helper function to get agent initials
+  const getAgentInitials = (firstname, surname) => {
+    const firstInitial = firstname?.charAt(0)?.toUpperCase() || '';
+    const lastInitial = surname?.charAt(0)?.toUpperCase() || '';
+    return `${firstInitial}${lastInitial}`;
+  };
+
+  // Get avatar URL for tiny profile pic
+  const getAgentAvatar = (agent) => {
+    if (!agent) return null;
+    const userForAvatar = { nid: agent.id, picture: agent.picture };
+    return getAvatarImageUrl(userForAvatar, 'sm');
   };
 
   return (
@@ -51,18 +66,43 @@ const TimelineStep = ({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Status label */}
-          <div className={cn(
-            "font-medium text-xs leading-tight",
-            isCompleted ? "text-gray-900" : "text-gray-600"
-          )}>
-            {label}
+          {/* Status label with timestamp */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className={cn(
+              "font-medium text-xs leading-tight",
+              isCompleted ? "text-gray-900" : "text-gray-600"
+            )}>
+              {label}
+            </div>
+            {timestamp && !isCollapsed && (
+              <div className="text-xs text-gray-500">
+                {formatTimestamp(timestamp)}
+              </div>
+            )}
           </div>
           
-          {/* Agent name - only show if not collapsed */}
+          {/* Agent with tiny profile pic - expanded state */}
           {agent && !isCollapsed && (
-            <div className="text-xs text-gray-700 mt-0.5">
-              {agent.firstname} {agent.surname}
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {/* Tiny profile picture */}
+              <div className="flex-shrink-0 w-4 h-4 rounded-full overflow-hidden">
+                {getAgentAvatar(agent) && !imageError ? (
+                  <img
+                    src={getAgentAvatar(agent)}
+                    alt={`${agent.firstname} ${agent.surname}`}
+                    className="w-full h-full object-cover"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                    {getAgentInitials(agent.firstname, agent.surname)}
+                  </div>
+                )}
+              </div>
+              {/* Agent name */}
+              <div className="text-xs text-gray-700">
+                {agent.firstname} {agent.surname}
+              </div>
             </div>
           )}
 
@@ -70,25 +110,6 @@ const TimelineStep = ({
           {agent && isCollapsed && (
             <div className="text-xs text-gray-700 mt-0.5">
               {agent.firstname} {agent.surname}
-            </div>
-          )}
-          
-          {/* Timestamp - only in expanded state */}
-          {timestamp && !isCollapsed && (
-            <div className="text-xs text-gray-500 mt-0.5">
-              {formatTimestamp(timestamp)}
-            </div>
-          )}
-          
-          {/* Profile picture - only in expanded state */}
-          {agent && !isCollapsed && (
-            <div className="mt-1.5">
-              <AgentProfile 
-                user={agent} 
-                role={step.role}
-                size="sm"
-                showRoleIcon={false}
-              />
             </div>
           )}
         </div>
