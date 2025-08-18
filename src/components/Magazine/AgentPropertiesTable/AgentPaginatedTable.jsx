@@ -24,31 +24,31 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
   const [expandedRows, setExpandedRows] = useState(new Set());
 
   // Fetch data using React Query
-  // const {
-  //   data,
-  //   isLoading,
-  //   isFetching,
-  //   isPlaceholderData,
-  //   error,
-  //   refetch
-  // } = useQuery({
-  //   queryKey: ['agent-properties-paginated', agentId, page, pageSize],
-  //   queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
-  //   placeholderData: keepPreviousData,
-  //   enabled: !!agentId
-  // });
-
-   const {
+  const {
     data,
-    enhancedProperties,
     isLoading,
     isFetching,
     isPlaceholderData,
     error,
     refetch
-  } = useAgentPropertiesPaginated(agentId, page, pageSize)
+  } = useQuery({
+    queryKey: ['agent-properties-paginated', agentId, page, pageSize],
+    queryFn: () => fetchAgentPaginatedProperties(agentId, { page, pageSize }),
+    placeholderData: keepPreviousData,
+    enabled: !!agentId
+  });
 
-  console.log(enhancedProperties);
+  //  const {
+  //   data,
+  //   enhancedProperties,
+  //   isLoading,
+  //   isFetching,
+  //   isPlaceholderData,
+  //   error,
+  //   refetch
+  // } = useAgentPropertiesPaginated(agentId, page, pageSize)
+
+  // console.log(enhancedProperties);
   
 
   // Toggle row expansion

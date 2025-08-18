@@ -1,7 +1,6 @@
 import React, { useState } from "react"
-import { createFileRoute, useParams, useSearch, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useParams, useSearch, useNavigate, useRouterState } from "@tanstack/react-router"
 import { useAuth } from "@/components/Auth/Auth"
-import AgentPropertiesTable from "@/components/Magazine/AgentPropertiesTable/AgentPropertiesTable"
 import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
 import { fetchAgentPaginatedProperties } from "@/components/Magazine/api"
 
@@ -43,10 +42,11 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/")({
         </div>
     ),
     component: () => {
+        
         // Get agent ID from URL params or however you're passing it
         const auth = useAuth()
-        const search = useSearch({ from: "/_auth/_dashboard/mag/" })
-        const navigate = useNavigate({ from: "/_auth/_dashboard/mag/" })
+        const search = Route.useSearch()
+        const navigate = Route.useNavigate()
 
         // Pagination handlers
         const onPageChange = (page) => {

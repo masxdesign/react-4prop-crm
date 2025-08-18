@@ -1,6 +1,6 @@
 import { useAuth } from '@/components/Auth/Auth';
 import { Toaster } from '@/components/ui/toaster';
-import { Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Outlet, createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { DashboardSidebar } from '@/components/DashboardSidebar/DashboardSidebar';
 
 export const Route = createFileRoute('/_auth/_dashboard')({
