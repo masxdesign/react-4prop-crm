@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSuspenseQueries, useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useSuspenseQueries, useQuery, useQueries, keepPreviousData } from '@tanstack/react-query';
 import { chain, compact, isEmpty } from 'lodash';
 import { typesQuery, subtypesQuery, propReqContentsQuery } from '@/store/listing.queries';
 import { propertyTypescombiner, PROPERTY_STATUS_NAMES, PROPERTY_STATUS_COLORS } from '@/store/use-listing';
@@ -838,6 +838,169 @@ export const usePropertyDetail = (rawProperty, options = {}) => {
     ...result,
     data: result.data[0] || null,
     hasData: !!result.data[0]
+  };
+};
+
+/**
+ * Enhanced hook for transforming raw properties with expansion-based content loading
+ * This hook takes raw properties and an expanded state to selectively fetch content
+ * data only for expanded properties, with individual caching per property.
+ * 
+ * @param {Array} rawPropertiesArray - Array of raw property data objects
+ * @param {Set} expandedPids - Set of expanded property PIDs
+ * @param {Object} options - Additional hook options
+ * @param {boolean} options.enabled - Whether to enable the query (default: true)
+ * @param {Object} options.settings - Display settings for property parsing
+ * @returns {Object} Hook result with enhanced property data
+ */
+export const useEnhancedPropertiesWithExpansion = (
+  rawPropertiesArray = [],
+  expandedPids = new Set(),
+  options = {}
+) => {
+  const { 
+    enabled = true, 
+    settings = { addressShowMore: true, addressShowBuilding: true }
+  } = options;
+
+  // Extract and validate PIDs from raw properties
+  const { normalizedProperties, allPids, expandedPidsArray } = useMemo(() => {
+    if (!Array.isArray(rawPropertiesArray) || rawPropertiesArray.length === 0) {
+      return { normalizedProperties: [], allPids: [], expandedPidsArray: [] };
+    }
+
+    // Normalize and validate properties
+    const normalized = rawPropertiesArray
+      .map(prop => {
+        if (!propertyUtils.validatePropertyData(prop)) {
+          console.warn('Invalid property data:', prop);
+          return null;
+        }
+        return propertyUtils.normalizePropertyData(prop);
+      })
+      .filter(Boolean);
+
+    const extractedPids = propertyUtils.extractPids(normalized);
+    
+    // Filter expanded PIDs to only those that exist in current properties
+    const validExpandedPids = extractedPids.filter(pid => expandedPids.has(pid));
+
+    return {
+      normalizedProperties: normalized,
+      allPids: extractedPids,
+      expandedPidsArray: validExpandedPids
+    };
+  }, [rawPropertiesArray, expandedPids]);
+
+  // Always fetch types and subtypes using useSuspenseQueries
+  const [typesResult, subtypesResult] = useSuspenseQueries({
+    queries: [
+      { ...typesQuery, enabled },
+      { ...subtypesQuery, enabled }
+    ]
+  });
+
+  // Create individual content queries for each expanded property using useQueries
+  const contentQueries = useQueries({
+    queries: expandedPidsArray.map(pid => ({
+      queryKey: ['property-content', pid],
+      queryFn: () => propReqContentsQuery([pid]).queryFn(),
+      enabled: enabled && expandedPids.has(pid),
+      staleTime: 1000 * 60 * 3 // Same as propReqContentsQuery
+    }))
+  });
+
+  // Process and transform properties
+  const processedData = useMemo(() => {
+    if (!enabled || normalizedProperties.length === 0) {
+      return {
+        data: [],
+        isLoading: false,
+        error: null
+      };
+    }
+
+    try {
+      // Check for loading states in content queries
+      const contentLoading = contentQueries.some(query => query.isLoading);
+      
+      // Check for errors in content queries
+      const contentError = contentQueries.find(query => query.error)?.error || null;
+
+      // Get types and subtypes data
+      const types = typesResult.data;
+      const subtypes = subtypesResult.data;
+
+      // Combine types and subtypes
+      const propertyTypes = propertyTypescombiner(types, subtypes);
+
+      // Create content map from individual query results
+      const contentData = {};
+      expandedPidsArray.forEach((pid, index) => {
+        const query = contentQueries[index];
+        if (query.data && !query.isLoading && !query.error) {
+          // propReqContentsQuery returns data in format { [pid]: contentArray }
+          contentData[pid] = query.data[pid] || [];
+        }
+      });
+
+      // Transform each property
+      const enhancedProperties = normalizedProperties
+        .map(property => {
+          try {
+            const pid = property.pid;
+            const contentArray = contentData[pid] || [];
+            
+            return enhancedPropertyCombiner(
+              property,
+              propertyTypes,
+              contentArray,
+              [], // Companies pool - could be enhanced in the future
+              settings
+            );
+          } catch (error) {
+            console.error(`Error processing property ${property.pid}:`, error);
+            return propertyUtils.createPropertyDefaults(property.pid);
+          }
+        })
+        .filter(Boolean);
+
+      return {
+        data: enhancedProperties,
+        isLoading: contentLoading,
+        error: contentError
+      };
+    } catch (error) {
+      console.error('Error in enhanced properties processing:', error);
+      return {
+        data: [],
+        isLoading: false,
+        error: error
+      };
+    }
+  }, [normalizedProperties, typesResult.data, subtypesResult.data, contentQueries, expandedPidsArray, enabled, settings]);
+
+  // Provide refetch function for content queries
+  const refetch = () => {
+    return Promise.all(contentQueries.map(query => query.refetch()));
+  };
+
+  return {
+    data: processedData.data,
+    isLoading: processedData.isLoading,
+    error: processedData.error,
+    refetch,
+    
+    // Additional utilities
+    allPids,
+    expandedPidsArray,
+    hasData: processedData.data.length > 0,
+    count: processedData.data.length,
+    
+    // Content loading states
+    isContentLoading: contentQueries.some(query => query.isLoading),
+    contentErrors: contentQueries.filter(query => query.error).map(query => query.error),
+    hasContentData: contentQueries.some(query => query.data)
   };
 };
 
