@@ -3,6 +3,7 @@ import { createFileRoute, useParams, useSearch, useNavigate, useRouterState } fr
 import { useAuth } from "@/components/Auth/Auth"
 import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
 import { fetchAgentPaginatedProperties } from "@/components/Magazine/api"
+import AgentPaginatedEnhancedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedEnhancedTable"
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/")({
     validateSearch: (search) => ({
@@ -75,7 +76,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/")({
         }
 
         return (
-            <AgentPaginatedTable 
+            <AgentPaginatedEnhancedTable 
                 agentId={auth.user.neg_id}
                 page={search.page}
                 pageSize={search.pageSize}

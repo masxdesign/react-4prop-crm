@@ -470,8 +470,8 @@ export const enhancedPropertyCombiner = (
     // Build enhanced property object
     const enhancedProperty = {
       // Core identifiers
-      id: pid,
       pid,
+      id: pid,
       key: pid,
 
       // Basic info
