@@ -63,6 +63,66 @@ export const fetchMagazineListingData = async (advertiserId) => {
   return response.json();
 };
 
+// Agent Search API functions
+export const searchAgents = async (searchTerm) => {
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+  
+  const response = await bizchatClient.get('/api/crm/agents/search', {
+    params: { email: searchTerm }
+  });
+  
+  return response.data || [];
+};
+
+// Schedule Status API functions
+export const fetchScheduleStatusOptions = async () => {
+  const response = await bizchatClient.get('/data/mag_schedule_status.json');
+  return response.data;
+};
+
+// Property Schedules Summary API functions
+export const fetchPropertySchedulesSummary = async (propertyId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/schedules/${propertyId}/summary`);
+  return response.data;
+};
+
+// Schedule Update API functions
+export const updateSchedule = async (scheduleId, updateData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/update/${scheduleId}`, updateData);
+  return response.data;
+};
+
+// Schedule Approval API functions
+export const approveSchedule = async (scheduleId, approvalData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/approve`, approvalData);
+  return response.data;
+};
+
+// Schedule Payment API functions
+export const paySchedule = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/pay`);
+  return response.data;
+};
+
+// Schedule Assign Approver API functions
+export const assignApprover = async (scheduleId, assignData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/${scheduleId}/assign-approver`, assignData);
+  return response.data;
+};
+
+// User Information API functions
+export const fetchUsersByNids = async (nids) => {
+  const filteredNids = nids.filter(Boolean);
+  if (filteredNids.length === 0) return [];
+  
+  const response = await bizchatClient.post('/api/users', {
+    ids: filteredNids.join(',')
+  });
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object

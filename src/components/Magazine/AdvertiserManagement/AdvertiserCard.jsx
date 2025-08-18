@@ -8,8 +8,7 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
     }
   };
 
-  // Display week rate with fallback to converted day rate for legacy data
-  const weekRate = advertiser.week_rate || (advertiser.day_rate * 7) || 0;
+  const weekRate = advertiser.week_rate;
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">

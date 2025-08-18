@@ -40,7 +40,7 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
 
   const handleFormSubmit = (data) => {
     onSubmit({
-      property_id: property.id,
+      property_id: property.pid,
       advertiser_id: parseInt(data.advertiser_id),
       start_date: data.start_date,
       week_no: parseInt(data.week_no),
@@ -59,7 +59,7 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
             <label className="block text-sm font-medium mb-1">Property</label>
             <input
               type="text"
-              value={`${property.id} - ${property.departmentName}`}
+              value={`${property.pid} - ${property.departmentName}`}
               disabled
               className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100"
             />
@@ -79,7 +79,7 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
             rules={{ required: 'Start date is required' }}
             label="Start Date"
             minDate={format(new Date(), 'yyyy-MM-dd')}
-            propertyId={property.id}
+            propertyId={property.pid}
             advertiserId={watchedAdvertiserId}
           />
 

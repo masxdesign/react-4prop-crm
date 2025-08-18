@@ -14,17 +14,17 @@ const AdvertiserStats = () => {
   const advertisers = data?.data || [];
   const totalAdvertisers = advertisers.length;
   
-  // Calculate averages using week_rate with fallback to day_rate for legacy data
+  // Calculate averages using week_rate
   const avgWeekRate = advertisers.length > 0 
     ? (advertisers.reduce((sum, adv) => {
-        const rate = adv.week_rate || (adv.day_rate * 7) || 0; // Convert day rate to week rate if needed
+        const rate = adv.week_rate || 0;
         return sum + parseFloat(rate);
       }, 0) / advertisers.length).toFixed(2)
     : 0;
 
   const highestRate = advertisers.length > 0 
     ? Math.max(...advertisers.map(adv => {
-        const rate = adv.week_rate || (adv.day_rate * 7) || 0; // Convert day rate to week rate if needed
+        const rate = adv.week_rate || 0;
         return parseFloat(rate);
       })).toFixed(2)
     : 0;

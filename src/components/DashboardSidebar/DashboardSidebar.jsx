@@ -3,7 +3,7 @@ import { useNavigation } from './use-navigation'
 import { NavLink } from './NavLink'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
-  const { mainNavItems, portalItems } = useNavigation(negId)
+  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId)
 
   return (
     <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40">
@@ -21,7 +21,22 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         ))}
       </nav>
 
-      <div className='flex flex-col gap-2 mb-auto'>
+      {magazineItems.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
+            Magazine
+          </h3>
+          {magazineItems.map((item) => (
+            <NavLink 
+              key={item.id}
+              {...item}
+              context={context}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className='flex flex-col gap-2'>
         <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
           Portals
         </h3>
@@ -34,13 +49,15 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         ))}
       </div>
 
-      <button
-        onClick={onLogout}
-        className="p-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline border-t border-t-sky-400/20"
-      >
-        <span className='opacity-60'>Logout</span>
-        <LogOut className='size-5' />
-      </button>
+      <div className='mt-auto'>
+        <button
+          onClick={onLogout}
+          className="p-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline border-t border-t-sky-400/20"
+        >
+          <span className='opacity-60'>Logout</span>
+          <LogOut className='size-5' />
+        </button>
+      </div>
     </div>
   )
 }

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
+import { useAuth } from '@/components/Auth/Auth-context';
 import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
+import { AgentEmailSearchField } from '../ui';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { pluralizeWeeks } from '../util/pluralize';
 
 const ScheduleWizardModal = ({ 
   open, 
@@ -27,12 +30,18 @@ const ScheduleWizardModal = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   
+  const auth = useAuth();
+  
   // React Hook Form setup
-  const { control, watch, getValues, reset } = useForm({
+  const { control, watch, getValues, reset, setValue } = useForm({
     defaultValues: {
       advertiser_id: '',
       start_date: '',
-      week_no: ''
+      week_no: '',
+      approver_id: '',
+      approver_email: '',
+      self_assign: false,
+      payer_id: ''
     }
   });
 
@@ -58,20 +67,40 @@ const ScheduleWizardModal = ({
 
   const { totalPrice, weeks, endDate } = calculateBookingDetails();
 
+  // Get selected approver info
+  const getApproverInfo = () => {
+    if (watchedValues.self_assign) {
+      return {
+        type: 'self_assign',
+        name: auth?.user?.name || 'Current User',
+        email: auth?.user?.email || 'N/A'
+      };
+    } else if (watchedValues.approver_id) {
+      return {
+        type: 'approver',
+        name: 'Selected Approver',
+        email: watchedValues.approver_email || `Agent ID: ${watchedValues.approver_id}`
+      };
+    }
+    return null;
+  };
+
   // Step validation
   const isStepValid = (step) => {
     switch (step) {
       case 1: return watchedValues.advertiser_id;
       case 2: return watchedValues.start_date;
       case 3: return watchedValues.week_no;
-      case 4: return true; // Summary step is always valid
+      case 4: return watchedValues.self_assign || watchedValues.approver_id;
+      case 5: return true; // Summary step is always valid
       default: return false;
     }
   };
 
   // Navigation handlers
   const goNext = () => {
-    if (currentStep < 4 && isStepValid(currentStep)) {
+    const maxStep = 5;
+    if (currentStep < maxStep && isStepValid(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -84,12 +113,43 @@ const ScheduleWizardModal = ({
 
   const handleSubmit = () => {
     const values = getValues();
-    onSubmit({
-      property_id: property.id,
-      advertiser_id: parseInt(values.advertiser_id),
-      start_date: values.start_date,
-      week_no: parseInt(values.week_no),
-    });
+    
+    // Ensure all required fields are present and valid
+    const advertiser_id = parseInt(values.advertiser_id);
+    const week_no = parseInt(values.week_no);
+    
+    const scheduleData = {
+      property_id: property.pid,
+      advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
+      start_date: values.start_date || null,
+      week_no: isNaN(week_no) ? null : week_no,
+      self_assign: values.self_assign || false
+    };
+    
+    // Include approver_id and payer_id based on self_assign status
+    if (values.self_assign) {
+      // For self_assign, set both approver_id and payer_id to current user
+      scheduleData.approver_id = values.approver_id || null;
+      scheduleData.payer_id = values.payer_id || null;
+    } else {
+      // For external approver, only send approver_id (payer_id will be set by approver later)
+      scheduleData.approver_id = values.approver_id || null;
+      scheduleData.payer_id = null;
+    }
+    
+    // Validate required fields
+    if (!scheduleData.property_id || !scheduleData.advertiser_id || 
+        !scheduleData.start_date || !scheduleData.week_no) {
+      console.error('Missing required fields:', {
+        property_id: scheduleData.property_id,
+        advertiser_id: scheduleData.advertiser_id,
+        start_date: scheduleData.start_date,
+        week_no: scheduleData.week_no
+      });
+      return;
+    }
+    
+    onSubmit(scheduleData);
   };
 
   const handleClose = () => {
@@ -105,6 +165,7 @@ const ScheduleWizardModal = ({
         return (
           <AdvertiserPicker
             name="advertiser_id"
+            label="Where should your property be advertised?"
             control={control}
             rules={{ required: 'Please select an advertiser' }}
             advertisers={advertisers}
@@ -118,9 +179,9 @@ const ScheduleWizardModal = ({
             control={control}
             name="start_date"
             rules={{ required: 'Start date is required' }}
-            label="Start Date"
+            label="When should your property be posted?"
             minDate={format(new Date(), 'yyyy-MM-dd')}
-            propertyId={property.id}
+            propertyId={property.pid}
             advertiserId={watchedValues.advertiser_id}
           />
         );
@@ -129,17 +190,104 @@ const ScheduleWizardModal = ({
         return (
           <WeekPicker
             name="week_no"
+            label="How long should it be advertised?"
             control={control}
             rules={{
               required: 'Number of weeks is required',
               min: { value: 1, message: 'Must be at least 1 week' },
               max: { value: 52, message: 'Cannot exceed 52 weeks' }
             }}
-            presetWeeks={[1, 2, 3, 4, 6, 8, 12]}
+            presetWeeks={[1, 4, 12]}
+            inputProps={{
+              inputDescription: endDate 
+                ? `Calculated end date ${format(new Date(endDate), 'MMM dd, yyyy')}`
+                : null
+            }}
+            renderButton={({ isSelected, onClick, disabled, week }) => {
+              return (
+                <Button
+                  key={week}
+                  type="button"
+                  variant={isSelected ? "default" : "outline"}
+                  disabled={disabled}
+                  onClick={onClick}
+                  className="flex flex-col gap-0 leading-none"
+                >
+                  <span>
+                    {pluralizeWeeks(week)}
+                  </span>
+                  {isSelected && endDate && (
+                    <span className='text-xs opacity-50'>
+                      {format(new Date(endDate), 'MMM dd, yyyy')}
+                    </span>
+                  )}
+                </Button>
+              )
+            }}
           />
         );
 
       case 4:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Approver</h3>
+            
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="self_assign"
+                  checked={watchedValues.self_assign}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    if (isChecked) {
+                      // Auto-assign current user as approver and payer
+                      setValue('approver_id', auth?.user?.neg_id || '');
+                      setValue('payer_id', auth?.user?.neg_id || '');
+                      setValue('self_assign', true);
+                    } else {
+                      setValue('approver_id', '');
+                      setValue('approver_email', '');
+                      setValue('payer_id', '');
+                      setValue('self_assign', false);
+                    }
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="self_assign" className="text-sm font-medium text-gray-700">
+                  I will handle approval and payment myself
+                </label>
+              </div>
+              
+              {!watchedValues.self_assign && (
+                <AgentEmailSearchField
+                  name="approver_id"
+                  control={control}
+                  rules={{ required: 'Please select an approver' }}
+                  label="Select Approver"
+                  placeholder="Type agent email to search..."
+                  className="max-w-md"
+                  onAgentSelect={(agent) => {
+                    setValue('approver_id', agent.nid);
+                    setValue('approver_email', agent.email);
+                  }}
+                  selectedAgentEmail={watchedValues.approver_email}
+                />
+              )}
+              
+              {watchedValues.self_assign && (
+                <div className="bg-green-50 p-4 rounded border border-green-200">
+                  <p className="text-sm text-green-700">
+                    You will be assigned as both the approver and payer for this schedule.
+                    You'll proceed to checkout to complete the payment.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 5:
         return (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Booking Summary</h3>
@@ -149,6 +297,58 @@ const ScheduleWizardModal = ({
               <h4 className="font-medium text-gray-900 mb-2">Property</h4>
               <p className="text-sm text-gray-600">{property.pid} - {property.pstids}</p>
             </div>
+
+            {/* Approver Information */}
+            {(() => {
+              const approverInfo = getApproverInfo();
+              return approverInfo && (
+                <div className={`p-4 rounded border ${
+                  approverInfo.type === 'self_assign' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-purple-50 border-purple-200'
+                }`}>
+                  <h4 className={`font-medium mb-2 ${
+                    approverInfo.type === 'self_assign' 
+                      ? 'text-green-900' 
+                      : 'text-purple-900'
+                  }`}>
+                    {approverInfo.type === 'self_assign' ? 'Self-Assigned' : 'Approver Selected'}
+                  </h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className={
+                        approverInfo.type === 'self_assign' 
+                          ? 'text-green-700' 
+                          : 'text-purple-700'
+                      }>
+                        {approverInfo.type === 'self_assign' ? 'You will handle:' : 'Approver:'}
+                      </span>
+                      <span className="font-medium">{approverInfo.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className={
+                        approverInfo.type === 'self_assign' 
+                          ? 'text-green-700' 
+                          : 'text-purple-700'
+                      }>
+                        Email:
+                      </span>
+                      <span className="font-medium">{approverInfo.email}</span>
+                    </div>
+                    {approverInfo.type === 'self_assign' && (
+                      <p className="text-xs text-green-600 mt-2">
+                        You will approve and pay for this schedule immediately.
+                      </p>
+                    )}
+                    {approverInfo.type === 'approver' && (
+                      <p className="text-xs text-purple-600 mt-2">
+                        This person will need to approve and arrange payment for the schedule.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Booking Details */}
             {selectedAdvertiser && weeks > 0 && watchedValues.start_date && (
@@ -185,6 +385,7 @@ const ScheduleWizardModal = ({
           </div>
         );
 
+
       default:
         return null;
     }
@@ -192,20 +393,21 @@ const ScheduleWizardModal = ({
 
   const getStepTitle = () => {
     switch (currentStep) {
-      case 1: return 'Select Advertiser';
-      case 2: return 'Choose Start Date';
-      case 3: return 'Number of Weeks';
-      case 4: return 'Confirm Booking';
+      case 1: return 'Advertiser';
+      case 2: return 'Start Date';
+      case 3: return 'Duration';
+      case 4: return 'Select Approver';
+      case 5: return 'Summary & Confirmation';
       default: return 'Schedule Advertiser';
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={showDialogClose ? handleClose : undefined}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            {getStepTitle()} - Step {currentStep} of 4
+            {getStepTitle()} - Step {currentStep} of 5
           </DialogTitle>
         </DialogHeader>
 
@@ -213,7 +415,7 @@ const ScheduleWizardModal = ({
           {/* Progress Indicator */}
           <div className="flex justify-center mb-6">
             <div className="flex space-x-2">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -255,7 +457,7 @@ const ScheduleWizardModal = ({
               </Button>
             )}
             
-            {currentStep < 4 ? (
+            {currentStep < 5 ? (
               <Button 
                 onClick={goNext} 
                 disabled={!isStepValid(currentStep)}
@@ -267,7 +469,7 @@ const ScheduleWizardModal = ({
                 onClick={handleSubmit}
                 disabled={isLoading || !totalPrice}
               >
-                {isLoading ? 'Scheduling...' : `Schedule for £${totalPrice.toFixed(2)}`}
+                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Make payment' : 'Create schedule')}
               </Button>
             )}
           </div>

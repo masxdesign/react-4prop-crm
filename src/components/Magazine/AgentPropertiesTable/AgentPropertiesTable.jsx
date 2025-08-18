@@ -8,7 +8,6 @@ import {
   createColumnHelper,
 } from '@tanstack/react-table';
 import { fetchAgentProperties } from '../api';
-import PropertySchedulesSummary from './PropertySchedulesSummary';
 import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
 import { Button } from '@/components/ui/button';
@@ -35,12 +34,12 @@ const AgentPropertiesTable = ({ agentId }) => {
   });
 
   // Toggle row expansion
-  const toggleRowExpansion = (rowId) => {
+  const toggleRowExpansion = (pid) => {
     const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(rowId)) {
-      newExpanded.delete(rowId);
+    if (newExpanded.has(pid)) {
+      newExpanded.delete(pid);
     } else {
-      newExpanded.add(rowId);
+      newExpanded.add(pid);
     }
     setExpandedRows(newExpanded);
   };
@@ -56,7 +55,6 @@ const AgentPropertiesTable = ({ agentId }) => {
       header: 'Property ID',
       cell: (info) => (
         <button
-          onClick={() => toggleRowExpansion(info.row.id)}
           className="text-blue-600 hover:text-blue-800 font-medium"
         >
           {info.getValue()}
@@ -65,10 +63,6 @@ const AgentPropertiesTable = ({ agentId }) => {
           </span>
         </button>
       ),
-    }),
-    columnHelper.accessor('departmentName', {
-      header: 'Department',
-      cell: (info) => info.getValue(),
     }),
     columnHelper.accessor('pstids', {
       header: 'Property Subtypes',
@@ -79,7 +73,7 @@ const AgentPropertiesTable = ({ agentId }) => {
         return ids.length > 3 ? `${ids.slice(0, 3).join(', ')}...` : ids.join(', ');
       },
     }),
-    columnHelper.accessor('dealsWith', {
+    columnHelper.accessor('dealswith', {
       header: 'Dealing Agents',
       cell: (info) => {
         const agents = info.getValue();
@@ -87,11 +81,6 @@ const AgentPropertiesTable = ({ agentId }) => {
         const agentIds = agents.replace(/^,|,$/g, '').split(',').filter(id => id.trim());
         return agentIds.length > 2 ? `${agentIds.slice(0, 2).join(', ')}...` : agentIds.join(', ');
       },
-    }),
-    columnHelper.display({
-      id: 'schedules',
-      header: 'Schedules',
-      cell: (info) => <PropertySchedulesSummary propertyId={info.row.original.id} />,
     })
   ];
 
