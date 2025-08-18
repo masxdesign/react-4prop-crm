@@ -38,17 +38,12 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     enabled: !!agentId
   });
 
-  // Use enhanced properties hook with expansion state
+  // Use enhanced properties hook 
   const {
     data: enhancedProperties,
     isLoading: enhancedIsLoading,
-    error: enhancedError,
-    isContentLoading,
-    hasContentData,
-    contentErrors,
-    allPids,
-    expandedPidsArray
-  } = useEnhancedPropertiesWithExpansion(rawData?.data, expandedRows);
+    error: enhancedError
+  } = useEnhancedPropertiesWithExpansion(rawData?.data);
 
   // Toggle row expansion
   const toggleRowExpansion = (pid) => {
@@ -202,14 +197,8 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
               </p>
               <p className="text-sm">
                 Enhanced: {enhancedProperties?.length || 0} | 
-                Expanded: {expandedPidsArray.length} |
-                Content Loading: {isContentLoading ? 'Yes' : 'No'}
+                Expanded: {expandedRows.size}
               </p>
-              {contentErrors.length > 0 && (
-                <p className="text-sm text-red-300">
-                  Content Errors: {contentErrors.length}
-                </p>
-              )}
             </div>
             <Button 
               size="sm"
@@ -230,7 +219,6 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         toggleRowExpansion={toggleRowExpansion}
         agentId={agentId}
         isEmpty={enhancedProperties?.length === 0}
-        isContentLoading={isContentLoading}
         className="bg-gray-100 rounded-lg"
       />
 
@@ -256,13 +244,6 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         </div>
       )}
 
-      {/* Content Loading Overlay - Show when content is being fetched for expanded properties */}
-      {isContentLoading && expandedPidsArray.length > 0 && (
-        <div className="absolute bottom-4 right-4 bg-blue-500 text-white p-3 rounded-lg shadow-lg flex items-center gap-2 z-40">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          <span className="text-sm">Loading content for {expandedPidsArray.length} properties...</span>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSuspenseQueries, useQuery, useQueries, keepPreviousData } from '@tanstack/react-query';
+import { useSuspenseQueries, useQuery, keepPreviousData } from '@tanstack/react-query';
 import { chain, compact, isEmpty } from 'lodash';
 import { typesQuery, subtypesQuery, propReqContentsQuery } from '@/store/listing.queries';
 import { propertyTypescombiner, PROPERTY_STATUS_NAMES, PROPERTY_STATUS_COLORS } from '@/store/use-listing';
@@ -842,12 +842,9 @@ export const usePropertyDetail = (rawProperty, options = {}) => {
 };
 
 /**
- * Enhanced hook for transforming raw properties with expansion-based content loading
- * This hook takes raw properties and an expanded state to selectively fetch content
- * data only for expanded properties, with individual caching per property.
+ * Enhanced hook for transforming raw properties into display-ready objects
  * 
  * @param {Array} rawPropertiesArray - Array of raw property data objects
- * @param {Set} expandedPids - Set of expanded property PIDs
  * @param {Object} options - Additional hook options
  * @param {boolean} options.enabled - Whether to enable the query (default: true)
  * @param {Object} options.settings - Display settings for property parsing
@@ -855,7 +852,6 @@ export const usePropertyDetail = (rawProperty, options = {}) => {
  */
 export const useEnhancedPropertiesWithExpansion = (
   rawPropertiesArray = [],
-  expandedPids = new Set(),
   options = {}
 ) => {
   const { 
@@ -864,9 +860,9 @@ export const useEnhancedPropertiesWithExpansion = (
   } = options;
 
   // Extract and validate PIDs from raw properties
-  const { normalizedProperties, allPids, expandedPidsArray } = useMemo(() => {
+  const { normalizedProperties, allPids } = useMemo(() => {
     if (!Array.isArray(rawPropertiesArray) || rawPropertiesArray.length === 0) {
-      return { normalizedProperties: [], allPids: [], expandedPidsArray: [] };
+      return { normalizedProperties: [], allPids: [] };
     }
 
     // Normalize and validate properties
@@ -881,34 +877,26 @@ export const useEnhancedPropertiesWithExpansion = (
       .filter(Boolean);
 
     const extractedPids = propertyUtils.extractPids(normalized);
-    
-    // Filter expanded PIDs to only those that exist in current properties
-    const validExpandedPids = extractedPids.filter(pid => expandedPids.has(pid));
 
     return {
       normalizedProperties: normalized,
-      allPids: extractedPids,
-      expandedPidsArray: validExpandedPids
+      allPids: extractedPids
     };
-  }, [rawPropertiesArray, expandedPids]);
+  }, [rawPropertiesArray]);
+
 
   // Always fetch types and subtypes using useSuspenseQueries
   const [typesResult, subtypesResult] = useSuspenseQueries({
-    queries: [
-      { ...typesQuery, enabled },
-      { ...subtypesQuery, enabled }
-    ]
+    queries: useMemo(() => 
+      [
+        { ...typesQuery, enabled },
+        { ...subtypesQuery, enabled }
+      ],
+      [enabled]
+    )
   });
 
-  // Create individual content queries for each expanded property using useQueries
-  const contentQueries = useQueries({
-    queries: expandedPidsArray.map(pid => ({
-      queryKey: ['property-content', pid],
-      queryFn: () => propReqContentsQuery([pid]).queryFn(),
-      enabled: enabled && expandedPids.has(pid),
-      staleTime: 1000 * 60 * 3 // Same as propReqContentsQuery
-    }))
-  });
+
 
   // Process and transform properties
   const processedData = useMemo(() => {
@@ -921,12 +909,6 @@ export const useEnhancedPropertiesWithExpansion = (
     }
 
     try {
-      // Check for loading states in content queries
-      const contentLoading = contentQueries.some(query => query.isLoading);
-      
-      // Check for errors in content queries
-      const contentError = contentQueries.find(query => query.error)?.error || null;
-
       // Get types and subtypes data
       const types = typesResult.data;
       const subtypes = subtypesResult.data;
@@ -934,27 +916,14 @@ export const useEnhancedPropertiesWithExpansion = (
       // Combine types and subtypes
       const propertyTypes = propertyTypescombiner(types, subtypes);
 
-      // Create content map from individual query results
-      const contentData = {};
-      expandedPidsArray.forEach((pid, index) => {
-        const query = contentQueries[index];
-        if (query.data && !query.isLoading && !query.error) {
-          // propReqContentsQuery returns data in format { [pid]: contentArray }
-          contentData[pid] = query.data[pid] || [];
-        }
-      });
-
       // Transform each property
       const enhancedProperties = normalizedProperties
         .map(property => {
           try {
-            const pid = property.pid;
-            const contentArray = contentData[pid] || [];
-            
             return enhancedPropertyCombiner(
               property,
               propertyTypes,
-              contentArray,
+              [], // No content array - will be fetched separately
               [], // Companies pool - could be enhanced in the future
               settings
             );
@@ -967,8 +936,8 @@ export const useEnhancedPropertiesWithExpansion = (
 
       return {
         data: enhancedProperties,
-        isLoading: contentLoading,
-        error: contentError
+        isLoading: false,
+        error: null
       };
     } catch (error) {
       console.error('Error in enhanced properties processing:', error);
@@ -978,11 +947,15 @@ export const useEnhancedPropertiesWithExpansion = (
         error: error
       };
     }
-  }, [normalizedProperties, typesResult.data, subtypesResult.data, contentQueries, expandedPidsArray, enabled, settings]);
+  }, [normalizedProperties, typesResult.data, subtypesResult.data, enabled]);
 
-  // Provide refetch function for content queries
+  // Provide refetch function
   const refetch = () => {
-    return Promise.all(contentQueries.map(query => query.refetch()));
+    // Refetch types and subtypes
+    return Promise.all([
+      typesResult.refetch(),
+      subtypesResult.refetch()
+    ]);
   };
 
   return {
@@ -993,14 +966,8 @@ export const useEnhancedPropertiesWithExpansion = (
     
     // Additional utilities
     allPids,
-    expandedPidsArray,
     hasData: processedData.data.length > 0,
-    count: processedData.data.length,
-    
-    // Content loading states
-    isContentLoading: contentQueries.some(query => query.isLoading),
-    contentErrors: contentQueries.filter(query => query.error).map(query => query.error),
-    hasContentData: contentQueries.some(query => query.data)
+    count: processedData.data.length
   };
 };
 
@@ -1200,4 +1167,28 @@ export const useAgentPropertiesPaginated = (
     total: transformedData.total,
     departmentName: transformedData.departmentName
   };
+};
+
+/**
+ * Simple hook for fetching content data for a single property
+ * Use this at the component level when a property row is expanded
+ * 
+ * @param {string} pid - Property ID to fetch content for
+ * @param {Object} options - Query options
+ * @param {boolean} options.enabled - Whether to enable the query (default: true)
+ * @returns {Object} Query result with content data
+ */
+export const usePropertyContent = (pid, options = {}) => {
+  const { enabled = true } = options;
+
+  return useQuery({
+    queryKey: ['property-content', pid],
+    queryFn: () => propReqContentsQuery([pid]).queryFn(),
+    enabled: enabled && !!pid,
+    staleTime: 1000 * 60 * 3, // 3 minutes - same as propReqContentsQuery
+    select: (data) => {
+      // Extract content for this specific property
+      return data[pid] || [];
+    }
+  });
 };
