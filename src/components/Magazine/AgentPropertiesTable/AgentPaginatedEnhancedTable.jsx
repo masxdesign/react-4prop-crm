@@ -14,6 +14,7 @@ import EnhancedPropertiesDataTable from './EnhancedPropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 import { useEnhancedPropertiesWithExpansion } from '@/hooks/propertyDetails-hooks';
+import { BrickWallIcon } from 'lucide-react';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -67,8 +68,9 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     columnHelper.group({
       id: 'property_info',
       header: () => (
-        <div className="text-center">
-          Property Info
+        <div className='flex gap-1'>
+          <BrickWallIcon className='size-4' strokeWidth={1} />
+          <span>Properties</span>
         </div>
       ),
       columns: [
@@ -142,14 +144,19 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     }),
     columnHelper.group({
       id: 'schedules',
-      header: () => (
-        <div className="text-center">
-          <div className="flex items-center justify-center gap-2">
-            <span>Schedules</span>
-          </div>
-        </div>
-      ),
+      header: 'Schedules',
       columns: [
+        columnHelper.accessor((row) => row.original?.schedules_total, {
+          id: 'schedules_total',
+          header: 'Total',
+          cell: (info) => (
+            <div className="text-center">
+              <span className="bg-slate-100 text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
+                {info.getValue() || 0}
+              </span>
+            </div>
+          ),
+        }),
         columnHelper.accessor((row) => row.original?.schedules_to_approve, {
           id: 'schedules_to_approve',
           header: 'Approve',

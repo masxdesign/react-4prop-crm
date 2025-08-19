@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { parseISO } from 'date-fns';
-import { LayoutGrid, Table2 } from 'lucide-react';
+import { Calendar, Grid2X2Icon, LayoutGrid, Table2, Table2Icon } from 'lucide-react';
 import { fetchPropertySchedules, fetchPropertySchedulesSummary } from '../api';
 import { Button } from '@/components/ui/button';
 import ScheduleCardView from './ScheduleCardView';
@@ -57,56 +57,65 @@ const CurrentSchedules = ({ propertyId }) => {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-1">
           <h5 className="font-semibold text-gray-900 flex items-center gap-2">
-            <span className="text-base">📅</span>
+            <Calendar className='size-5 shrink-0' strokeWidth={1} />
             Current Schedules ({schedules.length})
           </h5>
-          <div className="text-sm font-semibold text-green-600">
+          <div className="text-sm text-muted-foreground">
             Total spent: £{summaryData?.data?.total_spent?.toFixed(2) || '0.00'}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-8">
+          {summaryData?.data && (
+            <div className="flex items-center gap-4 text-xs">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span>
+                  {summaryData.data.active_count || 0} Active
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span>
+                  {summaryData.data.upcoming_count || 0} Upcoming
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                <span>
+                  {summaryData.data.waiting_for_approval_count || 0} Pending
+                  Approval
+                </span>
+              </div>
+            </div>
+          )}
           <div className="flex rounded-md border" role="radiogroup" aria-label="View options">
             <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('table')}
-              className="rounded-r-none border-r-0"
+              className="rounded-r-none border-r-0 flex items-center gap-1 text-xs"
               aria-pressed={viewMode === 'table'}
               role="radio"
             >
-              <span className="text-base">📅</span>
-              Calendar View
+              <Table2Icon className='size-4 shrink-0' strokeWidth={1} />
+              Table
             </Button>
             <Button
-              variant={viewMode === 'card' ? 'default' : 'ghost'}
+              variant={viewMode === 'card' ? 'secondary' : 'ghost'}
               size="sm"
               onClick={() => setViewMode('card')}
-              className="rounded-l-none"
+              className="rounded-l-none flex items-center gap-1 text-xs"
               aria-pressed={viewMode === 'card'}
               role="radio"
             >
-              <span className="text-base">📊</span>
-              Grid View
+              <Grid2X2Icon className='size-4 shrink-0' strokeWidth={1} />
+              Grid
             </Button>
           </div>
         </div>
       </div>
-      
-      {summaryData?.data && (
-        <div className="flex gap-2 mb-4">
-          <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-            {summaryData.data.active_count || 0} Active
-          </span>
-          <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-            {summaryData.data.upcoming_count || 0} Upcoming
-          </span>
-          <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
-            {summaryData.data.waiting_for_approval_count || 0} Pending Approval
-          </span>
-        </div>
-      )}
       
       {viewMode === 'card' ? (
         <ScheduleCardView schedules={schedules} />

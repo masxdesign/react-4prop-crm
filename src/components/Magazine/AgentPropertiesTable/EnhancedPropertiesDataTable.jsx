@@ -67,11 +67,16 @@ const EnhancedPropertiesDataTable = ({
           <thead className="sticky top-0 z-40 shadow-sm bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
+                {headerGroup.headers.map((header, index) => (
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
-                    className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className={cn(
+                      `px-3 text-left cursor-pointer`, 
+                      headerGroup.depth === 0 
+                        ? 'py-2 text-xs bg-slate-200' 
+                        : 'py-2 uppercase hover:bg-gray-100 text-xs font-medium text-gray-500 tracking-wider'
+                    )}
                     onClick={header.column.getToggleSortingHandler()}
                   >
                     <div className="flex items-center gap-2">

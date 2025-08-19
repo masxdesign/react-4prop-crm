@@ -3,7 +3,7 @@ import ScheduleItem from './ScheduleItem';
 
 const ScheduleCardView = ({ schedules }) => {
   return (
-    <div className="space-y-3 max-h-64 overflow-y-auto">
+    <div className="grid grid-cols-3 gap-3 max-h-[500px] overflow-y-auto">
       {schedules.map((schedule) => (
         <ScheduleItem key={schedule.id} schedule={schedule} />
       ))}
