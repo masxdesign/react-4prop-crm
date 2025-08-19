@@ -129,6 +129,28 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         );
       },
     }),
+    columnHelper.accessor((row) => row.original?.schedules_approve, {
+      id: 'schedules_approve',
+      header: 'Approve',
+      cell: (info) => (
+        <div className="text-center">
+          <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+            {info.getValue() || 0}
+          </span>
+        </div>
+      ),
+    }),
+    columnHelper.accessor((row) => row.original?.schedules_pay, {
+      id: 'schedules_pay',
+      header: 'Pay',
+      cell: (info) => (
+        <div className="text-center">
+          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+            {info.getValue() || 0}
+          </span>
+        </div>
+      ),
+    }),
   ];
 
   // Table instance using enhanced properties
