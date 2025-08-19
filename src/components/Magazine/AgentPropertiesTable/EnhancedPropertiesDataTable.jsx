@@ -67,7 +67,7 @@ const EnhancedPropertiesDataTable = ({
           <thead className="sticky top-0 z-40 shadow-sm bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, index) => (
+                {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
                     colSpan={header.colSpan}
