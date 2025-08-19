@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import CurrentSchedules from './CurrentSchedules';
@@ -116,6 +116,11 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
 
   const addressLines = useMemo(() => formatAddress(property.addressText), [property.addressText]);
 
+  // Create a stable callback for image error handling
+  const handleImageError = useCallback((agentNid) => {
+    setImageErrors(prev => new Set([...prev, agentNid]));
+  }, []);
+
   const scheduleMutation = useMutation({
     mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
     onSuccess: (newScheduleData) => {
@@ -177,10 +182,6 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                     const agent = getUserByNid(agentNid);
                     const hasImageError = imageErrors.has(agentNid);
                     
-                    const handleImageError = () => {
-                      setImageErrors(prev => new Set([...prev, agentNid]));
-                    };
-                    
                     return (
                       <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
                         <div className="flex-shrink-0 size-6 rounded-full overflow-hidden">
@@ -189,7 +190,7 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                               src={getAgentAvatar(agent)}
                               alt={getAgentFullName(agent)}
                               className="w-full h-full object-cover"
-                              onError={handleImageError}
+                              onError={() => handleImageError(agentNid)}
                             />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
