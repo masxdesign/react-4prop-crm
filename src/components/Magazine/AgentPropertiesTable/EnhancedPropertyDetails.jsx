@@ -5,11 +5,14 @@ import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
 import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
+import { Building2Icon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
 const EnhancedPropertyDetails = ({ property, agentId }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [imageErrors, setImageErrors] = useState(new Set());
+  const [showAllSubtypes, setShowAllSubtypes] = useState(false);
+  const [showAllTypes, setShowAllTypes] = useState(false);
   const queryClient = useQueryClient();
 
   // Extract property subtype IDs for fetching advertisers
@@ -38,6 +41,81 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
   const advertisers = advertisersData?.data || [];
 
   // Schedule mutation
+  // Helper function to render pills with show more functionality
+  const renderPillsWithShowMore = (items, showAll, setShowAll, bgColor = 'bg-blue-100', textColor = 'text-blue-800') => {
+    if (!items || items.length === 0) {
+      return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">-</span>;
+    }
+
+    const displayItems = showAll ? items : items.slice(0, 2);
+    const hasMore = items.length > 2;
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {displayItems.map((item, index) => (
+          <span key={index} className={`${bgColor} ${textColor} px-2 py-1 rounded-full text-xs font-medium`}>
+            {item}
+          </span>
+        ))}
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded-full text-xs font-medium transition-colors"
+          >
+            {showAll ? '- Less' : `+${items.length - 2} more`}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Parse subtypes and types from their text format
+  const parsedSubtypes = useMemo(() => {
+    if (!property.subtypesText || property.subtypesText === 'No subtypes') return [];
+    return property.subtypesText.split(',').map(item => item.trim()).filter(Boolean);
+  }, [property.subtypesText]);
+
+  const parsedTypes = useMemo(() => {
+    if (!property.typesText) return [];
+    return property.typesText.split(',').map(item => item.trim()).filter(Boolean);
+  }, [property.typesText]);
+
+  // Format address for multi-line display
+  const formatAddress = (addressText) => {
+    if (!addressText) return [];
+    
+    // Split by comma and clean up
+    const parts = addressText.split(',').map(part => part.trim()).filter(Boolean);
+    
+    // Typical UK address format: try to identify postcode (last part that matches UK postcode pattern)
+    const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i;
+    
+    const lines = [];
+    let postcodeIndex = -1;
+    
+    // Find postcode from the end
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (postcodeRegex.test(parts[i])) {
+        postcodeIndex = i;
+        break;
+      }
+    }
+    
+    if (postcodeIndex > 0) {
+      // Everything before postcode goes on separate lines
+      lines.push(...parts.slice(0, postcodeIndex));
+      // Postcode goes on its own line
+      lines.push(parts[postcodeIndex]);
+    } else {
+      // No postcode found, just split by comma
+      lines.push(...parts);
+    }
+    
+    return lines;
+  };
+
+  const addressLines = useMemo(() => formatAddress(property.addressText), [property.addressText]);
+
   const scheduleMutation = useMutation({
     mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
     onSuccess: (newScheduleData) => {
@@ -80,24 +158,17 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         {/* Property Information - Using Enhanced Data */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-            <span className="text-base">📄</span>
+            <Building2Icon className='size-4 shrink-0' strokeWidth={1} />
             Property Information
-            <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${property.statusColor || 'gray'}-100 text-${property.statusColor || 'gray'}-800`}>
+            <span className={`px-2 py-0 rounded-full text-[9px] font-medium bg-${property.statusColor || 'gray'}-100 text-${property.statusColor || 'gray'}-800`}>
               {property.statusText}
             </span>
           </h4>
           
           {/* Property Fields - Consistent Badge Style */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <span className="text-xs text-gray-600">Property Subtypes:</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                {property.subtypesText || 'No subtypes'}
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-start border-b border-gray-100 pb-2">
-              <span className="text-xs text-gray-600">Dealing Agents:</span>
+          <div className="space-y-3">            
+            <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Agents</span>
               <div className="flex flex-wrap gap-1">
                 {agentsLoading ? (
                   <div className="text-xs text-gray-500">Loading...</div>
@@ -111,8 +182,8 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                     };
                     
                     return (
-                      <div key={index} className="flex items-center gap-1 bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
-                        <div className="flex-shrink-0 w-3 h-3 rounded-full overflow-hidden">
+                      <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
+                        <div className="flex-shrink-0 size-6 rounded-full overflow-hidden">
                           {getAgentAvatar(agent) && !hasImageError ? (
                             <img
                               src={getAgentAvatar(agent)}
@@ -121,12 +192,12 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                               onError={handleImageError}
                             />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
                               {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
                             </div>
                           )}
                         </div>
-                        <span className="text-xs font-medium">
+                        <span className="text-xs font-medium pr-1">
                           {agent ? getAgentFullName(agent) : `Agent ${agentNid}`}
                         </span>
                       </div>
@@ -138,53 +209,61 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <span className="text-xs text-gray-600">Title:</span>
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.title}>
-                {property.title}
-              </span>
+            <div className="flex justify-start items-start border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Address</span>
+              <div className="text-gray-800 text-xs flex-1 px-2">
+                {addressLines.length > 0 ? (
+                  addressLines.map((line, index) => (
+                    <div key={index} className={index === addressLines.length - 1 ? 'font-semibold' : ''}>
+                      {line}
+                    </div>
+                  ))
+                ) : (
+                  property.addressText || '-'
+                )}
+              </div>
             </div>
             
-            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <span className="text-xs text-gray-600">Address:</span>
-              <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.addressText}>
-                {property.addressText}
-              </span>
-            </div>
-            
-            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-              <span className="text-xs text-gray-600">Tenure:</span>
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Tenure</span>
               <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                 {property.tenureText}
               </span>
             </div>
             
             {property.sizeText && (
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                <span className="text-xs text-gray-600">Size:</span>
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Size</span>
                 <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
                   {property.sizeText}
                 </span>
               </div>
             )}
-            
-            {property.typesText && (
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                <span className="text-xs text-gray-600">Types:</span>
-                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.typesText}>
-                  {property.typesText}
-                </span>
-              </div>
-            )}
-            
+
             {property.landText && (
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                <span className="text-xs text-gray-600">Land:</span>
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Land</span>
                 <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
                   {property.landText}
                 </span>
               </div>
             )}
+            
+            {parsedTypes.length > 0 && (
+              <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Types</span>
+                <div className="flex-1 ml-2">
+                  {renderPillsWithShowMore(parsedTypes, showAllTypes, setShowAllTypes, 'bg-gray-100', 'text-gray-800')}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-start border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Subtypes</span>
+              <div className="flex-1 ml-2">
+                {renderPillsWithShowMore(parsedSubtypes, showAllSubtypes, setShowAllSubtypes, 'bg-blue-100', 'text-blue-800')}
+              </div>
+            </div>
           </div>
         </div>
 
