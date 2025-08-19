@@ -7,6 +7,7 @@ import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
 import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
 import EmblaCarousel from '@/components/ui/EmblaCarousel';
+import CSSCarousel from '@/components/ui/CSSCarousel';
 import AdvertiserCard from '@/components/ui/AdvertiserCard';
 import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 
@@ -311,24 +312,45 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         )}
         
         {advertisers.length > 0 && (
-          <EmblaCarousel 
-            options={{ align: 'start', slidesToScroll: 1 }}
-            className="mx-2"
-          >
-            {advertisers.map((advertiser) => {
-              console.log(advertiser, getSubtypeLabels(advertiser.pstids));
-              
-              return (
-                <AdvertiserCard
-                  key={advertiser.id}
-                  advertiser={advertiser}
-                  subtypeLabels={getSubtypeLabels(advertiser.pstids)}
-                  onBook={() => setIsScheduleModalOpen(true)}
-                  renderPillsWithShowMore={renderPillsWithShowMore}
-                />
-              )
-            })}
-          </EmblaCarousel>
+          <>
+            {/* CSSCarousel - Pure CSS implementation */}
+            <CSSCarousel 
+              showNavigation={true}
+              className="mx-2"
+            >
+              {advertisers.map((advertiser) => {
+                return (
+                  <AdvertiserCard
+                    key={advertiser.id}
+                    advertiser={advertiser}
+                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
+                    onBook={() => setIsScheduleModalOpen(true)}
+                    renderPillsWithShowMore={renderPillsWithShowMore}
+                  />
+                )
+              })}
+            </CSSCarousel>
+
+            {/* EmblaCarousel - JavaScript implementation (commented out) */}
+            {/* 
+            <EmblaCarousel 
+              options={{ align: 'start', slidesToScroll: 1 }}
+              className="mx-2"
+            >
+              {advertisers.map((advertiser) => {
+                return (
+                  <AdvertiserCard
+                    key={advertiser.id}
+                    advertiser={advertiser}
+                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
+                    onBook={() => setIsScheduleModalOpen(true)}
+                    renderPillsWithShowMore={renderPillsWithShowMore}
+                  />
+                )
+              })}
+            </EmblaCarousel>
+            */}
+          </>
         )}
       </div>
 

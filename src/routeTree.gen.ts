@@ -15,12 +15,15 @@ import { Route as ExampleImport } from './routes/example'
 import { Route as AuthImport } from './routes/_auth'
 import { Route as LoginRouteImport } from './routes/login/route'
 import { Route as IndexImport } from './routes/index'
+import { Route as AgentbAdvertiseridImport } from './routes/agentb_.$advertiser_id'
 import { Route as AuthGradeImport } from './routes/_auth.grade'
 import { Route as AuthDashboardtestImport } from './routes/_auth._dashboard_test'
 import { Route as AuthDashboardImport } from './routes/_auth._dashboard'
 import { Route as AuthComImport } from './routes/_auth._com'
 import { Route as ViewDetailsPidRouteImport } from './routes/view-details.$pid/route'
+import { Route as AgentbAdvertiseridIndexImport } from './routes/agentb_.$advertiser_id/index'
 import { Route as AuthGradeSharingIndexImport } from './routes/_auth.grade-sharing_.index'
+import { Route as AgentbAdvertiseridListingImport } from './routes/agentb_.$advertiser_id/listing'
 import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerUid'
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
 import { Route as AuthGradeSharingSetupEmailImport } from './routes/_auth.grade-sharing_.setup-email'
@@ -29,6 +32,7 @@ import { Route as AuthDashboardLayout1Import } from './routes/_auth._dashboard._
 import { Route as AuthComUserImport } from './routes/_auth._com/user'
 import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
 import { Route as AuthDashboardMagIndexImport } from './routes/_auth._dashboard.mag.index'
+import { Route as AgentbAdvertiseridDetailsPidImport } from './routes/agentb_.$advertiser_id/details.$pid'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
 import { Route as AuthDashboardMagManageAdvertisersImport } from './routes/_auth._dashboard.mag.manage-advertisers'
@@ -73,6 +77,11 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AgentbAdvertiseridRoute = AgentbAdvertiseridImport.update({
+  path: '/agentb/$advertiser_id',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const AuthGradeRoute = AuthGradeImport.update({
   path: '/grade',
   getParentRoute: () => AuthRoute,
@@ -100,9 +109,19 @@ const ViewDetailsPidRouteRoute = ViewDetailsPidRouteImport.update({
   import('./routes/view-details.$pid/route.lazy').then((d) => d.Route),
 )
 
+const AgentbAdvertiseridIndexRoute = AgentbAdvertiseridIndexImport.update({
+  path: '/',
+  getParentRoute: () => AgentbAdvertiseridRoute,
+} as any)
+
 const AuthGradeSharingIndexRoute = AuthGradeSharingIndexImport.update({
   path: '/grade-sharing/',
   getParentRoute: () => AuthRoute,
+} as any)
+
+const AgentbAdvertiseridListingRoute = AgentbAdvertiseridListingImport.update({
+  path: '/listing',
+  getParentRoute: () => AgentbAdvertiseridRoute,
 } as any)
 
 const AccessHashOwnerUidRoute = AccessHashOwnerUidImport.update({
@@ -149,6 +168,12 @@ const AuthDashboardMagIndexRoute = AuthDashboardMagIndexImport.update({
   path: '/mag/',
   getParentRoute: () => AuthDashboardRoute,
 } as any)
+
+const AgentbAdvertiseridDetailsPidRoute =
+  AgentbAdvertiseridDetailsPidImport.update({
+    path: '/details/$pid',
+    getParentRoute: () => AgentbAdvertiseridRoute,
+  } as any)
 
 const AccessHashOwnerUidSharedRoute = AccessHashOwnerUidSharedImport.update({
   path: '/shared',
@@ -344,6 +369,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeImport
       parentRoute: typeof AuthImport
     }
+    '/agentb/$advertiser_id': {
+      preLoaderRoute: typeof AgentbAdvertiseridImport
+      parentRoute: typeof rootRoute
+    }
     '/_auth/_com/agent': {
       preLoaderRoute: typeof AuthComAgentRouteImport
       parentRoute: typeof AuthComImport
@@ -372,9 +401,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccessHashOwnerUidImport
       parentRoute: typeof rootRoute
     }
+    '/agentb/$advertiser_id/listing': {
+      preLoaderRoute: typeof AgentbAdvertiseridListingImport
+      parentRoute: typeof AgentbAdvertiseridImport
+    }
     '/_auth/grade-sharing/': {
       preLoaderRoute: typeof AuthGradeSharingIndexImport
       parentRoute: typeof AuthImport
+    }
+    '/agentb/$advertiser_id/': {
+      preLoaderRoute: typeof AgentbAdvertiseridIndexImport
+      parentRoute: typeof AgentbAdvertiseridImport
     }
     '/_auth/_com/user/$sub': {
       preLoaderRoute: typeof AuthComUserSubRouteImport
@@ -415,6 +452,10 @@ declare module '@tanstack/react-router' {
     '/access/$hash/$ownerUid/shared': {
       preLoaderRoute: typeof AccessHashOwnerUidSharedImport
       parentRoute: typeof AccessHashOwnerUidImport
+    }
+    '/agentb/$advertiser_id/details/$pid': {
+      preLoaderRoute: typeof AgentbAdvertiseridDetailsPidImport
+      parentRoute: typeof AgentbAdvertiseridImport
     }
     '/_auth/_dashboard/mag/': {
       preLoaderRoute: typeof AuthDashboardMagIndexImport
@@ -514,6 +555,11 @@ export const routeTree = rootRoute.addChildren([
   ]),
   ExampleRoute,
   ViewDetailsPidRouteRoute,
+  AgentbAdvertiseridRoute.addChildren([
+    AgentbAdvertiseridListingRoute,
+    AgentbAdvertiseridIndexRoute,
+    AgentbAdvertiseridDetailsPidRoute,
+  ]),
   AccessHashOwnerUidRoute.addChildren([
     AccessHashOwnerUidSharedRoute.addChildren([
       AccessHashOwnerUidSharedTagidRoute,

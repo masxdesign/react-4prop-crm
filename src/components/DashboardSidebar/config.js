@@ -52,7 +52,14 @@ export const navigationConfig = {
       allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
-      id: 'mag-schedulet',
+      id: 'mag-schedules',
+      to: "/crm/mag/manage-schedule/6",
+      icon: NewspaperIcon,
+      label: "Schedules (#6)",
+      allowedNegIds: RESTRICTED_NEG_IDS
+    },
+    {
+      id: 'mag-agentb',
       to: "/crm/mag/manage-schedule/6",
       icon: NewspaperIcon,
       label: "Schedules (#6)",

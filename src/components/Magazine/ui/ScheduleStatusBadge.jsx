@@ -22,7 +22,7 @@ const ScheduleStatusBadge = ({ schedule, className, ...props }) => {
     
     if (schedule.expired) {
       return {
-        label: 'Completed',
+        label: 'Finished',
         color: 'bg-gray-100 text-gray-800 border-gray-200',
         icon: '⚫'
       };
