@@ -1,16 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
+import useUsersByNids from '@/hooks/useUsersByNids';
+import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
 
 // Enhanced Property Details Component - Uses display-ready property data
-const EnhancedPropertyDetails = ({ property, agentId, isContentLoading }) => {
+const EnhancedPropertyDetails = ({ property, agentId }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [imageErrors, setImageErrors] = useState(new Set());
   const queryClient = useQueryClient();
 
   // Extract property subtype IDs for fetching advertisers
   const subtypeIds = property.subtypes?.map(subtype => subtype.id).join(',') || '';
+  
+  // Extract agent NIDs for fetching agent data
+  const agentNids = useMemo(() => {
+    if (!property.agents || !Array.isArray(property.agents)) return [];
+    return property.agents.filter(Boolean);
+  }, [property.agents]);
+
+  // Fetch agent data using the same pattern as schedule workflow
+  const { getUserByNid, isLoading: agentsLoading } = useUsersByNids(agentNids);
   
   // Fetch advertisers based on property subtypes
   const {
@@ -64,147 +76,122 @@ const EnhancedPropertyDetails = ({ property, agentId, isContentLoading }) => {
   return (
     <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
       {/* Enhanced Property Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-[20%_1fr] gap-6 mb-6">
         {/* Property Information - Using Enhanced Data */}
-        <div>
-          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <span className="text-base">📄</span>
             Property Information
             <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${property.statusColor || 'gray'}-100 text-${property.statusColor || 'gray'}-800`}>
               {property.statusText}
             </span>
           </h4>
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="font-medium">Property ID:</span> {property.pid}
+          
+          {/* Property Fields - Consistent Badge Style */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span className="text-xs text-gray-600">Property Subtypes:</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                {property.subtypesText || 'No subtypes'}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Title:</span> 
-              <div className="text-blue-600 font-medium mt-1">{property.title}</div>
+            
+            <div className="flex justify-between items-start border-b border-gray-100 pb-2">
+              <span className="text-xs text-gray-600">Dealing Agents:</span>
+              <div className="flex flex-wrap gap-1">
+                {agentsLoading ? (
+                  <div className="text-xs text-gray-500">Loading...</div>
+                ) : agentNids.length > 0 ? (
+                  agentNids.map((agentNid, index) => {
+                    const agent = getUserByNid(agentNid);
+                    const hasImageError = imageErrors.has(agentNid);
+                    
+                    const handleImageError = () => {
+                      setImageErrors(prev => new Set([...prev, agentNid]));
+                    };
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-1 bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded-full">
+                        <div className="flex-shrink-0 w-3 h-3 rounded-full overflow-hidden">
+                          {getAgentAvatar(agent) && !hasImageError ? (
+                            <img
+                              src={getAgentAvatar(agent)}
+                              alt={getAgentFullName(agent)}
+                              className="w-full h-full object-cover"
+                              onError={handleImageError}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+                              {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium">
+                          {agent ? getAgentFullName(agent) : `Agent ${agentNid}`}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">-</span>
+                )}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Address:</span> 
-              <div className="mt-1">{property.addressText}</div>
+
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span className="text-xs text-gray-600">Title:</span>
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.title}>
+                {property.title}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Property Types:</span> 
-              <div className="mt-1">{property.typesText || 'No types specified'}</div>
+            
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span className="text-xs text-gray-600">Address:</span>
+              <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.addressText}>
+                {property.addressText}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Subtypes:</span> 
-              <div className="mt-1">{property.subtypesText || 'No subtypes specified'}</div>
+            
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+              <span className="text-xs text-gray-600">Tenure:</span>
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                {property.tenureText}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Tenure:</span> 
-              <div className="mt-1 text-green-600 font-medium">{property.tenureText}</div>
-            </div>
+            
             {property.sizeText && (
-              <div>
-                <span className="font-medium">Size:</span> 
-                <div className="mt-1">{property.sizeText}</div>
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                <span className="text-xs text-gray-600">Size:</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {property.sizeText}
+                </span>
               </div>
             )}
+            
+            {property.typesText && (
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                <span className="text-xs text-gray-600">Types:</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium truncate" title={property.typesText}>
+                  {property.typesText}
+                </span>
+              </div>
+            )}
+            
             {property.landText && (
-              <div>
-                <span className="font-medium">Land:</span> 
-                <div className="mt-1">{property.landText}</div>
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                <span className="text-xs text-gray-600">Land:</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {property.landText}
+                </span>
               </div>
             )}
-            <div>
-              <span className="font-medium">Dealing Agents:</span> 
-              <div className="mt-1">{property.agents?.join(', ') || 'None'}</div>
-            </div>
           </div>
         </div>
 
-        {/* Property Content - Enhanced Content Display */}
-        <div>
-          <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
-            Property Content
-            {isContentLoading && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            )}
-          </h4>
-          {isContentLoading ? (
-            <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
-              Loading property content...
-            </div>
-          ) : (
-            <div className="space-y-3 text-sm">
-              {property.content?.description && (
-                <div>
-                  <span className="font-medium">Description:</span>
-                  <div className="mt-1 text-gray-700 max-h-24 overflow-y-auto" 
-                       dangerouslySetInnerHTML={{ __html: property.content.description }} />
-                </div>
-              )}
-              {property.content?.location && (
-                <div>
-                  <span className="font-medium">Location:</span>
-                  <div className="mt-1 text-gray-700 max-h-16 overflow-y-auto"
-                       dangerouslySetInnerHTML={{ __html: property.content.location }} />
-                </div>
-              )}
-              {property.content?.amenities && (
-                <div>
-                  <span className="font-medium">Amenities:</span>
-                  <div className="mt-1 text-gray-700 max-h-16 overflow-y-auto"
-                       dangerouslySetInnerHTML={{ __html: property.content.amenities }} />
-                </div>
-              )}
-              {property.content?.teaser && (
-                <div>
-                  <span className="font-medium">Teaser:</span>
-                  <div className="mt-1 text-gray-600 italic">{property.content.teaser}</div>
-                </div>
-              )}
-              {!property.content?.description && !property.content?.location && !property.content?.amenities && !isContentLoading && (
-                <div className="text-gray-500 bg-gray-50 p-3 rounded">
-                  No content available for this property
-                </div>
-              )}
-            </div>
-          )}
+        {/* Current Schedules */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <CurrentSchedules propertyId={property.pid} />
         </div>
-
-        {/* Property Images - Enhanced Image Display */}
-        <div>
-          <h4 className="font-semibold text-lg mb-3">
-            Property Images ({property.pictures?.count || 0})
-          </h4>
-          {property.pictures?.count > 0 ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                {property.pictures.thumbs.slice(0, 4).map((thumb, index) => (
-                  <img 
-                    key={index}
-                    src={thumb} 
-                    alt={`Property ${property.pid} - ${index + 1}`}
-                    className="w-full h-20 object-cover rounded border"
-                  />
-                ))}
-              </div>
-              {property.pictures.count > 4 && (
-                <div className="text-sm text-gray-500 text-center">
-                  +{property.pictures.count - 4} more images
-                </div>
-              )}
-              {property.pictures.captions?.length > 0 && (
-                <div className="text-xs text-gray-500">
-                  <span className="font-medium">First caption:</span> {property.pictures.captions[0]}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-gray-500 bg-gray-50 p-3 rounded text-center">
-              No images available
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Current Schedules */}
-      <div className="mb-6">
-        <CurrentSchedules propertyId={property.pid} />
       </div>
 
       {/* Available Advertisers Section */}

@@ -65,22 +65,35 @@ const PropertyDetails = ({ property, agentId }) => {
     <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Property Information */}
-        <div>
-          <h4 className="font-semibold text-lg mb-3">Property Information</h4>
-          <div className="space-y-2 text-sm">
-            <div>
-              <span className="font-medium">Property ID:</span> {property.pid}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h4 className="font-semibold text-lg mb-4 flex items-center gap-2">
+            <span className="text-xl">📄</span>
+            Property Information
+          </h4>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Property ID:</span>
+              <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                {property.pid}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Department:</span> {property.departmentName}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Department:</span>
+              <span className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium">
+                {property.departmentName || '-'}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Property Subtypes:</span>{' '}
-              {property.pstids?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Property Subtypes:</span>
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                {property.pstids?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).length || 0}
+              </span>
             </div>
-            <div>
-              <span className="font-medium">Dealing Agents:</span>{' '}
-              {property.dealswith?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Dealing Agents:</span>
+              <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                {property.dealswith?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ') || 'None'}
+              </span>
             </div>
           </div>
         </div>

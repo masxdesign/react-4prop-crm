@@ -77,7 +77,14 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     columnHelper.accessor('addressText', {
       header: 'Address',
       cell: (info) => (
-        <div className="max-w-xs">
+        <div className="flex items-center gap-2 max-w-xs">
+          {info.row.original.thumbnail && (
+            <img 
+              src={info.row.original.thumbnail} 
+              alt="Property thumbnail"
+              className="w-8 h-8 rounded object-cover flex-shrink-0"
+            />
+          )}
           <div className="truncate" title={info.getValue()}>
             {info.getValue() || 'Address unavailable'}
           </div>
@@ -122,28 +129,6 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
             {status || 'Unknown'}
           </span>
         );
-      },
-    }),
-    columnHelper.accessor('pictures.count', {
-      header: 'Images',
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          <span className="text-sm">{info.getValue() || 0}</span>
-          {info.row.original.thumbnail && (
-            <img 
-              src={info.row.original.thumbnail} 
-              alt="Property thumbnail"
-              className="w-8 h-8 rounded object-cover"
-            />
-          )}
-        </div>
-      ),
-    }),
-    columnHelper.accessor('agents', {
-      header: 'Dealing Agents',
-      cell: (info) => {
-        const agents = info.getValue() || [];
-        return agents.length > 2 ? `${agents.slice(0, 2).join(', ')}...` : agents.join(', ') || 'None';
       },
     }),
   ];
