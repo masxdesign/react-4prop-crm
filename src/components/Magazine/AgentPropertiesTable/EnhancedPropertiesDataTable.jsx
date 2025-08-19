@@ -9,7 +9,8 @@ const EnhancedPropertyRow = ({
   row, 
   columns, 
   agentId, 
-  isContentLoading 
+  isContentLoading,
+  table
 }) => {
   const scrollAnchorRef = useRef();
   const expanded = expandedRows.has(row.original.pid);
@@ -31,7 +32,7 @@ const EnhancedPropertyRow = ({
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={columns.length} className="relative p-0">
+          <td colSpan={row.getVisibleCells().length} className="relative p-0">
             <div ref={scrollAnchorRef} className='absolute -top-20'></div>
             <div className="max-h-[800px] overflow-y-auto">
               <EnhancedPropertyDetails 
@@ -69,6 +70,7 @@ const EnhancedPropertiesDataTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
+                    colSpan={header.colSpan}
                     className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -99,6 +101,7 @@ const EnhancedPropertiesDataTable = ({
                   columns={columns} 
                   agentId={agentId}
                   isContentLoading={isContentLoading}
+                  table={table}
                 />
               );
             })}

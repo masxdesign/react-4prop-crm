@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
+  getGroupedRowModel,
   createColumnHelper,
 } from '@tanstack/react-table';
 import { fetchAgentPaginatedProperties } from '../api';
@@ -129,27 +130,42 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         );
       },
     }),
-    columnHelper.accessor((row) => row.original?.schedules_to_approve, {
-      id: 'schedules_to_approve',
-      header: 'Approve',
-      cell: (info) => (
+    columnHelper.group({
+      id: 'schedules',
+      header: () => (
         <div className="text-center">
-          <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
-            {info.getValue() || 0}
-          </span>
+          <div className="flex items-center justify-center gap-2">
+            <span>Schedules</span>
+            <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+              total
+            </span>
+          </div>
         </div>
       ),
-    }),
-    columnHelper.accessor((row) => row.original?.schedules_to_pay, {
-      id: 'schedules_to_pay',
-      header: 'Pay',
-      cell: (info) => (
-        <div className="text-center">
-          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-            {info.getValue() || 0}
-          </span>
-        </div>
-      ),
+      columns: [
+        columnHelper.accessor((row) => row.original?.schedules_to_approve, {
+          id: 'schedules_to_approve',
+          header: 'Approve',
+          cell: (info) => (
+            <div className="text-center">
+              <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                {info.getValue() || 0}
+              </span>
+            </div>
+          ),
+        }),
+        columnHelper.accessor((row) => row.original?.schedules_to_pay, {
+          id: 'schedules_to_pay',
+          header: 'Pay',
+          cell: (info) => (
+            <div className="text-center">
+              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                {info.getValue() || 0}
+              </span>
+            </div>
+          ),
+        }),
+      ],
     }),
   ];
 
@@ -166,6 +182,8 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getGroupedRowModel: getGroupedRowModel(),
+    enableColumnGrouping: true,
   });
 
   // Handle errors
