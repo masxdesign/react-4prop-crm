@@ -64,71 +64,81 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
 
   // Enhanced table columns using display-ready fields
   const columns = [
-    columnHelper.accessor('addressText', {
-      header: 'Address',
-      cell: (info) => (
-        <div className="flex items-center gap-2 max-w-xs">
-          {info.row.original.thumbnail ? (
-            <img 
-              src={info.row.original.thumbnail} 
-              alt="Property thumbnail"
-              className="w-6 h-6 rounded object-cover flex-shrink-0"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
-              <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-              </svg>
+    columnHelper.group({
+      id: 'property_info',
+      header: () => (
+        <div className="text-center">
+          Property Info
+        </div>
+      ),
+      columns: [
+        columnHelper.accessor('addressText', {
+          header: 'Address',
+          cell: (info) => (
+            <div className="flex items-center gap-2 max-w-xs">
+              {info.row.original.thumbnail ? (
+                <img 
+                  src={info.row.original.thumbnail} 
+                  alt="Property thumbnail"
+                  className="w-6 h-6 rounded object-cover flex-shrink-0"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              )}
+              <div className="truncate" title={info.getValue()}>
+                {info.getValue() || 'Address unavailable'}
+              </div>
+              <span className="ml-auto text-blue-600">
+                {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
+              </span>
             </div>
-          )}
-          <div className="truncate" title={info.getValue()}>
-            {info.getValue() || 'Address unavailable'}
-          </div>
-          <span className="ml-auto text-blue-600">
-            {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
-          </span>
-        </div>
-      ),
-    }),
-    columnHelper.accessor('typesText', {
-      header: 'Property Types',
-      cell: (info) => (
-        <div className="max-w-xs">
-          <div className="truncate" title={info.getValue()}>
-            {info.getValue() || 'No types'}
-          </div>
-        </div>
-      ),
-    }),
-    columnHelper.accessor('subtypesText', {
-      header: 'Subtypes',
-      cell: (info) => (
-        <div className="max-w-xs">
-          <div className="truncate" title={info.getValue()}>
-            {info.getValue() || 'No subtypes'}
-          </div>
-        </div>
-      ),
-    }),
-    columnHelper.accessor('tenureText', {
-      header: 'Tenure',
-      cell: (info) => (
-        <div className="font-medium text-green-600">
-          {info.getValue() || 'N/A'}
-        </div>
-      ),
-    }),
-    columnHelper.accessor('statusText', {
-      header: 'Status',
-      cell: (info) => {
-        const status = info.getValue();
-        const color = info.row.original.statusColor || 'gray';
-        return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${color}-100 text-${color}-800`}>
-            {status || 'Unknown'}
-          </span>
-        );
-      },
+          ),
+        }),
+        columnHelper.accessor('typesText', {
+          header: 'Property Types',
+          cell: (info) => (
+            <div className="max-w-xs">
+              <div className="truncate" title={info.getValue()}>
+                {info.getValue() || 'No types'}
+              </div>
+            </div>
+          ),
+        }),
+        columnHelper.accessor('subtypesText', {
+          header: 'Subtypes',
+          cell: (info) => (
+            <div className="max-w-xs">
+              <div className="truncate" title={info.getValue()}>
+                {info.getValue() || 'No subtypes'}
+              </div>
+            </div>
+          ),
+        }),
+        columnHelper.accessor('tenureText', {
+          header: 'Tenure',
+          cell: (info) => (
+            <div className="font-medium text-green-600">
+              {info.getValue() || 'N/A'}
+            </div>
+          ),
+        }),
+        columnHelper.accessor('statusText', {
+          header: 'Status',
+          cell: (info) => {
+            const status = info.getValue();
+            const color = info.row.original.statusColor || 'gray';
+            return (
+              <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${color}-100 text-${color}-800`}>
+                {status || 'Unknown'}
+              </span>
+            );
+          },
+        }),
+      ],
     }),
     columnHelper.group({
       id: 'schedules',
@@ -136,9 +146,6 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         <div className="text-center">
           <div className="flex items-center justify-center gap-2">
             <span>Schedules</span>
-            <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
-              total
-            </span>
           </div>
         </div>
       ),

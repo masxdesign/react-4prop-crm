@@ -74,7 +74,7 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
   });
 
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
+    <div className="relative z-10 bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
       {/* Enhanced Property Overview */}
       <div className="grid grid-cols-[20%_1fr] gap-6 mb-6">
         {/* Property Information - Using Enhanced Data */}
