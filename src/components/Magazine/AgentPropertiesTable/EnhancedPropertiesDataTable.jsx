@@ -32,8 +32,7 @@ const EnhancedPropertyRow = ({
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={row.getVisibleCells().length} className="relative p-0">
-            <div ref={scrollAnchorRef} className='absolute -top-20'></div>
+          <td ref={scrollAnchorRef} colSpan={row.getVisibleCells().length} className="relative p-0 scroll-m-28">
             <div className="max-h-[800px] overflow-y-auto">
               <EnhancedPropertyDetails 
                 property={row.original} 

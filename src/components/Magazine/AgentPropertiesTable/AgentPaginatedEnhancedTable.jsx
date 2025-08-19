@@ -14,7 +14,8 @@ import EnhancedPropertiesDataTable from './EnhancedPropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 import { useEnhancedPropertiesWithExpansion } from '@/hooks/propertyDetails-hooks';
-import { BrickWallIcon } from 'lucide-react';
+import { BrickWallIcon, Building, Clock } from 'lucide-react';
+import ClientOnly from '@/components/ui/ClientOnly';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -68,9 +69,9 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     columnHelper.group({
       id: 'property_info',
       header: () => (
-        <div className='flex gap-1'>
-          <BrickWallIcon className='size-4' strokeWidth={1} />
+        <div className='flex gap-2'>
           <span>Properties</span>
+          <Building className='size-4' strokeWidth={2} />
         </div>
       ),
       columns: [
@@ -78,6 +79,9 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
           header: 'Address',
           cell: (info) => (
             <div className="flex items-center gap-2 max-w-xs">
+               <span className="text-slate-600 text-[9px]">
+                {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
+              </span>
               {info.row.original.thumbnail ? (
                 <img 
                   src={info.row.original.thumbnail} 
@@ -94,9 +98,6 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
               <div className="truncate" title={info.getValue()}>
                 {info.getValue() || 'Address unavailable'}
               </div>
-              <span className="ml-auto text-blue-600">
-                {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
-              </span>
             </div>
           ),
         }),
@@ -144,7 +145,12 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     }),
     columnHelper.group({
       id: 'schedules',
-      header: 'Schedules',
+      header: () => (
+        <div className='flex gap-2'>
+          <span>Schedules</span>
+          <Clock className='size-4' strokeWidth={2} />
+        </div>
+      ),
       columns: [
         columnHelper.accessor((row) => row.original?.schedules_total, {
           id: 'schedules_total',
@@ -197,7 +203,7 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getGroupedRowModel: getGroupedRowModel(),
-    enableColumnGrouping: true,
+    enableColumnGrouping: true
   });
 
   // Handle errors
@@ -249,15 +255,21 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         <PropertiesTableFilters table={table} />
       </div>
 
-      <EnhancedPropertiesDataTable 
-        table={table}
-        columns={columns}
-        expandedRows={expandedRows}
-        toggleRowExpansion={toggleRowExpansion}
-        agentId={agentId}
-        isEmpty={enhancedProperties?.length === 0}
-        className="bg-gray-100 rounded-lg"
-      />
+      {/* 
+        Temporary patch for TanStack Table React state update warnings
+        @see https://github.com/TanStack/table/issues/5026 
+      */}
+      <ClientOnly>
+        <EnhancedPropertiesDataTable 
+          table={table}
+          columns={columns}
+          expandedRows={expandedRows}
+          toggleRowExpansion={toggleRowExpansion}
+          agentId={agentId}
+          isEmpty={enhancedProperties?.length === 0}
+          className="bg-gray-100 rounded-lg"
+        />
+      </ClientOnly>
 
       {rawData?.data && rawData.data.length > 0 && (
         <TablePagination
