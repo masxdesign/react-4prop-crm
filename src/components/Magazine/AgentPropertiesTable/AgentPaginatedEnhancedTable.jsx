@@ -129,8 +129,8 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         );
       },
     }),
-    columnHelper.accessor((row) => row.original?.schedules_approve, {
-      id: 'schedules_approve',
+    columnHelper.accessor((row) => row.original?.schedules_to_approve, {
+      id: 'schedules_to_approve',
       header: 'Approve',
       cell: (info) => (
         <div className="text-center">
@@ -140,8 +140,8 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
         </div>
       ),
     }),
-    columnHelper.accessor((row) => row.original?.schedules_pay, {
-      id: 'schedules_pay',
+    columnHelper.accessor((row) => row.original?.schedules_to_pay, {
+      id: 'schedules_to_pay',
       header: 'Pay',
       cell: (info) => (
         <div className="text-center">
