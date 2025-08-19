@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
-import { typesQuery, subtypesQuery } from '@/store/listing.queries';
+import usePropertyTypeLabels from '@/hooks/usePropertyTypeLabels';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
@@ -41,32 +41,10 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
     enabled: !!subtypeIds,
   });
 
-  // Fetch types and subtypes for label translation (leveraging cache)
-  const { data: typesData } = useQuery(typesQuery);
-  const { data: subtypesData } = useQuery(subtypesQuery);
+  // Use hook for resolving raw subtype IDs to labels (for advertiser cards)
+  const { getSubtypeLabels } = usePropertyTypeLabels();
 
   const advertisers = advertisersData?.data || [];
-
-  // Create subtype ID to label mapping
-  const subtypeMap = useMemo(() => {
-    if (!subtypesData) return new Map();
-    
-    const map = new Map();
-    subtypesData.forEach(subtype => {
-      if (subtype && subtype.id) {
-        map.set(String(subtype.id), subtype.label || subtype.name || 'Unknown');
-      }
-    });
-    return map;
-  }, [subtypesData]);
-
-  // Helper function to convert subtype IDs to labels
-  const getSubtypeLabels = useCallback((pstids) => {
-    if (!pstids || !subtypeMap.size) return [];
-    
-    const ids = pstids.replace(/^,|,$/g, '').split(',').filter(id => id.trim());
-    return ids.map(id => subtypeMap.get(id.trim())).filter(Boolean);
-  }, [subtypeMap]);
 
   // Schedule mutation
   // Helper function to render pills with show more functionality
@@ -346,6 +324,7 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                   advertiser={advertiser}
                   subtypeLabels={getSubtypeLabels(advertiser.pstids)}
                   onBook={() => setIsScheduleModalOpen(true)}
+                  renderPillsWithShowMore={renderPillsWithShowMore}
                 />
               )
             })}

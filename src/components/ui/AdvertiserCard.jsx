@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const AdvertiserCard = ({ 
   advertiser, 
   subtypeLabels = [], 
   onBook,
-  className = '' 
+  className = '',
+  renderPillsWithShowMore 
 }) => {
+  const [showAllSubtypes, setShowAllSubtypes] = useState(false);
+
   return (
     <div className={`bg-white p-4 rounded border border-gray-200 hover:border-blue-300 transition-colors ${className}`}>
       <div className="flex justify-between items-start mb-2">
@@ -17,7 +20,23 @@ const AdvertiserCard = ({
         </div>
       </div>
       
-      {subtypeLabels.length > 0 && (
+      {subtypeLabels.length > 0 && renderPillsWithShowMore && (
+        <div className="mb-3">
+          <div className="text-xs text-gray-500 mb-1">Subtypes:</div>
+          <div className="flex flex-wrap gap-1">
+            {renderPillsWithShowMore(
+              subtypeLabels, 
+              showAllSubtypes, 
+              setShowAllSubtypes, 
+              'bg-blue-100', 
+              'text-blue-800'
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Fallback for when renderPillsWithShowMore is not provided */}
+      {subtypeLabels.length > 0 && !renderPillsWithShowMore && (
         <div className="mb-3">
           <div className="text-xs text-gray-500 mb-1">Subtypes:</div>
           <div className="flex flex-wrap gap-1">
