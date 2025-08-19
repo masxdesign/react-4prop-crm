@@ -123,7 +123,7 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
 
   return (
     <div className="max-h-96 overflow-auto border rounded-md">
-      <table className="w-full" style={{ minWidth: 1070 }}>
+      <table className="w-full" style={{ minWidth: 870 }}>
         <thead className="bg-gray-50 sticky top-0 shadow-sm z-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>

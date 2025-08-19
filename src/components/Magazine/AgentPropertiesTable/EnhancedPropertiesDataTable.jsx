@@ -22,7 +22,7 @@ const EnhancedPropertyRow = ({
 
   return (
     <React.Fragment>
-      <tr className="hover:bg-slate-50">
+      <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.original.pid)}>
         {row.getVisibleCells().map((cell) => (
           <td key={cell.id} className="relative px-3 py-2 whitespace-nowrap text-xs text-gray-900">
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
