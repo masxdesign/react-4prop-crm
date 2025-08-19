@@ -1,11 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
+import { typesQuery, subtypesQuery } from '@/store/listing.queries';
 import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
 import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
-import { Building2Icon } from 'lucide-react';
+import EmblaCarousel from '@/components/ui/EmblaCarousel';
+import AdvertiserCard from '@/components/ui/AdvertiserCard';
+import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
 const EnhancedPropertyDetails = ({ property, agentId }) => {
@@ -38,7 +41,32 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
     enabled: !!subtypeIds,
   });
 
+  // Fetch types and subtypes for label translation (leveraging cache)
+  const { data: typesData } = useQuery(typesQuery);
+  const { data: subtypesData } = useQuery(subtypesQuery);
+
   const advertisers = advertisersData?.data || [];
+
+  // Create subtype ID to label mapping
+  const subtypeMap = useMemo(() => {
+    if (!subtypesData) return new Map();
+    
+    const map = new Map();
+    subtypesData.forEach(subtype => {
+      if (subtype && subtype.id) {
+        map.set(String(subtype.id), subtype.label || subtype.name || 'Unknown');
+      }
+    });
+    return map;
+  }, [subtypesData]);
+
+  // Helper function to convert subtype IDs to labels
+  const getSubtypeLabels = useCallback((pstids) => {
+    if (!pstids || !subtypeMap.size) return [];
+    
+    const ids = pstids.replace(/^,|,$/g, '').split(',').filter(id => id.trim());
+    return ids.map(id => subtypeMap.get(id.trim())).filter(Boolean);
+  }, [subtypeMap]);
 
   // Schedule mutation
   // Helper function to render pills with show more functionality
@@ -275,12 +303,15 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
       </div>
 
       {/* Available Advertisers Section */}
-      <div className="pt-6 border-t border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-lg">Available Advertisers for New Booking</h4>
+          <h4 className="font-semibold text-sm flex items-center gap-2">
+            <ShoppingCartIcon className='size-4 shrink-0' strokeWidth={1} />
+            Available Advertisers for New Booking
+          </h4>
           <button
             onClick={() => setIsScheduleModalOpen(true)}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium"
             disabled={advertisers.length === 0}
           >
             + Schedule New Advertiser
@@ -288,44 +319,37 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         </div>
         
         {advertisersLoading && (
-          <div className="text-sm text-gray-500">Loading advertisers...</div>
+          <div className="text-sm text-gray-500 py-8 text-center">Loading advertisers...</div>
         )}
         
         {advertisersError && (
-          <div className="text-sm text-red-500">Error loading advertisers</div>
+          <div className="text-sm text-red-500 py-8 text-center">Error loading advertisers</div>
         )}
         
         {advertisers.length === 0 && !advertisersLoading && (
-          <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded border">
+          <div className="text-sm text-gray-500 py-8 text-center bg-gray-50 rounded">
             No advertisers available for this property type
           </div>
         )}
         
         {advertisers.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {advertisers.map((advertiser) => (
-              <div key={advertiser.id} className="bg-white p-4 rounded border border-gray-200 hover:border-blue-300 transition-colors">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="font-medium text-gray-900">{advertiser.company}</div>
-                  <div className="text-lg font-semibold text-green-600">
-                    £{advertiser.week_rate}/week
-                  </div>
-                </div>
-                <div className="text-sm text-gray-600 mb-3">
-                  ID: {advertiser.id}
-                </div>
-                <div className="text-xs text-gray-500 mb-3">
-                  Subtypes: {advertiser.pstids?.replace(/^,|,$/g, '').split(',').filter(id => id.trim()).join(', ')}
-                </div>
-                <button
-                  onClick={() => setIsScheduleModalOpen(true)}
-                  className="w-full px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Book This Advertiser
-                </button>
-              </div>
-            ))}
-          </div>
+          <EmblaCarousel 
+            options={{ align: 'start', slidesToScroll: 1 }}
+            className="mx-2"
+          >
+            {advertisers.map((advertiser) => {
+              console.log(advertiser, getSubtypeLabels(advertiser.pstids));
+              
+              return (
+                <AdvertiserCard
+                  key={advertiser.id}
+                  advertiser={advertiser}
+                  subtypeLabels={getSubtypeLabels(advertiser.pstids)}
+                  onBook={() => setIsScheduleModalOpen(true)}
+                />
+              )
+            })}
+          </EmblaCarousel>
         )}
       </div>
 
