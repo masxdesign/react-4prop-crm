@@ -63,31 +63,37 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
 
   // Enhanced table columns using display-ready fields
   const columns = [
-    columnHelper.accessor('pid', {
-      header: 'Property ID',
-      cell: (info) => (
-        <button className="text-blue-600 hover:text-blue-800 font-medium">
-          {info.getValue()}
-          <span className="ml-2">
-            {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
-          </span>
-        </button>
-      ),
-    }),
     columnHelper.accessor('addressText', {
       header: 'Address',
       cell: (info) => (
         <div className="flex items-center gap-2 max-w-xs">
-          {info.row.original.thumbnail && (
-            <img 
-              src={info.row.original.thumbnail} 
-              alt="Property thumbnail"
-              className="w-8 h-8 rounded object-cover flex-shrink-0"
-            />
-          )}
-          <div className="truncate" title={info.getValue()}>
-            {info.getValue() || 'Address unavailable'}
-          </div>
+          <button 
+            className="flex items-center gap-2 w-full text-left hover:bg-gray-50 rounded p-1 -m-1"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleRowExpansion(info.row.original.pid);
+            }}
+          >
+            {info.row.original.thumbnail ? (
+              <img 
+                src={info.row.original.thumbnail} 
+                alt="Property thumbnail"
+                className="w-6 h-6 rounded object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                </svg>
+              </div>
+            )}
+            <div className="truncate" title={info.getValue()}>
+              {info.getValue() || 'Address unavailable'}
+            </div>
+            <span className="ml-auto text-blue-600">
+              {expandedRows.has(info.row.original.pid) ? '▼' : '▶'}
+            </span>
+          </button>
         </div>
       ),
     }),
