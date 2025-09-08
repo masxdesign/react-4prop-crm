@@ -1,14 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { CheckCircle, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 
-// Helper function to get agent initials (reused from AgentEmailSearchField)
-const getAgentInitials = (firstname, surname) => {
-  const firstInitial = firstname?.charAt(0)?.toUpperCase() || '';
-  const lastInitial = surname?.charAt(0)?.toUpperCase() || '';
-  return `${firstInitial}${lastInitial}`;
-};
 
 const AgentProfile = ({
   user,
@@ -19,7 +14,6 @@ const AgentProfile = ({
   className,
   ...props
 }) => {
-  const [imageError, setImageError] = useState(false);
 
   if (!user) return null;
 
@@ -59,21 +53,19 @@ const AgentProfile = ({
         "flex-shrink-0 rounded-full overflow-hidden",
         size === "sm" ? "w-6 h-6" : "w-8 h-8"
       )}>
-        {avatarUrl && !imageError ? (
-          <img
-            src={avatarUrl}
-            alt={fullName}
-            className="w-full h-full object-cover"
-            onError={() => setImageError(true)}
-          />
-        ) : (
-          <div className={cn(
-            "w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
-            size === "sm" ? "text-xs" : "text-sm"
-          )}>
-            {getAgentInitials(user.firstname, user.surname)}
-          </div>
-        )}
+        <ImageWithFallback
+          src={avatarUrl}
+          alt={fullName}
+          className="w-full h-full object-cover"
+          fallback={
+            <div className={cn(
+              "w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
+              size === "sm" ? "text-xs" : "text-sm"
+            )}>
+              {user.firstname?.charAt(0)?.toUpperCase() || ''}{user.surname?.charAt(0)?.toUpperCase() || ''}
+            </div>
+          }
+        />
       </div>
 
       {/* User Info */}

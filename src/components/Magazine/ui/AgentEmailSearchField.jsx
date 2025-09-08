@@ -8,13 +8,8 @@ import { Popover, PopoverContent } from '@/components/ui/popover';
 import { PopoverAnchor } from '@radix-ui/react-popover';
 import { Building, Briefcase, Check } from 'lucide-react';
 import { useAgentSearch } from '@/hooks/useAgentSearch';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 
-// Helper function to get agent initials
-const getAgentInitials = (firstname, surname) => {
-  const firstInitial = firstname?.charAt(0)?.toUpperCase() || '';
-  const lastInitial = surname?.charAt(0)?.toUpperCase() || '';
-  return `${firstInitial}${lastInitial}`;
-};
 
 // CVA variants for different sizes
 const selectedTickIconVariants = cva(
@@ -218,7 +213,6 @@ const AgentEmailSearchField = ({
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [failedImages, setFailedImages] = useState(new Set());
 
   const { agents, isSearching, hasResults, debouncedSearchTerm } = useAgentSearch(searchTerm);
 
@@ -230,9 +224,6 @@ const AgentEmailSearchField = ({
     }
   }, [selectedAgentEmail, searchTerm, selectedAgent]);
 
-  const handleImageError = (agentNid) => {
-    setFailedImages(prev => new Set(prev).add(agentNid));
-  };
 
   const handleAgentSelect = (agent, onChange) => {
     setSelectedAgent(agent);
@@ -351,18 +342,16 @@ const AgentEmailSearchField = ({
                             >
                               {/* Avatar */}
                               <div className={cn(avatarVariants({ size }))}>
-                                {agent.picture && !failedImages.has(agent.nid) ? (
-                                  <img
-                                    src={agent.picture}
-                                    alt={`${agent.firstname} ${agent.surname}`}
-                                    className="w-full h-full object-cover"
-                                    onError={() => handleImageError(agent.nid)}
-                                  />
-                                ) : (
-                                  <div className={cn(avatarTextVariants({ size }))}>
-                                    {getAgentInitials(agent.firstname, agent.surname)}
-                                  </div>
-                                )}
+                                <ImageWithFallback
+                                  src={agent.picture}
+                                  alt={`${agent.firstname} ${agent.surname}`}
+                                  className="w-full h-full object-cover"
+                                  fallback={
+                                    <div className={cn(avatarTextVariants({ size }))}>
+                                      {agent.firstname?.charAt(0)?.toUpperCase() || ''}{agent.surname?.charAt(0)?.toUpperCase() || ''}
+                                    </div>
+                                  }
+                                />
                               </div>
                               
                               {/* Content */}

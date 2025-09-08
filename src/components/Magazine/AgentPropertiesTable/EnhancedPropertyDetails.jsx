@@ -9,12 +9,12 @@ import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agen
 import EmblaCarousel from '@/components/ui/EmblaCarousel';
 import CSSCarousel from '@/components/ui/CSSCarousel';
 import AdvertiserCard from '@/components/ui/AdvertiserCard';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
 const EnhancedPropertyDetails = ({ property, agentId }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [imageErrors, setImageErrors] = useState(new Set());
   const [showAllSubtypes, setShowAllSubtypes] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
   const queryClient = useQueryClient();
@@ -123,10 +123,6 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
 
   const addressLines = useMemo(() => formatAddress(property.addressText), [property.addressText]);
 
-  // Create a stable callback for image error handling
-  const handleImageError = useCallback((agentNid) => {
-    setImageErrors(prev => new Set([...prev, agentNid]));
-  }, []);
 
   const scheduleMutation = useMutation({
     mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
@@ -187,23 +183,20 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                 ) : agentNids.length > 0 ? (
                   agentNids.map((agentNid, index) => {
                     const agent = getUserByNid(agentNid);
-                    const hasImageError = imageErrors.has(agentNid);
                     
                     return (
                       <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
                         <div className="flex-shrink-0 size-6 rounded-full overflow-hidden">
-                          {getAgentAvatar(agent) && !hasImageError ? (
-                            <img
-                              src={getAgentAvatar(agent)}
-                              alt={getAgentFullName(agent)}
-                              className="w-full h-full object-cover"
-                              onError={() => handleImageError(agentNid)}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
-                              {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
-                            </div>
-                          )}
+                          <ImageWithFallback
+                            src={getAgentAvatar(agent)}
+                            alt={getAgentFullName(agent)}
+                            className="w-full h-full object-cover"
+                            fallback={
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
+                                {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
+                              </div>
+                            }
+                          />
                         </div>
                         <span className="text-xs font-medium pr-1">
                           {agent ? getAgentFullName(agent) : `Agent ${agentNid}`}
