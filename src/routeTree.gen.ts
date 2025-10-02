@@ -35,6 +35,7 @@ import { Route as AuthDashboardMagIndexImport } from './routes/_auth._dashboard.
 import { Route as AgentbAdvertiseridDetailsPidImport } from './routes/agentb_.$advertiser_id/details.$pid'
 import { Route as AccessHashOwnerUidSharedImport } from './routes/access.$hash.$ownerUid.shared'
 import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gradeWidget/$pid'
+import { Route as AuthDashboardMagPaymentSettingsImport } from './routes/_auth._dashboard.mag.payment-settings'
 import { Route as AuthDashboardMagManageAdvertisersImport } from './routes/_auth._dashboard.mag.manage-advertisers'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
 import { Route as AuthDashboardLayout1ListRouteImport } from './routes/_auth._dashboard._layout-1/list/route'
@@ -184,6 +185,12 @@ const AuthGradeGradeWidgetPidRoute = AuthGradeGradeWidgetPidImport.update({
   path: '/$pid',
   getParentRoute: () => AuthGradeGradeWidgetRoute,
 } as any)
+
+const AuthDashboardMagPaymentSettingsRoute =
+  AuthDashboardMagPaymentSettingsImport.update({
+    path: '/mag/payment-settings',
+    getParentRoute: () => AuthDashboardRoute,
+  } as any)
 
 const AuthDashboardMagManageAdvertisersRoute =
   AuthDashboardMagManageAdvertisersImport.update({
@@ -445,6 +452,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardMagManageAdvertisersImport
       parentRoute: typeof AuthDashboardImport
     }
+    '/_auth/_dashboard/mag/payment-settings': {
+      preLoaderRoute: typeof AuthDashboardMagPaymentSettingsImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/grade/_gradeWidget/$pid': {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidImport
       parentRoute: typeof AuthGradeGradeWidgetImport
@@ -535,6 +546,7 @@ export const routeTree = rootRoute.addChildren([
         ]),
       ]),
       AuthDashboardMagManageAdvertisersRoute,
+      AuthDashboardMagPaymentSettingsRoute,
       AuthDashboardMagIndexRoute,
       AuthDashboardMagManageScheduleAdvertiserIdRoute,
     ]),

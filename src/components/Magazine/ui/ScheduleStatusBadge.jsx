@@ -27,7 +27,7 @@ const ScheduleStatusBadge = ({ schedule, className, ...props }) => {
         icon: '⚫'
       };
     }
-    
+
     // Fallback to workflow status for non-operational schedules
     switch (schedule.status_id) {
       case 0:
@@ -44,13 +44,13 @@ const ScheduleStatusBadge = ({ schedule, className, ...props }) => {
         };
       case 2:
         return {
-          label: 'Pending Payment',
-          color: 'bg-orange-100 text-orange-800 border-orange-200',
-          icon: '🟠'
+          label: 'Awaiting Activation',
+          color: 'bg-purple-100 text-purple-800 border-purple-200',
+          icon: '🟣'
         };
       case 3:
         return {
-          label: 'Paid',
+          label: 'Active Subscription',
           color: 'bg-green-100 text-green-800 border-green-200',
           icon: '🟢'
         };

@@ -100,9 +100,9 @@ export const approveSchedule = async (scheduleId, approvalData) => {
   return response.data;
 };
 
-// Schedule Payment API functions
-export const paySchedule = async (scheduleId) => {
-  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/pay`);
+// Schedule Subscription Activation API functions
+export const activateSubscription = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/activate-subscription`);
   return response.data;
 };
 
@@ -123,22 +123,49 @@ export const fetchUsersByNids = async (nids) => {
   return response.data;
 };
 
+// Agent Payment Setup API functions
+export const setupAgentPayment = async (nid, agentData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/stripe/agents/${nid}/setup-payment`, agentData);
+  return response.data;
+};
+
+export const getAgentPaymentMethods = async (nid) => {
+  const response = await bizchatClient.get(`/api/crm/mag/stripe/agents/${nid}/payment-methods`);
+  return response.data;
+};
+
+export const setDefaultPaymentMethod = async (nid, paymentMethodData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/stripe/agents/${nid}/default-payment-method`, paymentMethodData);
+  return response.data;
+};
+
+// Advertiser Stripe Onboarding API functions
+export const onboardAdvertiser = async (advertiserId, onboardingData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/stripe/advertisers/${advertiserId}/onboard`, onboardingData);
+  return response.data;
+};
+
+export const getAdvertiserStripeStatus = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/stripe/advertisers/${advertiserId}/status`);
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object
   const schedule = scheduleData.data || scheduleData;
-  
+
   // Find the advertiser company name
   const advertiser = advertisers.find(adv => adv.id === parseInt(schedule.advertiser_id));
   const advertiser_company = advertiser?.company || `Advertiser ${schedule.advertiser_id}`;
-  
+
   // Normalize end_date - handle both array and string formats
   let end_date = schedule.end_date;
   if (Array.isArray(end_date) && end_date.length > 0) {
     // Take the first element if it's an array
     end_date = end_date[0];
   }
-  
+
   // Return normalized schedule data
   return {
     ...schedule,

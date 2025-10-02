@@ -156,15 +156,15 @@ const WorkflowTimeline = ({
       });
     }
 
-    // 3. Payment step (if payer assigned)
+    // 3. Subscription activation step (if payer assigned)
     const payer = getUserByNid(schedule.payer_id);
     if (payer) {
       steps.push({
-        id: 'paid',
+        id: 'activated',
         agent: payer,
-        timestamp: schedule.paid_at,
-        isFinished: !!schedule.paid_at,
-        label: schedule.paid_at ? 'Payment Complete' : 'Pending Payment',
+        timestamp: schedule.activated_at,
+        isFinished: !!schedule.activated_at,
+        label: schedule.activated_at ? 'Subscription Activated' : 'Awaiting Activation',
         role: 'payer'
       });
     }

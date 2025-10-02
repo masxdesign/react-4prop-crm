@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -64,6 +64,12 @@ export const navigationConfig = {
       icon: NewspaperIcon,
       label: "Schedules (#6)",
       allowedNegIds: RESTRICTED_NEG_IDS
+    },
+    {
+      id: 'mag-payment-settings',
+      to: "/crm/mag/payment-settings",
+      icon: CreditCard,
+      label: "Payment Settings"
     },
   ],
   portals: [
