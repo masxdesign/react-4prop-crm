@@ -11,15 +11,14 @@ import PaymentDialog from '../dialogs/PaymentDialog';
 
 const ScheduleActionButtons = ({ schedule, propertyId, className, ...props }) => {
   const auth = useAuth();
-  const queryClient = useQueryClient();
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+
+  if (schedule.expired) return null // can not be expired
   
   const currentUserNid = auth?.user?.neg_id;
   
-
-
   // Determine which buttons to show based on user role and schedule status
   // Using hybrid approach: check both field presence AND status_id for maximum reliability
   const showAssignButton = () => {
