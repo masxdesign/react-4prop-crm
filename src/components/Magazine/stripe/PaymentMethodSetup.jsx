@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CreditCard, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { CreditCard, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { setupAgentPayment } from '../api';
@@ -90,29 +90,28 @@ const PaymentForm = ({ clientSecret, onSuccess, onCancel, agentNid }) => {
 
 // Main component
 const PaymentMethodSetup = ({ agentNid, agentName, agentEmail, onSuccess, onCancel }) => {
-  const [clientSecret, setClientSecret] = useState(null);
   const queryClient = useQueryClient();
   const stripePromise = getStripe();
 
-  // Setup mutation to get client secret
-  const setupMutation = useMutation({
-    mutationFn: () => setupAgentPayment(agentNid, {
+  // Use useQuery instead of useMutation to prevent duplicate calls
+  const {
+    data: setupData,
+    isLoading,
+    isError,
+    error
+  } = useQuery({
+    queryKey: ['agent-payment-setup', agentNid],
+    queryFn: () => setupAgentPayment(agentNid, {
       name: agentName,
       email: agentEmail
     }),
-    onSuccess: (data) => {
-      setClientSecret(data.data.client_secret);
-    },
-    onError: (error) => {
-      console.error('Failed to setup payment method:', error);
-    }
+    staleTime: 5 * 60 * 1000, // 5 minutes - prevent duplicate calls
+    retry: 1,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
   });
 
-  useEffect(() => {
-    if (!clientSecret && !setupMutation.isPending && !setupMutation.isError) {
-      setupMutation.mutate();
-    }
-  }, []);
+  const clientSecret = setupData?.data?.client_secret;
 
   const handleSuccess = () => {
     // Invalidate payment methods query
@@ -120,7 +119,7 @@ const PaymentMethodSetup = ({ agentNid, agentName, agentEmail, onSuccess, onCanc
     onSuccess();
   };
 
-  if (setupMutation.isPending || !clientSecret) {
+  if (isLoading || !clientSecret) {
     return (
       <div className="flex flex-col items-center justify-center p-8 space-y-4">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -129,7 +128,7 @@ const PaymentMethodSetup = ({ agentNid, agentName, agentEmail, onSuccess, onCanc
     );
   }
 
-  if (setupMutation.isError) {
+  if (isError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
