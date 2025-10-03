@@ -19,7 +19,7 @@ const PaymentSettings = () => {
   const queryClient = useQueryClient();
   const auth = useAuth();
   const agentNid = auth?.user?.neg_id;
-  const agentName = `${auth?.user?.firstname || ''} ${auth?.user?.surname || ''}`.trim();
+  const agentName = `${auth?.user?.first || ''} ${auth?.user?.last || ''}`.trim();
   const agentEmail = auth?.user?.email || '';
 
   // Fetch payment methods
