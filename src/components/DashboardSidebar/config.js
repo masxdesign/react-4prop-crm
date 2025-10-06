@@ -62,7 +62,8 @@ export const navigationConfig = {
       id: 'mag-payment-settings',
       to: "/crm/mag/payment-settings",
       icon: CreditCard,
-      label: "Payment Settings"
+      label: "Payment Settings",
+      allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
       id: 'mag-transfers',

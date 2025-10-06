@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { CreditCard, Loader2, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { CreditCard, Loader2, DollarSign, AlertCircle, CheckCircle, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -10,13 +10,11 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { activateSubscriptionPlatformMor, getAgentPaymentMethods, getAdvertiserStripeStatus } from '../api';
+import { activateSubscriptionPlatformMor, getAgentPaymentMethods, setDefaultPaymentMethod } from '../api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { format, parseISO } from 'date-fns';
-import CommissionBreakdown from '../ui/CommissionBreakdown';
-import PlatformMorBadge from '../ui/PlatformMorBadge';
-import SelfBillingAgreementDialog from './SelfBillingAgreementDialog';
 import { toast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 const PaymentDialog = ({
   open,
@@ -24,29 +22,39 @@ const PaymentDialog = ({
   schedule,
   propertyId
 }) => {
-  const [showSelfBillingDialog, setShowSelfBillingDialog] = useState(false);
   const queryClient = useQueryClient();
   const auth = useAuth();
   const currentUserNid = auth?.user?.neg_id;
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
-  // Check if payer has payment methods
+  // Fetch payment methods
   const {
     data: paymentMethodsData,
     isLoading: paymentMethodsLoading
   } = useQuery({
     queryKey: ['agent-payment-methods', currentUserNid],
     queryFn: () => getAgentPaymentMethods(currentUserNid),
-    enabled: open && !!currentUserNid && schedule?.payer_id === currentUserNid
+    enabled: open && !!currentUserNid
   });
 
-  // Check advertiser onboarding status
-  const {
-    data: advertiserStatusData,
-    isLoading: advertiserStatusLoading
-  } = useQuery({
-    queryKey: ['advertiser-stripe-status', schedule?.advertiser_id],
-    queryFn: () => getAdvertiserStripeStatus(schedule?.advertiser_id),
-    enabled: open && !!schedule?.advertiser_id
+  // Set default payment method mutation
+  const setDefaultMutation = useMutation({
+    mutationFn: (paymentMethodId) => setDefaultPaymentMethod(currentUserNid, { payment_method_id: paymentMethodId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agent-payment-methods', currentUserNid] });
+      toast({
+        title: 'Default Updated',
+        description: 'Default payment method has been updated.',
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to set default payment method:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update default payment method.',
+      });
+    }
   });
 
   const activateMutation = useMutation({
@@ -55,14 +63,11 @@ const PaymentDialog = ({
       queryClient.invalidateQueries({ queryKey: ['property-schedules', propertyId] });
       queryClient.invalidateQueries({ queryKey: ['property-schedules-summary', propertyId] });
 
-      // Show success toast with commission info
-      const commissionPercent = data?.data?.commission_percent || 50;
       const totalAmount = data?.data?.total_amount || (weeklyRate * (schedule?.week_no || 0));
-      const advertiserAmount = totalAmount * (1 - commissionPercent / 100);
 
       toast({
         title: 'Subscription Activated!',
-        description: `Platform MoR subscription active. Total: £${totalAmount.toFixed(2)}, Advertiser receives: £${advertiserAmount.toFixed(2)} (${commissionPercent}% commission)`,
+        description: `Subscription active. Total amount: £${totalAmount.toFixed(2)}`,
       });
 
       onOpenChange(false);
@@ -70,11 +75,11 @@ const PaymentDialog = ({
     onError: (error) => {
       console.error('Failed to activate subscription:', error);
 
-      // Check for self-billing error
-      const errorMessage = error?.response?.data?.error || '';
-      if (errorMessage.includes('self-billing agreement') || errorMessage.includes('self_billing')) {
-        setShowSelfBillingDialog(true);
-      }
+      toast({
+        variant: 'destructive',
+        title: 'Activation Failed',
+        description: error?.response?.data?.error || 'Failed to activate subscription. Please try again.',
+      });
     }
   });
 
@@ -87,20 +92,21 @@ const PaymentDialog = ({
     onOpenChange(false);
   };
 
+  const handleSetDefault = (paymentMethodId) => {
+    setDefaultMutation.mutate(paymentMethodId);
+  };
+
   const paymentMethods = paymentMethodsData?.data || [];
   const hasPaymentMethod = paymentMethods.length > 0;
-  const advertiserStatus = advertiserStatusData?.data;
-  const advertiserOnboarded = advertiserStatus?.onboarding_completed;
-  const selfBillingAccepted = advertiserStatus?.self_billing_agreement;
+  const defaultPaymentMethod = paymentMethods.find(pm => pm.is_default);
 
   const weeklyRate = schedule?.fixed_week_rate || 0;
   const totalAmount = weeklyRate * (schedule?.week_no || 0);
-  const commissionPercent = advertiserStatus?.commission_percent || 50;
 
-  const isLoading = paymentMethodsLoading || advertiserStatusLoading;
+  const isLoading = paymentMethodsLoading;
 
-  // Check for blockers (Platform MoR requirements)
-  const canActivate = hasPaymentMethod && advertiserOnboarded && selfBillingAccepted;
+  // Can activate if has payment method
+  const canActivate = hasPaymentMethod;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -109,10 +115,9 @@ const PaymentDialog = ({
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Activate Subscription
-            <PlatformMorBadge schedule={{ platform_mor: true }} showTooltip={false} className="ml-2" />
           </DialogTitle>
           <DialogDescription>
-            Activate Platform MoR subscription for {schedule?.advertiser_company}.
+            Activate subscription for {schedule?.advertiser_company}.
           </DialogDescription>
         </DialogHeader>
 
@@ -150,7 +155,7 @@ const PaymentDialog = ({
             </div>
           ) : (
             <>
-              {/* Payment Method Status */}
+              {/* Payment Methods */}
               {!hasPaymentMethod && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -162,40 +167,62 @@ const PaymentDialog = ({
               )}
 
               {hasPaymentMethod && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    Payment method configured ({paymentMethods[0]?.card?.brand} ****{paymentMethods[0]?.card?.last4})
-                  </AlertDescription>
-                </Alert>
+                <div className="space-y-2">
+                  <div className="text-sm font-medium text-gray-700">Your Payment Methods:</div>
+                  <div className="space-y-2">
+                    {paymentMethods.map((pm) => (
+                      <div
+                        key={pm.id}
+                        className={cn(
+                          "flex items-center justify-between p-3 border rounded-lg transition-colors cursor-pointer",
+                          pm.is_default
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                        )}
+                        onClick={() => !pm.is_default && handleSetDefault(pm.id)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="h-4 w-4 text-gray-600" />
+                          <div>
+                            <div className="text-sm font-medium capitalize">
+                              {pm.card?.brand} •••• {pm.card?.last4}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Expires {pm.card?.exp_month}/{pm.card?.exp_year}
+                            </div>
+                          </div>
+                        </div>
+                        {pm.is_default ? (
+                          <div className="flex items-center gap-1 text-blue-600 text-xs font-medium">
+                            <Check className="h-4 w-4" />
+                            Default
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetDefault(pm.id);
+                            }}
+                            disabled={setDefaultMutation.isPending}
+                            className="text-xs"
+                          >
+                            Set as default
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {defaultPaymentMethod && (
+                    <p className="text-xs text-gray-600 mt-2">
+                      Default payment method will be charged for this subscription
+                    </p>
+                  )}
+                </div>
               )}
 
-              {/* Advertiser Onboarding Status */}
-              {!advertiserOnboarded && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    The advertiser has not completed Stripe onboarding. Please ask them to complete onboarding first.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {advertiserOnboarded && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    Advertiser onboarding complete
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Commission Breakdown */}
-              {canActivate && (
-                <CommissionBreakdown
-                  totalAmount={totalAmount}
-                  commissionPercent={commissionPercent}
-                />
-              )}
 
               {/* Subscription Info */}
               {canActivate && (
@@ -203,10 +230,10 @@ const PaymentDialog = ({
                   <div className="font-medium text-blue-800">What happens next:</div>
                   <ul className="text-blue-700 mt-1 space-y-1 text-xs list-disc list-inside">
                     <li>Subscription will be activated immediately</li>
-                    <li>Weekly billing starts on {schedule?.start_date && format(parseISO(schedule.start_date), 'PP')}</li>
-                    <li>BizChat collects £{weeklyRate.toFixed(2)} per week for {schedule?.week_no} weeks</li>
-                    <li>Platform commission ({commissionPercent}%) deducted, remainder transferred to advertiser</li>
-                    <li>Transfers settle in 2-7 days, invoices generated after settlement</li>
+                    <li>You'll be charged £{weeklyRate.toFixed(2)} per week for {schedule?.week_no} weeks</li>
+                    <li>Billing starts on {schedule?.start_date && format(parseISO(schedule.start_date), 'PP')}</li>
+                    <li>Total subscription cost: £{totalAmount.toFixed(2)}</li>
+                    <li>Invoices will be generated and sent to you automatically</li>
                   </ul>
                 </div>
               )}
@@ -251,22 +278,6 @@ const PaymentDialog = ({
           </div>
         </form>
       </DialogContent>
-
-      {/* Self-Billing Agreement Dialog */}
-      <SelfBillingAgreementDialog
-        open={showSelfBillingDialog}
-        onOpenChange={setShowSelfBillingDialog}
-        advertiserId={schedule?.advertiser_id}
-        advertiserName={schedule?.advertiser_company}
-        onAccepted={() => {
-          // Refresh advertiser status to get updated self-billing flag
-          queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', schedule?.advertiser_id] });
-          toast({
-            title: 'Agreement Accepted',
-            description: 'Self-billing agreement has been accepted. You can now activate the subscription.',
-          });
-        }}
-      />
     </Dialog>
   );
 };
