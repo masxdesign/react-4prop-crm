@@ -151,13 +151,13 @@ const PaymentSettings = () => {
 
 // Payment Method Card Component
 const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
-  const isDefault = method.default || false; // Assuming backend marks default
+  const isDefault = method.is_default || false;
   const cardBrand = method.card?.brand || 'card';
   const last4 = method.card?.last4 || '****';
   const expMonth = method.card?.exp_month || '**';
   const expYear = method.card?.exp_year ? String(method.card.exp_year).slice(-2) : '**';
 
-  // Brand colors
+  // Brand colors - different gradient for default card
   const brandColors = {
     visa: 'from-blue-600 to-blue-700',
     mastercard: 'from-orange-600 to-orange-700',
@@ -167,9 +167,12 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
   };
 
   const gradientClass = brandColors[cardBrand.toLowerCase()] || brandColors.default;
+  const cardClasses = isDefault
+    ? `relative bg-gradient-to-br ${gradientClass} rounded-lg p-6 text-white shadow-xl ring-2 ring-blue-400 ring-offset-2`
+    : `relative bg-gradient-to-br ${gradientClass} rounded-lg p-6 text-white shadow-lg`;
 
   return (
-    <div className={`relative bg-gradient-to-br ${gradientClass} rounded-lg p-6 text-white shadow-lg`}>
+    <div className={cardClasses}>
       {isDefault && (
         <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
           <Check className="h-3 w-3" />
