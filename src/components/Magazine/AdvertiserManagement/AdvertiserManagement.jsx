@@ -168,15 +168,15 @@ const AdvertiserManagement = () => {
       )}
 
       {/* Form Modal */}
-      {isFormOpen && (
-        <AdvertiserForm
-          advertiser={editingAdvertiser}
-          onClose={closeForm}
-          onSubmit={handleFormSubmit}
-          isLoading={editingAdvertiser ? updateMutation.isPending : createMutation.isPending}
-          error={editingAdvertiser ? updateMutation.error : createMutation.error}
-        />
-      )}
+      <AdvertiserForm
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        advertiser={editingAdvertiser}
+        onClose={closeForm}
+        onSubmit={handleFormSubmit}
+        isLoading={editingAdvertiser ? updateMutation.isPending : createMutation.isPending}
+        error={editingAdvertiser ? updateMutation.error : createMutation.error}
+      />
 
       {/* Delete Loading Indicator */}
       {deleteMutation.isPending && (

@@ -3,6 +3,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
 import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/services/fourProp"
 import { AuthContext, AuthDispatchContext, useAuthContext, useAuthDispatch } from "./Auth-context"
 import { flushSync } from "react-dom"
+import { RESTRICTED_NEG_IDS } from "../DashboardSidebar/permissions"
 
 export const initialAuthState = {
     isAuthenticated: false,
@@ -24,7 +25,10 @@ export const authCombiner = (user) => {
         bzUserId: user.neg_id ? user.neg_id : `U${user.id}`,
         authUserId: `U${user.id}`,
         displayName: user.display_name ?? `${user.first} ${user.last}`,
-        user,
+        user: {
+            ...user,
+            is_admin: RESTRICTED_NEG_IDS.includes(user.neg_id)
+        },
         allowFutureFeatured: ['2', '161', '207', '60726'].includes(`${user.id}`),
     }
 }

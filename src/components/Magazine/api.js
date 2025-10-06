@@ -106,6 +106,18 @@ export const activateSubscription = async (scheduleId) => {
   return response.data;
 };
 
+// Platform MoR Subscription Activation (NEW)
+export const activateSubscriptionPlatformMor = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/activate-subscription-platform-mor`);
+  return response.data;
+};
+
+// Self-Billing Agreement API functions (NEW)
+export const acceptSelfBillingAgreement = async (advertiserId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/accept-self-billing`);
+  return response.data;
+};
+
 // Schedule Assign Approver API functions
 export const assignApprover = async (scheduleId, assignData) => {
   const response = await bizchatClient.put(`/api/crm/mag/schedules/${scheduleId}/assign-approver`, assignData);
@@ -147,6 +159,32 @@ export const onboardAdvertiser = async (advertiserId, onboardingData) => {
 
 export const getAdvertiserStripeStatus = async (advertiserId) => {
   const response = await bizchatClient.get(`/api/crm/mag/stripe/advertisers/${advertiserId}/status`);
+  return response.data;
+};
+
+// Transfer Settlement API functions
+export const fetchTransferStats = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/stats');
+  return response.data;
+};
+
+export const fetchPendingTransfers = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/admin/pending');
+  return response.data;
+};
+
+export const fetchFailedTransfers = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/admin/failed');
+  return response.data;
+};
+
+export const forceSettleTransfer = async (bookingItemId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/transfers/admin/force-settle/${bookingItemId}`);
+  return response.data;
+};
+
+export const processAllSettlements = async () => {
+  const response = await bizchatClient.post('/api/crm/mag/transfers/cron/process-settlements');
   return response.data;
 };
 
