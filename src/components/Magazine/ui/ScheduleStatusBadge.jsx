@@ -3,7 +3,16 @@ import { cn } from '@/lib/utils';
 
 const ScheduleStatusBadge = ({ schedule, className, ...props }) => {
   // Priority display logic: active > upcoming > expired > workflow status
+  // 🔴 🟠 🟡 🟢 🔵 🟣 ⚪️ ⚫️ 🟤 ✅
   const getStatusDisplay = () => {
+    if (schedule.cancelled_at) {
+      return {
+        label: 'Cancelled',
+        color: 'bg-amber-100 text-amber-800 border-amber-200',
+        icon: '🟠'
+      };
+    }
+
     if (schedule.active) {
       return {
         label: 'Active',
@@ -20,12 +29,30 @@ const ScheduleStatusBadge = ({ schedule, className, ...props }) => {
       };
     }
     
-    if (schedule.expired) {
+    if (schedule.completed_at) {
       return {
-        label: schedule.subscription_schedule_id ? 'Finished': 'Expired',
+        label: 'Completed',
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: '✅'
+      };
+    }
+
+    if (schedule.expired) {
+
+      if (schedule.subscription_schedule_id) {
+        return {
+          label: 'Expired (completed?)',
+          color: 'bg-gray-100 text-gray-800 border-gray-200',
+          icon: '⚫'
+        };
+      }
+
+      return {
+        label: 'Expired',
         color: 'bg-gray-100 text-gray-800 border-gray-200',
         icon: '⚫'
       };
+
     }
 
     // Fallback to workflow status for non-operational schedules

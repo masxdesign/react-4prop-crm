@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
@@ -53,11 +53,14 @@ const TimelineStep = ({
         {/* Status indicator */}
         <div className={cn(
           "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-white relative z-10",
-          isFinished 
-            ? "bg-green-500" 
-            : "bg-gray-300"
+          step.id === 'cancelled' ? "bg-amber-500" :
+            isFinished 
+              ? "bg-green-500" 
+              : "bg-gray-300"
         )}>
-          {isFinished ? (
+          {step.id === 'cancelled' ? (
+            <X className="w-3 h-3" />
+          ) : isFinished ? (
             <CheckCircle className="w-3 h-3" />
           ) : (
             <Circle className="w-3 h-3" />
@@ -169,6 +172,22 @@ const WorkflowTimeline = ({
       });
     }
 
+    if (schedule.cancelled_at) {
+      steps.push({
+        id: 'cancelled',
+        // agent: getUserByNid(schedule.cancelled_by_id),
+        label: 
+          <div className='flex flex-col'>
+            Schedule Cancelled 
+            <span className='text-xs text-gray-700 font-normal'>
+              {schedule.cancellation_reason}
+            </span>
+          </div>,
+        timestamp: schedule.cancelled_at,
+        isFinished: true,
+      });
+    }
+
     return steps;
   };
 
@@ -203,7 +222,7 @@ const WorkflowTimeline = ({
           </button>
           
           <div className="ml-2">
-            {steps.map((step, index) => (
+            {steps.reverse().map((step, index) => (
               <TimelineStep
                 key={step.id}
                 step={step}
