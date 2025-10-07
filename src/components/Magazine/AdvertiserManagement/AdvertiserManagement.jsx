@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllAdvertisers, createAdvertiser, updateAdvertiser, deleteAdvertiser } from '../api';
 import AdvertiserForm from './AdvertiserForm';
 import AdvertiserCard from './AdvertiserCard';
+
+const defaultAdvertisers = []
 
 // Main Advertiser Management Component - Updated for week-based system
 const AdvertiserManagement = () => {
@@ -49,7 +51,13 @@ const AdvertiserManagement = () => {
     },
   });
 
-  const advertisers = data?.data || [];
+  const advertisers = data?.data || defaultAdvertisers;
+
+  useEffect(() => {
+    if (editingAdvertiser) {
+      setEditingAdvertiser(advertisers.find((adv) => editingAdvertiser.id === adv.id))
+    }
+  }, [advertisers])
   
   // Filter advertisers based on search term
   const filteredAdvertisers = advertisers.filter(advertiser =>

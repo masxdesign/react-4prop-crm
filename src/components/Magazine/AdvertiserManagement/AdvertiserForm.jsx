@@ -67,7 +67,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const acceptMutation = useMutation({
     mutationFn: () => acceptSelfBillingAgreement(advertiser?.id),
     onSuccess: () => {
-      // Invalidate advertiser status to refresh self-billing flag
+      // Invalidate queries to refresh advertiser data
       queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', advertiser?.id] });
       queryClient.invalidateQueries({ queryKey: ['advertisers'] });
 
@@ -76,7 +76,8 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
         description: 'Self-billing agreement has been accepted. You can now activate the subscription.',
       });
 
-      // Reset to main form
+      // Reset to main form - the form will automatically show the updated status
+      // because the parent component will re-render with fresh data from the invalidated query
       setShowSelfBillingContent(false);
       setAgreed(false);
     },
