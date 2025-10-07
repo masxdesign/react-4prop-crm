@@ -1,15 +1,19 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AlertCircle, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
-import SelfBillingAgreementDialog from '../dialogs/SelfBillingAgreementDialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { acceptSelfBillingAgreement } from '../api';
 
 // Advertiser Form Component - Updated for week-based system
 const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error }) => {
-  const [showSelfBillingDialog, setShowSelfBillingDialog] = useState(false);
+  const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, formState: { errors }, watch, reset } = useForm({
     values: advertiser || {
@@ -26,6 +30,27 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
 
   const isVatRegistered = watch('vat_registered');
 
+  const acceptMutation = useMutation({
+    mutationFn: () => acceptSelfBillingAgreement(advertiser?.id),
+    onSuccess: () => {
+      // Invalidate advertiser status to refresh self-billing flag
+      queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', advertiser?.id] });
+      queryClient.invalidateQueries({ queryKey: ['advertisers'] });
+
+      toast({
+        title: 'Agreement Accepted',
+        description: 'Self-billing agreement has been accepted. You can now activate the subscription.',
+      });
+
+      // Reset to main form
+      setShowSelfBillingContent(false);
+      setAgreed(false);
+    },
+    onError: (error) => {
+      console.error('Failed to accept self-billing agreement:', error);
+    }
+  });
+
   const handleFormSubmit = (data) => {
     // Format pstids to ensure proper comma-delimited format
     const formattedData = {
@@ -39,20 +64,33 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     onSubmit(formattedData);
   };
 
+  const handleAcceptAgreement = () => {
+    if (agreed) {
+      acceptMutation.mutate();
+    }
+  };
+
+  const handleBackToForm = () => {
+    setShowSelfBillingContent(false);
+    setAgreed(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {advertiser ? 'Edit Advertiser' : 'Add New Advertiser'}
-          </DialogTitle>
-          <DialogDescription>
-            Required for Platform Merchant of Record (MoR) model
-          </DialogDescription>
-        </DialogHeader>
+        {!showSelfBillingContent ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {advertiser ? 'Edit Advertiser' : 'Add New Advertiser'}
+              </DialogTitle>
+              <DialogDescription>
+                Required for Platform Merchant of Record (MoR) model
+              </DialogDescription>
+            </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+            <div className="space-y-4 py-4">
+              <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Company Name *</label>
               <input
@@ -169,7 +207,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setShowSelfBillingDialog(true)}
+                    onClick={() => setShowSelfBillingContent(true)}
                     className="ml-2 mt-2"
                   >
                     Accept Agreement
@@ -211,23 +249,146 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
             </div>
           </form>
         </div>
-      </DialogContent>
+          </>
+        ) : (
+          <>
+            {/* Self-Billing Agreement Content */}
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Self-Billing Agreement
+              </DialogTitle>
+              <DialogDescription>
+                Required for Platform Merchant of Record (MoR) model
+              </DialogDescription>
+            </DialogHeader>
 
-      {/* Self-Billing Agreement Dialog */}
-      <SelfBillingAgreementDialog
-        open={showSelfBillingDialog}
-        onOpenChange={setShowSelfBillingDialog}
-        advertiserId={advertiser?.id}
-        advertiserName={advertiser?.company}
-        onAccepted={() => {
-          // Refresh advertiser status to get updated self-billing flag
-          queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', schedule?.advertiser_id] });
-          toast({
-            title: 'Agreement Accepted',
-            description: 'Self-billing agreement has been accepted. You can now activate the subscription.',
-          });
-        }}
-      />
+            <div className="space-y-4 py-4">
+              {/* Back Button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToForm}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Edit Advertiser
+              </Button>
+
+              {/* Info Alert */}
+              <Alert className="border-blue-200 bg-blue-50">
+                <AlertCircle className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-800 text-sm">
+                  This is a one-time agreement required before your first Platform MoR subscription can be activated.
+                </AlertDescription>
+              </Alert>
+
+              {/* Agreement Content */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
+                <h3 className="font-semibold text-gray-900 mb-3">Self-Billing Agreement Terms</h3>
+
+                <div className="text-sm text-gray-700 space-y-3">
+                  <p>
+                    By accepting this agreement, <strong>{advertiser?.company}</strong> authorizes BizChat Ltd to:
+                  </p>
+
+                  <ul className="list-disc list-inside space-y-2 ml-2">
+                    <li>
+                      <strong>Issue VAT invoices</strong> on your behalf for revenue share payments under UK VAT self-billing regulations
+                    </li>
+                    <li>
+                      <strong>Collect payments</strong> from estate agents on your behalf as the Platform Merchant of Record
+                    </li>
+                    <li>
+                      <strong>Deduct platform commission</strong> (as agreed in your advertiser terms) from collected payments
+                    </li>
+                    <li>
+                      <strong>Transfer net proceeds</strong> to your connected Stripe account after commission deduction
+                    </li>
+                    <li>
+                      <strong>Generate self-billing invoices</strong> showing the revenue share amount and applicable VAT
+                    </li>
+                  </ul>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mt-3">
+                    <p className="text-sm text-yellow-800">
+                      <strong>Important:</strong> You remain responsible for:
+                    </p>
+                    <ul className="list-disc list-inside mt-1 text-sm text-yellow-700 ml-2">
+                      <li>Maintaining accurate VAT registration (if applicable)</li>
+                      <li>Declaring self-billed invoice amounts in your VAT returns</li>
+                      <li>Keeping records of all self-billing transactions</li>
+                    </ul>
+                  </div>
+
+                  <p className="text-xs text-gray-600 mt-4">
+                    This agreement complies with HMRC VAT Notice 700/62 regarding self-billing arrangements.
+                    You may revoke this agreement at any time, but doing so will prevent new Platform MoR subscriptions.
+                  </p>
+                </div>
+              </div>
+
+              {/* Acceptance Checkbox */}
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="agree"
+                  checked={agreed}
+                  onCheckedChange={setAgreed}
+                  disabled={acceptMutation.isPending}
+                />
+                <label
+                  htmlFor="agree"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  I have read and accept the self-billing agreement on behalf of {advertiser?.company}
+                </label>
+              </div>
+
+              {/* Error Display */}
+              {acceptMutation.isError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {acceptMutation.error?.response?.data?.error || 'Failed to accept agreement. Please try again.'}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBackToForm}
+                  disabled={acceptMutation.isPending}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleAcceptAgreement}
+                  disabled={!agreed || acceptMutation.isPending}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {acceptMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Accepting...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accept & Continue
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </DialogContent>
     </Dialog>
   )
 };
