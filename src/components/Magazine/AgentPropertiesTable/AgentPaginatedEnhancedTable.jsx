@@ -226,33 +226,40 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
   const isLoading = rawIsLoading || enhancedIsLoading;
 
   return (
-    <div className='grid grid-rows-[5rem_1fr_auto] min-h-0 py-4 relative'>
-      <div className='flex items-end py-4 gap-0 text-white px-3'>
-        <div className='flex-1'>  
-          <span className='text-xl font-bold'>
-            My Enhanced Properties
+    <div className='grid grid-rows-[2.5rem_1fr_auto] min-h-0 py-4 relative'>
+      <div className='flex items-start gap-0 text-white mr-3'>
+        <div className='flex-1 flex justify-between'>  
+          <span className='text-base font-bold'>
+            My Department properties {rawData?.total || 0}
           </span>
-          <div className="flex justify-between items-center">
-            <div className="text-white mix-blend-overlay space-y-1">
-              <p>
-                Department: {rawData?.departmentName || 'N/A'} | 
-                Total Properties: {rawData?.total || 0}
-              </p>
-              <p className="text-sm">
-                Enhanced: {enhancedProperties?.length || 0} | 
-                Expanded: {expandedRows.size}
-              </p>
-            </div>
+          <div className="flex gap-2 items-center">
             <Button 
-              size="sm"
+              size="xs"
+              variant="link"
+              className="text-white"
               onClick={handleRefresh}
               disabled={isLoading}
             >
-              {isLoading ? 'Loading...' : 'Refresh'}
+              {isLoading ? 'Loading...' : (
+                  <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              )}
             </Button>
+            <PropertiesTableFilters table={table} />
           </div>
         </div>
-        <PropertiesTableFilters table={table} />
       </div>
 
       {/* 
@@ -267,7 +274,7 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
           toggleRowExpansion={toggleRowExpansion}
           agentId={agentId}
           isEmpty={enhancedProperties?.length === 0}
-          className="bg-gray-100 rounded-lg"
+          className="bg-gray-100 rounded-lg mr-3"
         />
       </ClientOnly>
 

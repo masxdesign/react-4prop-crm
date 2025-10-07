@@ -2,12 +2,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, CheckCircle, FileText, ArrowLeft, X } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2 } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { acceptSelfBillingAgreement } from '../api';
+import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripeStatus } from '../api';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
 // Advertiser Form Component - Updated for week-based system
@@ -64,6 +64,20 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
 
   const isVatRegistered = watch('vat_registered');
 
+  // Fetch advertiser Stripe status
+  const {
+    data: stripeStatusData,
+    isLoading: stripeStatusLoading
+  } = useQuery({
+    queryKey: ['advertiser-stripe-status', advertiser?.id],
+    queryFn: () => getAdvertiserStripeStatus(advertiser?.id),
+    enabled: !!advertiser?.id
+  });
+
+  const stripeStatus = stripeStatusData?.data;
+  const hasStripeAccount = !!stripeStatus?.account_id;
+  const hasPlatformCustomer = !!stripeStatus?.platform_customer_id;
+
   const acceptMutation = useMutation({
     mutationFn: () => acceptSelfBillingAgreement(advertiser?.id),
     onSuccess: () => {
@@ -83,6 +97,35 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     },
     onError: (error) => {
       console.error('Failed to accept self-billing agreement:', error);
+    }
+  });
+
+  const createPlatformCustomerMutation = useMutation({
+    mutationFn: () => createPlatformCustomer(advertiser?.id),
+    onSuccess: (data) => {
+      // Invalidate queries to refresh advertiser data
+      queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', advertiser?.id] });
+      queryClient.invalidateQueries({ queryKey: ['advertisers'] });
+
+      if (data?.data?.already_exists) {
+        toast({
+          title: 'Already Exists',
+          description: 'Platform customer already exists for this advertiser',
+        });
+      } else {
+        toast({
+          title: 'Success',
+          description: 'Platform customer created successfully',
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create platform customer:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Creation Failed',
+        description: error?.response?.data?.error || 'Failed to create platform customer. Please try again.',
+      });
     }
   });
 
@@ -295,6 +338,67 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                       <p className="text-xs text-gray-500 mt-1">
                         UK VAT number (e.g., GB123456789)
                       </p>
+                    </div>
+                  )}
+
+                  {/* Platform Customer Section */}
+                  {advertiser && (
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <label className="block text-sm font-medium mb-2">Platform Customer</label>
+
+                      {stripeStatusLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Checking status...</span>
+                        </div>
+                      ) : hasPlatformCustomer ? (
+                        <div className="space-y-2">
+                          <Alert className="border-green-200 bg-green-50">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <AlertDescription className="text-green-800 text-sm">
+                              Platform customer created
+                              {stripeStatus?.platform_customer_id && (
+                                <span className="block text-xs text-green-700 mt-1 font-mono">
+                                  {stripeStatus.platform_customer_id}
+                                </span>
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      ) : hasStripeAccount ? (
+                        <div className="space-y-2">
+                          <p className="text-xs text-gray-600 mb-2">
+                            Create a platform customer for self-billing invoices
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => createPlatformCustomerMutation.mutate()}
+                            disabled={createPlatformCustomerMutation.isPending}
+                            className="w-full sm:w-auto"
+                          >
+                            {createPlatformCustomerMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Create Platform Customer
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            Complete Stripe onboarding first to create platform customer
+                          </AlertDescription>
+                        </Alert>
+                      )}
                     </div>
                   )}
                 </div>

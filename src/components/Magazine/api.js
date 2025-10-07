@@ -162,6 +162,11 @@ export const getAdvertiserStripeStatus = async (advertiserId) => {
   return response.data;
 };
 
+export const createPlatformCustomer = async (advertiserId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/create-platform-customer`);
+  return response.data;
+};
+
 // Transfer Settlement API functions
 export const fetchTransferStats = async () => {
   const response = await bizchatClient.get('/api/crm/mag/transfers/stats');

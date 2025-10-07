@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
+import { Button } from '@/components/ui/button';
 
 // Advertiser Card Component - Updated for week-based system with Stripe integration
 const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
@@ -42,11 +43,10 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-        <div className="flex justify-between items-start mb-4">
+      <div className="flex flex-col bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="shrink-0 flex justify-between items-start mb-4">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold">{advertiser.company}</h3>
-            <p className="text-sm text-gray-500">ID: {advertiser.id}</p>
+            <h3 className="text-base font-semibold mr-4">{advertiser.company}</h3>
 
             {/* Stripe Onboarding Status */}
             <div className="mt-2">
@@ -72,8 +72,8 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
             </div>
           </div>
           <div className="text-right">
-            <div className="text-lg font-bold text-green-600">
-              £{weekRate}/week
+            <div className="text-base font-bold text-green-600">
+              £{weekRate}<span className='text-sm font-light'>/week</span>
             </div>
             {advertiser.day_rate && !advertiser.week_rate && (
               <div className="text-xs text-gray-400">
@@ -83,51 +83,55 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
           </div>
         </div>
 
-      <div className="space-y-2 mb-4">
-        <div>
-          <span className="text-sm font-medium text-gray-500">Property Subtypes:</span>
-          <div className="text-sm">
-            {subtypeLabels.length > 0
-              ? subtypeLabels.join(', ')
-              : 'All types'
-            }
+        <div className="shrink-0 space-y-2 mb-auto">
+          <div>
+            <span className="text-xs font-medium text-gray-500">Property Subtypes</span>
+            <div className="text-xs">
+              {subtypeLabels.length > 0
+                ? subtypeLabels.join(', ')
+                : 'All types'
+              }
+            </div>
           </div>
+        </div>
+
+        <div className="shrink-0 flex gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onEdit(advertiser)}
+            className="flex-1"
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex-1"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </div>
       </div>
 
-      <div className="flex gap-2">
-        <button
-          onClick={() => onEdit(advertiser)}
-          className="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          disabled={isDeleting}
-          className="flex-1 px-3 py-2 text-sm bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-        >
-          {isDeleting ? 'Deleting...' : 'Delete'}
-        </button>
-      </div>
-    </div>
-
-    {/* Stripe Onboarding Dialog */}
-    <Dialog open={showOnboardingDialog} onOpenChange={setShowOnboardingDialog}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Stripe Onboarding</DialogTitle>
-          <DialogDescription>
-            Connect {advertiser.company} to Stripe to receive payments.
-          </DialogDescription>
-        </DialogHeader>
-        <AdvertiserOnboarding
-          advertiserId={advertiser.id}
-          advertiserName={advertiser.company}
-        />
-      </DialogContent>
-    </Dialog>
-  </>
+      {/* Stripe Onboarding Dialog */}
+      <Dialog open={showOnboardingDialog} onOpenChange={setShowOnboardingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Stripe Onboarding</DialogTitle>
+            <DialogDescription>
+              Connect {advertiser.company} to Stripe to receive payments.
+            </DialogDescription>
+          </DialogHeader>
+          <AdvertiserOnboarding
+            advertiserId={advertiser.id}
+            advertiserName={advertiser.company}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

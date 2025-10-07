@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllAdvertisers, createAdvertiser, updateAdvertiser, deleteAdvertiser } from '../api';
 import AdvertiserForm from './AdvertiserForm';
 import AdvertiserCard from './AdvertiserCard';
+import { Button } from '@/components/ui/button';
 
 const defaultAdvertisers = []
 
@@ -110,31 +111,32 @@ const AdvertiserManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid grid-rows-[4rem_2rem_1fr] gap-4 min-h-0">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center py-4 mr-3">
         <div>
-          <h2 className="text-2xl font-bold">Advertiser Management</h2>
-          <p className="text-gray-600">Manage advertising companies and their weekly rates</p>
+          <h2 className="text-base text-muted font-bold">Advertiser Management</h2>
+          <p className="text-gray-300 text-sm">Manage advertising companies and their weekly rates</p>
         </div>
-        <button 
+        <Button 
+          size="xs"
           onClick={() => setIsFormOpen(true)}
-          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          className="bg-green-500 text-white rounded hover:bg-green-600"
         >
           Add Advertiser
-        </button>
+        </Button>
       </div>
 
       {/* Search and Stats */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mr-3">
         <input
           type="text"
           placeholder="Search advertisers..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+          className="px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <div className="text-sm text-gray-600">
+        <div className="text-xs text-gray-200">
           Showing {filteredAdvertisers.length} of {advertisers.length} advertisers
         </div>
       </div>
@@ -162,7 +164,7 @@ const AdvertiserManagement = () => {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-3 gap-3 bg-white p-4 mr-3 rounded-lg shadow-lg overflow-y-auto mb-4">
           {filteredAdvertisers.map((advertiser) => (
             <AdvertiserCard
               key={advertiser.id}
