@@ -15,6 +15,7 @@ import { propertyTypescombiner } from '@/store/use-listing';
 const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error }) => {
   const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
   const queryClient = useQueryClient();
 
   // Fetch types and subtypes data
@@ -22,8 +23,8 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const { data: subtypesData } = useQuery(subtypesQuery);
 
   // Build grouped subtypes by parent type using propertyTypesCombiner
-  const { subtypeOptions, groupedPropertyTypes } = useMemo(() => {
-    if (!typesData || !subtypesData) return { subtypeOptions: [], groupedPropertyTypes: [] };
+  const { subtypeOptions, groupedPropertyTypes, filteredGroupedPropertyTypes } = useMemo(() => {
+    if (!typesData || !subtypesData) return { subtypeOptions: [], groupedPropertyTypes: [], filteredGroupedPropertyTypes: [] };
 
     // Use the propertyTypescombiner to get structured property types with subtypes
     const propertyTypes = propertyTypescombiner(typesData, subtypesData);
@@ -52,8 +53,22 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       });
     });
 
-    return { subtypeOptions: flatOptions, groupedPropertyTypes };
-  }, [typesData, subtypesData]);
+    // Filter based on search term
+    const searchLower = subtypeSearchTerm.toLowerCase().trim();
+    const filteredGroupedPropertyTypes = searchLower
+      ? groupedPropertyTypes
+          .map(type => ({
+            ...type,
+            subtypes: type.subtypes.filter(subtype =>
+              subtype.label.toLowerCase().includes(searchLower) ||
+              type.label.toLowerCase().includes(searchLower)
+            )
+          }))
+          .filter(type => type.subtypes.length > 0)
+      : groupedPropertyTypes;
+
+    return { subtypeOptions: flatOptions, groupedPropertyTypes, filteredGroupedPropertyTypes };
+  }, [typesData, subtypesData, subtypeSearchTerm]);
 
   // Parse initial pstids into array for Controller
   const initialPstids = useMemo(() => {
@@ -166,6 +181,15 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                 control={control}
                 render={({ field }) => (
                   <div className="space-y-2">
+                    {/* Search box */}
+                    <input
+                      type="text"
+                      placeholder="Search subtypes..."
+                      value={subtypeSearchTerm}
+                      onChange={(e) => setSubtypeSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+
                     {/* Multi-select dropdown with grouped options */}
                     <div className="relative">
                       <select
@@ -177,15 +201,19 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px]"
                       >
-                        {groupedPropertyTypes.map(type => (
-                          <optgroup key={type.id} label={type.label}>
-                            {type.subtypes.map(subtype => (
-                              <option key={subtype.id} value={subtype.id}>
-                                {subtype.label}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
+                        {filteredGroupedPropertyTypes.length > 0 ? (
+                          filteredGroupedPropertyTypes.map(type => (
+                            <optgroup key={type.id} label={type.label}>
+                              {type.subtypes.map(subtype => (
+                                <option key={subtype.id} value={subtype.id}>
+                                  {subtype.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))
+                        ) : (
+                          <option disabled>No subtypes found</option>
+                        )}
                       </select>
                     </div>
 
