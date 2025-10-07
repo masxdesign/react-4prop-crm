@@ -42,7 +42,7 @@ export const navigationConfig = {
       to: "/crm/mag",
       icon: NewspaperIcon,
       label: "Magazine",
-      allowedNegIds: RESTRICTED_NEG_IDS
+      // allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
       id: 'mag-advertisers',
@@ -63,7 +63,7 @@ export const navigationConfig = {
       to: "/crm/mag/payment-settings",
       icon: CreditCard,
       label: "Payment Settings",
-      allowedNegIds: RESTRICTED_NEG_IDS
+      // allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
       id: 'mag-transfers',

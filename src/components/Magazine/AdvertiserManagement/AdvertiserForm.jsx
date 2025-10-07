@@ -114,10 +114,10 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] sm:max-w-2xl flex flex-col">
         {!showSelfBillingContent ? (
           <>
-            <DialogHeader>
+            <DialogHeader className="shrink-0">
               <DialogTitle className="flex items-center gap-2">
                 {advertiser ? 'Edit Advertiser' : 'Add New Advertiser'}
               </DialogTitle>
@@ -126,230 +126,230 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4 py-4">
-              <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Company Name *</label>
-              <input
-                type="text"
-                {...register('company', { required: 'Company name is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter company name"
-              />
-              {errors.company && (
-                <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Property Subtypes</label>
-              <Controller
-                name="pstids"
-                control={control}
-                render={({ field }) => (
-                  <div className="space-y-2">
-                    {/* Search box */}
-                    <input
-                      type="text"
-                      placeholder="Search subtypes..."
-                      value={subtypeSearchTerm}
-                      onChange={(e) => setSubtypeSearchTerm(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-
-                    {/* Multi-select dropdown with grouped options */}
-                    <div className="relative">
-                      <select
-                        multiple
-                        value={field.value || []}
-                        onChange={(e) => {
-                          const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                          field.onChange(selectedOptions);
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px]"
-                      >
-                        {filteredGroupedPropertyTypes.length > 0 ? (
-                          filteredGroupedPropertyTypes.map(type => (
-                            <optgroup key={type.id} label={type.label}>
-                              {type.subtypes.map(subtype => (
-                                <option key={subtype.id} value={subtype.id}>
-                                  {subtype.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))
-                        ) : (
-                          <option disabled>No subtypes found</option>
-                        )}
-                      </select>
-                    </div>
-
-                    {/* Selected subtypes display */}
-                    {field.value && field.value.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {field.value.map(pstid => {
-                          const subtype = subtypeOptions.find(opt => opt.id === pstid);
-                          return subtype ? (
-                            <span
-                              key={pstid}
-                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-                            >
-                              {subtype.label}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newValue = field.value.filter(id => id !== pstid);
-                                  field.onChange(newValue);
-                                }}
-                                className="hover:bg-blue-200 rounded-full p-0.5"
-                              >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                {...register('week_rate', {
-                  required: 'Week rate is required',
-                  min: { value: 0, message: 'Week rate must be positive' }
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0.00"
-              />
-              {errors.week_rate && (
-                <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
-              )}
-            </div>
-
-            {/* Platform MoR Fields */}
-            <div className="border-t pt-4 mt-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Platform MoR Settings</h4>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Commission Percentage *</label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="100"
-                  {...register('commission_percent', {
-                    required: 'Commission percentage is required',
-                    min: { value: 0, message: 'Commission must be 0 or greater' },
-                    max: { value: 100, message: 'Commission cannot exceed 100%' }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="50"
-                />
-                {errors.commission_percent && (
-                  <p className="text-red-500 text-sm mt-1">{errors.commission_percent.message}</p>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Platform commission percentage (default: 50%)
-                </p>
-              </div>
-
-              <div className="mt-3">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    {...register('vat_registered')}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm font-medium">VAT Registered (UK)</span>
-                </label>
-              </div>
-
-              {isVatRegistered && (
-                <div className="mt-3">
-                  <label className="block text-sm font-medium mb-1">VAT Number</label>
+            <form onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
+              <div className='flex-1 space-y-4 overflow-y-auto -mx-6 px-6'>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Company Name *</label>
                   <input
                     type="text"
-                    {...register('vat_number', {
-                      required: isVatRegistered ? 'VAT number is required when VAT registered' : false,
-                      pattern: {
-                        value: /^GB[0-9]{9}$/,
-                        message: 'VAT number must be in format: GB123456789'
-                      }
-                    })}
+                    {...register('company', { required: 'Company name is required' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="GB123456789"
+                    placeholder="Enter company name"
                   />
-                  {errors.vat_number && (
-                    <p className="text-red-500 text-sm mt-1">{errors.vat_number.message}</p>
+                  {errors.company && (
+                    <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Property Subtypes</label>
+                  <Controller
+                    name="pstids"
+                    control={control}
+                    render={({ field }) => (
+                      <div className="space-y-2">
+                        {/* Search box */}
+                        <input
+                          type="text"
+                          placeholder="Search subtypes..."
+                          value={subtypeSearchTerm}
+                          onChange={(e) => setSubtypeSearchTerm(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        />
+
+                        {/* Multi-select dropdown with grouped options */}
+                        <div className="relative">
+                          <select
+                            multiple
+                            value={field.value || []}
+                            onChange={(e) => {
+                              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                              field.onChange(selectedOptions);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px]"
+                          >
+                            {filteredGroupedPropertyTypes.length > 0 ? (
+                              filteredGroupedPropertyTypes.map(type => (
+                                <optgroup key={type.id} label={type.label}>
+                                  {type.subtypes.map(subtype => (
+                                    <option key={subtype.id} value={subtype.id}>
+                                      {subtype.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))
+                            ) : (
+                              <option disabled>No subtypes found</option>
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Selected subtypes display */}
+                        {field.value && field.value.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {field.value.map(pstid => {
+                              const subtype = subtypeOptions.find(opt => opt.id === pstid);
+                              return subtype ? (
+                                <span
+                                  key={pstid}
+                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                                >
+                                  {subtype.label}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newValue = field.value.filter(id => id !== pstid);
+                                      field.onChange(newValue);
+                                    }}
+                                    className="hover:bg-blue-200 rounded-full p-0.5"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </span>
+                              ) : null;
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  />
                   <p className="text-xs text-gray-500 mt-1">
-                    UK VAT number (e.g., GB123456789)
+                    Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
                   </p>
                 </div>
-              )}
-            </div>
 
-            {/* Self-Billing Agreement Status */}
-            {!advertiser?.self_billing_agreement && advertiserOnboarded && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Advertiser must accept self-billing agreement before Platform MoR activation.
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowSelfBillingContent(true)}
-                    className="ml-2 mt-2"
-                  >
-                    Accept Agreement
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...register('week_rate', {
+                      required: 'Week rate is required',
+                      min: { value: 0, message: 'Week rate must be positive' }
+                    })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0.00"
+                  />
+                  {errors.week_rate && (
+                    <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
+                  )}
+                </div>
 
-            {advertiser?.self_billing_agreement && (
-              <Alert className="border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  Self-billing agreement accepted
-                </AlertDescription>
-              </Alert>
-            )}
+                {/* Platform MoR Fields */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Platform MoR Settings</h4>
 
-            {error && (
-              <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
-                {error.response?.data?.error || 'An error occurred'}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Commission Percentage *</label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="100"
+                      {...register('commission_percent', {
+                        required: 'Commission percentage is required',
+                        min: { value: 0, message: 'Commission must be 0 or greater' },
+                        max: { value: 100, message: 'Commission cannot exceed 100%' }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="50"
+                    />
+                    {errors.commission_percent && (
+                      <p className="text-red-500 text-sm mt-1">{errors.commission_percent.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Platform commission percentage (default: 50%)
+                    </p>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        {...register('vat_registered')}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm font-medium">VAT Registered (UK)</span>
+                    </label>
+                  </div>
+
+                  {isVatRegistered && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">VAT Number</label>
+                      <input
+                        type="text"
+                        {...register('vat_number', {
+                          required: isVatRegistered ? 'VAT number is required when VAT registered' : false,
+                          pattern: {
+                            value: /^GB[0-9]{9}$/,
+                            message: 'VAT number must be in format: GB123456789'
+                          }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="GB123456789"
+                      />
+                      {errors.vat_number && (
+                        <p className="text-red-500 text-sm mt-1">{errors.vat_number.message}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        UK VAT number (e.g., GB123456789)
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Self-Billing Agreement Status */}
+                {advertiser && !advertiser?.self_billing_agreement && advertiserOnboarded && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Advertiser must accept self-billing agreement before Platform MoR activation.
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowSelfBillingContent(true)}
+                        className="ml-2 mt-2"
+                      >
+                        Accept Agreement
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {advertiser?.self_billing_agreement && (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      Self-billing agreement accepted
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {error && (
+                  <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
+                    {error.response?.data?.error || 'An error occurred'}
+                  </div>
+                )}
               </div>
-            )}
 
-            <div className="flex gap-2 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isLoading ? 'Saving...' : (advertiser ? 'Update' : 'Create')}
-              </button>
-            </div>
-          </form>
-        </div>
+              <div className="shrink-0 flex gap-2 pt-4 border-t -mx-6 px-5">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : (advertiser ? 'Update' : 'Create')}
+                </button>
+              </div>
+            </form>
           </>
         ) : (
           <>
@@ -465,7 +465,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   disabled={acceptMutation.isPending}
                   className="flex-1"
                 >
-                  Cancel
+                  Return
                 </Button>
                 <Button
                   type="button"

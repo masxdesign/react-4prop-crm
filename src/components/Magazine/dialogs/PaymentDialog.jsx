@@ -101,7 +101,17 @@ const PaymentDialog = ({
   const defaultPaymentMethod = paymentMethods.find(pm => pm.is_default);
 
   const weeklyRate = schedule?.fixed_week_rate || 0;
-  const totalAmount = weeklyRate * (schedule?.week_no || 0);
+  const weeks = schedule?.week_no || 0;
+  const vatRate = 0.20; // UK VAT 20%
+
+  // Weekly calculations
+  const weeklyVat = weeklyRate * vatRate;
+  const weeklyTotal = weeklyRate + weeklyVat;
+
+  // Total over duration
+  const subtotal = weeklyRate * weeks;
+  const vatAmount = subtotal * vatRate;
+  const totalAmount = subtotal + vatAmount;
 
   const isLoading = paymentMethodsLoading;
 
@@ -126,23 +136,41 @@ const PaymentDialog = ({
             <div className="bg-gray-50 p-3 rounded-md text-sm space-y-2">
               <div className="font-medium">Subscription Details:</div>
               <div>Advertiser: {schedule.advertiser_company}</div>
-              <div className="flex items-center justify-between">
-                <span>Weekly Rate:</span>
-                <span className="font-semibold">£{weeklyRate.toFixed(2)}</span>
+
+              {/* Weekly Breakdown */}
+              <div className="bg-white p-2 rounded border border-gray-200 mt-2">
+                <div className="text-xs font-medium text-gray-600 mb-1">Weekly Charge:</div>
+                <div className="flex items-center justify-between text-sm">
+                  <span>Weekly Rate:</span>
+                  <span className="font-semibold">£{weeklyRate.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>VAT (20%):</span>
+                  <span className="font-semibold">£{weeklyVat.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm border-t border-gray-200 pt-1 mt-1">
+                  <span className="font-medium">Per Week Total:</span>
+                  <span className="font-bold text-blue-600">£{weeklyTotal.toFixed(2)}</span>
+                </div>
               </div>
+
+              {/* Duration and Total */}
               <div className="flex items-center justify-between">
                 <span>Duration:</span>
-                <span className="font-semibold">{schedule.week_no} week{schedule.week_no !== 1 ? 's' : ''}</span>
+                <span className="font-semibold">{weeks} week{weeks !== 1 ? 's' : ''}</span>
               </div>
               <div className="border-t pt-2 flex items-center justify-between">
-                <span className="font-medium">Total Amount:</span>
+                <span className="font-medium">Total Over {weeks} Week{weeks !== 1 ? 's' : ''}:</span>
                 <span className="font-bold text-green-600 flex items-center gap-1">
                   <DollarSign className="h-4 w-4" />
                   £{totalAmount.toFixed(2)}
                 </span>
               </div>
+              <div className="text-xs text-gray-600">
+                (£{subtotal.toFixed(2)} + £{vatAmount.toFixed(2)} VAT)
+              </div>
               {schedule.start_date && (
-                <div className="text-xs text-gray-600">
+                <div className="text-xs text-gray-600 border-t pt-2 mt-1">
                   Billing starts: {format(parseISO(schedule.start_date), 'PPP')}
                 </div>
               )}
@@ -230,10 +258,12 @@ const PaymentDialog = ({
                   <div className="font-medium text-blue-800">What happens next:</div>
                   <ul className="text-blue-700 mt-1 space-y-1 text-xs list-disc list-inside">
                     <li>Subscription will be activated immediately</li>
-                    <li>You'll be charged £{weeklyRate.toFixed(2)} per week for {schedule?.week_no} weeks</li>
+                    <li>You'll be charged <strong>£{weeklyTotal.toFixed(2)} per week</strong> (£{weeklyRate.toFixed(2)} + £{weeklyVat.toFixed(2)} VAT)</li>
+                    <li>Weekly charges will continue for {weeks} week{weeks !== 1 ? 's' : ''}</li>
                     <li>Billing starts on {schedule?.start_date && format(parseISO(schedule.start_date), 'PP')}</li>
-                    <li>Total subscription cost: £{totalAmount.toFixed(2)}</li>
-                    <li>Invoices will be generated and sent to you automatically</li>
+                    <li>Total amount over {weeks} week{weeks !== 1 ? 's' : ''}: £{totalAmount.toFixed(2)} (includes £{vatAmount.toFixed(2)} VAT)</li>
+                    <li>UK VAT is charged at the standard rate of 20% on each weekly payment</li>
+                    <li>Weekly invoices will be generated and sent to you automatically</li>
                   </ul>
                 </div>
               )}
