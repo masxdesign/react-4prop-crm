@@ -8,8 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { acceptSelfBillingAgreement } from '../api';
-import { subtypesQuery, typesQuery } from '@/store/listing.queries';
-import { propertyTypescombiner } from '@/store/use-listing';
+import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
 // Advertiser Form Component - Updated for week-based system
 const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error }) => {
@@ -18,57 +17,24 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
   const queryClient = useQueryClient();
 
-  // Fetch types and subtypes data
-  const { data: typesData } = useQuery(typesQuery);
-  const { data: subtypesData } = useQuery(subtypesQuery);
+  // Get property subtypes using the custom hook
+  const { subtypeOptions, groupedPropertyTypes } = usePropertySubtypes();
 
-  // Build grouped subtypes by parent type using propertyTypesCombiner
-  const { subtypeOptions, groupedPropertyTypes, filteredGroupedPropertyTypes } = useMemo(() => {
-    if (!typesData || !subtypesData) return { subtypeOptions: [], groupedPropertyTypes: [], filteredGroupedPropertyTypes: [] };
-
-    // Use the propertyTypescombiner to get structured property types with subtypes
-    const propertyTypes = propertyTypescombiner(typesData, subtypesData);
-
-    // Keep the grouped structure for the select dropdown
-    const groupedPropertyTypes = propertyTypes
-      .filter(type => type.subtypes && type.subtypes.length > 0)
-      .map(type => ({
-        id: String(type.id),
-        label: String(type.label || ''),
-        subtypes: type.subtypes.map(subtype => ({
-          id: String(subtype.id),
-          label: String(subtype.label || '')
-        }))
-      }));
-
-    // Also create a flat list for lookup purposes
-    const flatOptions = [];
-    groupedPropertyTypes.forEach(type => {
-      type.subtypes.forEach(subtype => {
-        flatOptions.push({
-          id: subtype.id,
-          label: subtype.label,
-          parentTypeLabel: type.label
-        });
-      });
-    });
-
-    // Filter based on search term
+  // Filter subtypes based on search term
+  const filteredGroupedPropertyTypes = useMemo(() => {
     const searchLower = subtypeSearchTerm.toLowerCase().trim();
-    const filteredGroupedPropertyTypes = searchLower
-      ? groupedPropertyTypes
-          .map(type => ({
-            ...type,
-            subtypes: type.subtypes.filter(subtype =>
-              subtype.label.toLowerCase().includes(searchLower) ||
-              type.label.toLowerCase().includes(searchLower)
-            )
-          }))
-          .filter(type => type.subtypes.length > 0)
-      : groupedPropertyTypes;
+    if (!searchLower) return groupedPropertyTypes;
 
-    return { subtypeOptions: flatOptions, groupedPropertyTypes, filteredGroupedPropertyTypes };
-  }, [typesData, subtypesData, subtypeSearchTerm]);
+    return groupedPropertyTypes
+      .map(type => ({
+        ...type,
+        subtypes: type.subtypes.filter(subtype =>
+          subtype.label.toLowerCase().includes(searchLower) ||
+          type.label.toLowerCase().includes(searchLower)
+        )
+      }))
+      .filter(type => type.subtypes.length > 0);
+  }, [groupedPropertyTypes, subtypeSearchTerm]);
 
   // Parse initial pstids into array for Controller
   const initialPstids = useMemo(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { getAdvertiserStripeStatus } from '../api';
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { subtypesQuery } from '@/store/listing.queries';
+import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
 // Advertiser Card Component - Updated for week-based system with Stripe integration
 const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
@@ -26,25 +26,9 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
     refetchInterval: false
   });
 
-  // Fetch subtypes data for label display
-  const { data: subtypesData } = useQuery(subtypesQuery);
-
-  // Get subtype labels from IDs
-  const subtypeLabels = useMemo(() => {
-    if (!advertiser.pstids || !subtypesData) return [];
-
-    const ids = advertiser.pstids
-      .replace(/^,|,$/g, '')
-      .split(',')
-      .filter(id => id.trim());
-
-    return ids
-      .map(id => {
-        const subtypeData = subtypesData[id];
-        return subtypeData ? subtypeData[0] : null; // subtypeData is [label, alias]
-      })
-      .filter(Boolean);
-  }, [advertiser.pstids, subtypesData]);
+  // Get subtype labels using the custom hook
+  const { getSubtypeLabels } = usePropertySubtypes();
+  const subtypeLabels = getSubtypeLabels(advertiser.pstids);
 
   const handleDelete = () => {
     if (window.confirm(`Are you sure you want to delete "${advertiser.company}"?`)) {
