@@ -2,12 +2,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { AlertCircle, CheckCircle, FileText, ArrowLeft, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { acceptSelfBillingAgreement } from '../api';
+import { subtypesQuery, typesQuery } from '@/store/listing.queries';
+import { propertyTypescombiner } from '@/store/use-listing';
 
 // Advertiser Form Component - Updated for week-based system
 const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error }) => {
@@ -15,10 +17,61 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const [agreed, setAgreed] = useState(false);
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, formState: { errors }, watch, reset } = useForm({
-    values: advertiser || {
+  // Fetch types and subtypes data
+  const { data: typesData } = useQuery(typesQuery);
+  const { data: subtypesData } = useQuery(subtypesQuery);
+
+  // Build grouped subtypes by parent type using propertyTypesCombiner
+  const { subtypeOptions, groupedPropertyTypes } = useMemo(() => {
+    if (!typesData || !subtypesData) return { subtypeOptions: [], groupedPropertyTypes: [] };
+
+    // Use the propertyTypescombiner to get structured property types with subtypes
+    const propertyTypes = propertyTypescombiner(typesData, subtypesData);
+
+    // Keep the grouped structure for the select dropdown
+    const groupedPropertyTypes = propertyTypes
+      .filter(type => type.subtypes && type.subtypes.length > 0)
+      .map(type => ({
+        id: String(type.id),
+        label: String(type.label || ''),
+        subtypes: type.subtypes.map(subtype => ({
+          id: String(subtype.id),
+          label: String(subtype.label || '')
+        }))
+      }));
+
+    // Also create a flat list for lookup purposes
+    const flatOptions = [];
+    groupedPropertyTypes.forEach(type => {
+      type.subtypes.forEach(subtype => {
+        flatOptions.push({
+          id: subtype.id,
+          label: subtype.label,
+          parentTypeLabel: type.label
+        });
+      });
+    });
+
+    return { subtypeOptions: flatOptions, groupedPropertyTypes };
+  }, [typesData, subtypesData]);
+
+  // Parse initial pstids into array for Controller
+  const initialPstids = useMemo(() => {
+    if (!advertiser?.pstids) return [];
+    return advertiser.pstids
+      .replace(/^,|,$/g, '')
+      .split(',')
+      .filter(id => id.trim())
+      .map(id => id.trim());
+  }, [advertiser?.pstids]);
+
+  const { register, handleSubmit, formState: { errors }, watch, reset, control } = useForm({
+    values: advertiser ? {
+      ...advertiser,
+      pstids: initialPstids
+    } : {
       company: '',
-      pstids: '',
+      pstids: [],
       week_rate: '',
       vat_registered: false,
       vat_number: '',
@@ -52,10 +105,12 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   });
 
   const handleFormSubmit = (data) => {
-    // Format pstids to ensure proper comma-delimited format
+    // Format pstids to ensure proper comma-delimited format with leading and trailing commas
     const formattedData = {
       ...data,
-      pstids: data.pstids ? `,${data.pstids.split(',').map(id => id.trim()).join(',')},` : '',
+      pstids: Array.isArray(data.pstids) && data.pstids.length > 0
+        ? `,${data.pstids.join(',')},`
+        : '',
       week_rate: parseFloat(data.week_rate),
       commission_percent: parseFloat(data.commission_percent) || 50,
       vat_registered: Boolean(data.vat_registered),
@@ -105,15 +160,66 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Property Subtype IDs</label>
-              <input
-                type="text"
-                {...register('pstids')}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 1,2,3,4 (comma-separated)"
+              <label className="block text-sm font-medium mb-1">Property Subtypes</label>
+              <Controller
+                name="pstids"
+                control={control}
+                render={({ field }) => (
+                  <div className="space-y-2">
+                    {/* Multi-select dropdown with grouped options */}
+                    <div className="relative">
+                      <select
+                        multiple
+                        value={field.value || []}
+                        onChange={(e) => {
+                          const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                          field.onChange(selectedOptions);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px]"
+                      >
+                        {groupedPropertyTypes.map(type => (
+                          <optgroup key={type.id} label={type.label}>
+                            {type.subtypes.map(subtype => (
+                              <option key={subtype.id} value={subtype.id}>
+                                {subtype.label}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Selected subtypes display */}
+                    {field.value && field.value.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {field.value.map(pstid => {
+                          const subtype = subtypeOptions.find(opt => opt.id === pstid);
+                          return subtype ? (
+                            <span
+                              key={pstid}
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+                            >
+                              {subtype.label}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newValue = field.value.filter(id => id !== pstid);
+                                  field.onChange(newValue);
+                                }}
+                                className="hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Enter property subtype IDs separated by commas (optional)
+                Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
               </p>
             </div>
 
