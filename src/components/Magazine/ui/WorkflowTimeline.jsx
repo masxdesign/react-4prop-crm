@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditC
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
+import { getScheduleStatusDisplay } from '../util/scheduleStatusHelpers';
 
 // Helper component for individual timeline steps
 const TimelineStep = ({ 
@@ -162,12 +163,23 @@ const WorkflowTimeline = ({
     // 3. Subscription activation step (if payer assigned)
     const payer = getUserByNid(schedule.payer_id);
     if (payer) {
+      const status = getScheduleStatusDisplay(schedule);
+      let activatedLabel = 'Subscription Activated';
+      let awaitingLabel = 'Awaiting Activation';
+      
+      // Adjust labels based on status
+      if (status.label === 'Active') {
+        activatedLabel = 'Payment Activated';
+      } else if (status.label === 'Scheduled') {
+        activatedLabel = 'Payment Ready';
+      }
+
       steps.push({
         id: 'activated',
         agent: payer,
         timestamp: schedule.activated_at,
         isFinished: !!schedule.activated_at,
-        label: schedule.activated_at ? 'Subscription Activated' : 'Awaiting Activation',
+        label: schedule.activated_at ? activatedLabel : awaitingLabel,
         role: 'payer'
       });
     }
