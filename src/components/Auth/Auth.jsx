@@ -15,13 +15,17 @@ export const initialAuthState = {
 
 export const authCombiner = (user) => {
     if (!user) return initialAuthState
-    
+
     const isAgent = user.neg_id ? true : false
+    // Bitwise role check: 4prop_user=2, advertiser=64
+    // If role is 66 (2 | 64), user is both 4prop_user and advertiser
+    const isAdvertiser = user.role ? (parseInt(user.role) & 64) === 64 : false
 
     return {
         ...initialAuthState,
         isAuthenticated: true,
         isAgent,
+        isAdvertiser,
         bzUserId: user.neg_id ? user.neg_id : `U${user.id}`,
         authUserId: `U${user.id}`,
         displayName: user.display_name ?? `${user.first} ${user.last}`,

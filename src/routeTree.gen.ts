@@ -28,6 +28,7 @@ import { Route as AccessHashOwnerUidImport } from './routes/access.$hash.$ownerU
 import { Route as AuthGradeGradeWidgetImport } from './routes/_auth.grade._gradeWidget'
 import { Route as AuthGradeSharingSetupEmailImport } from './routes/_auth.grade-sharing_.setup-email'
 import { Route as AuthGradeSharingSelectClientImport } from './routes/_auth.grade-sharing.select-client'
+import { Route as AuthDashboardAdvertiserProfileImport } from './routes/_auth._dashboard.advertiser-profile'
 import { Route as AuthDashboardLayout1Import } from './routes/_auth._dashboard._layout-1'
 import { Route as AuthComUserImport } from './routes/_auth._com/user'
 import { Route as AuthComAgentRouteImport } from './routes/_auth._com/agent/route'
@@ -147,6 +148,12 @@ const AuthGradeSharingSelectClientRoute =
   AuthGradeSharingSelectClientImport.update({
     path: '/grade-sharing/select-client',
     getParentRoute: () => AuthRoute,
+  } as any)
+
+const AuthDashboardAdvertiserProfileRoute =
+  AuthDashboardAdvertiserProfileImport.update({
+    path: '/advertiser-profile',
+    getParentRoute: () => AuthDashboardRoute,
   } as any)
 
 const AuthDashboardLayout1Route = AuthDashboardLayout1Import.update({
@@ -398,6 +405,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardLayout1Import
       parentRoute: typeof AuthDashboardImport
     }
+    '/_auth/_dashboard/advertiser-profile': {
+      preLoaderRoute: typeof AuthDashboardAdvertiserProfileImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/grade-sharing/select-client': {
       preLoaderRoute: typeof AuthGradeSharingSelectClientImport
       parentRoute: typeof AuthImport
@@ -555,6 +566,7 @@ export const routeTree = rootRoute.addChildren([
           ]),
         ]),
       ]),
+      AuthDashboardAdvertiserProfileRoute,
       AuthDashboardMagManageAdvertisersRoute,
       AuthDashboardMagPaymentSettingsRoute,
       AuthDashboardMagTransfersRoute,

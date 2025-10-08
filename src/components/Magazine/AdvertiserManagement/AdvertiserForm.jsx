@@ -11,7 +11,8 @@ import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripe
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
 // Advertiser Form Component - Updated for week-based system
-const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error }) => {
+// isSelfService: When true, hides admin-only fields (commission, week_rate) - used when advertiser edits their own profile
+const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error, isSelfService = false }) => {
   const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
@@ -377,50 +378,56 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   </p>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register('week_rate', {
-                      required: 'Week rate is required',
-                      min: { value: 0, message: 'Week rate must be positive' }
-                    })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="0.00"
-                  />
-                  {errors.week_rate && (
-                    <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
-                  )}
-                </div>
+                {/* Week Rate - Hidden for self-service (advertiser-only) */}
+                {!isSelfService && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      {...register('week_rate', {
+                        required: !isSelfService ? 'Week rate is required' : false,
+                        min: { value: 0, message: 'Week rate must be positive' }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="0.00"
+                    />
+                    {errors.week_rate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Platform MoR Fields */}
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Platform MoR Settings</h4>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Commission Percentage *</label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      max="100"
-                      {...register('commission_percent', {
-                        required: 'Commission percentage is required',
-                        min: { value: 0, message: 'Commission must be 0 or greater' },
-                        max: { value: 100, message: 'Commission cannot exceed 100%' }
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="50"
-                    />
-                    {errors.commission_percent && (
-                      <p className="text-red-500 text-sm mt-1">{errors.commission_percent.message}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      Platform commission percentage (default: 50%)
-                    </p>
-                  </div>
+                  {/* Commission Percentage - Hidden for self-service (advertiser-only) */}
+                  {!isSelfService && (
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Commission Percentage *</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="100"
+                        {...register('commission_percent', {
+                          required: !isSelfService ? 'Commission percentage is required' : false,
+                          min: { value: 0, message: 'Commission must be 0 or greater' },
+                          max: { value: 100, message: 'Commission cannot exceed 100%' }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="50"
+                      />
+                      {errors.commission_percent && (
+                        <p className="text-red-500 text-sm mt-1">{errors.commission_percent.message}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Platform commission percentage (default: 50%)
+                      </p>
+                    </div>
+                  )}
 
                   <div className="mt-3">
                     <label className="flex items-center gap-2">

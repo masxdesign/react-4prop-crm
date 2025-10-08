@@ -13,14 +13,19 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/")({
     beforeLoad: ({ context, search }) => {
         const { page = 1, pageSize = 10 } = search;
         const auth = context.auth;
-        
+
+        // Prevent advertisers from accessing the magazine management page
+        if (auth?.isAdvertiser) {
+            throw new Error('Advertisers cannot access the magazine management page')
+        }
+
         // Create query options that can be used by child routes and components
         const queryOptions = {
             queryKey: ['agent-properties-paginated', auth.user?.neg_id, page, pageSize],
             queryFn: () => fetchAgentPaginatedProperties(auth.user?.neg_id, { page, pageSize }),
             enabled: !!auth.user?.neg_id,
         };
-        
+
         return {
             ...context,
             agentPropertiesQueryOptions: queryOptions,

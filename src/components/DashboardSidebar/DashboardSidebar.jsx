@@ -1,9 +1,11 @@
 import { LogOut } from 'lucide-react'
 import { useNavigation } from './use-navigation'
 import { NavLink } from './NavLink'
+import { useAuth } from '../Auth/Auth-context'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
-  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId)
+  const auth = useAuth()
+  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
 
   return (
     <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40">

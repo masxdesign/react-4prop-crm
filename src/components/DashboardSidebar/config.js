@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -12,18 +12,21 @@ export const navigationConfig = {
         to: 'list',
         icon: ListIcon,
         label: 'Clients',
+        excludedRoles: ['advertiser']
       },
       {
         id: 'nav-import',
         to: 'import',
         icon: ImportIcon,
         label: 'Import',
+        excludedRoles: ['advertiser']
       },
       {
         id: 'nav-inbox',
         to: '/crm/user/active',
         icon: EnvelopeOpenIcon,
         label: 'My inbox',
+        excludedRoles: ['advertiser']
       }
     ],
     restricted: [
@@ -42,7 +45,7 @@ export const navigationConfig = {
       to: "/crm/mag",
       icon: NewspaperIcon,
       label: "Magazine",
-      // allowedNegIds: RESTRICTED_NEG_IDS
+      excludedRoles: ['advertiser']
     },
     {
       id: 'mag-advertisers',
@@ -63,7 +66,7 @@ export const navigationConfig = {
       to: "/crm/mag/payment-settings",
       icon: CreditCard,
       label: "Payment Settings",
-      // allowedNegIds: RESTRICTED_NEG_IDS
+      excludedRoles: ['advertiser']
     },
     {
       id: 'mag-transfers',
@@ -71,6 +74,13 @@ export const navigationConfig = {
       icon: ArrowRightLeft,
       label: "Transfers",
       allowedNegIds: RESTRICTED_NEG_IDS
+    },
+    {
+      id: 'advertiser-profile',
+      to: "/crm/advertiser-profile",
+      icon: UserCircle,
+      label: "My Profile",
+      requiredRoles: ['advertiser']
     },
   ],
   portals: [

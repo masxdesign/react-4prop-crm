@@ -4,6 +4,14 @@ import { useAuth } from "@/components/Auth/Auth"
 import PaymentSettings from "@/components/Magazine/PaymentSettings/PaymentSettings"
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/payment-settings")({
+  beforeLoad: ({ context }) => {
+    const auth = context.auth;
+
+    // Prevent advertisers from accessing payment settings page
+    if (auth?.isAdvertiser) {
+      throw new Error('Advertisers cannot access payment settings')
+    }
+  },
   component: () => {
     const auth = useAuth()
 
