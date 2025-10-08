@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, Mail, Copy } from 'lucide-react';
 import { getAdvertiserStripeStatus } from '../api';
 import AdvertiserOnboarding from '../stripe/AdvertiserOnboarding';
 import {
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
 
 // Advertiser Card Component - Updated for week-based system with Stripe integration
 const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
@@ -37,6 +38,17 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
     }
   };
 
+  const handleCopyEmail = () => {
+    if (advertiser.email) {
+      navigator.clipboard.writeText(advertiser.email);
+      toast({
+        title: 'Email copied',
+        description: 'Email address copied to clipboard',
+        duration: 2000,
+      });
+    }
+  };
+
   const weekRate = advertiser.week_rate;
   const stripeStatus = stripeStatusData?.data;
   const isOnboarded = stripeStatus?.onboarding_completed;
@@ -47,6 +59,21 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
         <div className="shrink-0 flex justify-between items-start mb-4">
           <div className="flex-1">
             <h3 className="text-base font-semibold mr-4">{advertiser.company}</h3>
+
+            {/* Email Display */}
+            {advertiser.email && (
+              <div className="mt-1">
+                <button
+                  onClick={handleCopyEmail}
+                  className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 group"
+                  title="Click to copy email"
+                >
+                  <Mail className="h-3 w-3" />
+                  <span className="truncate max-w-[180px]">{advertiser.email}</span>
+                  <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
+            )}
 
             {/* Stripe Onboarding Status */}
             <div className="mt-2">

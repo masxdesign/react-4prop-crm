@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
@@ -15,6 +15,8 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const queryClient = useQueryClient();
 
   // Get property subtypes using the custom hook
@@ -49,9 +51,15 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const { register, handleSubmit, formState: { errors }, watch, reset, control } = useForm({
     values: advertiser ? {
       ...advertiser,
-      pstids: initialPstids
+      pstids: initialPstids,
+      email: advertiser.email || '',
+      password: '',
+      confirmPassword: ''
     } : {
       company: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
       pstids: [],
       week_rate: '',
       vat_registered: false,
@@ -63,6 +71,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const advertiserOnboarded = true
 
   const isVatRegistered = watch('vat_registered');
+  const password = watch('password');
 
   // Fetch advertiser Stripe status
   const {
@@ -130,6 +139,11 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   });
 
   const handleFormSubmit = (data) => {
+    // Validate password match on create
+    if (!advertiser && data.password !== data.confirmPassword) {
+      return;
+    }
+
     // Format pstids to ensure proper comma-delimited format with leading and trailing commas
     const formattedData = {
       ...data,
@@ -141,6 +155,19 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       vat_registered: Boolean(data.vat_registered),
       vat_number: data.vat_registered ? data.vat_number : ''
     };
+
+    // Only include email and password if they have values
+    if (data.email && data.email.trim()) {
+      formattedData.email = data.email.trim();
+    }
+
+    if (data.password && data.password.trim()) {
+      formattedData.password = data.password.trim();
+    }
+
+    // Remove confirmPassword from the submitted data
+    delete formattedData.confirmPassword;
+
     onSubmit(formattedData);
   };
 
@@ -181,6 +208,95 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   />
                   {errors.company && (
                     <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
+                  )}
+                </div>
+
+                {/* Account Credentials Section */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Account Credentials</h4>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Email Address {!advertiser && '*'}
+                    </label>
+                    <input
+                      type="email"
+                      {...register('email', {
+                        required: !advertiser ? 'Email is required' : false,
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Please enter a valid email address'
+                        }
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="advertiser@example.com"
+                    />
+                    {errors.email && (
+                      <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {advertiser ? 'Update email address (leave as is to keep current)' : 'Used for advertiser login'}
+                    </p>
+                  </div>
+
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium mb-1">
+                      Password {!advertiser && '*'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        {...register('password', {
+                          required: !advertiser ? 'Password is required' : false,
+                          minLength: {
+                            value: 8,
+                            message: 'Password must be at least 8 characters'
+                          }
+                        })}
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder={advertiser ? '••••••••' : 'Enter password'}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {advertiser ? 'Leave blank to keep current password' : 'Minimum 8 characters'}
+                    </p>
+                  </div>
+
+                  {!advertiser && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          {...register('confirmPassword', {
+                            required: !advertiser ? 'Please confirm your password' : false,
+                            validate: (value) => !advertiser ? (value === password || 'Passwords do not match') : true
+                          })}
+                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Re-enter password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {errors.confirmPassword && (
+                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                      )}
+                    </div>
                   )}
                 </div>
 
