@@ -8,7 +8,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
   const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
 
   return (
-    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40">
+    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-gradient-to-l from-blue-900 to-blue-950">
       <span className='text-2xl font-bold text-emerald-500 p-3 tracking-tighter'>
         CRM
       </span>
@@ -26,7 +26,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
       {magazineItems.length > 0 && (
         <div className='flex flex-col gap-2'>
           <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
-            Magazine
+            Marketing
           </h3>
           {magazineItems.map((item) => (
             <NavLink 

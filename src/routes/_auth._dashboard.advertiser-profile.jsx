@@ -31,9 +31,9 @@ function AdvertiserProfilePage() {
     data: stripeStatusData,
     isLoading: stripeStatusLoading
   } = useQuery({
-    queryKey: ['advertiser-stripe-status', auth.user?.id],
-    queryFn: () => getAdvertiserStripeStatus(auth.user?.id),
-    enabled: !!auth.user?.id
+    queryKey: ['advertiser-stripe-status', auth.user?.advertiser_id],
+    queryFn: () => getAdvertiserStripeStatus(auth.user?.advertiser_id),
+    enabled: !!auth.user?.advertiser_id
   })
 
   const stripeStatus = stripeStatusData?.data
@@ -86,7 +86,7 @@ function AdvertiserProfilePage() {
 
         <TabsContent value="onboarding" className="mt-6">
           <OnboardingTab
-            userId={auth.user.id}
+            advertiserId={auth.user.advertiser_id}
             hasStripeAccount={hasStripeAccount}
             stripeStatus={stripeStatus}
             isLoading={stripeStatusLoading}
@@ -157,7 +157,7 @@ function ProfileTab({ user }) {
 }
 
 // Onboarding Tab Component
-function OnboardingTab({ userId, hasStripeAccount, stripeStatus, isLoading }) {
+function OnboardingTab({ advertiserId, hasStripeAccount, stripeStatus, isLoading }) {
   if (isLoading) {
     return (
       <Card>
@@ -195,7 +195,7 @@ function OnboardingTab({ userId, hasStripeAccount, stripeStatus, isLoading }) {
         )}
 
         <AdvertiserOnboarding
-          advertiserId={userId}
+          advertiserId={advertiserId}
           onSuccess={() => {
             // Refresh the page or show success message
             window.location.reload()

@@ -4,6 +4,8 @@
  * @returns {Object} Object with label, color (Tailwind classes), and icon
  */
 export const getScheduleStatusDisplay = (schedule) => {
+  console.log(schedule);
+  
   // Priority display logic: cancelled > active > upcoming > completed > expired > workflow status
   if (schedule.cancelled_at) {
     return {

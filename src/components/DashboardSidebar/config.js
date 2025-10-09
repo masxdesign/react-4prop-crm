@@ -44,7 +44,7 @@ export const navigationConfig = {
       id: 'mag-agents-list',
       to: "/crm/mag",
       icon: NewspaperIcon,
-      label: "Magazine",
+      label: "Properties",
       excludedRoles: ['advertiser']
     },
     {
@@ -54,13 +54,14 @@ export const navigationConfig = {
       label: "Advertisers",
       allowedNegIds: RESTRICTED_NEG_IDS
     },
-    {
-      id: 'mag-schedules',
-      to: "/crm/mag/manage-schedule/6",
-      icon: NewspaperIcon,
-      label: "Schedules (#6)",
-      allowedNegIds: RESTRICTED_NEG_IDS
-    },
+    // This is for later, admin/advertisers can view current bookings
+    // {
+    //   id: 'mag-schedules',
+    //   to: "/crm/mag/manage-schedule/6",
+    //   icon: NewspaperIcon,
+    //   label: "Schedules (#6)",
+    //   allowedNegIds: RESTRICTED_NEG_IDS
+    // },
     {
       id: 'mag-payment-settings',
       to: "/crm/mag/payment-settings",

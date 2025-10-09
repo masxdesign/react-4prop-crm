@@ -167,7 +167,10 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Building2Icon className='size-4 shrink-0' strokeWidth={1} />
-            Property Information
+            Property Information 
+            <span className='font-light text-[9px] text-muted-foreground'>
+              {property.pid}
+            </span>
             <span className={`px-2 py-0 rounded-full text-[9px] font-medium bg-${property.statusColor || 'gray'}-100 text-${property.statusColor || 'gray'}-800`}>
               {property.statusText}
             </span>

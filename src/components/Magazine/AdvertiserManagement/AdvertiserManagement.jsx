@@ -115,8 +115,8 @@ const AdvertiserManagement = () => {
       {/* Header */}
       <div className="flex justify-between items-center py-4 mr-3">
         <div>
-          <h2 className="text-base text-muted font-bold">Advertiser Management</h2>
-          <p className="text-gray-300 text-sm">Manage advertising companies and their weekly rates</p>
+          <h2 className="text-xl font-bold">Advertiser Management</h2>
+          <p className="text-sm opacity-80">Manage advertising companies and their weekly rates</p>
         </div>
         <Button 
           size="xs"
@@ -136,7 +136,7 @@ const AdvertiserManagement = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-2 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
-        <div className="text-xs text-gray-200">
+        <div className="text-xs opacity-80">
           Showing {filteredAdvertisers.length} of {advertisers.length} advertisers
         </div>
       </div>

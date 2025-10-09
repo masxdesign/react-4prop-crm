@@ -83,9 +83,9 @@ const ScheduleManagement = ({ advertiserId }) => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center py-4 mr-3">
         <div>
-          <h2 className="text-2xl font-bold">Scheduled Properties</h2>
+          <h2 className="text-xl font-bold">Scheduled Properties</h2>
           <p className="text-gray-600">
             {data?.data?.[0]?.advertiser_company || 'Advertiser'} | 
             Total Schedules: {schedules.length}
