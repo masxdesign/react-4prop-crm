@@ -5,6 +5,7 @@ import { useAuth } from '@/components/Auth/Auth-context';
 import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
+import PaymentActivationForm from '../ui/PaymentActivationForm';
 import { AgentEmailSearchField } from '../ui';
 import {
   Dialog,
@@ -23,6 +24,7 @@ const ScheduleWizardModal = ({
   preselectedAdvertiser = null,
   onClose,
   onSubmit,
+  createdSchedule = null, // Schedule created by parent (for self-assign payment flow)
   isLoading,
   error,
   showCancelButton = true,
@@ -57,6 +59,14 @@ const ScheduleWizardModal = ({
       setCurrentStep(2);
     }
   }, [preselectedAdvertiser, open, setValue]);
+
+  // Handle schedule creation for self-assign flow
+  useEffect(() => {
+    if (createdSchedule && watchedValues.self_assign) {
+      // Advance to step 6 (payment) when schedule is created for self-assign
+      setCurrentStep(6);
+    }
+  }, [createdSchedule, watchedValues.self_assign]);
 
   // Find selected advertiser for calculations
   const selectedAdvertiser = advertisers.find(adv => adv.id === parseInt(watchedValues.advertiser_id));
@@ -103,13 +113,15 @@ const ScheduleWizardModal = ({
       case 3: return watchedValues.week_no;
       case 4: return watchedValues.self_assign || watchedValues.approver_id;
       case 5: return true; // Summary step is always valid
+      case 6: return true; // Payment step is always valid
       default: return false;
     }
   };
 
   // Navigation handlers
   const goNext = () => {
-    const maxStep = 5;
+    // Max step is 6 for self-assign, 5 for external approver
+    const maxStep = watchedValues.self_assign ? 6 : 5;
     if (currentStep < maxStep && isStepValid(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
@@ -123,11 +135,11 @@ const ScheduleWizardModal = ({
 
   const handleSubmit = () => {
     const values = getValues();
-    
+
     // Ensure all required fields are present and valid
     const advertiser_id = parseInt(values.advertiser_id);
     const week_no = parseInt(values.week_no);
-    
+
     const scheduleData = {
       property_id: property.pid,
       advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
@@ -135,7 +147,7 @@ const ScheduleWizardModal = ({
       week_no: isNaN(week_no) ? null : week_no,
       self_assign: values.self_assign || false
     };
-    
+
     // Include approver_id and payer_id based on self_assign status
     if (values.self_assign) {
       // For self_assign, set both approver_id and payer_id to current user
@@ -146,9 +158,9 @@ const ScheduleWizardModal = ({
       scheduleData.approver_id = values.approver_id || null;
       scheduleData.payer_id = null;
     }
-    
+
     // Validate required fields
-    if (!scheduleData.property_id || !scheduleData.advertiser_id || 
+    if (!scheduleData.property_id || !scheduleData.advertiser_id ||
         !scheduleData.start_date || !scheduleData.week_no) {
       console.error('Missing required fields:', {
         property_id: scheduleData.property_id,
@@ -158,8 +170,9 @@ const ScheduleWizardModal = ({
       });
       return;
     }
-    
-    onSubmit(scheduleData);
+
+    // Pass additional metadata to help parent component decide behavior
+    onSubmit(scheduleData, { isSelfAssign: values.self_assign });
   };
 
   const handleClose = () => {
@@ -395,6 +408,26 @@ const ScheduleWizardModal = ({
           </div>
         );
 
+      case 6:
+        // Payment step - only shown for self-assign flow
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Activate Subscription</h3>
+
+            {createdSchedule ? (
+              <PaymentActivationForm
+                schedule={createdSchedule}
+                propertyId={property.pid}
+                onSuccess={handleClose}
+                onCancel={null} // No cancel button in step 6, use Back button instead
+              />
+            ) : (
+              <div className="text-center p-4 text-gray-500">
+                Loading payment details...
+              </div>
+            )}
+          </div>
+        );
 
       default:
         return null;
@@ -409,6 +442,7 @@ const ScheduleWizardModal = ({
       case 3: return `Duration${advertiserName}`;
       case 4: return `Select Approver${advertiserName}`;
       case 5: return `Summary & Confirmation${advertiserName}`;
+      case 6: return `Payment${advertiserName}`;
       default: return 'Schedule Advertiser';
     }
   };
@@ -418,7 +452,7 @@ const ScheduleWizardModal = ({
       <DialogContent className="max-w-md max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
-            {getStepTitle()} - Step {currentStep} of 5
+            {getStepTitle()} - Step {currentStep} of {watchedValues.self_assign ? 6 : 5}
           </DialogTitle>
         </DialogHeader>
 
@@ -426,7 +460,7 @@ const ScheduleWizardModal = ({
           {/* Progress Indicator */}
           <div className="flex justify-center mb-6">
             <div className="flex space-x-2">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {(watchedValues.self_assign ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]).map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -462,27 +496,27 @@ const ScheduleWizardModal = ({
 
           {/* Navigation Buttons */}
           <div className="flex gap-2">
-            {currentStep > 1 && (
+            {currentStep > 1 && currentStep !== 6 && (
               <Button variant="outline" onClick={goBack}>
                 Back
               </Button>
             )}
-            
+
             {currentStep < 5 ? (
-              <Button 
-                onClick={goNext} 
+              <Button
+                onClick={goNext}
                 disabled={!isStepValid(currentStep)}
               >
                 Next
               </Button>
-            ) : (
+            ) : currentStep === 5 ? (
               <Button
                 onClick={handleSubmit}
                 disabled={isLoading || !totalPrice}
               >
-                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Make payment' : 'Create schedule')}
+                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Continue to payment' : 'Create schedule')}
               </Button>
-            )}
+            ) : null /* Step 6 has its own submit button in PaymentActivationForm */}
           </div>
         </DialogFooter>
       </DialogContent>

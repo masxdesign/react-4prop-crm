@@ -15,6 +15,7 @@ import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 const EnhancedPropertyDetails = ({ property, agentId }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
+  const [createdScheduleForPayment, setCreatedScheduleForPayment] = useState(null);
   const [showAllSubtypes, setShowAllSubtypes] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
   const queryClient = useQueryClient();
@@ -125,11 +126,12 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
 
 
   const scheduleMutation = useMutation({
-    mutationFn: (scheduleData) => createSchedule(agentId, scheduleData),
-    onSuccess: (newScheduleData) => {
+    mutationFn: ({ scheduleData }) => createSchedule(agentId, scheduleData),
+    onSuccess: (newScheduleData, variables) => {
+      const { metadata } = variables;
       // Normalize the schedule data before adding to cache
       const normalizedSchedule = normalizeScheduleData(newScheduleData, advertisers);
-      
+
       // Update the property schedules cache with the normalized schedule
       queryClient.setQueryData(['property-schedules', property.pid], (oldData) => {
         if (!oldData) return { data: [normalizedSchedule] };
@@ -138,24 +140,31 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
           data: [...oldData.data, normalizedSchedule]
         };
       });
-      
+
       // Also invalidate the query to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ['property-schedules', property.pid] });
-      
+
       // Update the agent properties cache to reflect the new schedule
       queryClient.setQueryData(['agent-properties', agentId], (oldData) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
-          data: oldData.data.map(prop => 
-            prop.id === property.pid 
+          data: oldData.data.map(prop =>
+            prop.id === property.pid
               ? { ...prop, schedulesCount: (prop.schedulesCount || 0) + 1 }
               : prop
           )
         };
       });
-      
-      setIsScheduleModalOpen(false);
+
+      // Handle different flows based on self-assign status
+      if (metadata?.isSelfAssign) {
+        // For self-assign: store schedule and keep modal open for payment
+        setCreatedScheduleForPayment(normalizedSchedule);
+      } else {
+        // For external approver: close modal immediately
+        setIsScheduleModalOpen(false);
+      }
     },
   });
 
@@ -365,8 +374,10 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         onClose={() => {
           setIsScheduleModalOpen(false);
           setSelectedAdvertiserForBooking(null);
+          setCreatedScheduleForPayment(null);
         }}
-        onSubmit={(data) => scheduleMutation.mutate(data)}
+        onSubmit={(scheduleData, metadata) => scheduleMutation.mutate({ scheduleData, metadata })}
+        createdSchedule={createdScheduleForPayment}
         isLoading={scheduleMutation.isPending}
         error={scheduleMutation.error}
       />
