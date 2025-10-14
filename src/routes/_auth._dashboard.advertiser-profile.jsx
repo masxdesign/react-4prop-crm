@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Building2, CreditCard, Lock, FileText } from "lucide-react"
 import AdvertiserOnboarding from "@/components/Magazine/stripe/AdvertiserOnboarding"
+import SelfBillingAgreementDialog from "@/components/Magazine/dialogs/SelfBillingAgreementDialog"
 import { useQuery } from "@tanstack/react-query"
 import { getAdvertiserStripeStatus } from "@/components/Magazine/api"
 
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/_auth/_dashboard/advertiser-profile")({
 function AdvertiserProfilePage() {
   const auth = useAuth()
   const [activeTab, setActiveTab] = useState("profile")
+  const [agreementDialogOpen, setAgreementDialogOpen] = useState(false)
 
   // Fetch advertiser Stripe status
   const {
@@ -98,6 +100,10 @@ function AdvertiserProfilePage() {
             selfBillingAccepted={selfBillingAccepted}
             stripeStatus={stripeStatus}
             isLoading={stripeStatusLoading}
+            advertiserId={auth.user.advertiser_id}
+            advertiserName={auth.user.company?.name}
+            dialogOpen={agreementDialogOpen}
+            setDialogOpen={setAgreementDialogOpen}
           />
         </TabsContent>
 
@@ -207,7 +213,15 @@ function OnboardingTab({ advertiserId, hasStripeAccount, stripeStatus, isLoading
 }
 
 // Agreement Tab Component
-function AgreementTab({ selfBillingAccepted, stripeStatus, isLoading }) {
+function AgreementTab({
+  selfBillingAccepted,
+  stripeStatus,
+  isLoading,
+  advertiserId,
+  advertiserName,
+  dialogOpen,
+  setDialogOpen
+}) {
   if (isLoading) {
     return (
       <Card>
@@ -220,52 +234,67 @@ function AgreementTab({ selfBillingAccepted, stripeStatus, isLoading }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Self-Billing Agreement</CardTitle>
-        <CardDescription>Review and accept the self-billing agreement</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {selfBillingAccepted ? (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You have accepted the self-billing agreement on{' '}
-              {stripeStatus?.self_billing_accepted_at
-                ? new Date(stripeStatus.self_billing_accepted_at).toLocaleDateString()
-                : 'N/A'
-              }
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              You haven't accepted the self-billing agreement yet. This is required to activate subscriptions.
-            </AlertDescription>
-          </Alert>
-        )}
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Self-Billing Agreement</CardTitle>
+          <CardDescription>Review and accept the self-billing agreement</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {selfBillingAccepted ? (
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                You have accepted the self-billing agreement on{' '}
+                {stripeStatus?.self_billing_accepted_at
+                  ? new Date(stripeStatus.self_billing_accepted_at).toLocaleDateString()
+                  : 'N/A'
+                }
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                You haven't accepted the self-billing agreement yet. This is required to activate subscriptions.
+              </AlertDescription>
+            </Alert>
+          )}
 
-        <div className="prose max-w-none mb-6">
-          <h3 className="text-lg font-semibold mb-2">Self-Billing Agreement</h3>
-          <p className="text-sm text-gray-600">
-            This agreement allows the platform to issue invoices on your behalf for the services you provide.
-            By accepting this agreement, you authorize the platform to handle billing and payment processing.
-          </p>
-        </div>
+          <div className="prose max-w-none mb-6">
+            <h3 className="text-lg font-semibold mb-2">Self-Billing Agreement</h3>
+            <p className="text-sm text-gray-600">
+              This agreement allows the platform to issue invoices on your behalf for the services you provide.
+              By accepting this agreement, you authorize the platform to handle billing and payment processing.
+            </p>
+          </div>
 
-        {selfBillingAccepted ? (
-          <p className="text-sm text-gray-500 italic">Agreement already accepted</p>
-        ) : (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              To accept the self-billing agreement, please contact an administrator or complete the onboarding process.
-            </AlertDescription>
-          </Alert>
-        )}
-      </CardContent>
-    </Card>
+          {selfBillingAccepted ? (
+            <p className="text-sm text-gray-500 italic">Agreement already accepted</p>
+          ) : (
+            <Button
+              onClick={() => setDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Review and Accept Agreement
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Self-Billing Agreement Dialog */}
+      <SelfBillingAgreementDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        advertiserId={advertiserId}
+        advertiserName={advertiserName}
+        onAccepted={() => {
+          // Dialog component handles query invalidation
+          setDialogOpen(false)
+        }}
+      />
+    </>
   )
 }
 
