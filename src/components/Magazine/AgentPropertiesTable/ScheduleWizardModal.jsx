@@ -405,6 +405,44 @@ const ScheduleWizardModal = ({
                 </div>
               </div>
             )}
+
+            {/* What Happens Next - Self Assign */}
+            {watchedValues.self_assign && (
+              <div className="bg-amber-50 border border-amber-300 p-4 rounded-md">
+                <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Next: Subscription Setup
+                </h4>
+                <div className="space-y-3 text-sm text-amber-900">
+                  <p className="font-medium">
+                    Clicking "Setup subscription" will:
+                  </p>
+                  <ol className="space-y-2 ml-4 list-decimal">
+                    <li>
+                      <strong>Create your schedule</strong> in an approved state
+                    </li>
+                    <li>
+                      <strong>Show payment method selection</strong> - you'll see your saved cards and select which one to use as the default for this subscription
+                    </li>
+                    <li>
+                      <strong>Activate the subscription</strong> - your selected card will be charged automatically:
+                      <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                        <li>First charge of <strong>£{selectedAdvertiser.week_rate}</strong> on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong></li>
+                        {weeks > 1 && (
+                          <li>Then <strong>£{selectedAdvertiser.week_rate}</strong> per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}</li>
+                        )}
+                        <li>Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Your property goes live</strong> in the magazine on the start date
+                    </li>
+                  </ol>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -514,7 +552,7 @@ const ScheduleWizardModal = ({
                 onClick={handleSubmit}
                 disabled={isLoading || !totalPrice}
               >
-                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Continue to payment' : 'Create schedule')}
+                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Setup subscription' : 'Create schedule')}
               </Button>
             ) : null /* Step 6 has its own submit button in PaymentActivationForm */}
           </div>
