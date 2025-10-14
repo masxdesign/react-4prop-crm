@@ -6,7 +6,6 @@ import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
 import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
-import EmblaCarousel from '@/components/ui/EmblaCarousel';
 import CSSCarousel from '@/components/ui/CSSCarousel';
 import AdvertiserCard from '@/components/ui/AdvertiserCard';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
