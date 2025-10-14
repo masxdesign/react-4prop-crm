@@ -14,6 +14,7 @@ import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 // Enhanced Property Details Component - Uses display-ready property data
 const EnhancedPropertyDetails = ({ property, agentId }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
   const [showAllSubtypes, setShowAllSubtypes] = useState(false);
   const [showAllTypes, setShowAllTypes] = useState(false);
   const queryClient = useQueryClient();
@@ -309,7 +310,7 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         {advertisers.length > 0 && (
           <>
             {/* CSSCarousel - Pure CSS implementation */}
-            <CSSCarousel 
+            <CSSCarousel
               showNavigation={true}
               className="mx-2"
             >
@@ -319,7 +320,10 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                     key={advertiser.id}
                     advertiser={advertiser}
                     subtypeLabels={getSubtypeLabels(advertiser.pstids)}
-                    onBook={() => setIsScheduleModalOpen(true)}
+                    onBook={(selectedAdvertiser) => {
+                      setSelectedAdvertiserForBooking(selectedAdvertiser);
+                      setIsScheduleModalOpen(true);
+                    }}
                     renderPillsWithShowMore={renderPillsWithShowMore}
                   />
                 )
@@ -327,8 +331,8 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
             </CSSCarousel>
 
             {/* EmblaCarousel - JavaScript implementation (commented out) */}
-            {/* 
-            <EmblaCarousel 
+            {/*
+            <EmblaCarousel
               options={{ align: 'start', slidesToScroll: 1 }}
               className="mx-2"
             >
@@ -338,7 +342,10 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
                     key={advertiser.id}
                     advertiser={advertiser}
                     subtypeLabels={getSubtypeLabels(advertiser.pstids)}
-                    onBook={() => setIsScheduleModalOpen(true)}
+                    onBook={(selectedAdvertiser) => {
+                      setSelectedAdvertiserForBooking(selectedAdvertiser);
+                      setIsScheduleModalOpen(true);
+                    }}
                     renderPillsWithShowMore={renderPillsWithShowMore}
                   />
                 )
@@ -354,7 +361,11 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         open={isScheduleModalOpen}
         property={property}
         advertisers={advertisers}
-        onClose={() => setIsScheduleModalOpen(false)}
+        preselectedAdvertiser={selectedAdvertiserForBooking}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setSelectedAdvertiserForBooking(null);
+        }}
         onSubmit={(data) => scheduleMutation.mutate(data)}
         isLoading={scheduleMutation.isPending}
         error={scheduleMutation.error}

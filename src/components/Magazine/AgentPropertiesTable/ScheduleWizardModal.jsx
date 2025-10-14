@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
 import { useAuth } from '@/components/Auth/Auth-context';
@@ -16,22 +16,23 @@ import {
 import { Button } from '@/components/ui/button';
 import { pluralizeWeeks } from '../util/pluralize';
 
-const ScheduleWizardModal = ({ 
-  open, 
-  property, 
-  advertisers, 
-  onClose, 
-  onSubmit, 
-  isLoading, 
+const ScheduleWizardModal = ({
+  open,
+  property,
+  advertisers,
+  preselectedAdvertiser = null,
+  onClose,
+  onSubmit,
+  isLoading,
   error,
   showCancelButton = true,
   showDialogClose = true,
   cancelButtonText = "Cancel"
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   const auth = useAuth();
-  
+
   // React Hook Form setup
   const { control, watch, getValues, reset, setValue } = useForm({
     defaultValues: {
@@ -47,6 +48,15 @@ const ScheduleWizardModal = ({
 
   // Watch form values for calculations and validation
   const watchedValues = watch();
+
+  // Handle preselected advertiser
+  useEffect(() => {
+    if (preselectedAdvertiser && open) {
+      setValue('advertiser_id', preselectedAdvertiser.id.toString());
+      // Auto-advance to step 2 when advertiser is preselected
+      setCurrentStep(2);
+    }
+  }, [preselectedAdvertiser, open, setValue]);
 
   // Find selected advertiser for calculations
   const selectedAdvertiser = advertisers.find(adv => adv.id === parseInt(watchedValues.advertiser_id));
@@ -392,12 +402,13 @@ const ScheduleWizardModal = ({
   };
 
   const getStepTitle = () => {
+    const advertiserName = selectedAdvertiser ? ` - ${selectedAdvertiser.company}` : '';
     switch (currentStep) {
-      case 1: return 'Advertiser';
-      case 2: return 'Start Date';
-      case 3: return 'Duration';
-      case 4: return 'Select Approver';
-      case 5: return 'Summary & Confirmation';
+      case 1: return 'Select Advertiser';
+      case 2: return `Start Date${advertiserName}`;
+      case 3: return `Duration${advertiserName}`;
+      case 4: return `Select Approver${advertiserName}`;
+      case 5: return `Summary & Confirmation${advertiserName}`;
       default: return 'Schedule Advertiser';
     }
   };
