@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+⚠️ Important:
+Never assume API request or response JSON shapes.
+Confirm all field names, types, and nesting with me before using them.
+If a shape isn’t clearly defined, ask first.
+Consistency between frontend and backend is critical.
+
+## Use React Hook Form for All Forms
+All forms in the frontend must use React Hook Form — no useState or custom input handlers for managing form data.
+
 ## Development Commands
 
 ```bash

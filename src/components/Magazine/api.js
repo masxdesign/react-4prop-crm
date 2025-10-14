@@ -167,6 +167,12 @@ export const createPlatformCustomer = async (advertiserId) => {
   return response.data;
 };
 
+// Change Advertiser Password API function
+export const changeAdvertiserPassword = async (advertiserId, passwordData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/change-password`, passwordData);
+  return response.data;
+};
+
 // Transfer Settlement API functions
 export const fetchTransferStats = async () => {
   const response = await bizchatClient.get('/api/crm/mag/transfers/stats');

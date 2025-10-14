@@ -8,8 +8,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Building2, CreditCard, Lock, FileText } from "lucide-react"
 import AdvertiserOnboarding from "@/components/Magazine/stripe/AdvertiserOnboarding"
 import SelfBillingAgreementDialog from "@/components/Magazine/dialogs/SelfBillingAgreementDialog"
-import { useQuery } from "@tanstack/react-query"
-import { getAdvertiserStripeStatus } from "@/components/Magazine/api"
+import { useQuery, useMutation } from "@tanstack/react-query"
+import { getAdvertiserStripeStatus, changeAdvertiserPassword } from "@/components/Magazine/api"
+import { useToast } from "@/components/ui/use-toast"
+import { useForm } from "react-hook-form"
 
 export const Route = createFileRoute("/_auth/_dashboard/advertiser-profile")({
   beforeLoad: ({ context }) => {
@@ -31,7 +33,8 @@ function AdvertiserProfilePage() {
   // Fetch advertiser Stripe status
   const {
     data: stripeStatusData,
-    isLoading: stripeStatusLoading
+    isLoading: stripeStatusLoading,
+    refetch: refetchStripeStatus
   } = useQuery({
     queryKey: ['advertiser-stripe-status', auth.user?.advertiser_id],
     queryFn: () => getAdvertiserStripeStatus(auth.user?.advertiser_id),
@@ -40,7 +43,7 @@ function AdvertiserProfilePage() {
 
   const stripeStatus = stripeStatusData?.data
   const hasStripeAccount = !!stripeStatus?.account_id
-  const selfBillingAccepted = !!stripeStatus?.self_billing_accepted
+  const selfBillingAccepted = !!stripeStatus?.self_billing_agreement
 
   if (!auth.user) {
     return (
@@ -104,6 +107,7 @@ function AdvertiserProfilePage() {
             advertiserName={auth.user.company?.name}
             dialogOpen={agreementDialogOpen}
             setDialogOpen={setAgreementDialogOpen}
+            refetchStripeStatus={refetchStripeStatus}
           />
         </TabsContent>
 
@@ -220,7 +224,8 @@ function AgreementTab({
   advertiserId,
   advertiserName,
   dialogOpen,
-  setDialogOpen
+  setDialogOpen,
+  refetchStripeStatus
 }) {
   if (isLoading) {
     return (
@@ -246,8 +251,8 @@ function AgreementTab({
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 You have accepted the self-billing agreement on{' '}
-                {stripeStatus?.self_billing_accepted_at
-                  ? new Date(stripeStatus.self_billing_accepted_at).toLocaleDateString()
+                {stripeStatus?.self_billing_agreed_at
+                  ? new Date(stripeStatus.self_billing_agreed_at).toLocaleDateString()
                   : 'N/A'
                 }
               </AlertDescription>
@@ -290,7 +295,8 @@ function AgreementTab({
         advertiserId={advertiserId}
         advertiserName={advertiserName}
         onAccepted={() => {
-          // Dialog component handles query invalidation
+          // Dialog component handles query invalidation, but also explicitly refetch
+          refetchStripeStatus()
           setDialogOpen(false)
         }}
       />
@@ -300,14 +306,44 @@ function AgreementTab({
 
 // Password Tab Component
 function PasswordTab({ user }) {
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
+  const { toast } = useToast()
 
-  const handlePasswordChange = (e) => {
-    e.preventDefault()
-    // TODO: Implement password change logic
-    console.log("Password change requested")
+  const { register, handleSubmit, formState: { errors }, watch, reset } = useForm({
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: ""
+    }
+  })
+
+  const newPassword = watch("newPassword")
+
+  const passwordMutation = useMutation({
+    mutationFn: (passwordData) => changeAdvertiserPassword(user.advertiser_id, passwordData),
+    onSuccess: () => {
+      toast({
+        title: "Password Changed",
+        description: "Your password has been successfully updated.",
+      })
+      // Clear form
+      reset()
+    },
+    onError: (error) => {
+      const errorMessage = error?.response?.data?.error || "Failed to change password. Please try again."
+      toast({
+        variant: "destructive",
+        title: "Password Change Failed",
+        description: errorMessage,
+      })
+    }
+  })
+
+  const onSubmit = (data) => {
+    // Submit password change
+    passwordMutation.mutate({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    })
   }
 
   return (
@@ -317,49 +353,87 @@ function PasswordTab({ user }) {
         <CardDescription>Update your account password</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handlePasswordChange} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-700">Current Password</label>
             <input
               type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-              required
+              {...register("currentPassword", {
+                required: "Current password is required"
+              })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={passwordMutation.isPending}
             />
+            {errors.currentPassword && (
+              <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
+            )}
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-700">New Password</label>
             <input
               type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-              required
+              {...register("newPassword", {
+                required: "New password is required",
+                minLength: {
+                  value: 8,
+                  message: "Password must be at least 8 characters"
+                },
+                validate: (value) => {
+                  const currentPassword = watch("currentPassword")
+                  if (value === currentPassword) {
+                    return "New password must be different from current password"
+                  }
+                  return true
+                }
+              })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={passwordMutation.isPending}
             />
+            {errors.newPassword && (
+              <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-700">Confirm New Password</label>
             <input
               type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md"
-              required
+              {...register("confirmPassword", {
+                required: "Please confirm your password",
+                validate: (value) => value === newPassword || "Passwords do not match"
+              })}
+              className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={passwordMutation.isPending}
             />
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+            )}
           </div>
 
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Password change functionality is currently under development. Please contact support to change your password.
-            </AlertDescription>
-          </Alert>
+          {passwordMutation.isError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {passwordMutation.error?.response?.data?.error || "Failed to change password. Please try again."}
+              </AlertDescription>
+            </Alert>
+          )}
 
-          <Button type="submit" disabled className="w-full">
-            Change Password (Coming Soon)
+          <Button
+            type="submit"
+            disabled={passwordMutation.isPending}
+            className="w-full"
+          >
+            {passwordMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Changing Password...
+              </>
+            ) : (
+              "Change Password"
+            )}
           </Button>
         </form>
       </CardContent>

@@ -29,6 +29,8 @@ const SelfBillingAgreementDialog = ({
     onSuccess: () => {
       // Invalidate advertiser status to refresh self-billing flag
       queryClient.invalidateQueries({ queryKey: ['advertiser-stripe-status', advertiserId] });
+      // Also invalidate the advertisers list (used in admin management)
+      queryClient.invalidateQueries({ queryKey: ['advertisers'] });
 
       if (onAccepted) {
         onAccepted();
