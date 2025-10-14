@@ -10,6 +10,7 @@ Currently, two official plugins are available:
 
 ```bash
 sudo lsof -i:8082
+sudo lsof -i:5173
 kill -9  [pid]
 ```
 

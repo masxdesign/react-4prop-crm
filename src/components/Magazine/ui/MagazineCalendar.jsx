@@ -51,7 +51,7 @@ const MagazineCalendar = ({
     // Filter schedules for the selected advertiser
     schedules.forEach(schedule => {
       // Match by advertiser_id (convert to number for comparison)
-      if (parseInt(schedule.advertiser_id) === parseInt(advertiserId)) {
+      if (![6].includes(schedule.status_id) && parseInt(schedule.advertiser_id) === parseInt(advertiserId)) {
         let startDate, endDate;
         
         // Handle week-based schedules (preferred)
