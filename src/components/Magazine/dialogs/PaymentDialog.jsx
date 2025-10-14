@@ -20,8 +20,9 @@ const PaymentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col gap-0 p-0">
+        {/* Fixed Header */}
+        <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
             Activate Subscription
@@ -31,12 +32,15 @@ const PaymentDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <PaymentActivationForm
-          schedule={schedule}
-          propertyId={propertyId}
-          onSuccess={handleClose}
-          onCancel={handleClose}
-        />
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto px-6 py-4 flex-1">
+          <PaymentActivationForm
+            schedule={schedule}
+            propertyId={propertyId}
+            onSuccess={handleClose}
+            onCancel={handleClose}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );

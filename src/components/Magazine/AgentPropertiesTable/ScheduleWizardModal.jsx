@@ -487,14 +487,16 @@ const ScheduleWizardModal = ({
 
   return (
     <Dialog open={open} onOpenChange={showDialogClose ? handleClose : undefined}>
-      <DialogContent className="max-w-md max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col gap-0 p-0">
+        {/* Fixed Header */}
+        <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
           <DialogTitle>
             {getStepTitle()} - Step {currentStep} of {watchedValues.self_assign ? 6 : 5}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="py-4">
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto px-6 py-4 flex-1">
           {/* Progress Indicator */}
           <div className="flex justify-center mb-6">
             <div className="flex space-x-2">
@@ -524,7 +526,8 @@ const ScheduleWizardModal = ({
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        {/* Fixed Footer */}
+        <DialogFooter className="flex justify-between px-6 pb-6 pt-4 shrink-0 border-t">
           {/* Cancel Button */}
           {showCancelButton && (
             <Button variant="outline" onClick={handleClose}>
