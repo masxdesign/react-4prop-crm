@@ -13,6 +13,7 @@ import {
 import { getAgentPaymentMethods, setDefaultPaymentMethod } from '../api';
 import PaymentMethodSetup from '../stripe/PaymentMethodSetup';
 import { useAuth } from '@/components/Auth/Auth-context';
+import { cn } from '@/lib/utils';
 
 const PaymentSettings = () => {
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
@@ -74,7 +75,7 @@ const PaymentSettings = () => {
       <div className="flex justify-between items-center py-4 mr-3">
         <div>
           <h2 className="text-xl font-bold">Payment Settings</h2>
-          <p className="text-gray-600">Manage your payment methods for magazine subscriptions</p>
+          <p className="text-gray-600">Manage your payment methods for booking subscriptions</p>
         </div>
         <Button
           onClick={() => setShowAddPaymentMethod(true)}
@@ -104,7 +105,7 @@ const PaymentSettings = () => {
             No payment methods yet
           </h3>
           <p className="text-gray-600 mb-4">
-            Add a payment method to activate magazine subscriptions
+            Add a payment method to activate booking subscriptions
           </p>
           <Button
             onClick={() => setShowAddPaymentMethod(true)}
@@ -167,14 +168,18 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
   };
 
   const gradientClass = brandColors[cardBrand.toLowerCase()] || brandColors.default;
-  const cardClasses = isDefault
-    ? `relative bg-gradient-to-br ${gradientClass} rounded-lg p-6 text-white shadow-xl ring-2 ring-blue-400 ring-offset-2`
-    : `relative bg-gradient-to-br ${gradientClass} rounded-lg p-6 text-white shadow-lg`;
 
   return (
-    <div className={cardClasses}>
+    <div className={cn(
+      gradientClass,
+      'max-w-96 min-h-52', 
+      'relative bg-gradient-to-br rounded-lg p-6 text-white',
+      isDefault
+        ? `shadow-xl ring-2 ring-blue-400 ring-offset-2`
+        : `shadow-lg`
+    )}>
       {isDefault && (
-        <div className="absolute top-3 right-3 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+        <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
           <Check className="h-3 w-3" />
           Default
         </div>
@@ -182,13 +187,13 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
 
       <div className="space-y-4">
         <div className="flex justify-between items-start">
-          <div>
+          <div className='mt-4'>
             <div className="text-sm opacity-80 uppercase">{cardBrand}</div>
             <div className="text-2xl font-mono tracking-wider mt-1">
               •••• •••• •••• {last4}
             </div>
           </div>
-          <CreditCard className="h-8 w-8 opacity-80" />
+          <CreditCard className="h-8 w-8 mix-blend-overlay text-white" strokeWidth={2} />
         </div>
 
         <div className="flex justify-between items-end">

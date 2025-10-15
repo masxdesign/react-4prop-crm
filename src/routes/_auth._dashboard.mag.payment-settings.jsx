@@ -29,9 +29,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/payment-settings")({
     }
 
     return (
-      <div className="grid grid-rows-[6rem_2rem_1fr_2rem] gap-4 h-full">
-        <PaymentSettings />
-      </div>
+      <PaymentSettings />
     )
   },
 })
