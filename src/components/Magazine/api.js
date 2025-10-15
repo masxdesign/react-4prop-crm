@@ -199,6 +199,27 @@ export const processAllSettlements = async () => {
   return response.data;
 };
 
+// Booking History API functions (schedules with active subscriptions)
+export const fetchAdvertiserBookings = async (advertiserId, status = 'all') => {
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/advertiser/${advertiserId}`,
+    {
+      params: { status }
+    }
+  );
+  return response.data;
+};
+
+export const fetchAgentBookings = async (agentNid, status = 'all') => {
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/agent/${agentNid}`,
+    {
+      params: { status }
+    }
+  );
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object

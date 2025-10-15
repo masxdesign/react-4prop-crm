@@ -39,6 +39,7 @@ import { Route as AuthGradeGradeWidgetPidImport } from './routes/_auth.grade._gr
 import { Route as AuthDashboardMagTransfersImport } from './routes/_auth._dashboard.mag.transfers'
 import { Route as AuthDashboardMagPaymentSettingsImport } from './routes/_auth._dashboard.mag.payment-settings'
 import { Route as AuthDashboardMagManageAdvertisersImport } from './routes/_auth._dashboard.mag.manage-advertisers'
+import { Route as AuthDashboardMagBookingsImport } from './routes/_auth._dashboard.mag.bookings'
 import { Route as AuthGradeShareSuccessRouteImport } from './routes/_auth.grade_.share_.success/route'
 import { Route as AuthDashboardLayout1ListRouteImport } from './routes/_auth._dashboard._layout-1/list/route'
 import { Route as AuthDashboardLayout1ImportRouteImport } from './routes/_auth._dashboard._layout-1/import/route'
@@ -210,6 +211,11 @@ const AuthDashboardMagManageAdvertisersRoute =
     path: '/mag/manage-advertisers',
     getParentRoute: () => AuthDashboardRoute,
   } as any)
+
+const AuthDashboardMagBookingsRoute = AuthDashboardMagBookingsImport.update({
+  path: '/mag/bookings',
+  getParentRoute: () => AuthDashboardRoute,
+} as any)
 
 const AuthGradeShareSuccessRouteRoute = AuthGradeShareSuccessRouteImport.update(
   {
@@ -465,6 +471,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGradeShareSuccessRouteImport
       parentRoute: typeof AuthImport
     }
+    '/_auth/_dashboard/mag/bookings': {
+      preLoaderRoute: typeof AuthDashboardMagBookingsImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/_dashboard/mag/manage-advertisers': {
       preLoaderRoute: typeof AuthDashboardMagManageAdvertisersImport
       parentRoute: typeof AuthDashboardImport
@@ -567,6 +577,7 @@ export const routeTree = rootRoute.addChildren([
         ]),
       ]),
       AuthDashboardAdvertiserProfileRoute,
+      AuthDashboardMagBookingsRoute,
       AuthDashboardMagManageAdvertisersRoute,
       AuthDashboardMagPaymentSettingsRoute,
       AuthDashboardMagTransfersRoute,
