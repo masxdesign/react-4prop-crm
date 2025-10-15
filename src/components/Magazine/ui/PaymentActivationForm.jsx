@@ -102,7 +102,7 @@ const PaymentActivationForm = ({
   const weeks = schedule?.week_no || 0;
   const vatRate = 0.20; // UK VAT 20%
 
-  // Weekly calculations
+  // Weekly calculations - VAT is ALWAYS applied (Platform MoR is VAT registered)
   const weeklyVat = weeklyRate * vatRate;
   const weeklyTotal = weeklyRate + weeklyVat;
 

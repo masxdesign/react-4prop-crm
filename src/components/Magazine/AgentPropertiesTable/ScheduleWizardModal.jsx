@@ -74,18 +74,29 @@ const ScheduleWizardModal = ({
   // Calculate booking details
   const calculateBookingDetails = () => {
     if (!selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date) {
-      return { totalPrice: 0, weeks: 0, endDate: '' };
+      return { totalPrice: 0, weeks: 0, endDate: '', weeklyRate: 0, vatAmount: 0, subtotal: 0 };
     }
-    
+
     const weeks = parseInt(watchedValues.week_no) || 0;
-    const totalPrice = weeks > 0 ? selectedAdvertiser.week_rate * weeks : 0;
-    const endDate = weeks > 0 && watchedValues.start_date ? 
+    const weeklyRate = selectedAdvertiser.week_rate || 0;
+
+    // Calculate subtotal (weekly rate × weeks)
+    const subtotal = weeklyRate * weeks;
+
+    // VAT is ALWAYS applied - Platform MoR is VAT registered
+    const vatRate = 0.20; // UK VAT 20%
+    const vatAmount = subtotal * vatRate;
+
+    // Total price always includes VAT
+    const totalPrice = subtotal + vatAmount;
+
+    const endDate = weeks > 0 && watchedValues.start_date ?
       format(addWeeks(new Date(watchedValues.start_date), weeks), 'yyyy-MM-dd') : '';
-    
-    return { totalPrice, weeks, endDate };
+
+    return { totalPrice, weeks, endDate, weeklyRate, vatAmount, subtotal };
   };
 
-  const { totalPrice, weeks, endDate } = calculateBookingDetails();
+  const { totalPrice, weeks, endDate, weeklyRate, vatAmount, subtotal } = calculateBookingDetails();
 
   // Get selected approver info
   const getApproverInfo = () => {
@@ -396,7 +407,15 @@ const ScheduleWizardModal = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700">Week Rate:</span>
-                    <span className="font-medium">£{selectedAdvertiser.week_rate}</span>
+                    <span className="font-medium">£{weeklyRate.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Subtotal:</span>
+                    <span className="font-medium">£{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">VAT (20%):</span>
+                    <span className="font-medium">£{vatAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between border-t border-blue-200 pt-2 mt-3">
                     <span className="text-blue-700 font-medium">Total Price:</span>
@@ -429,11 +448,20 @@ const ScheduleWizardModal = ({
                     <li>
                       <strong>Activate the subscription</strong> - your selected card will be charged automatically:
                       <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
-                        <li>First charge of <strong>£{selectedAdvertiser.week_rate}</strong> on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong></li>
+                        <li>
+                          First charge of <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                          {' '}on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong>
+                        </li>
                         {weeks > 1 && (
-                          <li>Then <strong>£{selectedAdvertiser.week_rate}</strong> per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}</li>
+                          <li>
+                            Then <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                            {' '}per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}
+                          </li>
                         )}
-                        <li>Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}</li>
+                        <li>
+                          Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
+                          {' '}(includes £{vatAmount.toFixed(2)} VAT)
+                        </li>
                       </ul>
                     </li>
                     <li>
