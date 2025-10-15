@@ -17,6 +17,8 @@ import { cn } from '@/lib/utils';
 
 const PaymentSettings = () => {
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [showSetDefaultPrompt, setShowSetDefaultPrompt] = useState(false);
+  const [newlyAddedCardId, setNewlyAddedCardId] = useState(null);
   const queryClient = useQueryClient();
   const auth = useAuth();
   const agentNid = auth?.user?.neg_id;
@@ -45,9 +47,28 @@ const PaymentSettings = () => {
     }
   });
 
-  const handleAddPaymentSuccess = () => {
+  const handleAddPaymentSuccess = async () => {
     setShowAddPaymentMethod(false);
-    queryClient.invalidateQueries({ queryKey: ['agent-payment-methods', agentNid] });
+
+    // Refresh payment methods to get the newly added card
+    await queryClient.invalidateQueries({ queryKey: ['agent-payment-methods', agentNid] });
+
+    // Wait a bit for the query to refetch
+    setTimeout(() => {
+      const updatedMethods = queryClient.getQueryData(['agent-payment-methods', agentNid]);
+      const methods = updatedMethods?.data || [];
+
+      // Find the most recently added card (newest one)
+      if (methods.length > 0) {
+        // Sort by created timestamp if available, otherwise just take the first non-default
+        const newestCard = methods.find(m => !m.is_default) || methods[methods.length - 1];
+
+        if (newestCard && !newestCard.is_default) {
+          setNewlyAddedCardId(newestCard.id);
+          setShowSetDefaultPrompt(true);
+        }
+      }
+    }, 500);
   };
 
   const handleSetDefault = (paymentMethodId) => {
@@ -116,7 +137,7 @@ const PaymentSettings = () => {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-row gap-8">
           {paymentMethods.map((method) => (
             <PaymentMethodCard
               key={method.id}
@@ -144,6 +165,60 @@ const PaymentSettings = () => {
             onSuccess={handleAddPaymentSuccess}
             onCancel={() => setShowAddPaymentMethod(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Set Default Card Prompt Dialog */}
+      <Dialog open={showSetDefaultPrompt} onOpenChange={setShowSetDefaultPrompt}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set as Default Payment Method?</DialogTitle>
+            <DialogDescription>
+              Would you like to set this newly added card as your default payment method?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {newlyAddedCardId && (() => {
+              const newCard = paymentMethods.find(m => m.id === newlyAddedCardId);
+              if (!newCard) return null;
+
+              const cardBrand = newCard.card?.brand || 'card';
+              const last4 = newCard.card?.last4 || '****';
+
+              return (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <CreditCard className="h-8 w-8 text-gray-600" />
+                  <div>
+                    <div className="font-medium text-gray-900 capitalize">{cardBrand}</div>
+                    <div className="text-sm text-gray-600">•••• •••• •••• {last4}</div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="flex gap-3 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowSetDefaultPrompt(false);
+                setNewlyAddedCardId(null);
+              }}
+            >
+              No, keep current
+            </Button>
+            <Button
+              onClick={() => {
+                handleSetDefault(newlyAddedCardId);
+                setShowSetDefaultPrompt(false);
+                setNewlyAddedCardId(null);
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Yes, set as default
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -178,13 +253,6 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
         ? `shadow-xl ring-2 ring-blue-400 ring-offset-2`
         : `shadow-lg`
     )}>
-      {isDefault && (
-        <div className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-          <Check className="h-3 w-3" />
-          Default
-        </div>
-      )}
-
       <div className="space-y-4">
         <div className="flex justify-between items-start">
           <div className='mt-4'>
@@ -196,19 +264,24 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
           <CreditCard className="h-8 w-8 mix-blend-overlay text-white" strokeWidth={2} />
         </div>
 
-        <div className="flex justify-between items-end">
-          <div className="text-sm">
-            <div className="opacity-70 text-xs">Expires</div>
-            <div className="font-mono">{expMonth}/{expYear}</div>
-          </div>
+        <div className="text-sm">
+          <div className="opacity-70 text-xs">Expires</div>
+          <div className="font-mono">{expMonth}/{expYear}</div>
+        </div>
 
-          {!isDefault && (
+        <div className='absolute bottom-4 right-4 flex items-center min-h-7'>
+          {isDefault ? (
+            <div className="bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+              <Check className="h-3 w-3" />
+              Default
+            </div>
+          ) : (
             <Button
               variant="outline"
               size="sm"
               onClick={() => onSetDefault(method.id)}
               disabled={isSettingDefault}
-              className="bg-white/10 hover:bg-white/20 border-white/30 text-white text-xs"
+              className="bg-white/10 hover:bg-white/20 border-white/30 !text-white text-xs"
             >
               {isSettingDefault ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
