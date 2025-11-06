@@ -77,17 +77,17 @@ export const navigationConfig = {
       allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
-      id: 'mag-bookings',
-      to: "/crm/mag/bookings",
-      icon: CalendarCheck,
-      label: "Booking History"
-    },
-    {
       id: 'advertiser-profile',
       to: "/crm/advertiser-profile",
       icon: UserCircle,
       label: "My Profile",
       requiredRoles: ['advertiser']
+    },
+    {
+      id: 'mag-bookings',
+      to: "/crm/mag/bookings",
+      icon: CalendarCheck,
+      label: "Booking History"
     },
   ],
   portals: [

@@ -200,21 +200,23 @@ export const processAllSettlements = async () => {
 };
 
 // Booking History API functions (schedules with active subscriptions)
-export const fetchAdvertiserBookings = async (advertiserId, status = 'all') => {
+export const fetchAdvertiserBookings = async (advertiserId, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/advertiser/${advertiserId}`,
     {
-      params: { status }
+      params: { status, page, pageSize }
     }
   );
   return response.data;
 };
 
-export const fetchAgentBookings = async (agentNid, status = 'all') => {
+export const fetchAgentBookings = async (agentNid, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/agent/${agentNid}`,
     {
-      params: { status }
+      params: { status, page, pageSize }
     }
   );
   return response.data;

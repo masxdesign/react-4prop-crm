@@ -145,3 +145,28 @@ git merge --no-ff hotfix-1.2.1 -m 'merge commit'
 
 git branch -d hotfix-1.2.1
 ```
+
+
+## Test accounts
+
+### Estate agents
+- pthomas@savills.com
+- lsjones@savills.com
+- tluckett@savills.com
+
+### Super Admin
+- afeach@gmail.com
+
+### Advertisers
+
+Elite Homes Showcase
+- your.email+fakedata67462@gmail.com
+
+Metropolitan Real Estate Weekly (not on-board)
+- your.email+fakedata70882@gmail.com
+
+SHOPPROPERTY.CO
+- info@shopproperty.co
+
+Luxury Living Digest
+- your.email+fakedata55287@gmail.com

@@ -59,14 +59,14 @@ function AdvertiserProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="p-6 max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
+        <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
         <p className="text-gray-600 mt-1">Manage your advertiser account settings</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid max-w-lg grid-cols-4">
           <TabsTrigger value="profile">
             <Building2 className="h-4 w-4 mr-2" />
             Profile

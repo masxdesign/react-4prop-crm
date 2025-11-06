@@ -9,10 +9,12 @@ import {
 import { format } from 'date-fns';
 import BookingStatusBadge from './BookingStatusBadge';
 import { pluralizeWeeks } from '../util/pluralize';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const columnHelper = createColumnHelper();
 
-const BookingHistoryTable = ({ bookings, isAdvertiser }) => {
+const BookingHistoryTable = ({ bookings, isAdvertiser, pagination, onPageChange }) => {
   // Define columns based on user role
   const columns = useMemo(() => {
     const baseColumns = [
@@ -131,44 +133,77 @@ const BookingHistoryTable = ({ bookings, isAdvertiser }) => {
   }
 
   return (
-    <div className="overflow-hidden border rounded-lg">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
-                    onClick={header.column.getToggleSortingHandler()}
-                  >
-                    <div className="flex items-center gap-2">
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                      {header.column.getIsSorted() && (
-                        <span className="text-gray-400">
-                          {header.column.getIsSorted() === 'desc' ? '↓' : '↑'}
-                        </span>
-                      )}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden border rounded-lg">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <div className="flex items-center gap-2">
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getIsSorted() && (
+                          <span className="text-gray-400">
+                            {header.column.getIsSorted() === 'desc' ? '↓' : '↑'}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 py-3 border rounded-lg bg-gray-50">
+          <div className="text-sm text-gray-700">
+            Showing page <span className="font-medium">{pagination.page}</span> of{' '}
+            <span className="font-medium">{pagination.totalPages}</span>
+            {' '}({pagination.total} total {pagination.total === 1 ? 'booking' : 'bookings'})
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page - 1)}
+              disabled={pagination.page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange?.(pagination.page + 1)}
+              disabled={pagination.page >= pagination.totalPages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

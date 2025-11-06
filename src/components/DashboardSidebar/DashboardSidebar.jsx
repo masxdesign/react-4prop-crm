@@ -51,13 +51,13 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         ))}
       </div>
 
-      <div className='mt-auto'>
+      <div className='mt-auto shrink-0 py-1 px-1 border-t border-t-sky-400/20'>
         <button
           onClick={onLogout}
-          className="p-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline border-t border-t-sky-400/20"
+          className="w-full px-3 py-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline"
         >
           <span className='opacity-60'>Logout</span>
-          <LogOut className='size-5' />
+          <LogOut className='size-4' />
         </button>
       </div>
     </div>
