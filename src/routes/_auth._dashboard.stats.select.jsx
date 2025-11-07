@@ -3,12 +3,12 @@ import StatsSelectionPage from '@/components/Stats/StatsSelectionPage/StatsSelec
 
 export const Route = createFileRoute('/_auth/_dashboard/stats/select')({
   validateSearch: (search) => ({
-    tab: search.tab || 'advertisers', // 'advertisers' or 'agencies'
-    page: search.page || 1,
-    limit: search.limit || 20,
-    search: search.search || '',
-    sortBy: search.sortBy || (search.tab === 'agencies' ? 'name' : 'company'),
-    order: search.order || 'asc',
+    tab: search.tab,
+    page: search.page,
+    limit: search.limit,
+    search: search.search,
+    sortBy: search.sortBy,
+    order: search.order,
   }),
   beforeLoad: ({ context }) => {
     const auth = context.auth;

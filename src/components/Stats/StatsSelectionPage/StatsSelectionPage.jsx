@@ -5,6 +5,62 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import AdvertiserSelectionTable from '../AdvertiserSelectionTable/AdvertiserSelectionTable';
 import AgencySelectionTable from '../AgencySelectionTable/AgencySelectionTable';
 
+// Default values for search params
+const DEFAULTS = {
+  tab: 'advertisers',
+  page: 1,
+  limit: 20,
+  search: '',
+  sortBy: {
+    advertisers: 'company',
+    agencies: 'name',
+  },
+  order: 'asc',
+};
+
+/**
+ * Remove default values from search params to keep URLs clean
+ */
+export const cleanSearchParams = (params, tab) => {
+  const cleaned = {};
+
+  // Only add tab if it's not the default
+  if (params.tab && params.tab !== DEFAULTS.tab) {
+    cleaned.tab = params.tab;
+  }
+
+  // Only add page if it's not the default
+  if (params.page && params.page !== DEFAULTS.page) {
+    cleaned.page = params.page;
+  }
+
+  // Only add limit if it's not the default
+  if (params.limit && params.limit !== DEFAULTS.limit) {
+    cleaned.limit = params.limit;
+  }
+
+  // Only add search if it's not empty
+  if (params.search && params.search !== DEFAULTS.search) {
+    cleaned.search = params.search;
+  }
+
+  // Only add sortBy if it's not the default for the current tab
+  const defaultSortBy = DEFAULTS.sortBy[tab || params.tab || DEFAULTS.tab];
+  if (params.sortBy && params.sortBy !== defaultSortBy) {
+    cleaned.sortBy = params.sortBy;
+  }
+
+  // Only add order if it's not the default
+  if (params.order && params.order !== DEFAULTS.order) {
+    cleaned.order = params.order;
+  }
+
+  return cleaned;
+};
+
+// Export DEFAULTS for use in child components
+export { DEFAULTS };
+
 /**
  * StatsSelectionPage Component
  *
@@ -14,22 +70,35 @@ import AgencySelectionTable from '../AgencySelectionTable/AgencySelectionTable';
  * - Agency Statistics: Browse and select agencies
  *
  * All state (tab, page, search, sorting) is synced with URL search parameters.
+ * Only non-default values are included in the URL to keep it clean.
  */
 const StatsSelectionPage = () => {
   const navigate = useNavigate({ from: '/crm/stats/select' });
-  const search = useSearch({ from: '/_auth/_dashboard/stats/select' });
+  const urlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
+
+  // Apply defaults to URL search params
+  const search = {
+    tab: urlSearch.tab || DEFAULTS.tab,
+    page: urlSearch.page || DEFAULTS.page,
+    limit: urlSearch.limit || DEFAULTS.limit,
+    search: urlSearch.search || DEFAULTS.search,
+    sortBy: urlSearch.sortBy || DEFAULTS.sortBy[urlSearch.tab || DEFAULTS.tab],
+    order: urlSearch.order || DEFAULTS.order,
+  };
 
   // Handle tab change - update URL and reset pagination
   const handleTabChange = (newTab) => {
+    const params = cleanSearchParams({
+      tab: newTab,
+      page: 1, // Reset to first page on tab change
+      limit: search.limit,
+      search: '', // Reset search on tab change
+      sortBy: DEFAULTS.sortBy[newTab], // Default sort for each tab
+      order: 'asc',
+    }, newTab);
+
     navigate({
-      search: {
-        tab: newTab,
-        page: 1, // Reset to first page on tab change
-        limit: search.limit,
-        search: '', // Reset search on tab change
-        sortBy: newTab === 'agencies' ? 'name' : 'company', // Default sort for each tab
-        order: 'asc',
-      },
+      search: params,
       replace: true,
     });
   };

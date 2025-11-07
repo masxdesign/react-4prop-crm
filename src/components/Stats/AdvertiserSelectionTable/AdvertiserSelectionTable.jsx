@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { fetchAdvertisers } from '../api';
+import { cleanSearchParams, DEFAULTS } from '../StatsSelectionPage/StatsSelectionPage';
 
 const columnHelper = createColumnHelper();
 
@@ -32,7 +33,17 @@ const columnHelper = createColumnHelper();
  */
 const AdvertiserSelectionTable = () => {
   const navigate = useNavigate({ from: '/crm/stats/select' });
-  const urlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
+  const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
+
+  // Apply defaults to URL search params
+  const urlSearch = {
+    tab: rawUrlSearch.tab || DEFAULTS.tab,
+    page: rawUrlSearch.page || DEFAULTS.page,
+    limit: rawUrlSearch.limit || DEFAULTS.limit,
+    search: rawUrlSearch.search || DEFAULTS.search,
+    sortBy: rawUrlSearch.sortBy || DEFAULTS.sortBy[rawUrlSearch.tab || DEFAULTS.tab],
+    order: rawUrlSearch.order || DEFAULTS.order,
+  };
 
   // Only use this table's state if we're on the advertisers tab
   const isActive = urlSearch.tab === 'advertisers';
@@ -53,16 +64,18 @@ const AdvertiserSelectionTable = () => {
   // Update URL when debounced search changes
   useEffect(() => {
     if (isActive && debouncedSearch !== urlSearch.search) {
+      const params = cleanSearchParams({
+        ...urlSearch,
+        search: debouncedSearch,
+        page: 1, // Reset to first page on search
+      }, urlSearch.tab);
+
       navigate({
-        search: {
-          ...urlSearch,
-          search: debouncedSearch,
-          page: 1, // Reset to first page on search
-        },
+        search: params,
         replace: true,
       });
     }
-  }, [debouncedSearch, isActive]);
+  }, [debouncedSearch, isActive, navigate, urlSearch]);
 
   // Fetch advertisers with TanStack Query (only when this tab is active)
   const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
@@ -123,22 +136,26 @@ const AdvertiserSelectionTable = () => {
   // Handle page change - update URL
   const handlePrevPage = () => {
     const newPage = Math.max(1, urlSearch.page - 1);
+    const params = cleanSearchParams({
+      ...urlSearch,
+      page: newPage,
+    }, urlSearch.tab);
+
     navigate({
-      search: {
-        ...urlSearch,
-        page: newPage,
-      },
+      search: params,
       replace: true,
     });
   };
 
   const handleNextPage = () => {
     if (!isPlaceholderData && pagination.has_next) {
+      const params = cleanSearchParams({
+        ...urlSearch,
+        page: urlSearch.page + 1,
+      }, urlSearch.tab);
+
       navigate({
-        search: {
-          ...urlSearch,
-          page: urlSearch.page + 1,
-        },
+        search: params,
         replace: true,
       });
     }
