@@ -68,12 +68,31 @@ export const searchAgents = async (searchTerm) => {
   if (!searchTerm || searchTerm.length < 2) {
     return [];
   }
-  
+
   const response = await bizchatClient.get('/api/crm/agents/search', {
     params: { email: searchTerm }
   });
-  
+
   return response.data || [];
+};
+
+/**
+ * Fetch agents for admin selection with search filtering
+ * @param {Object} options - Query options
+ * @param {string} options.search - Email search query
+ * @param {number} options.limit - Max results (default: 10)
+ * @returns {Promise} Response data with agents array
+ */
+export const fetchAgentsForSelection = async ({ search = '', limit = 10 }) => {
+  if (!search || search.length < 2) {
+    return { data: [] };
+  }
+
+  const response = await bizchatClient.get('/api/crm/agents/search', {
+    params: { email: search, limit }
+  });
+
+  return { data: response.data || [] };
 };
 
 // Schedule Status API functions

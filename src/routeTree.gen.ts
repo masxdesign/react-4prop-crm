@@ -56,6 +56,8 @@ import { Route as AuthGradeGradeWidgetPidCrmPromoImport } from './routes/_auth.g
 import { Route as AuthDashboardStatsAgencyAgencyIdImport } from './routes/_auth._dashboard.stats.agency.$agencyId'
 import { Route as AuthDashboardStatsAdvertiserAdvertiserIdImport } from './routes/_auth._dashboard.stats.advertiser.$advertiserId'
 import { Route as AuthDashboardMagManageScheduleAdvertiserIdImport } from './routes/_auth._dashboard.mag.manage-schedule.$advertiserId'
+import { Route as AuthDashboardMagAgentSelectImport } from './routes/_auth._dashboard.mag.agent.select'
+import { Route as AuthDashboardMagAgentNidImport } from './routes/_auth._dashboard.mag.agent.$nid'
 import { Route as AuthDashboardLayout1ListImportidImport } from './routes/_auth._dashboard._layout-1/list_.$import_id'
 import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade._gradeWidget/$pid_.share/confirm'
 import { Route as AuthDashboardLayout1ListImportidSharedImport } from './routes/_auth._dashboard._layout-1/list_.$import_id.shared'
@@ -341,6 +343,17 @@ const AuthDashboardMagManageScheduleAdvertiserIdRoute =
     getParentRoute: () => AuthDashboardRoute,
   } as any)
 
+const AuthDashboardMagAgentSelectRoute =
+  AuthDashboardMagAgentSelectImport.update({
+    path: '/mag/agent/select',
+    getParentRoute: () => AuthDashboardRoute,
+  } as any)
+
+const AuthDashboardMagAgentNidRoute = AuthDashboardMagAgentNidImport.update({
+  path: '/mag/agent/$nid',
+  getParentRoute: () => AuthDashboardRoute,
+} as any)
+
 const AuthDashboardLayout1ListImportidRoute =
   AuthDashboardLayout1ListImportidImport.update({
     path: '/list/$import_id',
@@ -541,6 +554,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardLayout1ListImportidImport
       parentRoute: typeof AuthDashboardLayout1Import
     }
+    '/_auth/_dashboard/mag/agent/$nid': {
+      preLoaderRoute: typeof AuthDashboardMagAgentNidImport
+      parentRoute: typeof AuthDashboardImport
+    }
+    '/_auth/_dashboard/mag/agent/select': {
+      preLoaderRoute: typeof AuthDashboardMagAgentSelectImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/_dashboard/mag/manage-schedule/$advertiserId': {
       preLoaderRoute: typeof AuthDashboardMagManageScheduleAdvertiserIdImport
       parentRoute: typeof AuthDashboardImport
@@ -626,6 +647,8 @@ export const routeTree = rootRoute.addChildren([
       AuthDashboardStatsSelectRoute,
       AuthDashboardMagIndexRoute,
       AuthDashboardStatsIndexRoute,
+      AuthDashboardMagAgentNidRoute,
+      AuthDashboardMagAgentSelectRoute,
       AuthDashboardMagManageScheduleAdvertiserIdRoute,
       AuthDashboardStatsAdvertiserAdvertiserIdRoute,
       AuthDashboardStatsAgencyAgencyIdRoute,

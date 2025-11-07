@@ -407,7 +407,9 @@ const ScheduleWizardModal = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700">Week Rate:</span>
-                    <span className="font-medium">£{weeklyRate.toFixed(2)}</span>
+                    <span className="font-medium">
+                      {weeklyRate === 0 ? <span className="text-green-700 font-bold">FREE</span> : `£${weeklyRate.toFixed(2)}`}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700">Subtotal:</span>
@@ -419,7 +421,9 @@ const ScheduleWizardModal = ({
                   </div>
                   <div className="flex justify-between border-t border-blue-200 pt-2 mt-3">
                     <span className="text-blue-700 font-medium">Total Price:</span>
-                    <span className="font-bold text-green-600 text-lg">£{totalPrice.toFixed(2)}</span>
+                    <span className={`font-bold text-lg ${totalPrice === 0 ? 'text-green-700' : 'text-green-600'}`}>
+                      {totalPrice === 0 ? 'FREE' : `£${totalPrice.toFixed(2)}`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -442,28 +446,47 @@ const ScheduleWizardModal = ({
                     <li>
                       <strong>Create your schedule</strong> in an approved state
                     </li>
-                    <li>
-                      <strong>Show payment method selection</strong> - you'll see your saved cards and select which one to use as the default for this subscription
-                    </li>
-                    <li>
-                      <strong>Activate the subscription</strong> - your selected card will be charged automatically:
-                      <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                    {totalPrice > 0 ? (
+                      <>
                         <li>
-                          First charge of <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
-                          {' '}on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong>
+                          <strong>Show payment method selection</strong> - you'll see your saved cards and select which one to use as the default for this subscription
                         </li>
-                        {weeks > 1 && (
+                        <li>
+                          <strong>Activate the subscription</strong> - your selected card will be charged automatically:
+                          <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                            <li>
+                              First charge of <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                              {' '}on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong>
+                            </li>
+                            {weeks > 1 && (
+                              <li>
+                                Then <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                                {' '}per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}
+                              </li>
+                            )}
+                            <li>
+                              Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
+                              {' '}(includes £{vatAmount.toFixed(2)} VAT)
+                            </li>
+                          </ul>
+                        </li>
+                      </>
+                    ) : (
+                      <li>
+                        <strong>Activate the subscription</strong> - this is a <strong className="text-green-700">FREE</strong> listing (no payment required):
+                        <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
                           <li>
-                            Then <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
-                            {' '}per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}
+                            Weekly rate: <strong>£0.00</strong> (FREE)
                           </li>
-                        )}
-                        <li>
-                          Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
-                          {' '}(includes £{vatAmount.toFixed(2)} VAT)
-                        </li>
-                      </ul>
-                    </li>
+                          <li>
+                            Total cost: <strong>£0.00</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
+                          </li>
+                          <li>
+                            No payment method required - subscription will be activated immediately
+                          </li>
+                        </ul>
+                      </li>
+                    )}
                     <li>
                       <strong>Your property goes live</strong> in the magazine on the start date
                     </li>
@@ -581,7 +604,7 @@ const ScheduleWizardModal = ({
             ) : currentStep === 5 ? (
               <Button
                 onClick={handleSubmit}
-                disabled={isLoading || !totalPrice}
+                disabled={isLoading || !selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date}
               >
                 {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Setup subscription' : 'Create schedule')}
               </Button>

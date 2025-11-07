@@ -14,14 +14,22 @@ import EnhancedPropertiesDataTable from './EnhancedPropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 import { useEnhancedPropertiesWithExpansion } from '@/hooks/propertyDetails-hooks';
-import { BrickWallIcon, Building, Clock } from 'lucide-react';
+import { BrickWallIcon, Building, Clock, AlertCircle } from 'lucide-react';
 import ClientOnly from '@/components/ui/ClientOnly';
 
 // Column helper
 const columnHelper = createColumnHelper();
 
 // Main Enhanced Component
-const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, onPageSizeChange }) => {
+const AgentPaginatedEnhancedTable = ({
+  agentId,
+  page,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+  isAdminViewing = false,
+  adminNid = null
+}) => {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [expandedRows, setExpandedRows] = useState(new Set());
@@ -226,12 +234,33 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
   const isLoading = rawIsLoading || enhancedIsLoading;
 
   return (
-    <div className='grid grid-rows-[2.5rem_1fr_auto] min-h-0 py-4 relative'>
+    <div className='flex flex-col min-h-0 py-4 relative'>
+      {/* Admin Viewing Banner */}
+      {isAdminViewing && rawData?.departmentName && (
+        <div className="mx-3 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">
+                Viewing as Agent (NID: {agentId})
+              </p>
+              <p className="text-sm text-blue-700 mt-1">
+                Department: {rawData.departmentName}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                All scheduling and editing operations will be performed using this agent's ID
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className='grid grid-rows-[2.5rem_1fr_auto] min-h-0 flex-1'>
       {enhancedProperties?.length !== 0 && (
         <div className='flex items-start gap-0 mr-3'>
-          <div className='flex-1 flex justify-between'>  
+          <div className='flex-1 flex justify-between'>
             <span className='text-xl font-bold'>
-              My Department properties {rawData?.total || 0}
+              {isAdminViewing ? 'Agent Department Properties' : 'My Department properties'} {rawData?.total || 0}
             </span>
             <div className="flex gap-2 items-center">
               <Button 
@@ -290,7 +319,7 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
           isLoading={isLoading}
         />
       )}
-      
+
       {/* Loading Overlay - Show when refetching data and showing placeholder data */}
       {isFetching && isPlaceholderData && (
         <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
@@ -300,7 +329,7 @@ const AgentPaginatedEnhancedTable = ({ agentId, page, pageSize, onPageChange, on
           </div>
         </div>
       )}
-
+      </div>
     </div>
   );
 };
