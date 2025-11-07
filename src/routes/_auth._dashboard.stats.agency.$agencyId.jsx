@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { subDays, format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { fetchAgencyStats } from '@/components/Stats/api';
@@ -12,6 +12,17 @@ export const Route = createFileRoute('/_auth/_dashboard/stats/agency/$agencyId')
   beforeLoad: ({ context, params, search }) => {
     const { agencyId } = params;
     const { startDate, endDate } = search;
+    const auth = context.auth;
+
+    // Check if user has permission to view this agency's stats
+    const canView =
+      auth.user?.is_admin ||
+      (auth.isAgent && auth.user?.cid === agencyId);
+
+    if (!canView) {
+      // Redirect back to stats router which will redirect to their own stats
+      throw redirect({ to: '/crm/stats' });
+    }
 
     const queryOptions = {
       queryKey: ['agency-stats', agencyId, startDate, endDate],

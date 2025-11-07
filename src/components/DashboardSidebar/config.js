@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -88,6 +88,12 @@ export const navigationConfig = {
       to: "/crm/mag/bookings",
       icon: CalendarCheck,
       label: "Booking History"
+    },
+    {
+      id: 'stats',
+      to: "/crm/stats",
+      icon: TrendingUp,
+      label: "Statistics"
     },
   ],
   portals: [
