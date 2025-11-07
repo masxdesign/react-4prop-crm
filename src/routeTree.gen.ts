@@ -51,6 +51,8 @@ import { Route as AccessHashOwnerUidSharedIndexImport } from './routes/access.$h
 import { Route as AccessHashOwnerUidSharedTagidImport } from './routes/access.$hash.$ownerUid.shared.$tag_id'
 import { Route as AuthGradeGradeWidgetPidShareImport } from './routes/_auth.grade._gradeWidget/$pid_.share'
 import { Route as AuthGradeGradeWidgetPidCrmPromoImport } from './routes/_auth.grade._gradeWidget/$pid_.crm-promo'
+import { Route as AuthDashboardStatsAgencyAgencyIdImport } from './routes/_auth._dashboard.stats.agency.$agencyId'
+import { Route as AuthDashboardStatsAdvertiserAdvertiserIdImport } from './routes/_auth._dashboard.stats.advertiser.$advertiserId'
 import { Route as AuthDashboardMagManageScheduleAdvertiserIdImport } from './routes/_auth._dashboard.mag.manage-schedule.$advertiserId'
 import { Route as AuthDashboardLayout1ListImportidImport } from './routes/_auth._dashboard._layout-1/list_.$import_id'
 import { Route as AuthGradeGradeWidgetPidShareConfirmImport } from './routes/_auth.grade._gradeWidget/$pid_.share/confirm'
@@ -309,6 +311,18 @@ const AuthGradeGradeWidgetPidCrmPromoRoute =
     getParentRoute: () => AuthGradeGradeWidgetRoute,
   } as any)
 
+const AuthDashboardStatsAgencyAgencyIdRoute =
+  AuthDashboardStatsAgencyAgencyIdImport.update({
+    path: '/stats/agency/$agencyId',
+    getParentRoute: () => AuthDashboardRoute,
+  } as any)
+
+const AuthDashboardStatsAdvertiserAdvertiserIdRoute =
+  AuthDashboardStatsAdvertiserAdvertiserIdImport.update({
+    path: '/stats/advertiser/$advertiserId',
+    getParentRoute: () => AuthDashboardRoute,
+  } as any)
+
 const AuthDashboardMagManageScheduleAdvertiserIdRoute =
   AuthDashboardMagManageScheduleAdvertiserIdImport.update({
     path: '/mag/manage-schedule/$advertiserId',
@@ -511,6 +525,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardMagManageScheduleAdvertiserIdImport
       parentRoute: typeof AuthDashboardImport
     }
+    '/_auth/_dashboard/stats/advertiser/$advertiserId': {
+      preLoaderRoute: typeof AuthDashboardStatsAdvertiserAdvertiserIdImport
+      parentRoute: typeof AuthDashboardImport
+    }
+    '/_auth/_dashboard/stats/agency/$agencyId': {
+      preLoaderRoute: typeof AuthDashboardStatsAgencyAgencyIdImport
+      parentRoute: typeof AuthDashboardImport
+    }
     '/_auth/grade/_gradeWidget/$pid/crm-promo': {
       preLoaderRoute: typeof AuthGradeGradeWidgetPidCrmPromoImport
       parentRoute: typeof AuthGradeGradeWidgetImport
@@ -583,6 +605,8 @@ export const routeTree = rootRoute.addChildren([
       AuthDashboardMagTransfersRoute,
       AuthDashboardMagIndexRoute,
       AuthDashboardMagManageScheduleAdvertiserIdRoute,
+      AuthDashboardStatsAdvertiserAdvertiserIdRoute,
+      AuthDashboardStatsAgencyAgencyIdRoute,
     ]),
     AuthGradeRoute.addChildren([
       AuthGradeGradeWidgetRoute.addChildren([
