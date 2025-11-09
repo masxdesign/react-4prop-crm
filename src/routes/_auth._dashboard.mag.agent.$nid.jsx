@@ -93,6 +93,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
         onPageSizeChange={onPageSizeChange}
         isAdminViewing={isViewingOtherAgent}
         adminNid={auth.user?.neg_id}
+        viewingAgentNid={nid}
       />
     );
   },

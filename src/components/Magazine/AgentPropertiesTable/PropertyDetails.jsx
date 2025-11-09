@@ -164,6 +164,7 @@ const PropertyDetails = ({ property, agentId }) => {
         open={isScheduleModalOpen}
         property={property}
         advertisers={advertisers}
+        agentId={agentId}
         onClose={() => setIsScheduleModalOpen(false)}
         onSubmit={(data) => scheduleMutation.mutate(data)}
         isLoading={scheduleMutation.isPending}

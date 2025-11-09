@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/Auth/Auth-context';
+import { toast } from '@/components/ui/use-toast';
+import { createSchedule, activateSubscriptionPlatformMor } from '../api';
 import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
@@ -16,11 +19,13 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { pluralizeWeeks } from '../util/pluralize';
+import { Loader2, CreditCard } from 'lucide-react';
 
 const ScheduleWizardModal = ({
   open,
   property,
   advertisers,
+  agentId, // The agent's NID (for creating schedules)
   preselectedAdvertiser = null,
   onClose,
   onSubmit,
@@ -29,11 +34,20 @@ const ScheduleWizardModal = ({
   error,
   showCancelButton = true,
   showDialogClose = true,
-  cancelButtonText = "Cancel"
+  cancelButtonText = "Cancel",
+  isAdminViewing, // Not used currently, but passed for future enhancement
+  viewingAgentNid // Not used currently, but passed for future enhancement
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [activationStep, setActivationStep] = useState(null); // null | 'creating' | 'activating' | 'success'
+  const [paymentActivationState, setPaymentActivationState] = useState({
+    canActivate: false,
+    isActivating: false,
+    activate: null
+  });
 
   const auth = useAuth();
+  const queryClient = useQueryClient();
 
   // React Hook Form setup
   const { control, watch, getValues, reset, setValue } = useForm({
@@ -186,9 +200,82 @@ const ScheduleWizardModal = ({
     onSubmit(scheduleData, { isSelfAssign: values.self_assign });
   };
 
+  // Handle zero-price activation (create + activate in one go)
+  const handleActivateZeroPrice = async () => {
+    const values = getValues();
+
+    // Build schedule data (same as handleSubmit)
+    const advertiser_id = parseInt(values.advertiser_id);
+    const week_no = parseInt(values.week_no);
+
+    const scheduleData = {
+      property_id: property.pid,
+      advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
+      start_date: values.start_date || null,
+      week_no: isNaN(week_no) ? null : week_no,
+      self_assign: values.self_assign || false,
+      approver_id: values.approver_id || null,
+      payer_id: values.payer_id || null
+    };
+
+    // Validate required fields
+    if (!scheduleData.property_id || !scheduleData.advertiser_id ||
+        !scheduleData.start_date || !scheduleData.week_no) {
+      console.error('Missing required fields for zero-price activation');
+      return;
+    }
+
+    try {
+      // Step 1: Create schedule
+      setActivationStep('creating');
+      const response = await createSchedule(agentId, scheduleData);
+
+      // API returns: { success: true, data: { id: 123, ... }, message: "..." }
+      const scheduleId = response?.data?.id;
+
+      if (!scheduleId) {
+        console.error('No schedule ID found in response:', response);
+        throw new Error('Failed to get schedule ID from API response');
+      }
+
+      // Step 2: Activate subscription
+      setActivationStep('activating');
+      await activateSubscriptionPlatformMor(scheduleId);
+
+      // Step 3: Success
+      setActivationStep('success');
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.pid] });
+      queryClient.invalidateQueries({ queryKey: ['property-schedules-summary', property.pid] });
+
+      // Show success toast
+      toast({
+        title: 'Subscription Activated!',
+        description: 'Your FREE property listing is now active and will go live on the start date.',
+      });
+
+      // Brief delay to show success state, then close
+      setTimeout(() => {
+        handleClose();
+      }, 500);
+
+    } catch (error) {
+      console.error('Zero-price activation failed:', error);
+      setActivationStep(null);
+
+      toast({
+        variant: 'destructive',
+        title: 'Activation Failed',
+        description: error?.response?.data?.error || 'Failed to activate subscription. Please try again.',
+      });
+    }
+  };
+
   const handleClose = () => {
     // Reset wizard and form state when closing
     setCurrentStep(1);
+    setActivationStep(null);
     reset();
     onClose();
   };
@@ -275,9 +362,10 @@ const ScheduleWizardModal = ({
                   onChange={(e) => {
                     const isChecked = e.target.checked;
                     if (isChecked) {
-                      // Auto-assign current user as approver and payer
-                      setValue('approver_id', auth?.user?.neg_id || '');
-                      setValue('payer_id', auth?.user?.neg_id || '');
+                      // Auto-assign the agent (whose properties we're managing) as approver and payer
+                      // Use agentId (the agent's NID) not auth.user.neg_id (which could be super admin)
+                      setValue('approver_id', agentId || '');
+                      setValue('payer_id', agentId || '');
                       setValue('self_assign', true);
                     } else {
                       setValue('approver_id', '');
@@ -440,14 +528,14 @@ const ScheduleWizardModal = ({
                 </h4>
                 <div className="space-y-3 text-sm text-amber-900">
                   <p className="font-medium">
-                    Clicking "Setup subscription" will:
+                    Clicking "{totalPrice === 0 ? 'Activate subscription' : 'Setup subscription'}" will:
                   </p>
                   <ol className="space-y-2 ml-4 list-decimal">
-                    <li>
-                      <strong>Create your schedule</strong> in an approved state
-                    </li>
                     {totalPrice > 0 ? (
                       <>
+                        <li>
+                          <strong>Create your schedule</strong> in an approved state
+                        </li>
                         <li>
                           <strong>Show payment method selection</strong> - you'll see your saved cards and select which one to use as the default for this subscription
                         </li>
@@ -472,20 +560,22 @@ const ScheduleWizardModal = ({
                         </li>
                       </>
                     ) : (
-                      <li>
-                        <strong>Activate the subscription</strong> - this is a <strong className="text-green-700">FREE</strong> listing (no payment required):
-                        <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
-                          <li>
-                            Weekly rate: <strong>£0.00</strong> (FREE)
+                      <>
+                        <li>
+                          <strong>Create and immediately activate your FREE subscription</strong> - this is a <strong className="text-green-700">FREE</strong> listing (no payment required):
+                          <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                            <li>
+                              Weekly rate: <strong>£0.00</strong> (FREE)
                           </li>
                           <li>
                             Total cost: <strong>£0.00</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
                           </li>
                           <li>
-                            No payment method required - subscription will be activated immediately
+                            No payment method required - your subscription will be activated immediately
                           </li>
                         </ul>
                       </li>
+                      </>
                     )}
                     <li>
                       <strong>Your property goes live</strong> in the magazine on the start date
@@ -509,6 +599,10 @@ const ScheduleWizardModal = ({
                 propertyId={property.pid}
                 onSuccess={handleClose}
                 onCancel={null} // No cancel button in step 6, use Back button instead
+                isAdminViewing={isAdminViewing}
+                viewingAgentNid={viewingAgentNid}
+                hideButtons={true}
+                onActivateStateChange={setPaymentActivationState}
               />
             ) : (
               <div className="text-center p-4 text-gray-500">
@@ -603,12 +697,41 @@ const ScheduleWizardModal = ({
               </Button>
             ) : currentStep === 5 ? (
               <Button
-                onClick={handleSubmit}
-                disabled={isLoading || !selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date}
+                onClick={totalPrice === 0 && watchedValues.self_assign ? handleActivateZeroPrice : handleSubmit}
+                disabled={(isLoading || activationStep !== null) || !selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date}
               >
-                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Setup subscription' : 'Create schedule')}
+                {(() => {
+                  // Show activation steps for zero-price flow
+                  if (totalPrice === 0 && watchedValues.self_assign) {
+                    if (activationStep === 'creating') return 'Creating schedule...';
+                    if (activationStep === 'activating') return 'Activating subscription...';
+                    if (activationStep === 'success') return 'Success!';
+                    return 'Activate subscription';
+                  }
+                  // Normal flow
+                  if (isLoading) return 'Processing...';
+                  return watchedValues.self_assign ? 'Setup subscription' : 'Create schedule';
+                })()}
               </Button>
-            ) : null /* Step 6 has its own submit button in PaymentActivationForm */}
+            ) : currentStep === 6 ? (
+              <Button
+                onClick={() => paymentActivationState.activate?.()}
+                disabled={!paymentActivationState.canActivate || paymentActivationState.isActivating}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {paymentActivationState.isActivating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Activating...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Activate Subscription
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
         </DialogFooter>
       </DialogContent>

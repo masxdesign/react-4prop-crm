@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { CreditCard, Loader2, DollarSign, AlertCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,16 +17,29 @@ import { cn } from '@/lib/utils';
  * @param {string} propertyId - Property ID for cache invalidation
  * @param {Function} onSuccess - Callback when payment is successful
  * @param {Function} onCancel - Callback when user cancels
+ * @param {boolean} isAdminViewing - Whether super admin is viewing another agent
+ * @param {string} viewingAgentNid - NID of the agent being viewed (when admin viewing)
+ * @param {boolean} hideButtons - If true, hides the internal buttons (for external button rendering)
+ * @param {Function} onActivateStateChange - Callback with activation state: { canActivate, isActivating, activate: fn }
  */
 const PaymentActivationForm = ({
   schedule,
   propertyId,
   onSuccess,
-  onCancel
+  onCancel,
+  isAdminViewing,
+  viewingAgentNid,
+  hideButtons = false,
+  onActivateStateChange
 }) => {
   const queryClient = useQueryClient();
   const auth = useAuth();
   const currentUserNid = auth?.user?.neg_id;
+
+  // When admin is viewing another agent, use the viewed agent's NID for payment methods
+  // This ensures the correct agent's payment methods are loaded and used
+  const effectiveUserNid = isAdminViewing ? viewingAgentNid : currentUserNid;
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
 
   // Fetch payment methods
@@ -34,16 +47,16 @@ const PaymentActivationForm = ({
     data: paymentMethodsData,
     isLoading: paymentMethodsLoading
   } = useQuery({
-    queryKey: ['agent-payment-methods', currentUserNid],
-    queryFn: () => getAgentPaymentMethods(currentUserNid),
-    enabled: !!currentUserNid
+    queryKey: ['agent-payment-methods', effectiveUserNid],
+    queryFn: () => getAgentPaymentMethods(effectiveUserNid),
+    enabled: !!effectiveUserNid
   });
 
   // Set default payment method mutation
   const setDefaultMutation = useMutation({
-    mutationFn: (paymentMethodId) => setDefaultPaymentMethod(currentUserNid, { payment_method_id: paymentMethodId }),
+    mutationFn: (paymentMethodId) => setDefaultPaymentMethod(effectiveUserNid, { payment_method_id: paymentMethodId }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['agent-payment-methods', currentUserNid] });
+      queryClient.invalidateQueries({ queryKey: ['agent-payment-methods', effectiveUserNid] });
       toast({
         title: 'Default Updated',
         description: 'Default payment method has been updated.',
@@ -115,6 +128,17 @@ const PaymentActivationForm = ({
 
   // Can activate if has payment method
   const canActivate = hasPaymentMethod;
+
+  // Expose activation state to parent (for external button rendering)
+  useEffect(() => {
+    if (onActivateStateChange) {
+      onActivateStateChange({
+        canActivate,
+        isActivating: activateMutation.isPending,
+        activate: () => activateMutation.mutate()
+      });
+    }
+  }, [canActivate, activateMutation.isPending, onActivateStateChange]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -265,35 +289,37 @@ const PaymentActivationForm = ({
         </Alert>
       )}
 
-      <div className="flex justify-end gap-2 pt-4">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={activateMutation.isPending}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button
-          type="submit"
-          disabled={!canActivate || activateMutation.isPending || isLoading}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          {activateMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Activating...
-            </>
-          ) : (
-            <>
-              <CreditCard className="h-4 w-4 mr-2" />
-              Activate Subscription
-            </>
+      {!hideButtons && (
+        <div className="flex justify-end gap-2 pt-4">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={activateMutation.isPending}
+            >
+              Cancel
+            </Button>
           )}
-        </Button>
-      </div>
+          <Button
+            type="submit"
+            disabled={!canActivate || activateMutation.isPending || isLoading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {activateMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Activating...
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-4 w-4 mr-2" />
+                Activate Subscription
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </form>
   );
 };

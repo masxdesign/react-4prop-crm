@@ -28,7 +28,8 @@ const AgentPaginatedEnhancedTable = ({
   onPageChange,
   onPageSizeChange,
   isAdminViewing = false,
-  adminNid = null
+  adminNid = null,
+  viewingAgentNid = null
 }) => {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -297,7 +298,7 @@ const AgentPaginatedEnhancedTable = ({
         @see https://github.com/TanStack/table/issues/5026 
       */}
       <ClientOnly>
-        <EnhancedPropertiesDataTable 
+        <EnhancedPropertiesDataTable
           table={table}
           columns={columns}
           expandedRows={expandedRows}
@@ -305,6 +306,8 @@ const AgentPaginatedEnhancedTable = ({
           agentId={agentId}
           isEmpty={enhancedProperties?.length === 0}
           className="bg-gray-100 rounded-lg mr-3"
+          isAdminViewing={isAdminViewing}
+          viewingAgentNid={viewingAgentNid}
         />
       </ClientOnly>
 

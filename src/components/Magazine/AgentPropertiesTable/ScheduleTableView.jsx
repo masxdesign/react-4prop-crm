@@ -16,7 +16,7 @@ import { pluralize } from '../util/pluralize';
 
 const columnHelper = createColumnHelper();
 
-const ScheduleTableView = ({ schedules, propertyId }) => {
+const ScheduleTableView = ({ schedules, propertyId, isAdminViewing, viewingAgentNid }) => {
   // Extract all unique NIDs for batch user fetching
   const allNids = useMemo(() => {
     const nids = [];
@@ -99,9 +99,11 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
     columnHelper.accessor('actions', {
       header: 'Actions',
       cell: (info) => (
-        <ScheduleActionButtons 
-          schedule={info.row.original} 
+        <ScheduleActionButtons
+          schedule={info.row.original}
           propertyId={propertyId}
+          isAdminViewing={isAdminViewing}
+          viewingAgentNid={viewingAgentNid}
         />
       ),
       enableSorting: false,
@@ -109,7 +111,7 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
       minSize: 120,
       maxSize: 120,
     })
-  ], [propertyId, getUserByNid]);
+  ], [propertyId, getUserByNid, isAdminViewing, viewingAgentNid]);
 
   const table = useReactTable({
     data: schedules,

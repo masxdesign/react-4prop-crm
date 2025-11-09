@@ -9,29 +9,33 @@ import AssignApproverDialog from '../dialogs/AssignApproverDialog';
 import ApprovalDialog from '../dialogs/ApprovalDialog';
 import PaymentDialog from '../dialogs/PaymentDialog';
 
-const ScheduleActionButtons = ({ schedule, propertyId, className, ...props }) => {
+const ScheduleActionButtons = ({ schedule, propertyId, className, isAdminViewing, viewingAgentNid, ...props }) => {
   const auth = useAuth();
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   if (schedule.expired) return null // can not be expired
-  
+
   const currentUserNid = auth?.user?.neg_id;
+
+  // When admin is viewing another agent, use the viewed agent's NID for authorization
+  // This allows super admin to approve/pay on behalf of the agent they're simulating
+  const effectiveUserNid = isAdminViewing ? viewingAgentNid : currentUserNid;
   
   // Determine which buttons to show based on user role and schedule status
   // Using hybrid approach: check both field presence AND status_id for maximum reliability
   const showAssignButton = () => {
     return (
       !schedule.approver_id && // No approver assigned yet
-      schedule.agent_id === currentUserNid && // Current user is the creator
+      schedule.agent_id === effectiveUserNid && // Effective user is the creator
       schedule.status_id === 0 // Status allows assignment
     );
   };
 
   const showApproveButton = () => {
     return (
-      schedule.approver_id === currentUserNid && // Current user is the assigned approver
+      schedule.approver_id === effectiveUserNid && // Effective user is the assigned approver
       !schedule.approved_at && // Not already approved
       schedule.status_id === 1 // Status is pending approval
     );
@@ -39,7 +43,7 @@ const ScheduleActionButtons = ({ schedule, propertyId, className, ...props }) =>
 
   const showPayButton = () => {
     return (
-      schedule.payer_id === currentUserNid && // Current user is the assigned payer
+      schedule.payer_id === effectiveUserNid && // Effective user is the assigned payer
       schedule.approved_at && // Schedule has been approved
       !schedule.paid_at && // Not already paid
       schedule.status_id === 2 // Status is pending payment
@@ -110,6 +114,8 @@ const ScheduleActionButtons = ({ schedule, propertyId, className, ...props }) =>
         onOpenChange={setShowPaymentDialog}
         schedule={schedule}
         propertyId={propertyId}
+        isAdminViewing={isAdminViewing}
+        viewingAgentNid={viewingAgentNid}
       />
     </>
   );

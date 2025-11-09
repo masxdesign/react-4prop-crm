@@ -8,7 +8,7 @@ import ScheduleCardView from './ScheduleCardView';
 import ScheduleTableView from './ScheduleTableView';
 
 // Current Schedules Component - Updated for week-based system
-const CurrentSchedules = ({ propertyId }) => {
+const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid }) => {
   const [viewMode, setViewMode] = useState('table');
   const {
     data: schedulesData,
@@ -118,9 +118,18 @@ const CurrentSchedules = ({ propertyId }) => {
       </div>
       
       {viewMode === 'card' ? (
-        <ScheduleCardView schedules={schedules} />
+        <ScheduleCardView
+          schedules={schedules}
+          isAdminViewing={isAdminViewing}
+          viewingAgentNid={viewingAgentNid}
+        />
       ) : (
-        <ScheduleTableView schedules={schedules} propertyId={propertyId} />
+        <ScheduleTableView
+          schedules={schedules}
+          propertyId={propertyId}
+          isAdminViewing={isAdminViewing}
+          viewingAgentNid={viewingAgentNid}
+        />
       )}
     </div>
   );

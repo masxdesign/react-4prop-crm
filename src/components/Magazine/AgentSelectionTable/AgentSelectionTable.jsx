@@ -26,7 +26,10 @@ const columnHelper = createColumnHelper();
 // Default values for search params
 const DEFAULTS = {
   search: '',
-  limit: 10,
+  limit: 20,
+  page: 1,
+  sortBy: 'surname',
+  order: 'asc',
 };
 
 /**
@@ -45,15 +48,31 @@ const cleanSearchParams = (params) => {
     cleaned.limit = params.limit;
   }
 
+  // Only add page if it's not the default
+  if (params.page && params.page !== DEFAULTS.page) {
+    cleaned.page = params.page;
+  }
+
+  // Only add sortBy if it's not the default
+  if (params.sortBy && params.sortBy !== DEFAULTS.sortBy) {
+    cleaned.sortBy = params.sortBy;
+  }
+
+  // Only add order if it's not the default
+  if (params.order && params.order !== DEFAULTS.order) {
+    cleaned.order = params.order;
+  }
+
   return cleaned;
 };
 
 /**
  * AgentSelectionTable Component
  *
- * Admin-only component for searching and selecting agents by email.
+ * Admin-only component for searching and selecting agents by name, email, or company.
  * Allows super admins to view any agent's department properties.
  * Uses debounced search with minimum 2 characters required.
+ * Supports pagination and sorting via URL parameters.
  */
 const AgentSelectionTable = () => {
   const navigate = useNavigate({ from: '/crm/mag/agent/select' });
@@ -63,6 +82,9 @@ const AgentSelectionTable = () => {
   const urlSearch = {
     search: rawUrlSearch.search || DEFAULTS.search,
     limit: rawUrlSearch.limit || DEFAULTS.limit,
+    page: rawUrlSearch.page || DEFAULTS.page,
+    sortBy: rawUrlSearch.sortBy || DEFAULTS.sortBy,
+    order: rawUrlSearch.order || DEFAULTS.order,
   };
 
   // Local search input state (not debounced)
@@ -82,6 +104,9 @@ const AgentSelectionTable = () => {
       const params = cleanSearchParams({
         search: debouncedSearch,
         limit: urlSearch.limit,
+        page: DEFAULTS.page, // Reset to page 1 when search changes
+        sortBy: urlSearch.sortBy,
+        order: urlSearch.order,
       });
 
       navigate({
@@ -89,20 +114,24 @@ const AgentSelectionTable = () => {
         replace: true,
       });
     }
-  }, [debouncedSearch, navigate, urlSearch.limit, urlSearch.search]);
+  }, [debouncedSearch, navigate, urlSearch.limit, urlSearch.search, urlSearch.sortBy, urlSearch.order]);
 
   // Fetch agents with TanStack Query (only if search term is >= 2 chars)
   const shouldFetch = debouncedSearch.length >= 2;
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['agents-selection', debouncedSearch, urlSearch.limit],
+    queryKey: ['agents-selection', debouncedSearch, urlSearch.limit, urlSearch.page, urlSearch.sortBy, urlSearch.order],
     queryFn: () => fetchAgentsForSelection({
       search: debouncedSearch,
-      limit: urlSearch.limit
+      limit: urlSearch.limit,
+      page: urlSearch.page,
+      sortBy: urlSearch.sortBy,
+      order: urlSearch.order,
     }),
     enabled: shouldFetch,
   });
 
   const agents = data?.data || [];
+  const pagination = data?.pagination || null;
 
   // Define table columns
   const columns = useMemo(
@@ -153,7 +182,7 @@ const AgentSelectionTable = () => {
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-gray-900">View Agent Properties</h1>
-          <p className="text-gray-600 mt-1">Search for an agent by email to view their department properties</p>
+          <p className="text-gray-600 mt-1">Search for an agent by name, email, or company to view their department properties</p>
         </div>
 
         {/* Search Card */}
@@ -167,7 +196,7 @@ const AgentSelectionTable = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="text"
-                placeholder="Search by email address (minimum 2 characters)..."
+                placeholder="Search by name, email, or company (minimum 2 characters)..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 className="pl-10"
@@ -231,7 +260,7 @@ const AgentSelectionTable = () => {
                             <div className="flex flex-col items-center justify-center text-gray-500">
                               <UserSearch className="h-12 w-12 mb-3 text-gray-400" />
                               <p className="font-medium">No agents found</p>
-                              <p className="text-sm mt-1">Try a different email search term</p>
+                              <p className="text-sm mt-1">Try a different search term</p>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -262,7 +291,7 @@ const AgentSelectionTable = () => {
                 <div className="flex flex-col items-center justify-center text-gray-500">
                   <UserSearch className="h-16 w-16 mb-4 text-gray-400" />
                   <p className="font-medium text-lg">Search for an agent</p>
-                  <p className="text-sm mt-2">Enter an email address to find agents</p>
+                  <p className="text-sm mt-2">Enter a name, email, or company to find agents</p>
                 </div>
               </div>
             )}

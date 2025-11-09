@@ -12,7 +12,7 @@ import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
-const EnhancedPropertyDetails = ({ property, agentId }) => {
+const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
   const [createdScheduleForPayment, setCreatedScheduleForPayment] = useState(null);
@@ -282,7 +282,11 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
 
         {/* Current Schedules */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <CurrentSchedules propertyId={property.pid} />
+          <CurrentSchedules
+            propertyId={property.pid}
+            isAdminViewing={isAdminViewing}
+            viewingAgentNid={viewingAgentNid}
+          />
         </div>
       </div>
 
@@ -370,6 +374,7 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         open={isScheduleModalOpen}
         property={property}
         advertisers={advertisers}
+        agentId={agentId}
         preselectedAdvertiser={selectedAdvertiserForBooking}
         onClose={() => {
           setIsScheduleModalOpen(false);
@@ -380,6 +385,8 @@ const EnhancedPropertyDetails = ({ property, agentId }) => {
         createdSchedule={createdScheduleForPayment}
         isLoading={scheduleMutation.isPending}
         error={scheduleMutation.error}
+        isAdminViewing={isAdminViewing}
+        viewingAgentNid={viewingAgentNid}
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import bizchatClient from '@/services/bizchatClient';
+import propertyPubClient from '@/services/propertyPubClient';
 
 // Agent Properties API functions
 export const fetchAgentProperties = async (nid) => {
@@ -69,30 +70,54 @@ export const searchAgents = async (searchTerm) => {
     return [];
   }
 
-  const response = await bizchatClient.get('/api/crm/agents/search', {
-    params: { email: searchTerm }
+  const response = await propertyPubClient.get('/api/agents', {
+    params: {
+      search: searchTerm,
+      page: 1,
+      limit: 10,
+      sortBy: 'surname',
+      order: 'asc'
+    }
   });
 
-  return response.data || [];
+  return response.data?.data || [];
 };
 
 /**
  * Fetch agents for admin selection with search filtering
  * @param {Object} options - Query options
- * @param {string} options.search - Email search query
- * @param {number} options.limit - Max results (default: 10)
- * @returns {Promise} Response data with agents array
+ * @param {string} options.search - Search query for firstname, surname, email, or company
+ * @param {number} options.limit - Max results (default: 20)
+ * @param {number} options.page - Page number (default: 1)
+ * @param {string} options.sortBy - Field to sort by: 'firstname', 'surname', 'company' (default: 'surname')
+ * @param {string} options.order - Sort order: 'asc' or 'desc' (default: 'asc')
+ * @returns {Promise} Response data with agents array and pagination metadata
  */
-export const fetchAgentsForSelection = async ({ search = '', limit = 10 }) => {
+export const fetchAgentsForSelection = async ({
+  search = '',
+  limit = 20,
+  page = 1,
+  sortBy = 'surname',
+  order = 'asc'
+}) => {
   if (!search || search.length < 2) {
-    return { data: [] };
+    return { data: [], pagination: null };
   }
 
-  const response = await bizchatClient.get('/api/crm/agents/search', {
-    params: { email: search, limit }
+  const response = await propertyPubClient.get('/api/agents', {
+    params: {
+      search,
+      limit,
+      page,
+      sortBy,
+      order
+    }
   });
 
-  return { data: response.data || [] };
+  return {
+    data: response.data?.data || [],
+    pagination: response.data?.pagination || null
+  };
 };
 
 // Schedule Status API functions

@@ -3,14 +3,16 @@ import { flexRender } from '@tanstack/react-table';
 import EnhancedPropertyDetails from './EnhancedPropertyDetails';
 import { cn } from '@/lib/utils';
 
-const EnhancedPropertyRow = ({ 
-  expandedRows, 
-  toggleRowExpansion, 
-  row, 
-  columns, 
-  agentId, 
+const EnhancedPropertyRow = ({
+  expandedRows,
+  toggleRowExpansion,
+  row,
+  columns,
+  agentId,
   isContentLoading,
-  table
+  table,
+  isAdminViewing,
+  viewingAgentNid
 }) => {
   const scrollAnchorRef = useRef();
   const expanded = expandedRows.has(row.original.pid);
@@ -34,10 +36,12 @@ const EnhancedPropertyRow = ({
         <tr>
           <td ref={scrollAnchorRef} colSpan={row.getVisibleCells().length} className="relative p-0 scroll-m-28">
             <div className="max-h-[800px] overflow-y-auto">
-              <EnhancedPropertyDetails 
-                property={row.original} 
+              <EnhancedPropertyDetails
+                property={row.original}
                 agentId={agentId}
                 isContentLoading={isContentLoading && expandedRows.has(row.original.pid)}
+                isAdminViewing={isAdminViewing}
+                viewingAgentNid={viewingAgentNid}
               />
             </div>
           </td>
@@ -47,15 +51,17 @@ const EnhancedPropertyRow = ({
   );
 };
 
-const EnhancedPropertiesDataTable = ({ 
-  table, 
-  columns, 
-  expandedRows, 
-  toggleRowExpansion, 
-  agentId, 
+const EnhancedPropertiesDataTable = ({
+  table,
+  columns,
+  expandedRows,
+  toggleRowExpansion,
+  agentId,
   isEmpty,
   isContentLoading,
-  className
+  className,
+  isAdminViewing,
+  viewingAgentNid
 }) => {
   const containerRef = useRef();
 
@@ -100,15 +106,17 @@ const EnhancedPropertiesDataTable = ({
         <tbody className="bg-white divide-y divide-slate-200">
           {table.getRowModel().rows.map((row) => {
             return (
-              <EnhancedPropertyRow 
+              <EnhancedPropertyRow
                 key={row.id}
-                expandedRows={expandedRows} 
+                expandedRows={expandedRows}
                 toggleRowExpansion={toggleRowExpansion}
-                row={row} 
-                columns={columns} 
+                row={row}
+                columns={columns}
                 agentId={agentId}
                 isContentLoading={isContentLoading}
                 table={table}
+                isAdminViewing={isAdminViewing}
+                viewingAgentNid={viewingAgentNid}
               />
             );
           })}

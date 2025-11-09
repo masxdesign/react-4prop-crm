@@ -12,7 +12,9 @@ const PaymentDialog = ({
   open,
   onOpenChange,
   schedule,
-  propertyId
+  propertyId,
+  isAdminViewing,
+  viewingAgentNid
 }) => {
   const handleClose = () => {
     onOpenChange(false);
@@ -39,6 +41,8 @@ const PaymentDialog = ({
             propertyId={propertyId}
             onSuccess={handleClose}
             onCancel={handleClose}
+            isAdminViewing={isAdminViewing}
+            viewingAgentNid={viewingAgentNid}
           />
         </div>
       </DialogContent>
