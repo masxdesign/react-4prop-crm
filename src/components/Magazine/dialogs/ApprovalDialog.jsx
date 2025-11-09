@@ -22,7 +22,7 @@ const ApprovalDialog = ({
   const queryClient = useQueryClient();
   const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: {
-      payer_id: null
+      payer_id: ''
     }
   });
 
@@ -76,7 +76,7 @@ const ApprovalDialog = ({
                 required: "Please select a payer"
               }}
               label="Choose Payer"
-              placeholder="Search by email..."
+              placeholder="Search by firstname, surname, email, or company"
               className="w-full"
             />
           </div>

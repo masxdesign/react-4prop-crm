@@ -13,6 +13,7 @@ import { AgentEmailSearchField } from '../ui';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -638,6 +639,9 @@ const ScheduleWizardModal = ({
           <DialogTitle>
             {getStepTitle()} - Step {currentStep} of {watchedValues.self_assign ? 6 : 5}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Schedule creation wizard for {property?.addressText || 'property'}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Scrollable Body */}
