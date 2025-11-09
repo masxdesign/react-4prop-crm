@@ -1,8 +1,9 @@
 import React from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAuth } from "@/components/Auth/Auth";
+import { useQuery } from "@tanstack/react-query";
 import AgentPaginatedEnhancedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedEnhancedTable";
-import { fetchAgentPaginatedProperties } from "@/components/Magazine/api";
+import { fetchAgentPaginatedProperties, fetchAgentDetails } from "@/components/Magazine/api";
 
 export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
   validateSearch: (search) => ({
@@ -24,23 +25,42 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
       throw new Error('Agent NID is required');
     }
 
-    // Create query options for the specified agent
-    const queryOptions = {
+    // Create query options for the specified agent properties
+    const propertiesQueryOptions = {
       queryKey: ['agent-properties-paginated', nid, page, pageSize],
       queryFn: () => fetchAgentPaginatedProperties(nid, { page, pageSize }),
       enabled: !!nid,
     };
 
+    // Create query options for agent details
+    const agentDetailsQueryOptions = {
+      queryKey: ['agent-details', nid],
+      queryFn: () => fetchAgentDetails(nid),
+      enabled: !!nid,
+      staleTime: 1000 * 60 * 10, // 10 minutes
+    };
+
     return {
       ...context,
-      agentPropertiesQueryOptions: queryOptions,
+      agentPropertiesQueryOptions: propertiesQueryOptions,
+      agentDetailsQueryOptions: agentDetailsQueryOptions,
       viewingNid: nid, // Track which agent we're viewing
     };
   },
   loader: async ({ context }) => {
-    // Use the query options from context to preload data
-    if (context.agentPropertiesQueryOptions && context.agentPropertiesQueryOptions.enabled) {
-      return context.queryClient.ensureQueryData(context.agentPropertiesQueryOptions);
+    // Preload both agent properties and agent details
+    const promises = [];
+
+    if (context.agentPropertiesQueryOptions?.enabled) {
+      promises.push(context.queryClient.ensureQueryData(context.agentPropertiesQueryOptions));
+    }
+
+    if (context.agentDetailsQueryOptions?.enabled) {
+      promises.push(context.queryClient.ensureQueryData(context.agentDetailsQueryOptions));
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
 
     return null;
@@ -58,6 +78,14 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
     const search = Route.useSearch();
     const navigate = Route.useNavigate();
     const { nid } = Route.useParams();
+
+    // Fetch agent details
+    const { data: agentDetails } = useQuery({
+      queryKey: ['agent-details', nid],
+      queryFn: () => fetchAgentDetails(nid),
+      enabled: !!nid,
+      staleTime: 1000 * 60 * 10, // 10 minutes
+    });
 
     // Pagination handlers
     const onPageChange = (page) => {
@@ -94,6 +122,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
         isAdminViewing={isViewingOtherAgent}
         adminNid={auth.user?.neg_id}
         viewingAgentNid={nid}
+        viewingAgent={agentDetails}
       />
     );
   },

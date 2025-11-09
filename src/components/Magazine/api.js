@@ -84,6 +84,16 @@ export const searchAgents = async (searchTerm) => {
 };
 
 /**
+ * Fetch single agent details by NID
+ * @param {string} nid - Agent NID
+ * @returns {Promise} Agent object with nid, email, firstname, surname, picture, company, position
+ */
+export const fetchAgentDetails = async (nid) => {
+  const response = await propertyPubClient.get(`/api/agents/${nid}`);
+  return response.data;
+};
+
+/**
  * Fetch agents for admin selection with search filtering
  * @param {Object} options - Query options
  * @param {string} options.search - Search query for firstname, surname, email, or company

@@ -14,7 +14,7 @@ import EnhancedPropertiesDataTable from './EnhancedPropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
 import { useEnhancedPropertiesWithExpansion } from '@/hooks/propertyDetails-hooks';
-import { BrickWallIcon, Building, Clock, AlertCircle } from 'lucide-react';
+import { BrickWallIcon, Building, Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import ClientOnly from '@/components/ui/ClientOnly';
 
 // Column helper
@@ -29,11 +29,13 @@ const AgentPaginatedEnhancedTable = ({
   onPageSizeChange,
   isAdminViewing = false,
   adminNid = null,
-  viewingAgentNid = null
+  viewingAgentNid = null,
+  viewingAgent = null
 }) => {
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
   const [expandedRows, setExpandedRows] = useState(new Set());
+  const [isBannerExpanded, setIsBannerExpanded] = useState(false);
 
   // Fetch raw data using React Query
   const {
@@ -236,23 +238,58 @@ const AgentPaginatedEnhancedTable = ({
 
   return (
     <div className='flex flex-col min-h-0 py-4 relative'>
-      {/* Admin Viewing Banner */}
-      {isAdminViewing && rawData?.departmentName && (
-        <div className="mx-3 mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-blue-900">
-                Viewing as Agent (NID: {agentId})
-              </p>
-              <p className="text-sm text-blue-700 mt-1">
-                Department: {rawData.departmentName}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">
-                All scheduling and editing operations will be performed using this agent's ID
+      {/* Admin Viewing Banner - Compact & Expandable */}
+      {isAdminViewing && viewingAgent && (
+        <div className="mx-3 mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600 rounded-lg shadow-sm">
+          {/* Compact Header - Always Visible */}
+          <button
+            onClick={() => setIsBannerExpanded(!isBannerExpanded)}
+            className="w-full px-3 py-2 flex items-center gap-2 hover:bg-blue-100/50 transition-colors rounded-lg"
+          >
+            <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide">
+              Admin
+            </span>
+            <span className="text-sm font-bold text-blue-900 flex-1 text-left">
+              Viewing: {viewingAgent.firstname} {viewingAgent.surname}
+            </span>
+            <span className="text-xs text-blue-700 font-mono">{viewingAgent.nid}</span>
+            {isBannerExpanded ? (
+              <ChevronUp className="h-4 w-4 text-blue-600" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-blue-600" />
+            )}
+          </button>
+
+          {/* Expanded Details */}
+          {isBannerExpanded && (
+            <div className="px-3 pb-3 pt-1 border-t border-blue-200/50">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mt-2">
+                <div>
+                  <span className="text-blue-700 font-medium">Email:</span>{' '}
+                  <span className="text-blue-900">{viewingAgent.email}</span>
+                </div>
+                <div>
+                  <span className="text-blue-700 font-medium">NID:</span>{' '}
+                  <span className="font-mono text-blue-900">{viewingAgent.nid}</span>
+                </div>
+                {viewingAgent.company && (
+                  <div>
+                    <span className="text-blue-700 font-medium">Company:</span>{' '}
+                    <span className="text-blue-900">{viewingAgent.company}</span>
+                  </div>
+                )}
+                {viewingAgent.position && (
+                  <div>
+                    <span className="text-blue-700 font-medium">Position:</span>{' '}
+                    <span className="text-blue-900">{viewingAgent.position}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-blue-600 mt-2 italic">
+                All operations performed as this agent
               </p>
             </div>
-          </div>
+          )}
         </div>
       )}
 
