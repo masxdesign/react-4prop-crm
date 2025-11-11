@@ -16,7 +16,7 @@ import { pluralize } from '../util/pluralize';
 
 const columnHelper = createColumnHelper();
 
-const ScheduleTableView = ({ schedules, propertyId }) => {
+const ScheduleTableView = ({ schedules, propertyId, isAdminViewing, viewingAgentNid }) => {
   // Extract all unique NIDs for batch user fetching
   const allNids = useMemo(() => {
     const nids = [];
@@ -54,46 +54,24 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
       minSize: 120,
       maxSize: 120,
     }),
-    columnHelper.accessor('duration', {
-      header: 'Duration',
-      cell: (info) => {
-        const schedule = info.row.original;
-        
-        if (schedule.week_no) {
-          return pluralize(schedule.week_no, 'week', 'weeks');
-        } else {
-          return 'N/A';
-        }
-      },
-      size: 40,
-      minSize: 40,
-      maxSize: 40,
-    }),
-    columnHelper.accessor('rate', {
-      header: 'Rate',
-      cell: (info) => {
-        const schedule = info.row.original;
-        
-        if (schedule.week_no && schedule.fixed_week_rate) {
-          return `£${schedule.fixed_week_rate}/week`;
-        } else {
-          return 'N/A';
-        }
-      },
-      size: 40,
-      minSize: 40,
-      maxSize: 40,
-    }),
     columnHelper.accessor('quote', {
       header: 'Quote',
       cell: (info) => {
         const schedule = info.row.original;
         const quote = schedule.quote || 0;
-        return <span className="font-semibold text-green-600">£{quote.toFixed(2)}</span>;
+        const duration = schedule.week_no ? pluralize(schedule.week_no, 'week', 'weeks') : 'N/A';
+        const rate = schedule.week_no && schedule.fixed_week_rate ? `£${schedule.fixed_week_rate}/week` : 'N/A';
+        
+        return (
+          <div className="text-xs">
+            <div className="font-semibold text-green-600">£{quote.toFixed(2)}</div>
+            <div className="text-gray-500">{duration} • {rate}</div>
+          </div>
+        );
       },
-      size: 80,
-      minSize: 80,
-      maxSize: 80,
+      size: 120,
+      minSize: 120,
+      maxSize: 120,
     }),
     columnHelper.accessor('status', {
       header: 'Status',
@@ -121,9 +99,11 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
     columnHelper.accessor('actions', {
       header: 'Actions',
       cell: (info) => (
-        <ScheduleActionButtons 
-          schedule={info.row.original} 
+        <ScheduleActionButtons
+          schedule={info.row.original}
           propertyId={propertyId}
+          isAdminViewing={isAdminViewing}
+          viewingAgentNid={viewingAgentNid}
         />
       ),
       enableSorting: false,
@@ -131,7 +111,7 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
       minSize: 120,
       maxSize: 120,
     })
-  ], [propertyId, getUserByNid]);
+  ], [propertyId, getUserByNid, isAdminViewing, viewingAgentNid]);
 
   const table = useReactTable({
     data: schedules,
@@ -144,8 +124,8 @@ const ScheduleTableView = ({ schedules, propertyId }) => {
   });
 
   return (
-    <div className="max-h-96 overflow-auto border rounded-md">
-      <table className="w-full" style={{ minWidth: 1150 }}>
+    <div className="max-h-[700px] overflow-auto border rounded-md">
+      <table className="w-full" style={{ minWidth: 870 }}>
         <thead className="bg-gray-50 sticky top-0 shadow-sm z-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>

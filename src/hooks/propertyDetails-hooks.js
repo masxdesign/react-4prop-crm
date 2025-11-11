@@ -470,8 +470,8 @@ export const enhancedPropertyCombiner = (
     // Build enhanced property object
     const enhancedProperty = {
       // Core identifiers
-      id: pid,
       pid,
+      id: pid,
       key: pid,
 
       // Basic info
@@ -842,6 +842,136 @@ export const usePropertyDetail = (rawProperty, options = {}) => {
 };
 
 /**
+ * Enhanced hook for transforming raw properties into display-ready objects
+ * 
+ * @param {Array} rawPropertiesArray - Array of raw property data objects
+ * @param {Object} options - Additional hook options
+ * @param {boolean} options.enabled - Whether to enable the query (default: true)
+ * @param {Object} options.settings - Display settings for property parsing
+ * @returns {Object} Hook result with enhanced property data
+ */
+export const useEnhancedPropertiesWithExpansion = (
+  rawPropertiesArray = [],
+  options = {}
+) => {
+  const { 
+    enabled = true, 
+    settings = { addressShowMore: true, addressShowBuilding: true }
+  } = options;
+
+  // Extract and validate PIDs from raw properties
+  const { normalizedProperties, allPids } = useMemo(() => {
+    if (!Array.isArray(rawPropertiesArray) || rawPropertiesArray.length === 0) {
+      return { normalizedProperties: [], allPids: [] };
+    }
+
+    // Normalize and validate properties
+    const normalized = rawPropertiesArray
+      .map(prop => {
+        if (!propertyUtils.validatePropertyData(prop)) {
+          console.warn('Invalid property data:', prop);
+          return null;
+        }
+        return propertyUtils.normalizePropertyData(prop);
+      })
+      .filter(Boolean);
+
+    const extractedPids = propertyUtils.extractPids(normalized);
+
+    return {
+      normalizedProperties: normalized,
+      allPids: extractedPids
+    };
+  }, [rawPropertiesArray]);
+
+
+  // Always fetch types and subtypes using useSuspenseQueries
+  const [typesResult, subtypesResult] = useSuspenseQueries({
+    queries: useMemo(() => 
+      [
+        { ...typesQuery, enabled },
+        { ...subtypesQuery, enabled }
+      ],
+      [enabled]
+    )
+  });
+
+
+
+  // Process and transform properties
+  const processedData = useMemo(() => {
+    if (!enabled || normalizedProperties.length === 0) {
+      return {
+        data: [],
+        isLoading: false,
+        error: null
+      };
+    }
+
+    try {
+      // Get types and subtypes data
+      const types = typesResult.data;
+      const subtypes = subtypesResult.data;
+
+      // Combine types and subtypes
+      const propertyTypes = propertyTypescombiner(types, subtypes);
+
+      // Transform each property
+      const enhancedProperties = normalizedProperties
+        .map(property => {
+          try {
+            return enhancedPropertyCombiner(
+              property,
+              propertyTypes,
+              [], // No content array - will be fetched separately
+              [], // Companies pool - could be enhanced in the future
+              settings
+            );
+          } catch (error) {
+            console.error(`Error processing property ${property.pid}:`, error);
+            return propertyUtils.createPropertyDefaults(property.pid);
+          }
+        })
+        .filter(Boolean);
+
+      return {
+        data: enhancedProperties,
+        isLoading: false,
+        error: null
+      };
+    } catch (error) {
+      console.error('Error in enhanced properties processing:', error);
+      return {
+        data: [],
+        isLoading: false,
+        error: error
+      };
+    }
+  }, [normalizedProperties, typesResult.data, subtypesResult.data, enabled]);
+
+  // Provide refetch function
+  const refetch = () => {
+    // Refetch types and subtypes
+    return Promise.all([
+      typesResult.refetch(),
+      subtypesResult.refetch()
+    ]);
+  };
+
+  return {
+    data: processedData.data,
+    isLoading: processedData.isLoading,
+    error: processedData.error,
+    refetch,
+    
+    // Additional utilities
+    allPids,
+    hasData: processedData.data.length > 0,
+    count: processedData.data.length
+  };
+};
+
+/**
  * Enhanced hook for paginated agent properties with property details transformation
  * This hook enhances the standard useQuery for agent properties by transforming
  * the paginated data into display-ready property objects.
@@ -1037,4 +1167,28 @@ export const useAgentPropertiesPaginated = (
     total: transformedData.total,
     departmentName: transformedData.departmentName
   };
+};
+
+/**
+ * Simple hook for fetching content data for a single property
+ * Use this at the component level when a property row is expanded
+ * 
+ * @param {string} pid - Property ID to fetch content for
+ * @param {Object} options - Query options
+ * @param {boolean} options.enabled - Whether to enable the query (default: true)
+ * @returns {Object} Query result with content data
+ */
+export const usePropertyContent = (pid, options = {}) => {
+  const { enabled = true } = options;
+
+  return useQuery({
+    queryKey: ['property-content', pid],
+    queryFn: () => propReqContentsQuery([pid]).queryFn(),
+    enabled: enabled && !!pid,
+    staleTime: 1000 * 60 * 3, // 3 minutes - same as propReqContentsQuery
+    select: (data) => {
+      // Extract content for this specific property
+      return data[pid] || [];
+    }
+  });
 };

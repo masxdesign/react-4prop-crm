@@ -12,7 +12,7 @@ import PropertiesTableFilters from './PropertiesTableFilters';
 import PropertiesDataTable from './PropertiesDataTable';
 import TablePagination from './TablePagination';
 import { Button } from '@/components/ui/button';
-import { useAgentPropertiesPaginated } from '@/hooks/propertyDetails-hooks';
+import { useAgentPropertiesPaginated, useEnhancedPropertiesWithExpansion } from '@/hooks/propertyDetails-hooks';
 
 // Column helper
 const columnHelper = createColumnHelper();
@@ -37,19 +37,6 @@ const AgentPaginatedTable = ({ agentId, page, pageSize, onPageChange, onPageSize
     placeholderData: keepPreviousData,
     enabled: !!agentId
   });
-
-  //  const {
-  //   data,
-  //   enhancedProperties,
-  //   isLoading,
-  //   isFetching,
-  //   isPlaceholderData,
-  //   error,
-  //   refetch
-  // } = useAgentPropertiesPaginated(agentId, page, pageSize)
-
-  // console.log(enhancedProperties);
-  
 
   // Toggle row expansion
   const toggleRowExpansion = (pid) => {

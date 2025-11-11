@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle, Circle, User, CheckSquare, CreditCard, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import getAvatarImageUrl from '@/utils/getAvatarImageUrl';
+import { getScheduleStatusDisplay } from '../util/scheduleStatusHelpers';
 
 // Helper component for individual timeline steps
 const TimelineStep = ({ 
@@ -10,7 +11,7 @@ const TimelineStep = ({
   isLast = false, 
   isCollapsed = false 
 }) => {
-  const { agent, timestamp, isCompleted, label } = step;
+  const { agent, timestamp, isFinished, label } = step;
   const [imageError, setImageError] = useState(false);
 
   const formatTimestamp = (timestamp) => {
@@ -53,11 +54,14 @@ const TimelineStep = ({
         {/* Status indicator */}
         <div className={cn(
           "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-white relative z-10",
-          isCompleted 
-            ? "bg-green-500" 
-            : "bg-gray-300"
+          step.id === 'cancelled' ? "bg-amber-500" :
+            isFinished 
+              ? "bg-green-500" 
+              : "bg-gray-300"
         )}>
-          {isCompleted ? (
+          {step.id === 'cancelled' ? (
+            <X className="w-3 h-3" />
+          ) : isFinished ? (
             <CheckCircle className="w-3 h-3" />
           ) : (
             <Circle className="w-3 h-3" />
@@ -70,7 +74,7 @@ const TimelineStep = ({
           <div className="flex items-center gap-2 flex-wrap">
             <div className={cn(
               "font-medium text-xs leading-tight",
-              isCompleted ? "text-gray-900" : "text-gray-600"
+              isFinished ? "text-gray-900" : "text-gray-600"
             )}>
               {label}
             </div>
@@ -137,7 +141,7 @@ const WorkflowTimeline = ({
         id: 'created',
         agent: creator,
         timestamp: schedule.created_at,
-        isCompleted: true,
+        isFinished: true,
         label: 'Schedule Created',
         role: 'creator'
       });
@@ -150,22 +154,49 @@ const WorkflowTimeline = ({
         id: 'approved',
         agent: approver,
         timestamp: schedule.approved_at,
-        isCompleted: !!schedule.approved_at,
+        isFinished: !!schedule.approved_at,
         label: schedule.approved_at ? 'Schedule Approved' : 'Pending Approval',
         role: 'approver'
       });
     }
 
-    // 3. Payment step (if payer assigned)
+    // 3. Subscription activation step (if payer assigned)
     const payer = getUserByNid(schedule.payer_id);
     if (payer) {
+      const status = getScheduleStatusDisplay(schedule);
+      let activatedLabel = 'Subscription Activated';
+      let awaitingLabel = 'Awaiting Activation';
+      
+      // Adjust labels based on status
+      if (status.label === 'Active') {
+        activatedLabel = 'Payment Activated';
+      } else if (status.label === 'Scheduled') {
+        activatedLabel = 'Payment Ready';
+      }
+
       steps.push({
-        id: 'paid',
+        id: 'activated',
         agent: payer,
-        timestamp: schedule.paid_at,
-        isCompleted: !!schedule.paid_at,
-        label: schedule.paid_at ? 'Payment Complete' : 'Pending Payment',
+        timestamp: schedule.activated_at,
+        isFinished: !!schedule.activated_at,
+        label: schedule.activated_at ? activatedLabel : awaitingLabel,
         role: 'payer'
+      });
+    }
+
+    if (schedule.cancelled_at) {
+      steps.push({
+        id: 'cancelled',
+        // agent: getUserByNid(schedule.cancelled_by_id),
+        label: 
+          <div className='flex flex-col'>
+            Schedule Cancelled 
+            <span className='text-xs text-gray-700 font-normal'>
+              {schedule.cancellation_reason}
+            </span>
+          </div>,
+        timestamp: schedule.cancelled_at,
+        isFinished: true,
       });
     }
 
@@ -177,7 +208,7 @@ const WorkflowTimeline = ({
   // Find the current/latest relevant step for collapsed view
   const getCurrentStep = () => {
     // Show the latest incomplete step, or the last completed step
-    const incompleteStep = steps.find(step => !step.isCompleted);
+    const incompleteStep = steps.find(step => !step.isFinished);
     return incompleteStep || steps[steps.length - 1];
   };
 
@@ -203,7 +234,7 @@ const WorkflowTimeline = ({
           </button>
           
           <div className="ml-2">
-            {steps.map((step, index) => (
+            {steps.reverse().map((step, index) => (
               <TimelineStep
                 key={step.id}
                 step={step}

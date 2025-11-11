@@ -3,7 +3,7 @@ import { format, parseISO } from 'date-fns';
 import ScheduleStatus from './ScheduleStatus';
 import ScheduleActionButtons from '../ui/ScheduleActionButtons';
 
-const ScheduleItem = ({ schedule }) => {
+const ScheduleItem = ({ schedule, isAdminViewing, viewingAgentNid }) => {
   // Calculate display values based on available data
   let duration, rate;
   
@@ -58,10 +58,12 @@ const ScheduleItem = ({ schedule }) => {
         </div>
       )}
       
-      <ScheduleActionButtons 
-        schedule={schedule} 
+      <ScheduleActionButtons
+        schedule={schedule}
         propertyId={schedule.property_id}
         className="mt-3"
+        isAdminViewing={isAdminViewing}
+        viewingAgentNid={viewingAgentNid}
       />
     </div>
   );

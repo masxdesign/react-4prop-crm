@@ -1,37 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { addWeeks, format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/Auth/Auth-context';
+import { toast } from '@/components/ui/use-toast';
+import { createSchedule, activateSubscriptionPlatformMor } from '../api';
 import MagazineCalendar from '../ui/MagazineCalendar';
 import WeekPicker from '../ui/WeekPicker';
 import AdvertiserPicker from '../ui/AdvertiserPicker';
+import PaymentActivationForm from '../ui/PaymentActivationForm';
 import { AgentEmailSearchField } from '../ui';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { pluralizeWeeks } from '../util/pluralize';
+import { Loader2, CreditCard } from 'lucide-react';
 
-const ScheduleWizardModal = ({ 
-  open, 
-  property, 
-  advertisers, 
-  onClose, 
-  onSubmit, 
-  isLoading, 
+const ScheduleWizardModal = ({
+  open,
+  property,
+  advertisers,
+  agentId, // The agent's NID (for creating schedules)
+  preselectedAdvertiser = null,
+  onClose,
+  onSubmit,
+  createdSchedule = null, // Schedule created by parent (for self-assign payment flow)
+  isLoading,
   error,
   showCancelButton = true,
   showDialogClose = true,
-  cancelButtonText = "Cancel"
+  cancelButtonText = "Cancel",
+  isAdminViewing, // Not used currently, but passed for future enhancement
+  viewingAgentNid // Not used currently, but passed for future enhancement
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
-  
+  const [activationStep, setActivationStep] = useState(null); // null | 'creating' | 'activating' | 'success'
+  const [paymentActivationState, setPaymentActivationState] = useState({
+    canActivate: false,
+    isActivating: false,
+    activate: null
+  });
+
   const auth = useAuth();
-  
+  const queryClient = useQueryClient();
+
   // React Hook Form setup
   const { control, watch, getValues, reset, setValue } = useForm({
     defaultValues: {
@@ -48,24 +66,52 @@ const ScheduleWizardModal = ({
   // Watch form values for calculations and validation
   const watchedValues = watch();
 
+  // Handle preselected advertiser
+  useEffect(() => {
+    if (preselectedAdvertiser && open) {
+      setValue('advertiser_id', preselectedAdvertiser.id.toString());
+      // Auto-advance to step 2 when advertiser is preselected
+      setCurrentStep(2);
+    }
+  }, [preselectedAdvertiser, open, setValue]);
+
+  // Handle schedule creation for self-assign flow
+  useEffect(() => {
+    if (createdSchedule && watchedValues.self_assign) {
+      // Advance to step 6 (payment) when schedule is created for self-assign
+      setCurrentStep(6);
+    }
+  }, [createdSchedule, watchedValues.self_assign]);
+
   // Find selected advertiser for calculations
   const selectedAdvertiser = advertisers.find(adv => adv.id === parseInt(watchedValues.advertiser_id));
 
   // Calculate booking details
   const calculateBookingDetails = () => {
     if (!selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date) {
-      return { totalPrice: 0, weeks: 0, endDate: '' };
+      return { totalPrice: 0, weeks: 0, endDate: '', weeklyRate: 0, vatAmount: 0, subtotal: 0 };
     }
-    
+
     const weeks = parseInt(watchedValues.week_no) || 0;
-    const totalPrice = weeks > 0 ? selectedAdvertiser.week_rate * weeks : 0;
-    const endDate = weeks > 0 && watchedValues.start_date ? 
+    const weeklyRate = selectedAdvertiser.week_rate || 0;
+
+    // Calculate subtotal (weekly rate × weeks)
+    const subtotal = weeklyRate * weeks;
+
+    // VAT is ALWAYS applied - Platform MoR is VAT registered
+    const vatRate = 0.20; // UK VAT 20%
+    const vatAmount = subtotal * vatRate;
+
+    // Total price always includes VAT
+    const totalPrice = subtotal + vatAmount;
+
+    const endDate = weeks > 0 && watchedValues.start_date ?
       format(addWeeks(new Date(watchedValues.start_date), weeks), 'yyyy-MM-dd') : '';
-    
-    return { totalPrice, weeks, endDate };
+
+    return { totalPrice, weeks, endDate, weeklyRate, vatAmount, subtotal };
   };
 
-  const { totalPrice, weeks, endDate } = calculateBookingDetails();
+  const { totalPrice, weeks, endDate, weeklyRate, vatAmount, subtotal } = calculateBookingDetails();
 
   // Get selected approver info
   const getApproverInfo = () => {
@@ -93,13 +139,15 @@ const ScheduleWizardModal = ({
       case 3: return watchedValues.week_no;
       case 4: return watchedValues.self_assign || watchedValues.approver_id;
       case 5: return true; // Summary step is always valid
+      case 6: return true; // Payment step is always valid
       default: return false;
     }
   };
 
   // Navigation handlers
   const goNext = () => {
-    const maxStep = 5;
+    // Max step is 6 for self-assign, 5 for external approver
+    const maxStep = watchedValues.self_assign ? 6 : 5;
     if (currentStep < maxStep && isStepValid(currentStep)) {
       setCurrentStep(currentStep + 1);
     }
@@ -113,11 +161,11 @@ const ScheduleWizardModal = ({
 
   const handleSubmit = () => {
     const values = getValues();
-    
+
     // Ensure all required fields are present and valid
     const advertiser_id = parseInt(values.advertiser_id);
     const week_no = parseInt(values.week_no);
-    
+
     const scheduleData = {
       property_id: property.pid,
       advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
@@ -125,7 +173,7 @@ const ScheduleWizardModal = ({
       week_no: isNaN(week_no) ? null : week_no,
       self_assign: values.self_assign || false
     };
-    
+
     // Include approver_id and payer_id based on self_assign status
     if (values.self_assign) {
       // For self_assign, set both approver_id and payer_id to current user
@@ -136,9 +184,9 @@ const ScheduleWizardModal = ({
       scheduleData.approver_id = values.approver_id || null;
       scheduleData.payer_id = null;
     }
-    
+
     // Validate required fields
-    if (!scheduleData.property_id || !scheduleData.advertiser_id || 
+    if (!scheduleData.property_id || !scheduleData.advertiser_id ||
         !scheduleData.start_date || !scheduleData.week_no) {
       console.error('Missing required fields:', {
         property_id: scheduleData.property_id,
@@ -148,13 +196,87 @@ const ScheduleWizardModal = ({
       });
       return;
     }
-    
-    onSubmit(scheduleData);
+
+    // Pass additional metadata to help parent component decide behavior
+    onSubmit(scheduleData, { isSelfAssign: values.self_assign });
+  };
+
+  // Handle zero-price activation (create + activate in one go)
+  const handleActivateZeroPrice = async () => {
+    const values = getValues();
+
+    // Build schedule data (same as handleSubmit)
+    const advertiser_id = parseInt(values.advertiser_id);
+    const week_no = parseInt(values.week_no);
+
+    const scheduleData = {
+      property_id: property.pid,
+      advertiser_id: isNaN(advertiser_id) ? null : advertiser_id,
+      start_date: values.start_date || null,
+      week_no: isNaN(week_no) ? null : week_no,
+      self_assign: values.self_assign || false,
+      approver_id: values.approver_id || null,
+      payer_id: values.payer_id || null
+    };
+
+    // Validate required fields
+    if (!scheduleData.property_id || !scheduleData.advertiser_id ||
+        !scheduleData.start_date || !scheduleData.week_no) {
+      console.error('Missing required fields for zero-price activation');
+      return;
+    }
+
+    try {
+      // Step 1: Create schedule
+      setActivationStep('creating');
+      const response = await createSchedule(agentId, scheduleData);
+
+      // API returns: { success: true, data: { id: 123, ... }, message: "..." }
+      const scheduleId = response?.data?.id;
+
+      if (!scheduleId) {
+        console.error('No schedule ID found in response:', response);
+        throw new Error('Failed to get schedule ID from API response');
+      }
+
+      // Step 2: Activate subscription
+      setActivationStep('activating');
+      await activateSubscriptionPlatformMor(scheduleId);
+
+      // Step 3: Success
+      setActivationStep('success');
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.pid] });
+      queryClient.invalidateQueries({ queryKey: ['property-schedules-summary', property.pid] });
+
+      // Show success toast
+      toast({
+        title: 'Subscription Activated!',
+        description: 'Your FREE property listing is now active and will go live on the start date.',
+      });
+
+      // Brief delay to show success state, then close
+      setTimeout(() => {
+        handleClose();
+      }, 500);
+
+    } catch (error) {
+      console.error('Zero-price activation failed:', error);
+      setActivationStep(null);
+
+      toast({
+        variant: 'destructive',
+        title: 'Activation Failed',
+        description: error?.response?.data?.error || 'Failed to activate subscription. Please try again.',
+      });
+    }
   };
 
   const handleClose = () => {
     // Reset wizard and form state when closing
     setCurrentStep(1);
+    setActivationStep(null);
     reset();
     onClose();
   };
@@ -241,9 +363,10 @@ const ScheduleWizardModal = ({
                   onChange={(e) => {
                     const isChecked = e.target.checked;
                     if (isChecked) {
-                      // Auto-assign current user as approver and payer
-                      setValue('approver_id', auth?.user?.neg_id || '');
-                      setValue('payer_id', auth?.user?.neg_id || '');
+                      // Auto-assign the agent (whose properties we're managing) as approver and payer
+                      // Use agentId (the agent's NID) not auth.user.neg_id (which could be super admin)
+                      setValue('approver_id', agentId || '');
+                      setValue('payer_id', agentId || '');
                       setValue('self_assign', true);
                     } else {
                       setValue('approver_id', '');
@@ -373,18 +496,122 @@ const ScheduleWizardModal = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-blue-700">Week Rate:</span>
-                    <span className="font-medium">£{selectedAdvertiser.week_rate}</span>
+                    <span className="font-medium">
+                      {weeklyRate === 0 ? <span className="text-green-700 font-bold">FREE</span> : `£${weeklyRate.toFixed(2)}`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">Subtotal:</span>
+                    <span className="font-medium">£{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-blue-700">VAT (20%):</span>
+                    <span className="font-medium">£{vatAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between border-t border-blue-200 pt-2 mt-3">
                     <span className="text-blue-700 font-medium">Total Price:</span>
-                    <span className="font-bold text-green-600 text-lg">£{totalPrice.toFixed(2)}</span>
+                    <span className={`font-bold text-lg ${totalPrice === 0 ? 'text-green-700' : 'text-green-600'}`}>
+                      {totalPrice === 0 ? 'FREE' : `£${totalPrice.toFixed(2)}`}
+                    </span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* What Happens Next - Self Assign */}
+            {watchedValues.self_assign && (
+              <div className="bg-amber-50 border border-amber-300 p-4 rounded-md">
+                <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Next: Subscription Setup
+                </h4>
+                <div className="space-y-3 text-sm text-amber-900">
+                  <p className="font-medium">
+                    Clicking "{totalPrice === 0 ? 'Activate subscription' : 'Setup subscription'}" will:
+                  </p>
+                  <ol className="space-y-2 ml-4 list-decimal">
+                    {totalPrice > 0 ? (
+                      <>
+                        <li>
+                          <strong>Create your schedule</strong> in an approved state
+                        </li>
+                        <li>
+                          <strong>Show payment method selection</strong> - you'll see your saved cards and select which one to use as the default for this subscription
+                        </li>
+                        <li>
+                          <strong>Activate the subscription</strong> - your selected card will be charged automatically:
+                          <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                            <li>
+                              First charge of <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                              {' '}on <strong>{format(new Date(watchedValues.start_date), 'MMM dd, yyyy')}</strong>
+                            </li>
+                            {weeks > 1 && (
+                              <li>
+                                Then <strong>£{weeklyRate.toFixed(2)}</strong> (+ £{(weeklyRate * 0.20).toFixed(2)} VAT)
+                                {' '}per week for {weeks - 1} more week{weeks - 1 !== 1 ? 's' : ''}
+                              </li>
+                            )}
+                            <li>
+                              Total: <strong>£{totalPrice.toFixed(2)}</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
+                              {' '}(includes £{vatAmount.toFixed(2)} VAT)
+                            </li>
+                          </ul>
+                        </li>
+                      </>
+                    ) : (
+                      <>
+                        <li>
+                          <strong>Create and immediately activate your FREE subscription</strong> - this is a <strong className="text-green-700">FREE</strong> listing (no payment required):
+                          <ul className="ml-4 mt-1 space-y-1 text-xs list-disc">
+                            <li>
+                              Weekly rate: <strong>£0.00</strong> (FREE)
+                          </li>
+                          <li>
+                            Total cost: <strong>£0.00</strong> over {weeks} week{weeks !== 1 ? 's' : ''}
+                          </li>
+                          <li>
+                            No payment method required - your subscription will be activated immediately
+                          </li>
+                        </ul>
+                      </li>
+                      </>
+                    )}
+                    <li>
+                      <strong>Your property goes live</strong> in the magazine on the start date
+                    </li>
+                  </ol>
                 </div>
               </div>
             )}
           </div>
         );
 
+      case 6:
+        // Payment step - only shown for self-assign flow
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Activate Subscription</h3>
+
+            {createdSchedule ? (
+              <PaymentActivationForm
+                schedule={createdSchedule}
+                propertyId={property.pid}
+                onSuccess={handleClose}
+                onCancel={null} // No cancel button in step 6, use Back button instead
+                isAdminViewing={isAdminViewing}
+                viewingAgentNid={viewingAgentNid}
+                hideButtons={true}
+                onActivateStateChange={setPaymentActivationState}
+              />
+            ) : (
+              <div className="text-center p-4 text-gray-500">
+                Loading payment details...
+              </div>
+            )}
+          </div>
+        );
 
       default:
         return null;
@@ -392,30 +619,37 @@ const ScheduleWizardModal = ({
   };
 
   const getStepTitle = () => {
+    const advertiserName = selectedAdvertiser ? ` - ${selectedAdvertiser.company}` : '';
     switch (currentStep) {
-      case 1: return 'Advertiser';
-      case 2: return 'Start Date';
-      case 3: return 'Duration';
-      case 4: return 'Select Approver';
-      case 5: return 'Summary & Confirmation';
+      case 1: return 'Select Advertiser';
+      case 2: return `Start Date${advertiserName}`;
+      case 3: return `Duration${advertiserName}`;
+      case 4: return `Select Approver${advertiserName}`;
+      case 5: return `Summary & Confirmation${advertiserName}`;
+      case 6: return `Payment${advertiserName}`;
       default: return 'Schedule Advertiser';
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={showDialogClose ? handleClose : undefined}>
-      <DialogContent className="max-w-md max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col gap-0 p-0">
+        {/* Fixed Header */}
+        <DialogHeader className="px-6 pt-6 pb-0 shrink-0">
           <DialogTitle>
-            {getStepTitle()} - Step {currentStep} of 5
+            {getStepTitle()} - Step {currentStep} of {watchedValues.self_assign ? 6 : 5}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Schedule creation wizard for {property?.addressText || 'property'}
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        {/* Scrollable Body */}
+        <div className="overflow-y-auto px-6 py-4 flex-1">
           {/* Progress Indicator */}
           <div className="flex justify-center mb-6">
             <div className="flex space-x-2">
-              {[1, 2, 3, 4, 5].map((step) => (
+              {(watchedValues.self_assign ? [1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5]).map((step) => (
                 <div
                   key={step}
                   className={`w-3 h-3 rounded-full ${
@@ -441,7 +675,8 @@ const ScheduleWizardModal = ({
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        {/* Fixed Footer */}
+        <DialogFooter className="flex justify-between px-6 pb-6 pt-4 shrink-0 border-t">
           {/* Cancel Button */}
           {showCancelButton && (
             <Button variant="outline" onClick={handleClose}>
@@ -451,27 +686,56 @@ const ScheduleWizardModal = ({
 
           {/* Navigation Buttons */}
           <div className="flex gap-2">
-            {currentStep > 1 && (
+            {currentStep > 1 && currentStep !== 6 && (
               <Button variant="outline" onClick={goBack}>
                 Back
               </Button>
             )}
-            
+
             {currentStep < 5 ? (
-              <Button 
-                onClick={goNext} 
+              <Button
+                onClick={goNext}
                 disabled={!isStepValid(currentStep)}
               >
                 Next
               </Button>
-            ) : (
+            ) : currentStep === 5 ? (
               <Button
-                onClick={handleSubmit}
-                disabled={isLoading || !totalPrice}
+                onClick={totalPrice === 0 && watchedValues.self_assign ? handleActivateZeroPrice : handleSubmit}
+                disabled={(isLoading || activationStep !== null) || !selectedAdvertiser || !watchedValues.week_no || !watchedValues.start_date}
               >
-                {isLoading ? 'Processing...' : (watchedValues.self_assign ? 'Make payment' : 'Create schedule')}
+                {(() => {
+                  // Show activation steps for zero-price flow
+                  if (totalPrice === 0 && watchedValues.self_assign) {
+                    if (activationStep === 'creating') return 'Creating schedule...';
+                    if (activationStep === 'activating') return 'Activating subscription...';
+                    if (activationStep === 'success') return 'Success!';
+                    return 'Activate subscription';
+                  }
+                  // Normal flow
+                  if (isLoading) return 'Processing...';
+                  return watchedValues.self_assign ? 'Setup subscription' : 'Create schedule';
+                })()}
               </Button>
-            )}
+            ) : currentStep === 6 ? (
+              <Button
+                onClick={() => paymentActivationState.activate?.()}
+                disabled={!paymentActivationState.canActivate || paymentActivationState.isActivating}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {paymentActivationState.isActivating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Activating...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Activate Subscription
+                  </>
+                )}
+              </Button>
+            ) : null}
           </div>
         </DialogFooter>
       </DialogContent>

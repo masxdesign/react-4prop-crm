@@ -76,7 +76,7 @@ const AssignApproverDialog = ({
                 required: "Please select an approver"
               }}
               label="Search for Approver"
-              placeholder="Search by email..."
+              placeholder="Search by firstname, surname, email, or company"
               className="w-full"
             />
           </div>

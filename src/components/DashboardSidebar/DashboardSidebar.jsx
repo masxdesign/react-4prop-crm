@@ -1,12 +1,14 @@
 import { LogOut } from 'lucide-react'
 import { useNavigation } from './use-navigation'
 import { NavLink } from './NavLink'
+import { useAuth } from '../Auth/Auth-context'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
-  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId)
+  const auth = useAuth()
+  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
 
   return (
-    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40">
+    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-gradient-to-l from-blue-900 to-blue-950">
       <span className='text-2xl font-bold text-emerald-500 p-3 tracking-tighter'>
         CRM
       </span>
@@ -24,7 +26,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
       {magazineItems.length > 0 && (
         <div className='flex flex-col gap-2'>
           <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
-            Magazine
+            Marketing
           </h3>
           {magazineItems.map((item) => (
             <NavLink 
@@ -49,13 +51,13 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         ))}
       </div>
 
-      <div className='mt-auto'>
+      <div className='mt-auto shrink-0 py-1 px-1 border-t border-t-sky-400/20'>
         <button
           onClick={onLogout}
-          className="p-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline border-t border-t-sky-400/20"
+          className="w-full px-3 py-3 flex items-center justify-between gap-1 cursor-pointer hover:no-underline"
         >
           <span className='opacity-60'>Logout</span>
-          <LogOut className='size-5' />
+          <LogOut className='size-4' />
         </button>
       </div>
     </div>

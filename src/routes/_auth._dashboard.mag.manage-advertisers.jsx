@@ -26,9 +26,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/manage-advertisers")
         }
 
         return (
-            <div className="grid grid-rows-[6rem_2rem_1fr_2rem] gap-4 h-full">
-                <AdvertiserManagement />
-            </div>
+            <AdvertiserManagement />
         )
     },
 })

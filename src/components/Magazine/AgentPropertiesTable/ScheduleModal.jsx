@@ -147,10 +147,10 @@ const ScheduleModal = ({ open, property, advertisers, onClose, onSubmit, isLoadi
           <button
             type="submit"
             form="schedule-form"
-            disabled={isLoading || !totalPrice}
+            disabled={isLoading || !selectedAdvertiser || !watchedWeekNo || !watchedStartDate}
             className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
           >
-            {isLoading ? 'Scheduling...' : `Schedule for £${totalPrice.toFixed(2)}`}
+            {isLoading ? 'Scheduling...' : (totalPrice === 0 ? 'Schedule (FREE)' : `Schedule for £${totalPrice.toFixed(2)}`)}
           </button>
         </DialogFooter>
       </DialogContent>

@@ -23,7 +23,7 @@ function dashboardComponent() {
   
   return (
     <>
-      <div className='grid grid-cols-[8rem_1fr] gap-4 h-screen bg-gradient-to-l from-blue-900 to-blue-950'>
+      <div className='grid grid-cols-[10rem_1fr] gap-4 h-screen'>
         <DashboardSidebar 
           negId={auth.user?.neg_id}
           onLogout={handleLogout}
