@@ -77,7 +77,29 @@ const AdvertiserManagement = () => {
 
   const handleFormSubmit = (data) => {
     if (editingAdvertiser) {
-      updateMutation.mutate({ id: editingAdvertiser.id, ...data });
+      // For editing mode: only send changed fields
+      const changedData = {};
+
+      // Check each field for changes
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== editingAdvertiser[key]) {
+          changedData[key] = data[key];
+        }
+      });
+
+      // Always include password if provided (it won't be in editingAdvertiser)
+      if (data.password) {
+        changedData.password = data.password;
+      }
+
+      // Only send update if there are changes
+      if (Object.keys(changedData).length > 0) {
+        updateMutation.mutate({ id: editingAdvertiser.id, ...changedData });
+      } else {
+        // No changes, just close the form
+        setEditingAdvertiser(null);
+        setIsFormOpen(false);
+      }
     } else {
       createMutation.mutate(data);
     }

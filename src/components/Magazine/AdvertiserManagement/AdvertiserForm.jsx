@@ -145,77 +145,33 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       return;
     }
 
-    let formattedData;
-
-    if (advertiser) {
-      // For editing mode: only send changed fields
-      formattedData = {};
-
-      // Check company name
-      if (data.company !== advertiser.company) {
-        formattedData.company = data.company;
-      }
-
-      // Check email
-      if (data.email && data.email.trim() && data.email.trim() !== advertiser.email) {
-        formattedData.email = data.email.trim();
-      }
-
-      // Check password (only include if provided)
-      if (data.password && data.password.trim()) {
-        formattedData.password = data.password.trim();
-      }
-
-      // Check pstids
-      const newPstids = Array.isArray(data.pstids) && data.pstids.length > 0
+    // Format pstids to ensure proper comma-delimited format with leading and trailing commas
+    const formattedData = {
+      ...data,
+      pstids: Array.isArray(data.pstids) && data.pstids.length > 0
         ? `,${data.pstids.join(',')},`
-        : '';
-      if (newPstids !== advertiser.pstids) {
-        formattedData.pstids = newPstids;
-      }
+        : '',
+      week_rate: parseFloat(data.week_rate),
+      commission_percent: parseFloat(data.commission_percent),
+      vat_registered: Boolean(data.vat_registered),
+      vat_number: data.vat_registered ? data.vat_number : ''
+    };
 
-      // Check week_rate (only if not in self-service mode)
-      if (!isSelfService && parseFloat(data.week_rate) !== parseFloat(advertiser.week_rate)) {
-        formattedData.week_rate = parseFloat(data.week_rate);
-      }
-
-      // Check commission_percent (only if not in self-service mode)
-      if (!isSelfService && parseFloat(data.commission_percent) !== parseFloat(advertiser.commission_percent)) {
-        formattedData.commission_percent = parseFloat(data.commission_percent);
-      }
-
-      // Check vat_registered
-      if (Boolean(data.vat_registered) !== Boolean(advertiser.vat_registered)) {
-        formattedData.vat_registered = Boolean(data.vat_registered);
-      }
-
-      // Check vat_number
-      const newVatNumber = data.vat_registered ? data.vat_number : '';
-      if (newVatNumber !== (advertiser.vat_number || '')) {
-        formattedData.vat_number = newVatNumber;
-      }
+    // Only include email and password if they have values
+    if (data.email && data.email.trim()) {
+      formattedData.email = data.email.trim();
     } else {
-      // For create mode: send all fields
-      formattedData = {
-        company: data.company,
-        pstids: Array.isArray(data.pstids) && data.pstids.length > 0
-          ? `,${data.pstids.join(',')},`
-          : '',
-        week_rate: parseFloat(data.week_rate),
-        commission_percent: parseFloat(data.commission_percent),
-        vat_registered: Boolean(data.vat_registered),
-        vat_number: data.vat_registered ? data.vat_number : ''
-      };
-
-      // Only include email and password if they have values
-      if (data.email && data.email.trim()) {
-        formattedData.email = data.email.trim();
-      }
-
-      if (data.password && data.password.trim()) {
-        formattedData.password = data.password.trim();
-      }
+      delete formattedData.email;
     }
+
+    if (data.password && data.password.trim()) {
+      formattedData.password = data.password.trim();
+    } else {
+      delete formattedData.password;
+    }
+
+    // Remove confirmPassword from the submitted data
+    delete formattedData.confirmPassword;
 
     onSubmit(formattedData);
   };
