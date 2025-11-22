@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
+import { useAuth } from '@/components/Auth/Auth-context';
 import { subDays, format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import AgencyBreakdownTable from '../AgencyBreakdownTable/AgencyBreakdownTable';
  * Route: /stats/advertiser/:advertiserId
  */
 const AdvertiserStatsPage = () => {
+  const auth = useAuth();
   const { advertiserId } = useParams({ from: '/_auth/_dashboard/stats/advertiser/$advertiserId' });
   const search = useSearch({ from: '/_auth/_dashboard/stats/advertiser/$advertiserId' });
   const navigate = useNavigate({ from: '/stats/advertiser/$advertiserId' });
@@ -100,9 +102,11 @@ const AdvertiserStatsPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Advertiser Statistics</h1>
-              <p className="text-gray-600 mt-1">
-                Advertiser ID: {advertiserId} • {data.totalProperties} Properties
-              </p>
+              {auth.user?.is_admin && (
+                <p className="text-gray-600 mt-1">
+                  {data.advertiser_name} • {data.totalProperties} Properties
+                </p>
+              )}
             </div>
             <DateRangePicker
               value={dateRange}

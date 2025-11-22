@@ -16,20 +16,21 @@ const StatsRouter = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    
     // Check user role and redirect accordingly
     if (auth.user?.is_admin) {
       // Super admin - redirect to selection page
-      navigate({ to: '/crm/stats/select', replace: true });
+      navigate({ to: '/stats/select', replace: true });
     } else if (auth.isAdvertiser && auth.user?.advertiser_id) {
       // Advertiser - redirect to their stats page
       navigate({
-        to: `/crm/stats/advertiser/${auth.user.advertiser_id}`,
+        to: `/stats/advertiser/${auth.user.advertiser_id}`,
         replace: true,
       });
     } else if (auth.isAgent && auth.user?.cid) {
       // Agent - redirect to their agency stats page
       navigate({
-        to: `/crm/stats/agency/${auth.user.cid}`,
+        to: `/stats/agency/${auth.user.cid}`,
         replace: true,
       });
     }
