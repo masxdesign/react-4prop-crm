@@ -1,6 +1,6 @@
 import { useAuth } from '@/components/Auth/Auth';
 import { Toaster } from '@/components/ui/toaster';
-import { Outlet, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { Outlet, createFileRoute, useNavigate, useRouterState } from '@tanstack/react-router';
 import { DashboardSidebar } from '@/components/DashboardSidebar/DashboardSidebar';
 
 export const Route = createFileRoute('/_auth/_dashboard')({
@@ -23,7 +23,7 @@ function dashboardComponent() {
   
   return (
     <>
-      <div className='grid grid-cols-[8rem_1fr] gap-4 h-screen bg-gradient-to-l from-blue-900 to-blue-950'>
+      <div className='grid grid-cols-[10rem_1fr] gap-4 h-screen'>
         <DashboardSidebar 
           negId={auth.user?.neg_id}
           onLogout={handleLogout}

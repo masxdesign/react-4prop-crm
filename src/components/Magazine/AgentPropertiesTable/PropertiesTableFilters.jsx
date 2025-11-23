@@ -4,20 +4,12 @@ const PropertiesTableFilters = ({ table }) => {
   return (
     <div className="flex gap-4">
       <input
-        placeholder="Filter by Property ID..."
-        value={(table.getColumn('id')?.getFilterValue()) ?? ''}
+        placeholder="Filter by Address..."
+        value={(table.getColumn('addressText')?.getFilterValue()) ?? ''}
         onChange={(event) =>
-          table.getColumn('id')?.setFilterValue(event.target.value)
+          table.getColumn('addressText')?.setFilterValue(event.target.value)
         }
-        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-      <input
-        placeholder="Filter by Department..."
-        value={(table.getColumn('departmentName')?.getFilterValue()) ?? ''}
-        onChange={(event) =>
-          table.getColumn('departmentName')?.setFilterValue(event.target.value)
-        }
-        className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="px-2 py-1 border border-gray-300 rounded-sm text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     </div>
   );

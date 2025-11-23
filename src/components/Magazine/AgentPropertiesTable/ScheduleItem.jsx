@@ -1,29 +1,19 @@
 import React from 'react';
 import { format, parseISO } from 'date-fns';
 import ScheduleStatus from './ScheduleStatus';
+import ScheduleActionButtons from '../ui/ScheduleActionButtons';
 
-const ScheduleItem = ({ schedule }) => {
+const ScheduleItem = ({ schedule, isAdminViewing, viewingAgentNid }) => {
   // Calculate display values based on available data
-  let duration, rate, totalPrice;
+  let duration, rate;
   
   if (schedule.week_no && schedule.fixed_week_rate) {
     // Week-based data
     duration = `${schedule.week_no} week${schedule.week_no !== 1 ? 's' : ''}`;
     rate = `£${schedule.fixed_week_rate}/week`;
-    totalPrice = schedule.total_revenue || (schedule.fixed_week_rate * schedule.week_no);
   } else {
-    // Legacy day-based data
-    if (schedule.end_date && schedule.start_date && 
-        typeof schedule.end_date === 'string' && typeof schedule.start_date === 'string') {
-      const days = Math.ceil((parseISO(schedule.end_date) - parseISO(schedule.start_date)) / (1000 * 60 * 60 * 24));
-      duration = `${days} days`;
-      rate = `£${schedule.fixed_day_rate}/day`;
-      totalPrice = schedule.fixed_day_rate * days;
-    } else {
-      duration = 'N/A';
-      rate = 'N/A';
-      totalPrice = 0;
-    }
+    duration = 'N/A';
+    rate = 'N/A';
   }
   
   return (
@@ -56,8 +46,8 @@ const ScheduleItem = ({ schedule }) => {
           <div className="font-medium">{rate}</div>
         </div>
         <div>
-          <span className="text-gray-500">Total Price:</span>
-          <div className="font-semibold text-green-600">£{totalPrice.toFixed(2)}</div>
+          <span className="text-gray-500">Quote:</span>
+          <div className="font-semibold text-green-600">£{schedule.quote.toFixed(2)}</div>
         </div>
       </div>
       
@@ -67,6 +57,14 @@ const ScheduleItem = ({ schedule }) => {
           <div className="text-gray-700">{schedule.notes}</div>
         </div>
       )}
+      
+      <ScheduleActionButtons
+        schedule={schedule}
+        propertyId={schedule.property_id}
+        className="mt-3"
+        isAdminViewing={isAdminViewing}
+        viewingAgentNid={viewingAgentNid}
+      />
     </div>
   );
 };

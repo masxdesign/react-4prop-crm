@@ -3,6 +3,7 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
 import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/services/fourProp"
 import { AuthContext, AuthDispatchContext, useAuthContext, useAuthDispatch } from "./Auth-context"
 import { flushSync } from "react-dom"
+import { RESTRICTED_NEG_IDS } from "../DashboardSidebar/permissions"
 
 export const initialAuthState = {
     isAuthenticated: false,
@@ -14,17 +15,24 @@ export const initialAuthState = {
 
 export const authCombiner = (user) => {
     if (!user) return initialAuthState
-    
+
     const isAgent = user.neg_id ? true : false
+    // Bitwise role check: 4prop_user=2, advertiser=64
+    // If role is 66 (2 | 64), user is both 4prop_user and advertiser
+    const isAdvertiser = user.role ? (parseInt(user.role) & 64) === 64 : false
 
     return {
         ...initialAuthState,
         isAuthenticated: true,
         isAgent,
+        isAdvertiser,
         bzUserId: user.neg_id ? user.neg_id : `U${user.id}`,
         authUserId: `U${user.id}`,
         displayName: user.display_name ?? `${user.first} ${user.last}`,
-        user,
+        user: {
+            ...user,
+            is_admin: RESTRICTED_NEG_IDS.includes(user.neg_id)
+        },
         allowFutureFeatured: ['2', '161', '207', '60726'].includes(`${user.id}`),
     }
 }

@@ -1,4 +1,5 @@
 import bizchatClient from '@/services/bizchatClient';
+import propertyPubClient from '@/services/propertyPubClient';
 
 // Agent Properties API functions
 export const fetchAgentProperties = async (nid) => {
@@ -7,8 +8,9 @@ export const fetchAgentProperties = async (nid) => {
 };
 
 // Agent Properties with Pagination API functions
-export const fetchAgentPropertiesPagination = async (nid) => {
-  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`);
+export const fetchAgentPaginatedProperties = async (nid, options = {}) => {
+  const { page = 1, pageSize = 10 } = options;
+  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}?page=${page}&pageSize=${pageSize}`);
   return response.data;
 };
 
@@ -62,22 +64,234 @@ export const fetchMagazineListingData = async (advertiserId) => {
   return response.json();
 };
 
+// Agent Search API functions
+export const searchAgents = async (searchTerm) => {
+  if (!searchTerm || searchTerm.length < 2) {
+    return [];
+  }
+
+  const response = await propertyPubClient.get('/api/agents', {
+    params: {
+      search: searchTerm,
+      page: 1,
+      limit: 10,
+      sortBy: 'surname',
+      order: 'asc'
+    }
+  });
+
+  return response.data?.data || [];
+};
+
+/**
+ * Fetch single agent details by NID
+ * @param {string} nid - Agent NID
+ * @returns {Promise} Agent object with nid, email, firstname, surname, picture, company, position
+ */
+export const fetchAgentDetails = async (nid) => {
+  const response = await propertyPubClient.get(`/api/agents/${nid}`);
+  return response.data;
+};
+
+/**
+ * Fetch agents for admin selection with search filtering
+ * @param {Object} options - Query options
+ * @param {string} options.search - Search query for firstname, surname, email, or company
+ * @param {number} options.limit - Max results (default: 20)
+ * @param {number} options.page - Page number (default: 1)
+ * @param {string} options.sortBy - Field to sort by: 'firstname', 'surname', 'company' (default: 'surname')
+ * @param {string} options.order - Sort order: 'asc' or 'desc' (default: 'asc')
+ * @returns {Promise} Response data with agents array and pagination metadata
+ */
+export const fetchAgentsForSelection = async ({
+  search = '',
+  limit = 20,
+  page = 1,
+  sortBy = 'surname',
+  order = 'asc'
+}) => {
+  if (!search || search.length < 2) {
+    return { data: [], pagination: null };
+  }
+
+  const response = await propertyPubClient.get('/api/agents', {
+    params: {
+      search,
+      limit,
+      page,
+      sortBy,
+      order
+    }
+  });
+
+  return {
+    data: response.data?.data || [],
+    pagination: response.data?.pagination || null
+  };
+};
+
+// Schedule Status API functions
+export const fetchScheduleStatusOptions = async () => {
+  const response = await bizchatClient.get('/data/mag_schedule_status.json');
+  return response.data;
+};
+
+// Property Schedules Summary API functions
+export const fetchPropertySchedulesSummary = async (propertyId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/schedules/${propertyId}/summary`);
+  return response.data;
+};
+
+// Schedule Update API functions
+export const updateSchedule = async (scheduleId, updateData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/update/${scheduleId}`, updateData);
+  return response.data;
+};
+
+// Schedule Approval API functions
+export const approveSchedule = async (scheduleId, approvalData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/approve`, approvalData);
+  return response.data;
+};
+
+// Schedule Subscription Activation API functions
+export const activateSubscription = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/activate-subscription`);
+  return response.data;
+};
+
+// Platform MoR Subscription Activation (NEW)
+export const activateSubscriptionPlatformMor = async (scheduleId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/schedules/${scheduleId}/activate-subscription-platform-mor`);
+  return response.data;
+};
+
+// Self-Billing Agreement API functions (NEW)
+export const acceptSelfBillingAgreement = async (advertiserId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/accept-self-billing`);
+  return response.data;
+};
+
+// Schedule Assign Approver API functions
+export const assignApprover = async (scheduleId, assignData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/schedules/${scheduleId}/assign-approver`, assignData);
+  return response.data;
+};
+
+// User Information API functions
+export const fetchUsersByNids = async (nids) => {
+  const filteredNids = nids.filter(Boolean);
+  if (filteredNids.length === 0) return [];
+  
+  const response = await bizchatClient.post('/api/users', {
+    ids: filteredNids.join(',')
+  });
+  return response.data;
+};
+
+// Agent Payment Setup API functions
+export const setupAgentPayment = async (nid, agentData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/stripe/agents/${nid}/setup-payment`, agentData);
+  return response.data;
+};
+
+export const getAgentPaymentMethods = async (nid) => {
+  const response = await bizchatClient.get(`/api/crm/mag/stripe/agents/${nid}/payment-methods`);
+  return response.data;
+};
+
+export const setDefaultPaymentMethod = async (nid, paymentMethodData) => {
+  const response = await bizchatClient.put(`/api/crm/mag/stripe/agents/${nid}/default-payment-method`, paymentMethodData);
+  return response.data;
+};
+
+// Advertiser Stripe Onboarding API functions
+export const onboardAdvertiser = async (advertiserId, onboardingData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/stripe/advertisers/${advertiserId}/onboard`, onboardingData);
+  return response.data;
+};
+
+export const getAdvertiserStripeStatus = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/stripe/advertisers/${advertiserId}/status`);
+  return response.data;
+};
+
+export const createPlatformCustomer = async (advertiserId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/create-platform-customer`);
+  return response.data;
+};
+
+// Change Advertiser Password API function
+export const changeAdvertiserPassword = async (advertiserId, passwordData) => {
+  const response = await bizchatClient.post(`/api/crm/mag/advertisers/${advertiserId}/change-password`, passwordData);
+  return response.data;
+};
+
+// Transfer Settlement API functions
+export const fetchTransferStats = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/stats');
+  return response.data;
+};
+
+export const fetchPendingTransfers = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/admin/pending');
+  return response.data;
+};
+
+export const fetchFailedTransfers = async () => {
+  const response = await bizchatClient.get('/api/crm/mag/transfers/admin/failed');
+  return response.data;
+};
+
+export const forceSettleTransfer = async (bookingItemId) => {
+  const response = await bizchatClient.post(`/api/crm/mag/transfers/admin/force-settle/${bookingItemId}`);
+  return response.data;
+};
+
+export const processAllSettlements = async () => {
+  const response = await bizchatClient.post('/api/crm/mag/transfers/cron/process-settlements');
+  return response.data;
+};
+
+// Booking History API functions (schedules with active subscriptions)
+export const fetchAdvertiserBookings = async (advertiserId, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/advertiser/${advertiserId}`,
+    {
+      params: { status, page, pageSize }
+    }
+  );
+  return response.data;
+};
+
+export const fetchAgentBookings = async (agentNid, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/agent/${agentNid}`,
+    {
+      params: { status, page, pageSize }
+    }
+  );
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object
   const schedule = scheduleData.data || scheduleData;
-  
+
   // Find the advertiser company name
   const advertiser = advertisers.find(adv => adv.id === parseInt(schedule.advertiser_id));
   const advertiser_company = advertiser?.company || `Advertiser ${schedule.advertiser_id}`;
-  
+
   // Normalize end_date - handle both array and string formats
   let end_date = schedule.end_date;
   if (Array.isArray(end_date) && end_date.length > 0) {
     // Take the first element if it's an array
     end_date = end_date[0];
   }
-  
+
   // Return normalized schedule data
   return {
     ...schedule,

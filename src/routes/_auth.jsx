@@ -14,6 +14,5 @@ export const Route = createFileRoute('/_auth')({
           })
         }
         window.name = WINDOWN_NAMES.auth
-    },
-    pendingComponent: PendingComponent
+    }
 })

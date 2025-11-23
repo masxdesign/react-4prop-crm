@@ -170,7 +170,7 @@ export const propertyCompactCombiner = (property) => {
         pid: id,
         title, 
         teaser: content.teaser,
-        thumb: thumbnail?.replace(/^https:\/\/4prop.com/, ''),
+        thumb: thumbnail?.replace(/^https:\/\/(?:www\.)?4prop.com/, ''),
         sizeText, 
         tenureText,
     }

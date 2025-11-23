@@ -7,10 +7,11 @@ export function NavLink({ id, to, icon: Icon, label, context }) {
     <Link 
       key={id}
       to={resolvedTo}
+      activeOptions={{ exact: true, includeSearch: false }}
       className="pl-3 py-2 [&.active]:font-bold [&.active]:border-r-4 [&.active]:border-r-emerald-500 hover:no-underline flex gap-2 items-center"
     >
-      <Icon className="size-5" />
-      <span className="opacity-60">{label}</span>
+      <Icon className="size-4 shrink-0" strokeWidth={1} />
+      <span className="opacity-80 text-xs">{label}</span>
     </Link>
   )
 }

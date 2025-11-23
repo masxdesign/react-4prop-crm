@@ -10,6 +10,7 @@ Currently, two official plugins are available:
 
 ```bash
 sudo lsof -i:8082
+sudo lsof -i:5173
 kill -9  [pid]
 ```
 
@@ -103,3 +104,69 @@ git push origin --delete feat/login-form
 ```
 
 ---
+# Using the Git Flow model (per Vincent Driessen’s strategy nvie.com)
+
+[A successful Git branching model](https://nvie.com/posts/a-successful-git-branching-model/)
+
+Model=Git branching strategy; main branches: main(production-ready, tagged releases), develop(integration, latest dev changes). Support branches: feature(branch off develop, merge into develop), release(branch off develop when release planned, bugfix, metadata, merge into main+develop), hotfix(branch off main for urgent production fixes, merge into main+develop). Workflow: new work in feature branches, integrated into develop; release branches stabilize; main updated only by merges from release/hotfix; tagging releases on main. Benefits: parallel dev, controlled releases, clear history. Tags=version numbers.
+
+# Feature
+```bash
+git checkout -b feat/git develop
+
+git checkout develop
+git merge -no-ff feat/git -m 'merge commit'
+
+git branch -d feat/git
+```
+
+# Release
+```bash
+git checkout -b release-1.0 develop
+
+git checkout main
+git merge --no-ff release-1.2 -m 'merge commit'
+git tag -a 1.2
+git checkout develop
+git merge --no-ff release-1.2 -m 'merge commit'
+
+git branch -d release-1.2
+```
+
+# Hotfixes
+```bash
+git checkout -b hotfix-1.2.1 main
+
+git checkout main
+git merge --no-ff hotfix-1.2.1 -m 'merge commit'
+git tag -a 1.2.1
+git checkout develop
+git merge --no-ff hotfix-1.2.1 -m 'merge commit'
+
+git branch -d hotfix-1.2.1
+```
+
+
+## Test accounts
+
+### Estate agents
+- pthomas@savills.com
+- lsjones@savills.com
+- tluckett@savills.com
+
+### Super Admin
+- afeach@gmail.com
+
+### Advertisers
+
+Elite Homes Showcase
+- your.email+fakedata67462@gmail.com
+
+Metropolitan Real Estate Weekly (not on-board)
+- your.email+fakedata70882@gmail.com
+
+SHOPPROPERTY.CO
+- info@shopproperty.co
+
+Luxury Living Digest
+- your.email+fakedata55287@gmail.com

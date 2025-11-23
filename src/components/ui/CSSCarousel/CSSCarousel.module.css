@@ -1,0 +1,96 @@
+/* CSS Carousel with pure CSS scroll-snap implementation */
+.carousel {
+  position: relative;
+  width: 100%;
+}
+
+.viewport {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.viewport::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.container {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.slide {
+  flex: 0 0 calc(33.333% - 0.34rem); /* 3 items visible with gap compensation */
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navButton:hover {
+  background-color: #f9fafb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.navButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.navButton:disabled:hover {
+  background-color: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.prevButton {
+  left: 0.5rem;
+}
+
+.nextButton {
+  right: 0.5rem;
+}
+
+.navIcon {
+  width: 1rem;
+  height: 1rem;
+  color: #374151;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .slide {
+    flex: 0 0 calc(50% - 0.25rem); /* 2 items on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .slide {
+    flex: 0 0 calc(100% - 0.5rem); /* 1 item on small mobile */
+  }
+}
+
+/* Smooth scrolling enhancement */
+@media (prefers-reduced-motion: no-preference) {
+  .viewport {
+    scroll-behavior: smooth;
+  }
+}

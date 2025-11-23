@@ -11,6 +11,7 @@ import { Loader2 } from 'lucide-react'
 import './App.css'
 import { BIZCHAT_BASEURL } from './services/bizchatClient'
 import { useDevMode } from './utils/use-DevMode'
+import PendingComponent from './components/PendingComponent'
 
 const router = createRouter({ 
   routeTree,
@@ -48,9 +49,7 @@ const App = () => (
     <TooltipProvider>
       <Suspense 
         fallback={
-          <div className="flex items-center justify-center h-screen w-100">
-              <Loader2 className="animate-spin w-20 h-20" />
-          </div>
+          <PendingComponent />
         }>
         <AuthProvider>
             <InnerAuth />

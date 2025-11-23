@@ -1,0 +1,395 @@
+import React, { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
+import usePropertyTypeLabels from '@/hooks/usePropertyTypeLabels';
+import CurrentSchedules from './CurrentSchedules';
+import ScheduleWizardModal from './ScheduleWizardModal';
+import useUsersByNids from '@/hooks/useUsersByNids';
+import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
+import CSSCarousel from '@/components/ui/CSSCarousel';
+import AdvertiserCard from '@/components/ui/AdvertiserCard';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
+import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
+
+// Enhanced Property Details Component - Uses display-ready property data
+const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid }) => {
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
+  const [createdScheduleForPayment, setCreatedScheduleForPayment] = useState(null);
+  const [showAllSubtypes, setShowAllSubtypes] = useState(false);
+  const [showAllTypes, setShowAllTypes] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Extract property subtype IDs for fetching advertisers
+  const subtypeIds = property.subtypes?.map(subtype => subtype.id).join(',') || '';
+  
+  // Extract agent NIDs for fetching agent data
+  const agentNids = useMemo(() => {
+    if (!property.agents || !Array.isArray(property.agents)) return [];
+    return property.agents.filter(Boolean);
+  }, [property.agents]);
+
+  // Fetch agent data using the same pattern as schedule workflow
+  const { getUserByNid, isLoading: agentsLoading } = useUsersByNids(agentNids);
+  
+  // Fetch advertisers based on property subtypes
+  const {
+    data: advertisersData,
+    isLoading: advertisersLoading,
+    error: advertisersError
+  } = useQuery({
+    queryKey: ['advertisers', subtypeIds],
+    queryFn: () => fetchAdvertisersByPstids(subtypeIds),
+    enabled: !!subtypeIds,
+  });
+
+  // Use hook for resolving raw subtype IDs to labels (for advertiser cards)
+  const { getSubtypeLabels } = usePropertyTypeLabels();
+
+  const advertisers = advertisersData?.data || [];
+
+  // Schedule mutation
+  // Helper function to render pills with show more functionality
+  const renderPillsWithShowMore = (items, showAll, setShowAll, bgColor = 'bg-blue-100', textColor = 'text-blue-800') => {
+    if (!items || items.length === 0) {
+      return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">-</span>;
+    }
+
+    const displayItems = showAll ? items : items.slice(0, 2);
+    const hasMore = items.length > 2;
+
+    return (
+      <div className="flex flex-wrap gap-1">
+        {displayItems.map((item, index) => (
+          <span key={index} className={`${bgColor} ${textColor} px-2 py-1 rounded-full text-xs font-medium`}>
+            {item}
+          </span>
+        ))}
+        {hasMore && (
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="bg-gray-200 hover:bg-gray-300 text-gray-600 px-2 py-1 rounded-full text-xs font-medium transition-colors"
+          >
+            {showAll ? '- Less' : `+${items.length - 2} more`}
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // Parse subtypes and types from their text format
+  const parsedSubtypes = useMemo(() => {
+    if (!property.subtypesText || property.subtypesText === 'No subtypes') return [];
+    return property.subtypesText.split(',').map(item => item.trim()).filter(Boolean);
+  }, [property.subtypesText]);
+
+  const parsedTypes = useMemo(() => {
+    if (!property.typesText) return [];
+    return property.typesText.split(',').map(item => item.trim()).filter(Boolean);
+  }, [property.typesText]);
+
+  // Format address for multi-line display
+  const formatAddress = (addressText) => {
+    if (!addressText) return [];
+    
+    // Split by comma and clean up
+    const parts = addressText.split(',').map(part => part.trim()).filter(Boolean);
+    
+    // Typical UK address format: try to identify postcode (last part that matches UK postcode pattern)
+    const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i;
+    
+    const lines = [];
+    let postcodeIndex = -1;
+    
+    // Find postcode from the end
+    for (let i = parts.length - 1; i >= 0; i--) {
+      if (postcodeRegex.test(parts[i])) {
+        postcodeIndex = i;
+        break;
+      }
+    }
+    
+    if (postcodeIndex > 0) {
+      // Everything before postcode goes on separate lines
+      lines.push(...parts.slice(0, postcodeIndex));
+      // Postcode goes on its own line
+      lines.push(parts[postcodeIndex]);
+    } else {
+      // No postcode found, just split by comma
+      lines.push(...parts);
+    }
+    
+    return lines;
+  };
+
+  const addressLines = useMemo(() => formatAddress(property.addressText), [property.addressText]);
+
+
+  const scheduleMutation = useMutation({
+    mutationFn: ({ scheduleData }) => createSchedule(agentId, scheduleData),
+    onSuccess: (newScheduleData, variables) => {
+      const { metadata } = variables;
+      // Normalize the schedule data before adding to cache
+      const normalizedSchedule = normalizeScheduleData(newScheduleData, advertisers);
+
+      // Update the property schedules cache with the normalized schedule
+      queryClient.setQueryData(['property-schedules', property.pid], (oldData) => {
+        if (!oldData) return { data: [normalizedSchedule] };
+        return {
+          ...oldData,
+          data: [...oldData.data, normalizedSchedule]
+        };
+      });
+
+      // Also invalidate the query to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: ['property-schedules', property.pid] });
+
+      // Update the agent properties cache to reflect the new schedule
+      queryClient.setQueryData(['agent-properties', agentId], (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map(prop =>
+            prop.id === property.pid
+              ? { ...prop, schedulesCount: (prop.schedulesCount || 0) + 1 }
+              : prop
+          )
+        };
+      });
+
+      // Handle different flows based on self-assign status
+      if (metadata?.isSelfAssign) {
+        // For self-assign: store schedule and keep modal open for payment
+        setCreatedScheduleForPayment(normalizedSchedule);
+      } else {
+        // For external approver: close modal immediately
+        setIsScheduleModalOpen(false);
+      }
+    },
+  });
+
+  return (
+    <div className="relative z-10 bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
+      {/* Enhanced Property Overview */}
+      <div className="grid grid-cols-[20%_1fr] gap-6 mb-6">
+        {/* Property Information - Using Enhanced Data */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+            <Building2Icon className='size-4 shrink-0' strokeWidth={1} />
+            Property Information 
+            <span className='font-light text-[9px] text-muted-foreground'>
+              {property.pid}
+            </span>
+            <span className={`px-2 py-0 rounded-full text-[9px] font-medium bg-${property.statusColor || 'gray'}-100 text-${property.statusColor || 'gray'}-800`}>
+              {property.statusText}
+            </span>
+          </h4>
+          
+          {/* Property Fields - Consistent Badge Style */}
+          <div className="space-y-3">            
+            <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Agents</span>
+              <div className="flex flex-wrap gap-1">
+                {agentsLoading ? (
+                  <div className="text-xs text-gray-500">Loading...</div>
+                ) : agentNids.length > 0 ? (
+                  agentNids.map((agentNid, index) => {
+                    const agent = getUserByNid(agentNid);
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
+                        <div className="flex-shrink-0 size-6 rounded-full overflow-hidden">
+                          <ImageWithFallback
+                            src={getAgentAvatar(agent)}
+                            alt={getAgentFullName(agent)}
+                            className="w-full h-full object-cover"
+                            fallback={
+                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
+                                {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
+                              </div>
+                            }
+                          />
+                        </div>
+                        <span className="text-xs font-medium pr-1">
+                          {agent ? getAgentFullName(agent) : `Agent ${agentNid}`}
+                        </span>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">-</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-start items-start border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Address</span>
+              <div className="text-gray-800 text-xs flex-1 px-2">
+                {addressLines.length > 0 ? (
+                  addressLines.map((line, index) => (
+                    <div key={index} className={index === addressLines.length - 1 ? 'font-semibold' : ''}>
+                      {line}
+                    </div>
+                  ))
+                ) : (
+                  property.addressText || '-'
+                )}
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Tenure</span>
+              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                {property.tenureText}
+              </span>
+            </div>
+            
+            {property.sizeText && (
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Size</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {property.sizeText}
+                </span>
+              </div>
+            )}
+
+            {property.landText && (
+              <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Land</span>
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium">
+                  {property.landText}
+                </span>
+              </div>
+            )}
+            
+            {parsedTypes.length > 0 && (
+              <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
+                <span className="text-xs text-gray-600">Types</span>
+                <div className="flex-1 ml-2">
+                  {renderPillsWithShowMore(parsedTypes, showAllTypes, setShowAllTypes, 'bg-gray-100', 'text-gray-800')}
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between items-start border-gray-100 pb-2 gap-2">
+              <span className="text-xs text-gray-600">Subtypes</span>
+              <div className="flex-1 ml-2">
+                {renderPillsWithShowMore(parsedSubtypes, showAllSubtypes, setShowAllSubtypes, 'bg-blue-100', 'text-blue-800')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Current Schedules */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <CurrentSchedules
+            propertyId={property.pid}
+            isAdminViewing={isAdminViewing}
+            viewingAgentNid={viewingAgentNid}
+          />
+        </div>
+      </div>
+
+      {/* Available Advertisers Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="font-semibold text-sm flex items-center gap-2">
+            <ShoppingCartIcon className='size-4 shrink-0' strokeWidth={1} />
+            Available Advertisers for New Booking
+          </h4>
+          <button
+            onClick={() => setIsScheduleModalOpen(true)}
+            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium"
+            disabled={advertisers.length === 0}
+          >
+            + Schedule New Advertiser
+          </button>
+        </div>
+        
+        {advertisersLoading && (
+          <div className="text-sm text-gray-500 py-8 text-center">Loading advertisers...</div>
+        )}
+        
+        {advertisersError && (
+          <div className="text-sm text-red-500 py-8 text-center">Error loading advertisers</div>
+        )}
+        
+        {advertisers.length === 0 && !advertisersLoading && (
+          <div className="text-sm text-gray-500 py-8 text-center bg-gray-50 rounded">
+            No advertisers available for this property type
+          </div>
+        )}
+        
+        {advertisers.length > 0 && (
+          <>
+            {/* CSSCarousel - Pure CSS implementation */}
+            <CSSCarousel
+              showNavigation={true}
+              className="mx-2"
+            >
+              {advertisers.map((advertiser) => {
+                return (
+                  <AdvertiserCard
+                    key={advertiser.id}
+                    advertiser={advertiser}
+                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
+                    onBook={(selectedAdvertiser) => {
+                      setSelectedAdvertiserForBooking(selectedAdvertiser);
+                      setIsScheduleModalOpen(true);
+                    }}
+                    renderPillsWithShowMore={renderPillsWithShowMore}
+                  />
+                )
+              })}
+            </CSSCarousel>
+
+            {/* EmblaCarousel - JavaScript implementation (commented out) */}
+            {/*
+            <EmblaCarousel
+              options={{ align: 'start', slidesToScroll: 1 }}
+              className="mx-2"
+            >
+              {advertisers.map((advertiser) => {
+                return (
+                  <AdvertiserCard
+                    key={advertiser.id}
+                    advertiser={advertiser}
+                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
+                    onBook={(selectedAdvertiser) => {
+                      setSelectedAdvertiserForBooking(selectedAdvertiser);
+                      setIsScheduleModalOpen(true);
+                    }}
+                    renderPillsWithShowMore={renderPillsWithShowMore}
+                  />
+                )
+              })}
+            </EmblaCarousel>
+            */}
+          </>
+        )}
+      </div>
+
+      {/* Schedule Modal */}
+      <ScheduleWizardModal
+        open={isScheduleModalOpen}
+        property={property}
+        advertisers={advertisers}
+        agentId={agentId}
+        preselectedAdvertiser={selectedAdvertiserForBooking}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setSelectedAdvertiserForBooking(null);
+          setCreatedScheduleForPayment(null);
+        }}
+        onSubmit={(scheduleData, metadata) => scheduleMutation.mutate({ scheduleData, metadata })}
+        createdSchedule={createdScheduleForPayment}
+        isLoading={scheduleMutation.isPending}
+        error={scheduleMutation.error}
+        isAdminViewing={isAdminViewing}
+        viewingAgentNid={viewingAgentNid}
+      />
+    </div>
+  );
+};
+
+export default EnhancedPropertyDetails;

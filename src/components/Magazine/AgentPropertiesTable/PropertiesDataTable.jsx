@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }) => {
   const scrollAnchorRef = useRef()
-  const expanded = expandedRows.has(row.id)
+  const expanded = expandedRows.has(row.original.pid)
   useEffect(() => {
     if (expanded && scrollAnchorRef.current) {
         scrollAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -13,7 +13,7 @@ const PropertyRow = ({ expandedRows, toggleRowExpansion, row, columns, agentId }
   }, [expanded]);
   return (
     <React.Fragment>
-      <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.id)}>
+      <tr className="hover:bg-slate-50 cursor-pointer" onClick={() => toggleRowExpansion(row.original.pid)}>
         {row.getVisibleCells().map((cell) => (
           <td key={cell.id} className="relative px-3 py-2 whitespace-nowrap text-xs text-gray-900">
             {flexRender(cell.column.columnDef.cell, cell.getContext())}

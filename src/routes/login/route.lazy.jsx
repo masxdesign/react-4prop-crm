@@ -22,9 +22,9 @@ function LoginComponent() {
       await auth.loginSubmit(variables)
 
       console.log(search.redirect);
-      
 
-      navigate({ to: search.redirect })
+      // Default to /crm if no redirect path is provided
+      navigate({ to: search.redirect || '/crm' })
 
     } catch (e) {
 

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { defaultTableModelState } from '@/hooks/use-TableModel'
 import PendingComponent from '@/components/PendingComponent'
 import { crmAddNote, crmFacetList, crmFetchNotes, crmList, crmListById, crmListByIds, crmListUpdateDetails, getCrmEnquiries, getMassBizchatList, getMassBizchatNotEmailed, getMassBizchatStat, sendMassBizchat } from '@/services/bizchat'
@@ -8,6 +8,10 @@ import ChatBoxMyListSingleMessage from '@/components/CRMTable/components/ChatBox
 export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list')({
   pendingComponent: PendingComponent,
   beforeLoad: async ({ context: { auth } }) => {
+    // Advertisers should not access the list page - redirect to their profile
+    if (auth.isAdvertiser) {
+      throw redirect({ to: '/crm/advertiser-profile' })
+    }
     const { columns, version } = await import('./-columns')
 
     const getBzId = (info) => info.bz_id

@@ -1,5 +1,5 @@
 import React from 'react';
-import { format, addWeeks, isWithinInterval, parseISO, startOfDay } from 'date-fns';
+import { format, addWeeks, addDays, isWithinInterval, parseISO, startOfDay } from 'date-fns';
 import { Controller } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -51,18 +51,13 @@ const MagazineCalendar = ({
     // Filter schedules for the selected advertiser
     schedules.forEach(schedule => {
       // Match by advertiser_id (convert to number for comparison)
-      if (parseInt(schedule.advertiser_id) === parseInt(advertiserId)) {
+      if (![6].includes(schedule.status_id) && parseInt(schedule.advertiser_id) === parseInt(advertiserId)) {
         let startDate, endDate;
         
         // Handle week-based schedules (preferred)
         if (schedule.start_date && schedule.week_no) {
           startDate = parseISO(schedule.start_date);
           endDate = addWeeks(startDate, parseInt(schedule.week_no));
-        }
-        // Handle legacy date-based schedules
-        else if (schedule.start_date && schedule.end_date) {
-          startDate = parseISO(schedule.start_date);
-          endDate = parseISO(schedule.end_date);
         }
         
         if (startDate && endDate) {
@@ -85,12 +80,18 @@ const MagazineCalendar = ({
   // Check if a date is blocked by existing schedules for this advertiser
   const isDateBlocked = (date) => {
     const checkDate = startOfDay(date);
+    const proposedEndDate = addDays(checkDate, 7); // 7 days duration
     
     return blockedRanges.some(range => {
-      return isWithinInterval(checkDate, {
-        start: range.start,
-        end: range.end
-      });
+      if (date < new Date(minDate)) {
+        return isWithinInterval(checkDate, {
+          start: range.start,
+          end: range.end
+        });
+      }
+      // Check if the proposed 7-day range overlaps with existing schedule
+      // Ranges overlap if: proposed start <= existing end AND proposed end >= existing start
+      return checkDate <= range.end && proposedEndDate >= range.start;
     });
   };
 
