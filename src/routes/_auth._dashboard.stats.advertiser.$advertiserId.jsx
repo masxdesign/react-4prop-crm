@@ -17,7 +17,7 @@ export const Route = createFileRoute('/_auth/_dashboard/stats/advertiser/$advert
     // Check if user has permission to view this advertiser's stats
     const canView =
       auth.user?.is_admin ||
-      (auth.isAdvertiser && auth.user?.advertiser_id === parseInt(advertiserId));
+      (auth.isAdvertiser && `${auth.user?.advertiser_id}` === `${advertiserId}`);
 
     if (!canView) {
       // Redirect back to stats router which will redirect to their own stats

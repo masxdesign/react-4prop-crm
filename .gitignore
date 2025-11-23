@@ -9,9 +9,17 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+package-lock.json
 dist
 dist-ssr
 *.local
+
+# Environment files
+.env
+.env.*
+
+# Claude configuration
+.claude
 
 # Editor directories and files
 .vscode/*

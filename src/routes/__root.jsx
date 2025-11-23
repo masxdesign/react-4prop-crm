@@ -32,11 +32,11 @@ function RouteRootComponent() {
   return (
     <>
       <Outlet />
-      {/* {!isInIframe && (
+      {!isInIframe && (
         <Suspense>
             <TanStackRouterDevtools />
         </Suspense>
-      )} */}
+      )}
     </>
   )
 }
