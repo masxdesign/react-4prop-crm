@@ -15,7 +15,7 @@ import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth.
 import { BASEPATH, WINDOWN_NAMES } from '@/constants'
 import { sharedTagListQueryOptions } from '@/features/tags/queryOptions'
 
-export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_id/shared')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list_/$import_id/shared')({
   component: ShareListComponent,
   pendingComponent: PendingComponent,
   beforeLoad () {

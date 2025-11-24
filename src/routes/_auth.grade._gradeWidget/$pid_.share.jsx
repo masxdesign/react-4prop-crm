@@ -12,7 +12,7 @@ import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 
 const allowUsersList = ['U161', 'U2', 'U60726']
 
-export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share')({
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid_/share')({
   component: GradeShareComponent,
   beforeLoad: ({ context, params }) => {
     

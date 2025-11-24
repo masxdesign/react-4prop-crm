@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/agentb/$advertiser_id/details/$pid')({
+export const Route = createFileRoute('/agentb_/$advertiser_id/details/$pid')({
   component: () => <div>Hello /_agentb/details/$pid!</div>
 })

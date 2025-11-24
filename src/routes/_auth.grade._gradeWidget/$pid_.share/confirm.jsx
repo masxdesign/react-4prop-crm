@@ -6,7 +6,7 @@ import Selection from '@/components/Selection'
 import { useQuery } from '@tanstack/react-query'
 import AssignTagInput from '@/features/tags/components/AssignTagInput'
 
-export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share/confirm')({
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid_/share/confirm')({
   component: ConfirmComponent
 })
 
