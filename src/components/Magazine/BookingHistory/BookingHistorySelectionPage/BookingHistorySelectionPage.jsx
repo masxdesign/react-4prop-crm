@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import AdvertiserSelectionTable from './AdvertiserSelectionTable';
-import AgencySelectionTable from './AgencySelectionTable';
+import AdvertiserSelectionTable from '@/components/AdvertiserSelectionTable';
+import AgencySelectionTable from '@/components/AgencySelectionTable';
 
 // Default values for search params
 const DEFAULTS = {
@@ -125,11 +125,21 @@ const BookingHistorySelectionPage = () => {
               </TabsList>
 
               <TabsContent value="advertisers" className="mt-6">
-                <AdvertiserSelectionTable />
+                <AdvertiserSelectionTable
+                  variant="booking-history"
+                  basePath="/crm/booking-history/select"
+                  cleanSearchParams={cleanSearchParams}
+                  DEFAULTS={DEFAULTS}
+                />
               </TabsContent>
 
               <TabsContent value="agencies" className="mt-6">
-                <AgencySelectionTable />
+                <AgencySelectionTable
+                  variant="booking-history"
+                  basePath="/crm/booking-history/select"
+                  cleanSearchParams={cleanSearchParams}
+                  DEFAULTS={DEFAULTS}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>

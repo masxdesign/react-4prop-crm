@@ -19,21 +19,25 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { fetchAgencies } from '@/components/Stats/api';
-import { cleanSearchParams, DEFAULTS } from './BookingHistorySelectionPage';
+import { fetchAdvertisers } from '@/components/Stats/api';
 
 const columnHelper = createColumnHelper();
 
 /**
- * AgencySelectionTable Component (for Booking History)
- *
- * Displays a searchable, paginated list of agencies for admin selection.
- * All state (page, search, sorting) is synced with URL search parameters.
- * Clicking a row navigates to that agency's booking history page.
+ * Searchable, paginated advertiser selection table
+ * @param {string} variant - 'stats' | 'booking-history'
+ * @param {string} basePath - Route path for navigation
+ * @param {Function} cleanSearchParams - Clean search params utility
+ * @param {Object} DEFAULTS - Default search param values
  */
-const AgencySelectionTable = () => {
-  const navigate = useNavigate({ from: '/crm/booking-history/select' });
-  const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/booking-history/select' });
+const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, DEFAULTS }) => {
+  const navigate = useNavigate({ from: basePath });
+  const rawUrlSearch = useSearch({ from: basePath.replace('/crm', '/_auth/_dashboard') });
+
+  // Determine navigation target based on variant
+  const navigationPath = variant === 'stats'
+    ? '/crm/stats/advertiser'
+    : '/crm/booking-history/advertiser';
 
   // Apply defaults to URL search params
   const urlSearch = {
@@ -45,8 +49,8 @@ const AgencySelectionTable = () => {
     order: rawUrlSearch.order || DEFAULTS.order,
   };
 
-  // Only use this table's state if we're on the agencies tab
-  const isActive = urlSearch.tab === 'agencies';
+  // Only use this table's state if we're on the advertisers tab
+  const isActive = urlSearch.tab === 'advertisers';
 
   // Local search input state (not debounced)
   const [searchInput, setSearchInput] = useState(urlSearch.search || '');
@@ -75,12 +79,12 @@ const AgencySelectionTable = () => {
         replace: true,
       });
     }
-  }, [debouncedSearch, isActive, navigate, urlSearch]);
+  }, [debouncedSearch, isActive, navigate, urlSearch, cleanSearchParams]);
 
-  // Fetch agencies with TanStack Query (only when this tab is active)
+  // Fetch advertisers with TanStack Query (only when this tab is active)
   const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
-    queryKey: ['agencies-list', urlSearch.page, urlSearch.limit, urlSearch.search],
-    queryFn: () => fetchAgencies({
+    queryKey: ['advertisers-list', urlSearch.page, urlSearch.limit, urlSearch.search],
+    queryFn: () => fetchAdvertisers({
       page: urlSearch.page,
       limit: urlSearch.limit,
       search: urlSearch.search
@@ -89,7 +93,7 @@ const AgencySelectionTable = () => {
     enabled: isActive, // Only fetch when this tab is active
   });
 
-  const agencies = data?.data || [];
+  const advertisers = data?.data || [];
   const pagination = data?.pagination || {
     page: 1,
     total: 0,
@@ -101,37 +105,36 @@ const AgencySelectionTable = () => {
   // Define table columns
   const columns = useMemo(
     () => [
-      columnHelper.accessor('cid', {
+      columnHelper.accessor('id', {
         header: 'ID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor('name', {
-        header: 'Agency Name',
+      columnHelper.accessor('company', {
+        header: 'Company Name',
         cell: (info) => (
           <span className="font-medium text-gray-900">{info.getValue()}</span>
         ),
       }),
-      columnHelper.accessor('type', {
-        header: 'Type',
-        cell: (info) => info.getValue() || '-',
-      }),
-      columnHelper.accessor('phone', {
-        header: 'Phone',
-        cell: (info) => info.getValue() || '-',
+      columnHelper.accessor('week_rate', {
+        header: 'Week Rate',
+        cell: (info) => {
+          const value = info.getValue();
+          return value ? `£${parseFloat(value).toFixed(2)}` : '-';
+        },
       }),
     ],
     []
   );
 
   const table = useReactTable({
-    data: agencies,
+    data: advertisers,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click - navigate to agency booking history page
-  const handleRowClick = (agency) => {
-    navigate({ to: `/crm/booking-history/agency/${agency.cid}` });
+  // Handle row click - navigate to advertiser detail page
+  const handleRowClick = (advertiser) => {
+    navigate({ to: `${navigationPath}/${advertiser.id}` });
   };
 
   // Handle page change - update URL
@@ -168,7 +171,7 @@ const AgencySelectionTable = () => {
       <div className="flex items-center justify-center py-12">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Loading agencies...</p>
+          <p className="text-gray-600">Loading advertisers...</p>
         </div>
       </div>
     );
@@ -181,7 +184,7 @@ const AgencySelectionTable = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           type="text"
-          placeholder="Search agencies by name..."
+          placeholder="Search advertisers by company name..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="pl-10"
@@ -220,7 +223,7 @@ const AgencySelectionTable = () => {
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
                     <div className="flex flex-col items-center justify-center text-gray-500">
-                      <p className="font-medium">No agencies found</p>
+                      <p className="font-medium">No advertisers found</p>
                       {urlSearch.search && (
                         <p className="text-sm mt-1">Try a different search term</p>
                       )}
@@ -252,7 +255,7 @@ const AgencySelectionTable = () => {
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-600">
             Showing {(urlSearch.page - 1) * urlSearch.limit + 1} to{' '}
-            {Math.min(urlSearch.page * urlSearch.limit, pagination.total)} of {pagination.total} agencies
+            {Math.min(urlSearch.page * urlSearch.limit, pagination.total)} of {pagination.total} advertisers
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -283,4 +286,4 @@ const AgencySelectionTable = () => {
   );
 };
 
-export default AgencySelectionTable;
+export default AdvertiserSelectionTable;

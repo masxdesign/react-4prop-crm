@@ -19,21 +19,25 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { fetchAgencies } from '../api';
-import { cleanSearchParams, DEFAULTS } from '../StatsSelectionPage/StatsSelectionPage';
+import { fetchAgencies } from '@/components/Stats/api';
 
 const columnHelper = createColumnHelper();
 
 /**
- * AgencySelectionTable Component
- *
- * Displays a searchable, paginated list of agencies for admin selection.
- * All state (page, search, sorting) is synced with URL search parameters.
- * Clicking a row navigates to that agency's statistics page.
+ * Searchable, paginated agency selection table
+ * @param {string} variant - 'stats' | 'booking-history'
+ * @param {string} basePath - Route path for navigation
+ * @param {Function} cleanSearchParams - Clean search params utility
+ * @param {Object} DEFAULTS - Default search param values
  */
-const AgencySelectionTable = () => {
-  const navigate = useNavigate({ from: '/crm/stats/select' });
-  const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
+const AgencySelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, DEFAULTS }) => {
+  const navigate = useNavigate({ from: basePath });
+  const rawUrlSearch = useSearch({ from: basePath.replace('/crm', '/_auth/_dashboard') });
+
+  // Determine navigation target based on variant
+  const navigationPath = variant === 'stats'
+    ? '/crm/stats/agency'
+    : '/crm/booking-history/agency';
 
   // Apply defaults to URL search params
   const urlSearch = {
@@ -75,7 +79,7 @@ const AgencySelectionTable = () => {
         replace: true,
       });
     }
-  }, [debouncedSearch, isActive, navigate, urlSearch]);
+  }, [debouncedSearch, isActive, navigate, urlSearch, cleanSearchParams]);
 
   // Fetch agencies with TanStack Query (only when this tab is active)
   const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
@@ -129,9 +133,9 @@ const AgencySelectionTable = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click - navigate to agency stats page
+  // Handle row click - navigate to agency detail page
   const handleRowClick = (agency) => {
-    navigate({ to: `/crm/stats/agency/${agency.cid}` });
+    navigate({ to: `${navigationPath}/${agency.cid}` });
   };
 
   // Handle page change - update URL
