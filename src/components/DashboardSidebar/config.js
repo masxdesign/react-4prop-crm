@@ -23,7 +23,7 @@ export const navigationConfig = {
       },
       {
         id: 'nav-inbox',
-        to: '/crm/user/active',
+        to: '/user/active',
         icon: EnvelopeOpenIcon,
         label: 'My inbox',
         excludedRoles: ['advertiser']
@@ -42,21 +42,21 @@ export const navigationConfig = {
   magazine: [
     {
       id: 'mag-agents-list',
-      to: "/crm/mag",
+      to: "/mag",
       icon: NewspaperIcon,
       label: "Properties",
       excludedRoles: ['advertiser']
     },
     {
       id: 'mag-advertisers',
-      to: "/crm/mag/manage-advertisers",
+      to: "/mag/manage-advertisers",
       icon: NewspaperIcon,
       label: "Advertisers",
       allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
       id: 'mag-agent-view',
-      to: "/crm/mag/agent/select",
+      to: "/mag/agent/select",
       icon: UserSearch,
       label: "View Agent Properties",
       allowedNegIds: RESTRICTED_NEG_IDS
@@ -64,41 +64,41 @@ export const navigationConfig = {
     // This is for later, admin/advertisers can view current bookings
     // {
     //   id: 'mag-schedules',
-    //   to: "/crm/mag/manage-schedule/6",
+    //   to: "/mag/manage-schedule/6",
     //   icon: NewspaperIcon,
     //   label: "Schedules (#6)",
     //   allowedNegIds: RESTRICTED_NEG_IDS
     // },
     {
       id: 'mag-payment-settings',
-      to: "/crm/mag/payment-settings",
+      to: "/mag/payment-settings",
       icon: CreditCard,
       label: "Payment Settings",
       excludedRoles: ['advertiser']
     },
     {
       id: 'mag-transfers',
-      to: "/crm/mag/transfers",
+      to: "/mag/transfers",
       icon: ArrowRightLeft,
       label: "Transfers",
       allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
       id: 'advertiser-profile',
-      to: "/crm/advertiser-profile",
+      to: "/advertiser-profile",
       icon: UserCircle,
       label: "My Profile",
       requiredRoles: ['advertiser']
     },
     {
       id: 'mag-bookings',
-      to: "/crm/mag/bookings",
+      to: "/booking-history",
       icon: CalendarCheck,
       label: "Booking History"
     },
     {
       id: 'stats',
-      to: "/crm/stats",
+      to: "/stats",
       icon: TrendingUp,
       label: "Statistics"
     },

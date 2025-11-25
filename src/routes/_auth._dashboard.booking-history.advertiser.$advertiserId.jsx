@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_auth/_dashboard/booking-history/advertis
       (auth.isAdvertiser && `${auth.user?.advertiser_id}` === `${advertiserId}`);
 
     if (!canView) {
-      throw redirect({ to: '/crm/booking-history' });
+      throw redirect({ to: '/booking-history' });
     }
 
     // Create query options

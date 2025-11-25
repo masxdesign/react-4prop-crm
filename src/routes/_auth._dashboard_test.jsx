@@ -15,7 +15,7 @@ function dashboardComponent() {
 
   const handleLogout = async () => {
     await auth.logout()
-    navigate({ to: '/crm/login' })
+    navigate({ to: '/login' })
   }
   
   return (

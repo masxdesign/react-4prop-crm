@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_auth/_dashboard/stats/agency/$agencyId')
 
     if (!canView) {
       // Redirect back to stats router which will redirect to their own stats
-      throw redirect({ to: '/crm/stats' });
+      throw redirect({ to: '/stats' });
     }
 
     const queryOptions = {

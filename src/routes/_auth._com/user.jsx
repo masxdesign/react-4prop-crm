@@ -22,11 +22,11 @@ export const Route = createFileRoute('/_auth/_com/user')({
 const menuShared = [
     { id: "inactive", to: 'inactive', label: <X className='text-pink-300 size-5'/> },
     { id: "enquiries", to: 'active', search: { filters: { choice: null } }, mask: { to: 'active' }, includeSearch: true, label: <StarFilledIcon  className='text-amber-500 size-5'/> },
-    { id: "rfi", to: '/crm/user/active', search: { filters: { choice: 2 } }, label: "RFI", mask: {
-        to: '/crm/user/rfi'
+    { id: "rfi", to: '/user/active', search: { filters: { choice: 2 } }, label: "RFI", mask: {
+        to: '/user/rfi'
     }, includeSearch: true },
-    { id: "view", to: '/crm/user/active', search: { filters: { choice: 1 } }, label: "View", mask: {
-        to: '/crm/user/view'
+    { id: "view", to: '/user/active', search: { filters: { choice: 1 } }, label: "View", mask: {
+        to: '/user/view'
     }, includeSearch: true },
 ]
 

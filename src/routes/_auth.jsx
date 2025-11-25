@@ -6,7 +6,7 @@ export const Route = createFileRoute('/_auth')({
     beforeLoad: ({ context, location }) => {
         if (!context.auth.isAuthenticated /*|| context.auth.user?.need_to_login*/) {
           throw redirect({
-            to: '/crm/login',
+            to: '/login',
             search: {
               redirect: location.href.replace(location.origin, ''),
               email: context.auth.user?.email

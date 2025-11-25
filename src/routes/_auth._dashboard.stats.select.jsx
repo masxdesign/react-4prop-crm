@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_auth/_dashboard/stats/select')({
     // Only super admins can access the selection page
     if (!auth.user?.is_admin) {
       // Redirect back to /stats which will redirect them to their own stats
-      throw redirect({ to: '/crm/stats' });
+      throw redirect({ to: '/stats' });
     }
   },
   component: StatsSelectionPage,

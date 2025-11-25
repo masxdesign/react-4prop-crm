@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_auth/_dashboard/mag/agent/$nid")({
 
     // Only super admins can access this route
     if (!auth.user?.is_admin) {
-      throw redirect({ to: '/crm/mag' });
+      throw redirect({ to: '/mag' });
     }
 
     // Validate nid parameter

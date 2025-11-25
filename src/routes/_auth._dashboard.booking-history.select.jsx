@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_auth/_dashboard/booking-history/select')
 
     // Only admins can access the selection page
     if (!auth.user?.is_admin) {
-      throw redirect({ to: '/crm/booking-history' });
+      throw redirect({ to: '/booking-history' });
     }
   },
   component: BookingHistorySelectionPage,

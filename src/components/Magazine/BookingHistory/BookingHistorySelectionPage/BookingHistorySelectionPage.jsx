@@ -73,7 +73,7 @@ export { DEFAULTS };
  * Only non-default values are included in the URL to keep it clean.
  */
 const BookingHistorySelectionPage = () => {
-  const navigate = useNavigate({ from: '/crm/booking-history/select' });
+  const navigate = useNavigate({ from: '/booking-history/select' });
   const urlSearch = useSearch({ from: '/_auth/_dashboard/booking-history/select' });
 
   // Apply defaults to URL search params
@@ -127,7 +127,7 @@ const BookingHistorySelectionPage = () => {
               <TabsContent value="advertisers" className="mt-6">
                 <AdvertiserSelectionTable
                   variant="booking-history"
-                  basePath="/crm/booking-history/select"
+                  basePath="/booking-history/select"
                   cleanSearchParams={cleanSearchParams}
                   DEFAULTS={DEFAULTS}
                 />
@@ -136,7 +136,7 @@ const BookingHistorySelectionPage = () => {
               <TabsContent value="agencies" className="mt-6">
                 <AgencySelectionTable
                   variant="booking-history"
-                  basePath="/crm/booking-history/select"
+                  basePath="/booking-history/select"
                   cleanSearchParams={cleanSearchParams}
                   DEFAULTS={DEFAULTS}
                 />

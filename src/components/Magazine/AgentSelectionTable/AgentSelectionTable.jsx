@@ -75,7 +75,7 @@ const cleanSearchParams = (params) => {
  * Supports pagination and sorting via URL parameters.
  */
 const AgentSelectionTable = () => {
-  const navigate = useNavigate({ from: '/crm/mag/agent/select' });
+  const navigate = useNavigate({ from: '/mag/agent/select' });
   const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/mag/agent/select' });
 
   // Apply defaults to URL search params
@@ -173,7 +173,7 @@ const AgentSelectionTable = () => {
 
   // Handle row click - navigate to agent's properties page
   const handleRowClick = (agent) => {
-    navigate({ to: `/crm/mag/agent/${agent.nid}` });
+    navigate({ to: `/mag/agent/${agent.nid}` });
   };
 
   return (

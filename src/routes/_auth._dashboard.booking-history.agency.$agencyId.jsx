@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_auth/_dashboard/booking-history/agency/$
       (auth.isAgent && `${auth.user?.cid}` === `${agencyId}`);
 
     if (!canView) {
-      throw redirect({ to: '/crm/booking-history' });
+      throw redirect({ to: '/booking-history' });
     }
 
     // Create query options

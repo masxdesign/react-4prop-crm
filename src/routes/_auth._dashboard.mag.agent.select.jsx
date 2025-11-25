@@ -25,7 +25,7 @@ export const Route = createFileRoute('/_auth/_dashboard/mag/agent/select')({
     // Only super admins can access the agent selection page
     if (!auth.user?.is_admin) {
       // Redirect back to magazine dashboard
-      throw redirect({ to: '/crm/mag' });
+      throw redirect({ to: '/mag' });
     }
 
     // Add query options to context for data preloading

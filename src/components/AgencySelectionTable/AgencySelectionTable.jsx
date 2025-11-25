@@ -32,12 +32,12 @@ const columnHelper = createColumnHelper();
  */
 const AgencySelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, DEFAULTS }) => {
   const navigate = useNavigate({ from: basePath });
-  const rawUrlSearch = useSearch({ from: basePath.replace('/crm', '/_auth/_dashboard') });
+  const rawUrlSearch = useSearch({ from: `/_auth/_dashboard${basePath}` });
 
   // Determine navigation target based on variant
   const navigationPath = variant === 'stats'
-    ? '/crm/stats/agency'
-    : '/crm/booking-history/agency';
+    ? '/stats/agency'
+    : '/booking-history/agency';
 
   // Apply defaults to URL search params
   const urlSearch = {

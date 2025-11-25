@@ -73,7 +73,7 @@ export { DEFAULTS };
  * Only non-default values are included in the URL to keep it clean.
  */
 const StatsSelectionPage = () => {
-  const navigate = useNavigate({ from: '/crm/stats/select' });
+  const navigate = useNavigate({ from: '/stats/select' });
   const urlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
 
   // Apply defaults to URL search params
@@ -127,7 +127,7 @@ const StatsSelectionPage = () => {
               <TabsContent value="advertisers" className="mt-6">
                 <AdvertiserSelectionTable
                   variant="stats"
-                  basePath="/crm/stats/select"
+                  basePath="/stats/select"
                   cleanSearchParams={cleanSearchParams}
                   DEFAULTS={DEFAULTS}
                 />
@@ -136,7 +136,7 @@ const StatsSelectionPage = () => {
               <TabsContent value="agencies" className="mt-6">
                 <AgencySelectionTable
                   variant="stats"
-                  basePath="/crm/stats/select"
+                  basePath="/stats/select"
                   cleanSearchParams={cleanSearchParams}
                   DEFAULTS={DEFAULTS}
                 />

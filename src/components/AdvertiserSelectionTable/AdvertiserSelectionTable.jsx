@@ -32,12 +32,12 @@ const columnHelper = createColumnHelper();
  */
 const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, DEFAULTS }) => {
   const navigate = useNavigate({ from: basePath });
-  const rawUrlSearch = useSearch({ from: basePath.replace('/crm', '/_auth/_dashboard') });
+  const rawUrlSearch = useSearch({ from: `/_auth/_dashboard${basePath}` });
 
   // Determine navigation target based on variant
   const navigationPath = variant === 'stats'
-    ? '/crm/stats/advertiser'
-    : '/crm/booking-history/advertiser';
+    ? '/stats/advertiser'
+    : '/booking-history/advertiser';
 
   // Apply defaults to URL search params
   const urlSearch = {

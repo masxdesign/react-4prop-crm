@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list')({
   beforeLoad: async ({ context: { auth } }) => {
     // Advertisers should not access the list page - redirect to their profile
     if (auth.isAdvertiser) {
-      throw redirect({ to: '/crm/advertiser-profile' })
+      throw redirect({ to: '/advertiser-profile' })
     }
     const { columns, version } = await import('./-columns')
 
