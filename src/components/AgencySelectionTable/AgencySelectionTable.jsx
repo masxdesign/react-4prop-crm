@@ -181,7 +181,7 @@ const AgencySelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, 
   return (
     <div className="space-y-4">
       {/* Search Input */}
-      <div className="relative">
+      <div className="relative w-full max-w-sm">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           type="text"

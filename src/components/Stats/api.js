@@ -92,6 +92,14 @@ export const fetchAdvertisers = async ({ page = 1, limit = 20, search = '' }) =>
 };
 
 /**
+ * Fetch single agency by ID
+ */
+export const fetchAgencyById = async (agencyId) => {
+  const response = await propertyPubClient.get(`/api/agencies/${agencyId}`);
+  return response.data;
+};
+
+/**
  * Fetch paginated list of agencies for selection
  * @param {Object} options - Query options
  * @param {number} options.page - Page number (1-indexed)

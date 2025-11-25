@@ -2,8 +2,12 @@ import React from 'react';
 import { useParams, useSearch, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAgentBookings } from '@/components/Magazine/api';
+import { fetchAgencyById } from '@/components/Stats/api';
+import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryTable from '../BookingHistoryTable';
 import BookingStatusFilter from '../BookingStatusFilter';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 
 /**
  * AgencyBookingHistoryPage Component
@@ -13,6 +17,7 @@ import BookingStatusFilter from '../BookingStatusFilter';
  * All state (status, page) is synced with URL search parameters.
  */
 const AgencyBookingHistoryPage = () => {
+  const auth = useAuth();
   const { agencyId } = useParams({ from: '/_auth/_dashboard/booking-history/agency/$agencyId' });
   const search = useSearch({ from: '/_auth/_dashboard/booking-history/agency/$agencyId' });
   const navigate = useNavigate({ from: '/booking-history/agency/$agencyId' });
@@ -28,6 +33,13 @@ const AgencyBookingHistoryPage = () => {
     enabled: !!agencyId,
   });
 
+  // Fetch agency details for super admin to display name
+  const { data: agencyData } = useQuery({
+    queryKey: ['agency', agencyId],
+    queryFn: () => fetchAgencyById(agencyId),
+    enabled: !!agencyId && auth.user?.is_admin,
+  });
+
   const bookings = data?.data || [];
   const pagination = data ? {
     page: data.page,
@@ -35,6 +47,9 @@ const AgencyBookingHistoryPage = () => {
     total: data.total,
     totalPages: data.totalPages
   } : null;
+
+  // Get agency name from API response (structure: {data: {...}, success: true})
+  const agencyName = agencyData?.data?.name;
 
   // Handle status change
   const handleStatusChange = (newStatus) => {
@@ -60,11 +75,29 @@ const AgencyBookingHistoryPage = () => {
   return (
     <div className="flex flex-col gap-6 p-6 w-full mx-auto">
       {/* Header */}
-      <div className="flex flex-col">
-        <h1 className="text-xl font-bold text-gray-900">Booking History</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          View all property bookings from advertisers with active subscriptions
-        </p>
+      <div className="flex flex-col gap-2">
+        {auth.user?.is_admin && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate({ to: '/booking-history/select' })}
+            className="self-start -ml-2 text-gray-600 hover:text-gray-900"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Selection
+          </Button>
+        )}
+        <div className="flex flex-col">
+          <h1 className="text-xl font-bold text-gray-900">Booking History</h1>
+          {auth.user?.is_admin && agencyName && (
+            <p className="text-sm text-gray-600 mt-1">{agencyName}</p>
+          )}
+          {!auth.user?.is_admin && (
+            <p className="text-sm text-gray-600 mt-1">
+              View all property bookings from advertisers with active subscriptions
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Status Filter Tabs */}

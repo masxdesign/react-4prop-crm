@@ -20,6 +20,11 @@ export const fetchAllAdvertisers = async () => {
   return response.data;
 };
 
+export const fetchAdvertiserById = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}`);
+  return response.data;
+};
+
 export const createAdvertiser = async (advertiserData) => {
   const response = await bizchatClient.post('/api/crm/mag/advertisers', advertiserData);
   return response.data;

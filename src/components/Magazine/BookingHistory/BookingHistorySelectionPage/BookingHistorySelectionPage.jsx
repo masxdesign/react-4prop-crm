@@ -119,7 +119,7 @@ const BookingHistorySelectionPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={search.tab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full max-w-lg grid-cols-2">
                 <TabsTrigger value="advertisers">Advertiser Bookings</TabsTrigger>
                 <TabsTrigger value="agencies">Agency Bookings</TabsTrigger>
               </TabsList>
