@@ -151,10 +151,6 @@ const AgencyStatsPage = () => {
             <CardContent>
               <DailySummaryTable
                 dailySummary={data.dailySummary}
-                totalProperties={data.advertiserBreakdown?.reduce(
-                  (sum, adv) => sum + (adv.totalProperties || 0),
-                  0
-                )}
               />
             </CardContent>
           </Card>

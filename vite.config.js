@@ -36,7 +36,7 @@ export default defineConfig(({ command, mode }) => {
     base: '/new/agentab_crm',
     build: {
       manifest: true,
-      outDir: '/Users/salgadom/EACH/4prop/code/seo/agentab_crm',
+      // outDir: '/Users/salgadom/EACH/4prop/code/seo/agentab_crm',
       emptyOutDir: true,
       rollupOptions: {
         input: 'src/main.jsx'

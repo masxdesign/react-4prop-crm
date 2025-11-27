@@ -1,7 +1,6 @@
 import React from 'react';
-import { useParams, useSearch, useNavigate } from '@tanstack/react-router';
+import { useParams, useSearch, useNavigate, useRouteContext } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAgentBookings } from '@/components/Magazine/api';
 import { fetchAgencyById } from '@/components/Stats/api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryTable from '../BookingHistoryTable';
@@ -22,16 +21,13 @@ const AgencyBookingHistoryPage = () => {
   const search = useSearch({ from: '/_auth/_dashboard/booking-history/agency/$agencyId' });
   const navigate = useNavigate({ from: '/booking-history/agency/$agencyId' });
 
-  // Fetch bookings using the same query key from beforeLoad
-  const { data, isLoading } = useQuery({
-    queryKey: ['bookings', 'agency', agencyId, search.status, search.page, search.pageSize],
-    queryFn: () => fetchAgentBookings(agencyId, {
-      status: search.status,
-      page: search.page,
-      pageSize: search.pageSize
-    }),
-    enabled: !!agencyId,
+  // Get query options from route context
+  const { bookingsQueryOptions } = useRouteContext({
+    from: '/_auth/_dashboard/booking-history/agency/$agencyId'
   });
+
+  // Fetch bookings using preloaded query options from route
+  const { data, isLoading } = useQuery(bookingsQueryOptions);
 
   // Fetch agency details for super admin to display name
   const { data: agencyData } = useQuery({

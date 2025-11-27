@@ -22,14 +22,13 @@ const columnHelper = createColumnHelper();
  * DailySummaryTable Component
  *
  * Displays daily metrics in a table format with a totals row at the top.
- * Columns: Date | Total Properties | Phone Reveals | View PDF | Viewing Requests
+ * Columns: Date | Clicks | Phone Reveals | View PDF | Viewing Requests
  *
  * @param {Object} props
  * @param {Array} props.dailySummary - Array of daily summary objects
- * @param {number} props.totalProperties - Total number of properties
  * @param {Object} props.className - Additional CSS classes
  */
-const DailySummaryTable = ({ dailySummary = [], totalProperties = 0, className = '' }) => {
+const DailySummaryTable = ({ dailySummary = [], className = '' }) => {
   // Define columns
   const columns = useMemo(
     () => [
@@ -42,8 +41,8 @@ const DailySummaryTable = ({ dailySummary = [], totalProperties = 0, className =
         },
         sortingFn: 'datetime',
       }),
-      columnHelper.accessor('totalProperties', {
-        header: 'Total Properties',
+      columnHelper.accessor('search_clicks', {
+        header: 'Clicks',
         cell: (info) => {
           const value = info.getValue();
           return <span className={info.row.original.date === 'TOTAL' ? 'font-semibold' : ''}>
@@ -105,10 +104,9 @@ const DailySummaryTable = ({ dailySummary = [], totalProperties = 0, className =
 
     return {
       date: 'TOTAL',
-      totalProperties,
       ...totals,
     };
-  }, [dailySummary, totalProperties]);
+  }, [dailySummary]);
 
   // Prepare data: totals row + sorted daily data
   const data = useMemo(() => {

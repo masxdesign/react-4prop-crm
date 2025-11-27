@@ -35,12 +35,6 @@ export const Route = createFileRoute('/_auth/_dashboard/stats/advertiser/$advert
       statsQueryOptions: queryOptions,
     };
   },
-  loader: async ({ context }) => {
-    if (context.statsQueryOptions?.enabled) {
-      return context.queryClient.ensureQueryData(context.statsQueryOptions);
-    }
-    return null;
-  },
   pendingComponent: () => (
     <div className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg flex items-center gap-3">

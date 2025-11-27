@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useAuth } from '@/components/Auth/Auth-context';
-import { subDays, format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { StatsExpandProvider } from '../context/StatsExpandContext';
 import DateRangePicker from '../DateRangePicker/DateRangePicker';
 import DailySummaryTable from '../DailySummaryTable/DailySummaryTable';
 import AgencyBreakdownTable from '../AgencyBreakdownTable/AgencyBreakdownTable';
+import { fetchAdvertiserStats } from '../api';
 
 /**
  * AdvertiserStatsPage Component
@@ -28,10 +28,7 @@ const AdvertiserStatsPage = () => {
   // Get query options from route context
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['advertiser-stats', advertiserId, search.startDate, search.endDate],
-    queryFn: async () => {
-      const { fetchAdvertiserStats } = await import('../api');
-      return fetchAdvertiserStats(advertiserId, search.startDate, search.endDate);
-    },
+    queryFn: () => fetchAdvertiserStats(advertiserId, search.startDate, search.endDate),
     enabled: !!advertiserId,
   });
 
@@ -124,7 +121,6 @@ const AdvertiserStatsPage = () => {
             <CardContent>
               <DailySummaryTable
                 dailySummary={data.dailySummary}
-                totalProperties={data.totalProperties}
               />
             </CardContent>
           </Card>

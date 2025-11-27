@@ -42,7 +42,6 @@ const AgencyBreakdownTable = ({
   const {
     isEntityExpanded,
     getEntityData,
-    setEntityLoading,
     setEntityProperties,
     toggleEntity,
   } = useStatsExpand();
@@ -63,15 +62,15 @@ const AgencyBreakdownTable = ({
 
     try {
       // Fetch properties for this agency
-      const properties = await fetchAdvertiserAgencyProperties(
+      const response = await fetchAdvertiserAgencyProperties(
         advertiserId,
         agencyId,
         startDate,
         endDate
       );
 
-      // Store properties in context
-      setEntityProperties(agencyId, properties);
+      // Store properties in context (extract properties array from response)
+      setEntityProperties(agencyId, response.properties || []);
     } catch (error) {
       console.error('Error loading agency properties:', error);
       // On error, collapse the row
@@ -109,8 +108,8 @@ const AgencyBreakdownTable = ({
           <span className="font-medium text-gray-900">{info.getValue()}</span>
         ),
       }),
-      columnHelper.accessor('totalProperties', {
-        header: 'Total Properties',
+      columnHelper.accessor('search_clicks', {
+        header: 'Clicks',
         cell: (info) => info.getValue()?.toLocaleString() || 0,
       }),
       columnHelper.accessor('phone_reveals', {
