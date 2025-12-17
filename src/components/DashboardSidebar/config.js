@@ -9,14 +9,14 @@ export const navigationConfig = {
     common: [
       {
         id: 'nav-clients',
-        to: 'list',
+        to: '/list',
         icon: ListIcon,
         label: 'Clients',
         excludedRoles: ['advertiser']
       },
       {
         id: 'nav-import',
-        to: 'import',
+        to: '/import',
         icon: ImportIcon,
         label: 'Import',
         excludedRoles: ['advertiser']
@@ -32,7 +32,7 @@ export const navigationConfig = {
     restricted: [
       {
         id: 'nav-each',
-        to: 'each',
+        to: '/each',
         icon: DatabaseIcon,
         label: 'EACH',
         allowedNegIds: RESTRICTED_NEG_IDS
