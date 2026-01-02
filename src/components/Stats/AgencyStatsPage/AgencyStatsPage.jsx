@@ -17,28 +17,41 @@ import AdvertiserBreakdownTable from '../AdvertiserBreakdownTable/AdvertiserBrea
  * Main page component for agency statistics.
  * Displays number of advertisers, daily summary, and advertiser breakdown with lazy-loaded property details.
  *
- * Route: /stats/agency/:agencyId
+ * Route: /agency/:id/stats
+ *
+ * Props passed from route file:
+ * - search: URL search params (startDate, endDate)
+ * - agencyId: The agency ID from route params
  */
-const AgencyStatsPage = () => {
+const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
   const auth = useAuth();
-  const { agencyId } = useParams({ from: '/_auth/_dashboard/stats/agency/$agencyId' });
-  const search = useSearch({ from: '/_auth/_dashboard/stats/agency/$agencyId' });
-  const navigate = useNavigate({ from: '/stats/agency/$agencyId' });
+  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
+  const params = useParams({ strict: false });
+  const agencyId = propAgencyId || params.id || params.agencyId;
+  const navigate = useNavigate();
+
+  // Use prop search if provided, otherwise use useSearch as fallback
+  const routeSearch = useSearch({ strict: false });
+  const search = propSearch || routeSearch || {};
+
+  // Default date values
+  const startDate = search.startDate || format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const endDate = search.endDate || format(new Date(), 'yyyy-MM-dd');
 
   // Get query options from route context
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['agency-stats', agencyId, search.startDate, search.endDate],
+    queryKey: ['agency-stats', agencyId, startDate, endDate],
     queryFn: async () => {
       const { fetchAgencyStats } = await import('../api');
-      return fetchAgencyStats(agencyId, search.startDate, search.endDate);
+      return fetchAgencyStats(agencyId, startDate, endDate);
     },
     enabled: !!agencyId,
   });
 
   // Date range state for picker
   const [dateRange, setDateRange] = useState({
-    from: new Date(search.startDate),
-    to: new Date(search.endDate),
+    from: new Date(startDate),
+    to: new Date(endDate),
   });
 
   // Handle date range change
@@ -167,8 +180,8 @@ const AgencyStatsPage = () => {
               <AdvertiserBreakdownTable
                 advertiserBreakdown={data.advertiserBreakdown}
                 agencyId={agencyId}
-                startDate={search.startDate}
-                endDate={search.endDate}
+                startDate={startDate}
+                endDate={endDate}
               />
             </CardContent>
           </Card>

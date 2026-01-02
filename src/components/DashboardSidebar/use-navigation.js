@@ -3,9 +3,12 @@ import { navigationConfig } from './config'
 
 export function useNavigation(negId, auth) {
   const hasAccess = (item) => {
-    // Check if user is excluded by role (e.g., advertiser excluded from certain pages)
-    if (item.excludedRoles && auth?.isAdvertiser) {
-      if (item.excludedRoles.includes('advertiser')) {
+    // Check if user is excluded by role
+    if (item.excludedRoles) {
+      if (item.excludedRoles.includes('advertiser') && auth?.isAdvertiser) {
+        return false
+      }
+      if (item.excludedRoles.includes('admin') && auth?.user?.is_admin) {
         return false
       }
     }

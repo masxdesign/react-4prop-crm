@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useDebounce } from '@uidotdev/usehooks';
 import {
   useReactTable,
@@ -25,34 +25,42 @@ const columnHelper = createColumnHelper();
 
 /**
  * Searchable, paginated advertiser selection table
- * @param {string} variant - 'stats' | 'booking-history'
- * @param {string} basePath - Route path for navigation
- * @param {Function} cleanSearchParams - Clean search params utility
- * @param {Object} DEFAULTS - Default search param values
  */
-const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchParams, DEFAULTS }) => {
-  const navigate = useNavigate({ from: basePath });
-  const rawUrlSearch = useSearch({ from: `/_auth/_dashboard${basePath}` });
+const AdvertiserSelectionTable = ({
+  variant = 'stats',
+  basePath,
+  cleanSearchParams,
+  DEFAULTS,
+  navigationPrefix,
+  urlSearch: externalUrlSearch // Accept search params from parent
+}) => {
+  const navigate = useNavigate();
 
-  // Determine navigation target based on variant
-  const navigationPath = variant === 'stats'
-    ? '/stats/advertiser'
-    : '/booking-history/advertiser';
+  // Determine navigation target based on variant and navigationPrefix
+  const navigationPath = navigationPrefix
+    ? `${navigationPrefix}`
+    : variant === 'stats'
+      ? '/stats/advertiser'
+      : '/booking-history/advertiser';
 
-  // Apply defaults to URL search params
-  const urlSearch = {
-    tab: rawUrlSearch.tab || DEFAULTS.tab,
-    page: rawUrlSearch.page || DEFAULTS.page,
-    limit: rawUrlSearch.limit || DEFAULTS.limit,
-    search: rawUrlSearch.search || DEFAULTS.search,
-    sortBy: rawUrlSearch.sortBy || DEFAULTS.sortBy[rawUrlSearch.tab || DEFAULTS.tab],
-    order: rawUrlSearch.order || DEFAULTS.order,
+  const navigationSuffix = navigationPrefix
+    ? variant === 'stats' ? '/stats' : '/bookings'
+    : '';
+
+  // Use external search params if provided, or fall back to DEFAULTS
+  const urlSearch = externalUrlSearch || {
+    tab: DEFAULTS.tab,
+    page: DEFAULTS.page,
+    limit: DEFAULTS.limit,
+    search: DEFAULTS.search,
+    sortBy: DEFAULTS.sortBy[DEFAULTS.tab],
+    order: DEFAULTS.order,
   };
 
-  // Only use this table's state if we're on the advertisers tab
-  const isActive = urlSearch.tab === 'advertisers';
+  // Only use this table's state if we're on the correct tab
+  const isActive = urlSearch.tab === 'advertisers' || urlSearch.tab === 'bookings' || urlSearch.tab === 'stats';
 
-  // Local search input state (not debounced)
+  // Local search input state
   const [searchInput, setSearchInput] = useState(urlSearch.search || '');
 
   // Sync local search input with URL when tab becomes active
@@ -62,7 +70,7 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
     }
   }, [isActive, urlSearch.search]);
 
-  // Debounce search input to reduce API calls
+  // Debounce search input
   const debouncedSearch = useDebounce(searchInput, 500);
 
   // Update URL when debounced search changes
@@ -71,17 +79,18 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
       const params = cleanSearchParams({
         ...urlSearch,
         search: debouncedSearch,
-        page: 1, // Reset to first page on search
+        page: 1,
       }, urlSearch.tab);
 
       navigate({
+        to: basePath,
         search: params,
         replace: true,
       });
     }
-  }, [debouncedSearch, isActive, navigate, urlSearch, cleanSearchParams]);
+  }, [debouncedSearch, isActive, navigate, urlSearch, cleanSearchParams, basePath]);
 
-  // Fetch advertisers with TanStack Query (only when this tab is active)
+  // Fetch advertisers with TanStack Query
   const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
     queryKey: ['advertisers-list', urlSearch.page, urlSearch.limit, urlSearch.search],
     queryFn: () => fetchAdvertisers({
@@ -90,7 +99,7 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
       search: urlSearch.search
     }),
     placeholderData: keepPreviousData,
-    enabled: isActive, // Only fetch when this tab is active
+    enabled: isActive,
   });
 
   const advertisers = data?.data || [];
@@ -132,12 +141,12 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click - navigate to advertiser detail page
+  // Handle row click
   const handleRowClick = (advertiser) => {
-    navigate({ to: `${navigationPath}/${advertiser.id}` });
+    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}` });
   };
 
-  // Handle page change - update URL
+  // Handle page change
   const handlePrevPage = () => {
     const newPage = Math.max(1, urlSearch.page - 1);
     const params = cleanSearchParams({
@@ -146,6 +155,7 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
     }, urlSearch.tab);
 
     navigate({
+      to: basePath,
       search: params,
       replace: true,
     });
@@ -159,6 +169,7 @@ const AdvertiserSelectionTable = ({ variant = 'stats', basePath, cleanSearchPara
       }, urlSearch.tab);
 
       navigate({
+        to: basePath,
         search: params,
         replace: true,
       });

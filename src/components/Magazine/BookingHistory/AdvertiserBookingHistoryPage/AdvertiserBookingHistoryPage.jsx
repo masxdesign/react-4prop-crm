@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useSearch, useNavigate } from '@tanstack/react-router';
+import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdvertiserBookings, fetchAdvertiserById } from '@/components/Magazine/api';
 import { useAuth } from '@/components/Auth/Auth-context';
@@ -14,20 +14,34 @@ import { ChevronLeft } from 'lucide-react';
  * Displays booking history for a specific advertiser.
  * Shows status filter tabs and paginated booking history table.
  * All state (status, page) is synced with URL search parameters.
+ *
+ * Props passed from route file:
+ * - search: URL search params (status, page, pageSize)
+ * - advertiserId: The advertiser ID from route params
  */
-const AdvertiserBookingHistoryPage = () => {
+const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAdvertiserId }) => {
   const auth = useAuth();
-  const { advertiserId } = useParams({ from: '/_auth/_dashboard/booking-history/advertiser/$advertiserId' });
-  const search = useSearch({ from: '/_auth/_dashboard/booking-history/advertiser/$advertiserId' });
-  const navigate = useNavigate({ from: '/booking-history/advertiser/$advertiserId' });
+  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
+  const params = useParams({ strict: false });
+  const advertiserId = propAdvertiserId || params.id || params.advertiserId;
+  const navigate = useNavigate();
+
+  // Use prop search if provided, otherwise use useSearch as fallback
+  const routeSearch = useSearch({ strict: false });
+  const search = propSearch || routeSearch || {};
+
+  // Default values for search params
+  const status = search.status || 'all';
+  const page = search.page || 1;
+  const pageSize = search.pageSize || 10;
 
   // Fetch bookings using the same query key from beforeLoad
   const { data, isLoading } = useQuery({
-    queryKey: ['bookings', 'advertiser', advertiserId, search.status, search.page, search.pageSize],
+    queryKey: ['bookings', 'advertiser', advertiserId, status, page, pageSize],
     queryFn: () => fetchAdvertiserBookings(advertiserId, {
-      status: search.status,
-      page: search.page,
-      pageSize: search.pageSize
+      status,
+      page,
+      pageSize
     }),
     enabled: !!advertiserId,
   });
@@ -52,12 +66,12 @@ const AdvertiserBookingHistoryPage = () => {
 
   // Handle status change
   const handleStatusChange = (newStatus) => {
-    navigate({ search: { status: newStatus, page: 1, pageSize: search.pageSize } });
+    navigate({ search: { status: newStatus, page: 1, pageSize } });
   };
 
   // Handle page change
   const handlePageChange = (newPage) => {
-    navigate({ search: { ...search, page: newPage } });
+    navigate({ search: { status, page: newPage, pageSize } });
   };
 
   if (!advertiserId) {
@@ -79,7 +93,7 @@ const AdvertiserBookingHistoryPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate({ to: '/booking-history/select' })}
+            onClick={() => navigate({ to: '/advertiser', search: { tab: 'bookings' } })}
             className="self-start -ml-2 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -101,7 +115,7 @@ const AdvertiserBookingHistoryPage = () => {
 
       {/* Status Filter Tabs */}
       <BookingStatusFilter
-        currentStatus={search.status}
+        currentStatus={status}
         onStatusChange={handleStatusChange}
         currentTotal={pagination?.total}
       />

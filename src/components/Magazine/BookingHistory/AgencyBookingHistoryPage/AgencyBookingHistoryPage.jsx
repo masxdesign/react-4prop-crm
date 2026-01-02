@@ -1,7 +1,8 @@
 import React from 'react';
-import { useParams, useSearch, useNavigate, useRouteContext } from '@tanstack/react-router';
+import { useParams, useNavigate, useRouteContext, useSearch } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAgencyById } from '@/components/Stats/api';
+import { fetchAgentBookings } from '@/components/Magazine/api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryTable from '../BookingHistoryTable';
 import BookingStatusFilter from '../BookingStatusFilter';
@@ -14,17 +15,35 @@ import { ChevronLeft } from 'lucide-react';
  * Displays booking history for a specific agency.
  * Shows status filter tabs and paginated booking history table.
  * All state (status, page) is synced with URL search parameters.
+ *
+ * Props passed from route file:
+ * - search: URL search params (status, page, pageSize)
+ * - agencyId: The agency ID from route params
+ * - bookingsQueryOptions: Query options from route context (optional)
  */
-const AgencyBookingHistoryPage = () => {
+const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, bookingsQueryOptions: propQueryOptions }) => {
   const auth = useAuth();
-  const { agencyId } = useParams({ from: '/_auth/_dashboard/booking-history/agency/$agencyId' });
-  const search = useSearch({ from: '/_auth/_dashboard/booking-history/agency/$agencyId' });
-  const navigate = useNavigate({ from: '/booking-history/agency/$agencyId' });
+  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
+  const params = useParams({ strict: false });
+  const agencyId = propAgencyId || params.id || params.agencyId;
+  const navigate = useNavigate();
 
-  // Get query options from route context
-  const { bookingsQueryOptions } = useRouteContext({
-    from: '/_auth/_dashboard/booking-history/agency/$agencyId'
-  });
+  // Use prop search if provided, otherwise use useSearch as fallback
+  const routeSearch = useSearch({ strict: false });
+  const search = propSearch || routeSearch || {};
+
+  // Default values for search params
+  const status = search.status || 'all';
+  const page = search.page || 1;
+  const pageSize = search.pageSize || 10;
+
+  // Get query options from route context if not passed as prop
+  const routeContext = useRouteContext({ strict: false });
+  const bookingsQueryOptions = propQueryOptions || routeContext?.bookingsQueryOptions || {
+    queryKey: ['bookings', 'agency', agencyId, status, page, pageSize],
+    queryFn: () => fetchAgentBookings(agencyId, { status, page, pageSize }),
+    enabled: !!agencyId,
+  };
 
   // Fetch bookings using preloaded query options from route
   const { data, isLoading } = useQuery(bookingsQueryOptions);
@@ -49,12 +68,12 @@ const AgencyBookingHistoryPage = () => {
 
   // Handle status change
   const handleStatusChange = (newStatus) => {
-    navigate({ search: { status: newStatus, page: 1, pageSize: search.pageSize } });
+    navigate({ search: { status: newStatus, page: 1, pageSize } });
   };
 
   // Handle page change
   const handlePageChange = (newPage) => {
-    navigate({ search: { ...search, page: newPage } });
+    navigate({ search: { status, page: newPage, pageSize } });
   };
 
   if (!agencyId) {
@@ -76,7 +95,7 @@ const AgencyBookingHistoryPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate({ to: '/booking-history/select' })}
+            onClick={() => navigate({ to: '/agency', search: { tab: 'bookings' } })}
             className="self-start -ml-2 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
@@ -98,7 +117,7 @@ const AgencyBookingHistoryPage = () => {
 
       {/* Status Filter Tabs */}
       <BookingStatusFilter
-        currentStatus={search.status}
+        currentStatus={status}
         onStatusChange={handleStatusChange}
         currentTotal={pagination?.total}
       />

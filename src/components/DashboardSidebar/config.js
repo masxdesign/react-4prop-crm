@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, UserSearch } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, Building2, Users } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -47,28 +47,21 @@ export const navigationConfig = {
       label: "Properties",
       excludedRoles: ['advertiser']
     },
+    // Admin hub pages - grouped navigation for advertiser/agency management
     {
-      id: 'mag-advertisers',
-      to: "/mag/manage-advertisers",
-      icon: NewspaperIcon,
-      label: "Advertisers",
+      id: 'advertiser-hub',
+      to: "/advertiser",
+      icon: Building2,
+      label: "Advertiser",
       allowedNegIds: RESTRICTED_NEG_IDS
     },
     {
-      id: 'mag-agent-view',
-      to: "/mag/agent/select",
-      icon: UserSearch,
-      label: "View Agent Properties",
+      id: 'agency-hub',
+      to: "/agency",
+      icon: Users,
+      label: "Agency",
       allowedNegIds: RESTRICTED_NEG_IDS
     },
-    // This is for later, admin/advertisers can view current bookings
-    // {
-    //   id: 'mag-schedules',
-    //   to: "/mag/manage-schedule/6",
-    //   icon: NewspaperIcon,
-    //   label: "Schedules (#6)",
-    //   allowedNegIds: RESTRICTED_NEG_IDS
-    // },
     {
       id: 'mag-payment-settings',
       to: "/mag/payment-settings",
@@ -90,17 +83,20 @@ export const navigationConfig = {
       label: "My Profile",
       requiredRoles: ['advertiser']
     },
+    // Direct access for non-admin users (advertisers/agents)
     {
       id: 'mag-bookings',
       to: "/booking-history",
       icon: CalendarCheck,
-      label: "Booking History"
+      label: "Booking History",
+      excludedRoles: ['admin']
     },
     {
       id: 'stats',
       to: "/stats",
       icon: TrendingUp,
-      label: "Statistics"
+      label: "Statistics",
+      excludedRoles: ['admin']
     },
   ],
   portals: [

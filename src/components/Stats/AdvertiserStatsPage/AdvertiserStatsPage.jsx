@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useAuth } from '@/components/Auth/Auth-context';
+import { subDays, format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,25 +18,38 @@ import { fetchAdvertiserStats } from '../api';
  * Main page component for advertiser statistics.
  * Displays daily summary and agency breakdown with lazy-loaded property details.
  *
- * Route: /stats/advertiser/:advertiserId
+ * Route: /advertiser/:id/stats
+ *
+ * Props passed from route file:
+ * - search: URL search params (startDate, endDate)
+ * - advertiserId: The advertiser ID from route params
  */
-const AdvertiserStatsPage = () => {
+const AdvertiserStatsPage = ({ search: propSearch, advertiserId: propAdvertiserId }) => {
   const auth = useAuth();
-  const { advertiserId } = useParams({ from: '/_auth/_dashboard/stats/advertiser/$advertiserId' });
-  const search = useSearch({ from: '/_auth/_dashboard/stats/advertiser/$advertiserId' });
-  const navigate = useNavigate({ from: '/stats/advertiser/$advertiserId' });
+  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
+  const params = useParams({ strict: false });
+  const advertiserId = propAdvertiserId || params.id || params.advertiserId;
+  const navigate = useNavigate();
+
+  // Use prop search if provided, otherwise use useSearch as fallback
+  const routeSearch = useSearch({ strict: false });
+  const search = propSearch || routeSearch || {};
+
+  // Default date values
+  const startDate = search.startDate || format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const endDate = search.endDate || format(new Date(), 'yyyy-MM-dd');
 
   // Get query options from route context
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['advertiser-stats', advertiserId, search.startDate, search.endDate],
-    queryFn: () => fetchAdvertiserStats(advertiserId, search.startDate, search.endDate),
+    queryKey: ['advertiser-stats', advertiserId, startDate, endDate],
+    queryFn: () => fetchAdvertiserStats(advertiserId, startDate, endDate),
     enabled: !!advertiserId,
   });
 
   // Date range state for picker
   const [dateRange, setDateRange] = useState({
-    from: new Date(search.startDate),
-    to: new Date(search.endDate),
+    from: new Date(startDate),
+    to: new Date(endDate),
   });
 
   // Handle date range change
@@ -137,8 +151,8 @@ const AdvertiserStatsPage = () => {
               <AgencyBreakdownTable
                 agencyBreakdown={data.agencyBreakdown}
                 advertiserId={advertiserId}
-                startDate={search.startDate}
-                endDate={search.endDate}
+                startDate={startDate}
+                endDate={endDate}
               />
             </CardContent>
           </Card>
