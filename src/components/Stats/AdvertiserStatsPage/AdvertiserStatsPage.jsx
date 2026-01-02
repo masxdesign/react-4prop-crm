@@ -117,7 +117,7 @@ const AdvertiserStatsPage = ({ search: propSearch, advertiserId: propAdvertiserI
               onClick={() => navigate({
                 to: '/advertiser',
                 search: {
-                  tab: 'stats',
+                  tab: 'advertisers',
                   ...(search.returnPage ? { page: search.returnPage } : {}),
                   ...(search.returnSearch ? { search: search.returnSearch } : {})
                 }
@@ -125,7 +125,7 @@ const AdvertiserStatsPage = ({ search: propSearch, advertiserId: propAdvertiserI
               className="self-start -ml-2 text-gray-600 hover:text-gray-900"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to Selection
+              Back to Advertisers
             </Button>
           )}
           <div className="flex items-center justify-between">

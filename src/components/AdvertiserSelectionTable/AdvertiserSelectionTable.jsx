@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -25,6 +25,8 @@ const columnHelper = createColumnHelper();
 
 /**
  * Searchable, paginated advertiser selection table
+ *
+ * @param {boolean} showActionButtons - When true, shows Bookings/Stats buttons instead of row click
  */
 const AdvertiserSelectionTable = ({
   variant = 'stats',
@@ -32,7 +34,8 @@ const AdvertiserSelectionTable = ({
   cleanSearchParams,
   DEFAULTS,
   navigationPrefix,
-  urlSearch: externalUrlSearch // Accept search params from parent
+  urlSearch: externalUrlSearch, // Accept search params from parent
+  showActionButtons = false, // Show action buttons instead of row click
 }) => {
   const navigate = useNavigate();
 
@@ -113,26 +116,62 @@ const AdvertiserSelectionTable = ({
 
   // Define table columns
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('id', {
-        header: 'ID',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('company', {
-        header: 'Company Name',
-        cell: (info) => (
-          <span className="font-medium text-gray-900">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor('week_rate', {
-        header: 'Week Rate',
-        cell: (info) => {
-          const value = info.getValue();
-          return value ? `£${parseFloat(value).toFixed(2)}` : '-';
-        },
-      }),
-    ],
-    []
+    () => {
+      const baseColumns = [
+        columnHelper.accessor('id', {
+          header: 'ID',
+          cell: (info) => info.getValue(),
+        }),
+        columnHelper.accessor('company', {
+          header: 'Company Name',
+          cell: (info) => (
+            <span className="font-medium text-gray-900">{info.getValue()}</span>
+          ),
+        }),
+        columnHelper.accessor('week_rate', {
+          header: 'Week Rate',
+          cell: (info) => {
+            const value = info.getValue();
+            return value ? `£${parseFloat(value).toFixed(2)}` : '-';
+          },
+        }),
+      ];
+
+      // Add action buttons column when showActionButtons is true
+      if (showActionButtons) {
+        baseColumns.push(
+          columnHelper.display({
+            id: 'actions',
+            header: 'Actions',
+            cell: ({ row }) => (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => handleBookingsClick(row.original, e)}
+                  className="h-8 px-3"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Bookings
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => handleStatsClick(row.original, e)}
+                  className="h-8 px-3"
+                >
+                  <BarChart3 className="h-4 w-4 mr-1" />
+                  Stats
+                </Button>
+              </div>
+            ),
+          })
+        );
+      }
+
+      return baseColumns;
+    },
+    [showActionButtons]
   );
 
   const table = useReactTable({
@@ -141,9 +180,8 @@ const AdvertiserSelectionTable = ({
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click
-  const handleRowClick = (advertiser) => {
-    // Pass current page and search so back button can restore them
+  // Build return search params for back button navigation
+  const getReturnSearchParams = () => {
     const searchParams = {};
     if (urlSearch.page && urlSearch.page !== 1) {
       searchParams.returnPage = urlSearch.page;
@@ -151,7 +189,23 @@ const AdvertiserSelectionTable = ({
     if (urlSearch.search) {
       searchParams.returnSearch = urlSearch.search;
     }
-    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}`, search: searchParams });
+    return searchParams;
+  };
+
+  // Handle row click (only used when showActionButtons is false)
+  const handleRowClick = (advertiser) => {
+    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}`, search: getReturnSearchParams() });
+  };
+
+  // Handle action button clicks
+  const handleBookingsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/bookings`, search: getReturnSearchParams() });
+  };
+
+  const handleStatsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/stats`, search: getReturnSearchParams() });
   };
 
   // Handle page change
@@ -253,8 +307,8 @@ const AdvertiserSelectionTable = ({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => handleRowClick(row.original)}
+                    className={showActionButtons ? "hover:bg-muted/50 transition-colors" : "hover:bg-muted/50 cursor-pointer transition-colors"}
+                    onClick={showActionButtons ? undefined : () => handleRowClick(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

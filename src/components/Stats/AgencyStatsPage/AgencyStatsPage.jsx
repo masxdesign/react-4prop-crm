@@ -119,7 +119,7 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
               onClick={() => navigate({
                 to: '/agency',
                 search: {
-                  tab: 'stats',
+                  tab: 'agencies',
                   ...(search.returnPage ? { page: search.returnPage } : {}),
                   ...(search.returnSearch ? { search: search.returnSearch } : {})
                 }
@@ -127,7 +127,7 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
               className="self-start -ml-2 text-gray-600 hover:text-gray-900"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Back to Selection
+              Back to Agencies
             </Button>
           )}
           <div className="flex items-center justify-between">

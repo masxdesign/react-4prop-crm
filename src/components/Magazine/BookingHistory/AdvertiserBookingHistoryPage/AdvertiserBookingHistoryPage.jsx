@@ -96,7 +96,7 @@ const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAd
             onClick={() => navigate({
               to: '/advertiser',
               search: {
-                tab: 'bookings',
+                tab: 'advertisers',
                 ...(search.returnPage ? { page: search.returnPage } : {}),
                 ...(search.returnSearch ? { search: search.returnSearch } : {})
               }
@@ -104,7 +104,7 @@ const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAd
             className="self-start -ml-2 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            Back to Selection
+            Back to Advertisers
           </Button>
         )}
         <div className="flex flex-col">

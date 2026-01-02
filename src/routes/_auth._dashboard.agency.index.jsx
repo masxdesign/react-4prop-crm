@@ -9,7 +9,7 @@ const DEFAULTS = {
   page: 1,
   limit: 20,
   search: '',
-  sortBy: { agents: 'surname', bookings: 'name', stats: 'name' },
+  sortBy: { agents: 'surname', agencies: 'name' },
   order: 'asc',
 };
 
@@ -79,10 +79,9 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/')({
           </div>
 
           <Tabs value={search.tab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="agents">Agent Properties</TabsTrigger>
-              <TabsTrigger value="bookings">Booking History</TabsTrigger>
-              <TabsTrigger value="stats">Statistics</TabsTrigger>
+              <TabsTrigger value="agencies">Agencies</TabsTrigger>
             </TabsList>
 
             <TabsContent value="agents" className="mt-6">
@@ -96,25 +95,14 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/')({
               />
             </TabsContent>
 
-            <TabsContent value="bookings" className="mt-6">
+            <TabsContent value="agencies" className="mt-6">
               <AgencySelectionTable
-                variant="booking-history"
                 basePath="/agency"
                 cleanSearchParams={cleanSearchParams}
                 DEFAULTS={DEFAULTS}
                 navigationPrefix="/agency"
                 urlSearch={search}
-              />
-            </TabsContent>
-
-            <TabsContent value="stats" className="mt-6">
-              <AgencySelectionTable
-                variant="stats"
-                basePath="/agency"
-                cleanSearchParams={cleanSearchParams}
-                DEFAULTS={DEFAULTS}
-                navigationPrefix="/agency"
-                urlSearch={search}
+                showActionButtons
               />
             </TabsContent>
           </Tabs>

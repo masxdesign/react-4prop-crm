@@ -9,7 +9,7 @@ const DEFAULTS = {
   page: 1,
   limit: 20,
   search: '',
-  sortBy: { manage: 'company', bookings: 'company', stats: 'company' },
+  sortBy: { manage: 'company', advertisers: 'company' },
   order: 'asc',
 };
 
@@ -79,35 +79,23 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/')({
           </div>
 
           <Tabs value={search.tab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full max-w-lg grid-cols-3">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
               <TabsTrigger value="manage">Manage</TabsTrigger>
-              <TabsTrigger value="bookings">Booking History</TabsTrigger>
-              <TabsTrigger value="stats">Statistics</TabsTrigger>
+              <TabsTrigger value="advertisers">Advertisers</TabsTrigger>
             </TabsList>
 
             <TabsContent value="manage" className="mt-6">
               <AdvertiserManagement />
             </TabsContent>
 
-            <TabsContent value="bookings" className="mt-6">
+            <TabsContent value="advertisers" className="mt-6">
               <AdvertiserSelectionTable
-                variant="booking-history"
                 basePath="/advertiser"
                 cleanSearchParams={cleanSearchParams}
                 DEFAULTS={DEFAULTS}
                 navigationPrefix="/advertiser"
                 urlSearch={search}
-              />
-            </TabsContent>
-
-            <TabsContent value="stats" className="mt-6">
-              <AdvertiserSelectionTable
-                variant="stats"
-                basePath="/advertiser"
-                cleanSearchParams={cleanSearchParams}
-                DEFAULTS={DEFAULTS}
-                navigationPrefix="/advertiser"
-                urlSearch={search}
+                showActionButtons
               />
             </TabsContent>
           </Tabs>
