@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { subDays, format } from 'date-fns';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatsExpandProvider } from '../context/StatsExpandContext';
@@ -109,14 +109,32 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
 
   return (
     <StatsExpandProvider>
-      <div className="flex flex-col h-full overflow-auto">
-        <div className="flex-1 p-6 space-y-6">
-          {/* Header */}
+      <div className="flex flex-col gap-6 p-6 w-full mx-auto">
+        {/* Header */}
+        <div className="flex flex-col gap-2">
+          {auth.user?.is_admin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate({
+                to: '/agency',
+                search: {
+                  tab: 'stats',
+                  ...(search.returnPage ? { page: search.returnPage } : {}),
+                  ...(search.returnSearch ? { search: search.returnSearch } : {})
+                }
+              })}
+              className="self-start -ml-2 text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back to Selection
+            </Button>
+          )}
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Agency Statistics</h1>
-              {auth.user?.is_admin && (
-                <p className="text-gray-600 mt-1">{data.agency_name}</p>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold text-gray-900">Agency Statistics</h1>
+              {auth.user?.is_admin && data.agency_name && (
+                <p className="text-sm text-gray-600 mt-1">{data.agency_name}</p>
               )}
             </div>
             <DateRangePicker
@@ -126,6 +144,7 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
               maxDate={new Date()}
             />
           </div>
+        </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,7 +204,6 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
               />
             </CardContent>
           </Card>
-        </div>
       </div>
     </StatsExpandProvider>
   );

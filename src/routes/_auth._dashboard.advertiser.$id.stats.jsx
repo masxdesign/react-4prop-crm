@@ -8,6 +8,8 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/stats')({
   validateSearch: (search) => ({
     startDate: search.startDate || format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     endDate: search.endDate || format(new Date(), 'yyyy-MM-dd'),
+    returnPage: search.returnPage ? Number(search.returnPage) : undefined,
+    returnSearch: search.returnSearch || '',
   }),
   beforeLoad: ({ context, params, search }) => {
     const { id: advertiserId } = params;

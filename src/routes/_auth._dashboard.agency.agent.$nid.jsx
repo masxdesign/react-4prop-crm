@@ -2,6 +2,8 @@ import React from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useAuth } from "@/components/Auth/Auth";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AgentPaginatedEnhancedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedEnhancedTable";
 import { fetchAgentPaginatedProperties, fetchAgentDetails } from "@/components/Magazine/api";
 
@@ -9,6 +11,7 @@ export const Route = createFileRoute("/_auth/_dashboard/agency/agent/$nid")({
   validateSearch: (search) => ({
     page: search.page ? Number(search.page) : 1,
     pageSize: search.pageSize ? Number(search.pageSize) : 10,
+    returnSearch: search.returnSearch || '',
   }),
   beforeLoad: ({ context, params, search }) => {
     const { nid } = params;
@@ -104,17 +107,39 @@ export const Route = createFileRoute("/_auth/_dashboard/agency/agent/$nid")({
     const isViewingOtherAgent = auth.user?.neg_id !== nid;
 
     return (
-      <AgentPaginatedEnhancedTable
-        agentId={nid}
-        page={search.page}
-        pageSize={search.pageSize}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        isAdminViewing={isViewingOtherAgent}
-        adminNid={auth.user?.neg_id}
-        viewingAgentNid={nid}
-        viewingAgent={agentDetails}
-      />
+      <div className="flex flex-col h-full">
+        {/* Back button for admins */}
+        {auth.user?.is_admin && (
+          <div className="px-6 pt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate({
+                to: '/agency',
+                search: {
+                  tab: 'agents',
+                  ...(search.returnSearch ? { search: search.returnSearch } : {})
+                }
+              })}
+              className="self-start -ml-2 text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back to Selection
+            </Button>
+          </div>
+        )}
+        <AgentPaginatedEnhancedTable
+          agentId={nid}
+          page={search.page}
+          pageSize={search.pageSize}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          isAdminViewing={isViewingOtherAgent}
+          adminNid={auth.user?.neg_id}
+          viewingAgentNid={nid}
+          viewingAgent={agentDetails}
+        />
+      </div>
     );
   },
 });

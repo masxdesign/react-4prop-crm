@@ -153,7 +153,12 @@ const AgentSelectionTable = ({
   });
 
   const handleRowClick = (agent) => {
-    navigate({ to: `${navTarget}/${agent.nid}` });
+    // Pass current search term so back button can restore it
+    const searchParams = { page: 1, pageSize: 10 };
+    if (debouncedSearch) {
+      searchParams.returnSearch = debouncedSearch;
+    }
+    navigate({ to: `${navTarget}/${agent.nid}`, search: searchParams });
   };
 
   // Content to render

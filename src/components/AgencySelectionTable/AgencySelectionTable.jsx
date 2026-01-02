@@ -144,7 +144,15 @@ const AgencySelectionTable = ({
 
   // Handle row click
   const handleRowClick = (agency) => {
-    navigate({ to: `${navigationPath}/${agency.cid}${navigationSuffix}` });
+    // Pass current page and search so back button can restore them
+    const searchParams = {};
+    if (urlSearch.page && urlSearch.page !== 1) {
+      searchParams.returnPage = urlSearch.page;
+    }
+    if (urlSearch.search) {
+      searchParams.returnSearch = urlSearch.search;
+    }
+    navigate({ to: `${navigationPath}/${agency.cid}${navigationSuffix}`, search: searchParams });
   };
 
   // Handle page change

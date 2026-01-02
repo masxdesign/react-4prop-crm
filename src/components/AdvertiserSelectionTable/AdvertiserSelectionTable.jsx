@@ -143,7 +143,15 @@ const AdvertiserSelectionTable = ({
 
   // Handle row click
   const handleRowClick = (advertiser) => {
-    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}` });
+    // Pass current page and search so back button can restore them
+    const searchParams = {};
+    if (urlSearch.page && urlSearch.page !== 1) {
+      searchParams.returnPage = urlSearch.page;
+    }
+    if (urlSearch.search) {
+      searchParams.returnSearch = urlSearch.search;
+    }
+    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}`, search: searchParams });
   };
 
   // Handle page change

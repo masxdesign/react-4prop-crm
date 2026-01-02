@@ -8,6 +8,8 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings')({
     status: search.status || 'all',
     page: search.page || 1,
     pageSize: search.pageSize || 10,
+    returnPage: search.returnPage ? Number(search.returnPage) : undefined,
+    returnSearch: search.returnSearch || '',
   }),
   beforeLoad: ({ context, params, search }) => {
     const { id: agencyId } = params;

@@ -93,7 +93,14 @@ const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAd
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate({ to: '/advertiser', search: { tab: 'bookings' } })}
+            onClick={() => navigate({
+              to: '/advertiser',
+              search: {
+                tab: 'bookings',
+                ...(search.returnPage ? { page: search.returnPage } : {}),
+                ...(search.returnSearch ? { search: search.returnSearch } : {})
+              }
+            })}
             className="self-start -ml-2 text-gray-600 hover:text-gray-900"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
