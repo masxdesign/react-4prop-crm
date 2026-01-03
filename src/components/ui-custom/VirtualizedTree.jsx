@@ -7,16 +7,18 @@ import { cn } from '@/lib/utils';
 
 /**
  * Flattens tree data into a list of visible nodes based on expanded state
+ * Adds ancestry path to each node for traceability
  */
-function flattenTree(items, expandedIds, depth = 0, parentPath = '') {
+function flattenTree(items, expandedIds, depth = 0, ancestry = []) {
   const result = [];
 
   items.forEach((item) => {
-    const path = parentPath ? `${parentPath}/${item.id}` : item.id;
-    result.push({ ...item, depth, path });
+    const nodeAncestry = [...ancestry, { id: item.id, name: item.name, depth }];
+    const path = nodeAncestry.map((a) => a.id).join('/');
+    result.push({ ...item, depth, path, ancestry: nodeAncestry });
 
     if (item.children && expandedIds.has(item.id)) {
-      result.push(...flattenTree(item.children, expandedIds, depth + 1, path));
+      result.push(...flattenTree(item.children, expandedIds, depth + 1, nodeAncestry));
     }
   });
 
@@ -35,6 +37,29 @@ function getAllFolderIds(items) {
     }
   });
   return ids;
+}
+
+/**
+ * Collects all leaf (street) IDs from a subtree
+ */
+function getAllLeafIds(item) {
+  if (!item.children || item.children.length === 0) {
+    return [item.id];
+  }
+  return item.children.flatMap((child) => getAllLeafIds(child));
+}
+
+/**
+ * Collects leaf IDs from a specific child matching a predicate
+ */
+function getLeafIdsFromMatchingChild(item, childMatcher) {
+  if (!item.children) return [];
+
+  const matchingChild = item.children.find(childMatcher);
+  if (matchingChild) {
+    return getAllLeafIds(matchingChild);
+  }
+  return [];
 }
 
 /**
@@ -81,19 +106,26 @@ export default function VirtualizedTree({
   showExpandAll = true,
   rowHeight = 36,
   className,
-  autoExpandMatch, // (item) => boolean - auto-expand children matching this predicate when parent expands
+  autoExpandMatch,
+  // Selection config
+  selectableDepths = [1, 2, 3], // Which depths are selectable (0=area, 1=district, 2=source, 3=street)
+  defaultChildMatcher, // (child) => boolean - when selecting a parent, select leaves from this child only
+  onSelectionChange, // (selectedItems) => void - callback with selected items including ancestry
+  selectionColor = 'bg-blue-100', // Tailwind class for selection highlight
 }) {
   const [expandedIds, setExpandedIds] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const parentRef = useRef(null);
 
   // Build a map of item IDs to their data for quick lookup
   const itemMap = useMemo(() => {
     const map = new Map();
-    const buildMap = (items) => {
+    const buildMap = (items, ancestry = []) => {
       items.forEach((item) => {
-        map.set(item.id, item);
-        if (item.children) buildMap(item.children);
+        const nodeAncestry = [...ancestry, { id: item.id, name: item.name }];
+        map.set(item.id, { ...item, ancestry: nodeAncestry });
+        if (item.children) buildMap(item.children, nodeAncestry);
       });
     };
     buildMap(data);
@@ -124,6 +156,23 @@ export default function VirtualizedTree({
     overscan: 10,
   });
 
+  // Get selected items with full ancestry for callback
+  const getSelectedItems = useCallback(() => {
+    return Array.from(selectedIds)
+      .map((id) => itemMap.get(id))
+      .filter(Boolean);
+  }, [selectedIds, itemMap]);
+
+  // Notify parent of selection changes
+  const notifySelectionChange = useCallback((newSelectedIds) => {
+    if (onSelectionChange) {
+      const items = Array.from(newSelectedIds)
+        .map((id) => itemMap.get(id))
+        .filter(Boolean);
+      onSelectionChange(items);
+    }
+  }, [onSelectionChange, itemMap]);
+
   const handleToggle = useCallback((id) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -147,6 +196,89 @@ export default function VirtualizedTree({
     });
   }, [autoExpandMatch, itemMap]);
 
+  const handleSelect = useCallback((node, event) => {
+    const isMultiSelect = event.metaKey || event.ctrlKey;
+    const depth = node.depth;
+
+    // Check if this depth is selectable
+    if (!selectableDepths.includes(depth)) return;
+
+    setSelectedIds((prev) => {
+      const item = itemMap.get(node.id);
+
+      // If it's a leaf node (street), just select/deselect it
+      if (!item?.children || item.children.length === 0) {
+        const isCurrentlySelected = prev.has(node.id);
+
+        if (isMultiSelect) {
+          const next = new Set(prev);
+          if (isCurrentlySelected) {
+            next.delete(node.id);
+          } else {
+            next.add(node.id);
+          }
+          notifySelectionChange(next);
+          return next;
+        } else {
+          // Single select mode: toggle or clear and select
+          if (isCurrentlySelected && prev.size === 1) {
+            // Only this item selected, deselect it
+            notifySelectionChange(new Set());
+            return new Set();
+          } else {
+            // Select only this item
+            const next = new Set([node.id]);
+            notifySelectionChange(next);
+            return next;
+          }
+        }
+      } else {
+        // It's a parent node (district or source)
+        let leafIds;
+
+        if (defaultChildMatcher && item.children.some((c) => c.children)) {
+          // For districts: select leaves from matching child only (e.g., 'claude')
+          leafIds = getLeafIdsFromMatchingChild(item, defaultChildMatcher);
+          // If no matching child found, fall back to all leaves
+          if (leafIds.length === 0) {
+            leafIds = getAllLeafIds(item);
+          }
+        } else {
+          // For sources or if no matcher: select all leaves
+          leafIds = getAllLeafIds(item);
+        }
+
+        // Check if all these leaves are already selected
+        const allSelected = leafIds.length > 0 && leafIds.every((id) => prev.has(id));
+
+        if (isMultiSelect) {
+          const next = new Set(prev);
+          if (allSelected) {
+            // Deselect all these leaves
+            leafIds.forEach((id) => next.delete(id));
+          } else {
+            // Add all these leaves
+            leafIds.forEach((id) => next.add(id));
+          }
+          notifySelectionChange(next);
+          return next;
+        } else {
+          // Single select mode
+          if (allSelected) {
+            // All were selected, deselect all
+            notifySelectionChange(new Set());
+            return new Set();
+          } else {
+            // Select only these leaves
+            const next = new Set(leafIds);
+            notifySelectionChange(next);
+            return next;
+          }
+        }
+      }
+    });
+  }, [selectableDepths, itemMap, defaultChildMatcher, notifySelectionChange]);
+
   const handleExpandAll = useCallback(() => {
     setExpandedIds(new Set(getAllFolderIds(data)));
   }, [data]);
@@ -154,6 +286,11 @@ export default function VirtualizedTree({
   const handleCollapseAll = useCallback(() => {
     setExpandedIds(new Set());
   }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    notifySelectionChange(new Set());
+  }, [notifySelectionChange]);
 
   return (
     <div className={cn('bg-background rounded-xl border shadow-sm', className)}>
@@ -198,6 +335,12 @@ export default function VirtualizedTree({
             const node = flatNodes[virtualRow.index];
             const hasChildren = node.children && node.children.length > 0;
             const isExpanded = effectiveExpandedIds.has(node.id);
+            const isSelected = selectedIds.has(node.id);
+            const isSelectable = selectableDepths.includes(node.depth);
+
+            // Check if any descendant leaves are selected (for parent highlight)
+            const hasSelectedDescendants = hasChildren &&
+              getAllLeafIds(node).some((id) => selectedIds.has(id));
 
             return (
               <div
@@ -210,7 +353,18 @@ export default function VirtualizedTree({
                   height: `${virtualRow.size}px`,
                   transform: `translateY(${virtualRow.start}px)`,
                 }}
-                className="flex items-center px-4 hover:bg-muted/50 cursor-default"
+                className={cn(
+                  'flex items-center px-4 cursor-default',
+                  isSelectable && 'cursor-pointer',
+                  isSelected && selectionColor,
+                  !isSelected && hasSelectedDescendants && 'bg-blue-50/50',
+                  !isSelected && !hasSelectedDescendants && 'hover:bg-muted/50'
+                )}
+                onClick={(e) => {
+                  if (isSelectable) {
+                    handleSelect(node, e);
+                  }
+                }}
               >
                 {/* Indentation */}
                 <div style={{ width: `${node.depth * 20}px` }} />
@@ -218,7 +372,10 @@ export default function VirtualizedTree({
                 {/* Expand/collapse button or spacer */}
                 {hasChildren ? (
                   <button
-                    onClick={() => handleToggle(node.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggle(node.id);
+                    }}
                     className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded"
                   >
                     {isExpanded ? (
@@ -239,7 +396,19 @@ export default function VirtualizedTree({
                 )}
 
                 {/* Label */}
-                <span className="truncate text-sm">{node.name}</span>
+                <span className={cn(
+                  'truncate text-sm',
+                  !isSelectable && 'text-muted-foreground'
+                )}>
+                  {node.name}
+                </span>
+
+                {/* Selection indicator for parents with selected children */}
+                {hasSelectedDescendants && !isSelected && (
+                  <span className="ml-2 text-xs text-blue-500">
+                    ({getAllLeafIds(node).filter((id) => selectedIds.has(id)).length} selected)
+                  </span>
+                )}
               </div>
             );
           })}
@@ -247,8 +416,16 @@ export default function VirtualizedTree({
       </div>
 
       {/* Footer with stats */}
-      <div className="px-4 py-2 border-t text-xs text-muted-foreground">
-        {flatNodes.length} items visible
+      <div className="flex items-center justify-between px-4 py-2 border-t text-xs text-muted-foreground">
+        <span>
+          {flatNodes.length} items visible
+          {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
+        </span>
+        {selectedIds.size > 0 && (
+          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={clearSelection}>
+            Clear
+          </Button>
+        )}
       </div>
     </div>
   );

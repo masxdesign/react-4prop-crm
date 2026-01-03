@@ -121,6 +121,12 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
                 searchPlaceholder="Search streets..."
                 showExpandAll={true}
                 autoExpandMatch={(item) => item.name === 'claude'}
+                selectableDepths={[1, 2, 3]} // district, source, street (not area)
+                defaultChildMatcher={(child) => child.name === 'claude'}
+                selectionColor="bg-blue-100"
+                onSelectionChange={(items) => {
+                  console.log('Selected items:', items);
+                }}
               />
             </div>
           )}
