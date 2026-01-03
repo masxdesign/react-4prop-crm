@@ -147,21 +147,19 @@ const AgencySelectionTable = ({
             cell: ({ row }) => (
               <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="gradient"
+                  size="default"
                   onClick={(e) => handleBookingsClick(row.original, e)}
-                  className="h-8 px-3"
                 >
-                  <Calendar className="h-4 w-4 mr-1" />
+                  <Calendar className="h-4 w-4 mr-2" />
                   Bookings
                 </Button>
                 <Button
-                  variant="outline"
-                  size="sm"
+                  variant="gradient"
+                  size="default"
                   onClick={(e) => handleStatsClick(row.original, e)}
-                  className="h-8 px-3"
                 >
-                  <BarChart3 className="h-4 w-4 mr-1" />
+                  <BarChart3 className="h-4 w-4 mr-2" />
                   Stats
                 </Button>
               </div>

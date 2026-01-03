@@ -117,7 +117,6 @@ const AdvertiserStatsPage = ({ search: propSearch, advertiserId: propAdvertiserI
               onClick={() => navigate({
                 to: '/advertiser',
                 search: {
-                  tab: 'advertisers',
                   ...(search.returnPage ? { page: search.returnPage } : {}),
                   ...(search.returnSearch ? { search: search.returnSearch } : {})
                 }

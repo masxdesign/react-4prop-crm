@@ -96,7 +96,6 @@ const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAd
             onClick={() => navigate({
               to: '/advertiser',
               search: {
-                tab: 'advertisers',
                 ...(search.returnPage ? { page: search.returnPage } : {}),
                 ...(search.returnSearch ? { search: search.returnSearch } : {})
               }
