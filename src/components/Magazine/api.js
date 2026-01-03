@@ -304,3 +304,17 @@ export const normalizeScheduleData = (scheduleData, advertisers = []) => {
     end_date
   };
 };
+
+// AI Postcodes API - returns districts grouped by prefix: [{ prefix, districts }]
+export const fetchPostcodesTree = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree', { params });
+  return response.data;
+};
+
+// AI Postcodes API - returns 4-level tree: prefix → district → source → streets
+export const fetchPostcodesTreeFull = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree-full', { params });
+  return response.data;
+};

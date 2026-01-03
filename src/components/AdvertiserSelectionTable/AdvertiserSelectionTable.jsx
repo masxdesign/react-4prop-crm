@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, X, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -27,6 +27,19 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { fetchAdvertisers } from '@/components/Stats/api';
 import { updateAdvertiser, deleteAdvertiser, getAdvertiserStripeStatus } from '@/components/Magazine/api';
 import AdvertiserForm from '@/components/Magazine/AdvertiserManagement/AdvertiserForm';
@@ -317,43 +330,77 @@ const AdvertiserSelectionTable = ({
             cell: ({ row }) => (
               <div className="flex items-center gap-2">
                 {showActionButtons && (
-                  <>
-                    <Button
-                      variant="gradient"
-                      size="default"
-                      onClick={(e) => handleBookingsClick(row.original, e)}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Bookings
-                    </Button>
-                    <Button
-                      variant="gradient"
-                      size="default"
-                      onClick={(e) => handleStatsClick(row.original, e)}
-                    >
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      Stats
-                    </Button>
-                  </>
+                  <TooltipProvider delayDuration={0}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="gradient"
+                          size="icon"
+                          onClick={(e) => handleBlogPostsClick(row.original, e)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Blog Posts</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="gradient"
+                          size="icon"
+                          onClick={(e) => handleBookingsClick(row.original, e)}
+                        >
+                          <Calendar className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Bookings</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="gradient"
+                          size="icon"
+                          onClick={(e) => handleStatsClick(row.original, e)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Stats</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 {showManageButtons && (
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={(e) => handleEditClick(row.original, e)}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
-                {showManageButtons && (
-                  <button
-                    onClick={(e) => handleDeleteClick(row.original, e)}
-                    title="Delete"
-                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="gradient-silver"
+                        size="icon"
+                        className="h-8 w-8"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => handleEditClick(row.original, e)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) => handleDeleteClick(row.original, e)}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             ),
@@ -398,6 +445,11 @@ const AdvertiserSelectionTable = ({
   const handleStatsClick = (advertiser, e) => {
     e.stopPropagation();
     navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/stats`, search: getReturnSearchParams() });
+  };
+
+  const handleBlogPostsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/blog-posts`, search: getReturnSearchParams() });
   };
 
   // Handle Edit button click

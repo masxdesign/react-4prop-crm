@@ -18,3 +18,12 @@ export const WINDOWN_NAMES = {
 }
 
 export const BASEPATH = '/crm'
+
+export const BLOG_POST_DATA_LIST = [
+  {
+    id: 1,
+    title: 'London Postcode - 3 Busiest Shopping Streets',
+    description: 'Generate blog posts featuring the top 3 busiest shopping streets in each London postcode area.',
+    list: '4AI-london-postcodes'
+  },
+]

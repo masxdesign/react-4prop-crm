@@ -80,7 +80,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/')({
               <p className="text-gray-600 mt-1">Manage advertisers, view booking history, and analyze statistics</p>
             </div>
             <Button
-              variant="gradient"
+              variant="gradient-green"
               onClick={() => setIsCreateFormOpen(true)}
             >
               <Plus className="h-4 w-4 mr-2" />
