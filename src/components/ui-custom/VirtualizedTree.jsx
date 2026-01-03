@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ChevronRight, ChevronDown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -112,9 +112,19 @@ export default function VirtualizedTree({
   defaultChildMatcher, // (child) => boolean - when selecting a parent, select leaves from this child only
   onSelectionChange, // (selectedItems) => void - callback with selected items including ancestry
   selectionColor = 'bg-blue-100', // Tailwind class for selection highlight
+  selectedIds: controlledSelectedIds, // Controlled selection from parent
 }) {
   const [expandedIds, setExpandedIds] = useState(new Set());
-  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [internalSelectedIds, setInternalSelectedIds] = useState(new Set());
+
+  // Use controlled selection if provided, otherwise use internal state
+  const selectedIds = controlledSelectedIds !== undefined
+    ? (controlledSelectedIds instanceof Set ? controlledSelectedIds : new Set(controlledSelectedIds))
+    : internalSelectedIds;
+
+  const setSelectedIds = controlledSelectedIds !== undefined
+    ? () => {} // No-op when controlled - parent handles state
+    : setInternalSelectedIds;
   const [searchQuery, setSearchQuery] = useState('');
   const parentRef = useRef(null);
 
@@ -203,81 +213,75 @@ export default function VirtualizedTree({
     // Check if this depth is selectable
     if (!selectableDepths.includes(depth)) return;
 
-    setSelectedIds((prev) => {
-      const item = itemMap.get(node.id);
+    const item = itemMap.get(node.id);
+    let newSelectedIds;
 
-      // If it's a leaf node (street), just select/deselect it
-      if (!item?.children || item.children.length === 0) {
-        const isCurrentlySelected = prev.has(node.id);
+    // If it's a leaf node (street), just select/deselect it
+    if (!item?.children || item.children.length === 0) {
+      const isCurrentlySelected = selectedIds.has(node.id);
 
-        if (isMultiSelect) {
-          const next = new Set(prev);
-          if (isCurrentlySelected) {
-            next.delete(node.id);
-          } else {
-            next.add(node.id);
-          }
-          notifySelectionChange(next);
-          return next;
+      if (isMultiSelect) {
+        newSelectedIds = new Set(selectedIds);
+        if (isCurrentlySelected) {
+          newSelectedIds.delete(node.id);
         } else {
-          // Single select mode: toggle or clear and select
-          if (isCurrentlySelected && prev.size === 1) {
-            // Only this item selected, deselect it
-            notifySelectionChange(new Set());
-            return new Set();
-          } else {
-            // Select only this item
-            const next = new Set([node.id]);
-            notifySelectionChange(next);
-            return next;
-          }
+          newSelectedIds.add(node.id);
         }
       } else {
-        // It's a parent node (district or source)
-        let leafIds;
-
-        if (defaultChildMatcher && item.children.some((c) => c.children)) {
-          // For districts: select leaves from matching child only (e.g., 'claude')
-          leafIds = getLeafIdsFromMatchingChild(item, defaultChildMatcher);
-          // If no matching child found, fall back to all leaves
-          if (leafIds.length === 0) {
-            leafIds = getAllLeafIds(item);
-          }
+        // Single select mode: toggle or clear and select
+        if (isCurrentlySelected && selectedIds.size === 1) {
+          // Only this item selected, deselect it
+          newSelectedIds = new Set();
         } else {
-          // For sources or if no matcher: select all leaves
-          leafIds = getAllLeafIds(item);
-        }
-
-        // Check if all these leaves are already selected
-        const allSelected = leafIds.length > 0 && leafIds.every((id) => prev.has(id));
-
-        if (isMultiSelect) {
-          const next = new Set(prev);
-          if (allSelected) {
-            // Deselect all these leaves
-            leafIds.forEach((id) => next.delete(id));
-          } else {
-            // Add all these leaves
-            leafIds.forEach((id) => next.add(id));
-          }
-          notifySelectionChange(next);
-          return next;
-        } else {
-          // Single select mode
-          if (allSelected) {
-            // All were selected, deselect all
-            notifySelectionChange(new Set());
-            return new Set();
-          } else {
-            // Select only these leaves
-            const next = new Set(leafIds);
-            notifySelectionChange(next);
-            return next;
-          }
+          // Select only this item
+          newSelectedIds = new Set([node.id]);
         }
       }
-    });
-  }, [selectableDepths, itemMap, defaultChildMatcher, notifySelectionChange]);
+    } else {
+      // It's a parent node (district or source)
+      let leafIds;
+
+      if (defaultChildMatcher && item.children.some((c) => c.children)) {
+        // For districts: select leaves from matching child only (e.g., 'claude')
+        leafIds = getLeafIdsFromMatchingChild(item, defaultChildMatcher);
+        // If no matching child found, fall back to all leaves
+        if (leafIds.length === 0) {
+          leafIds = getAllLeafIds(item);
+        }
+      } else {
+        // For sources or if no matcher: select all leaves
+        leafIds = getAllLeafIds(item);
+      }
+
+      // Check if all these leaves are already selected
+      const allSelected = leafIds.length > 0 && leafIds.every((id) => selectedIds.has(id));
+
+      if (isMultiSelect) {
+        newSelectedIds = new Set(selectedIds);
+        if (allSelected) {
+          // Deselect all these leaves
+          leafIds.forEach((id) => newSelectedIds.delete(id));
+        } else {
+          // Add all these leaves
+          leafIds.forEach((id) => newSelectedIds.add(id));
+        }
+      } else {
+        // Single select mode
+        if (allSelected) {
+          // All were selected, deselect all
+          newSelectedIds = new Set();
+        } else {
+          // Select only these leaves
+          newSelectedIds = new Set(leafIds);
+        }
+      }
+    }
+
+    // Update internal state (no-op in controlled mode)
+    setSelectedIds(newSelectedIds);
+    // Notify parent of change
+    notifySelectionChange(newSelectedIds);
+  }, [selectableDepths, itemMap, defaultChildMatcher, notifySelectionChange, selectedIds]);
 
   const handleExpandAll = useCallback(() => {
     setExpandedIds(new Set(getAllFolderIds(data)));

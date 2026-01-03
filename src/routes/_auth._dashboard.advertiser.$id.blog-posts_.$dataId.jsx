@@ -1,6 +1,7 @@
+import { useState, useMemo } from 'react';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, Loader2, MapPin, Building2, Bot, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, Loader2, MapPin, Building2, Bot, ShoppingBag, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import VirtualizedTree from '@/components/ui-custom/VirtualizedTree';
 import { fetchAdvertiserById, fetchPostcodesTreeFull } from '@/components/Magazine/api';
@@ -34,6 +35,13 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
     const { id: advertiserId, dataId } = Route.useParams();
     const navigate = useNavigate();
     const auth = useAuth();
+    const [selectedItems, setSelectedItems] = useState([]);
+
+    // Derive selectedIds Set from selectedItems for controlled tree selection
+    const selectedIds = useMemo(
+      () => new Set(selectedItems.map((item) => item.id)),
+      [selectedItems]
+    );
 
     // Find the data list config by id
     const dataConfig = BLOG_POST_DATA_LIST.find((item) => item.id === Number(dataId));
@@ -58,6 +66,19 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
       navigate({ to: `/advertiser/${advertiserId}/blog-posts` });
     };
 
+    const handleSelectionChange = (items) => {
+      setSelectedItems(items);
+    };
+
+    const handleRemoveItem = (itemId) => {
+      setSelectedItems((prev) => prev.filter((item) => item.id !== itemId));
+    };
+
+    const handleGenerate = () => {
+      console.log('Generate blog posts for:', selectedItems);
+      // TODO: Implement generation logic
+    };
+
     if (!dataConfig) {
       return (
         <div className="flex flex-col h-full overflow-auto">
@@ -80,6 +101,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
     return (
       <div className="flex flex-col h-full overflow-auto">
         <div className="flex-1 p-6 space-y-6">
+          {/* Header */}
           <div>
             <Button
               variant="ghost"
@@ -98,6 +120,14 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
             <p className="text-gray-500 mt-2">{dataConfig.description}</p>
           </div>
 
+          {/* Stats */}
+          {treeData?.data && (
+            <p className="text-sm text-gray-500">
+              {treeData.totalPrefixes} areas, {treeData.totalDistricts} districts, {treeData.totalSources} sources
+            </p>
+          )}
+
+          {/* Loading state */}
           {isLoading && (
             <div className="flex items-center gap-2 text-gray-600">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -105,29 +135,75 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
             </div>
           )}
 
+          {/* Error state */}
           {error && (
             <p className="text-red-600">Failed to load postcodes: {error.message}</p>
           )}
 
+          {/* Main content: Tree + Selection tray */}
           {treeData?.data && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-500">
-                {treeData.totalPrefixes} areas, {treeData.totalDistricts} districts, {treeData.totalSources} sources
-              </p>
+            <div className="flex gap-6">
+              {/* Left: Tree view */}
+              <div className="w-96 flex-shrink-0">
+                <VirtualizedTree
+                  data={treeData.data}
+                  getIcon={getTreeIcon}
+                  searchPlaceholder="Find street"
+                  showExpandAll={true}
+                  autoExpandMatch={(item) => item.name === 'claude'}
+                  selectableDepths={[1, 2, 3]}
+                  defaultChildMatcher={(child) => child.name === 'claude'}
+                  selectionColor="bg-blue-100"
+                  selectedIds={selectedIds}
+                  onSelectionChange={handleSelectionChange}
+                />
+              </div>
 
-              <VirtualizedTree
-                data={treeData.data}
-                getIcon={getTreeIcon}
-                searchPlaceholder="Search streets..."
-                showExpandAll={true}
-                autoExpandMatch={(item) => item.name === 'claude'}
-                selectableDepths={[1, 2, 3]} // district, source, street (not area)
-                defaultChildMatcher={(child) => child.name === 'claude'}
-                selectionColor="bg-blue-100"
-                onSelectionChange={(items) => {
-                  console.log('Selected items:', items);
-                }}
-              />
+              {/* Right: Selection tray */}
+              <div className="flex-1 flex flex-col">
+                <div className="border-2 border-gray-300 rounded-xl bg-white flex flex-col min-h-[120px]">
+                  {/* Tray header with Generate button */}
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <span className="text-sm text-gray-500">
+                      {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''} selected
+                    </span>
+                    <Button
+                      variant="gradient"
+                      disabled={selectedItems.length === 0}
+                      onClick={handleGenerate}
+                    >
+                      Generate
+                    </Button>
+                  </div>
+
+                  {/* Pills container */}
+                  <div className="flex-1 p-4 overflow-auto">
+                    {selectedItems.length === 0 ? (
+                      <p className="text-gray-400 text-sm">
+                        Select items from the tree to add them here
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedItems.map((item) => (
+                          <span
+                            key={item.id}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm"
+                          >
+                            {/* Show ancestry path */}
+                            {item.ancestry?.slice(1).map((a) => a.name).join(' → ')}
+                            <button
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
