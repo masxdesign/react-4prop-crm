@@ -311,16 +311,6 @@ const AdvertiserSelectionTable = ({
             header: 'Actions',
             cell: ({ row }) => (
               <div className="flex items-center gap-2">
-                {showManageButtons && (
-                  <Button
-                    variant="outline"
-                    size="default"
-                    onClick={(e) => handleEditClick(row.original, e)}
-                  >
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                )}
                 {showActionButtons && (
                   <>
                     <Button
@@ -340,6 +330,16 @@ const AdvertiserSelectionTable = ({
                       Stats
                     </Button>
                   </>
+                )}
+                {showManageButtons && (
+                  <Button
+                    variant="outline"
+                    size="default"
+                    onClick={(e) => handleEditClick(row.original, e)}
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
                 )}
                 {showManageButtons && (
                   <Button

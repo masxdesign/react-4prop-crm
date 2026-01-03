@@ -5,7 +5,7 @@ import AgentSelectionTable from '@/components/Magazine/AgentSelectionTable/Agent
 import AgencySelectionTable from '@/components/AgencySelectionTable';
 
 const DEFAULTS = {
-  tab: 'agents',
+  tab: 'agencies',
   page: 1,
   limit: 20,
   search: '',
@@ -80,20 +80,9 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/')({
 
           <Tabs value={search.tab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="agents">Agent Properties</TabsTrigger>
               <TabsTrigger value="agencies">Agencies</TabsTrigger>
+              <TabsTrigger value="agents">Agent Properties</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="agents" className="mt-6">
-              <AgentSelectionTable
-                basePath="/agency"
-                cleanSearchParams={cleanSearchParams}
-                DEFAULTS={DEFAULTS}
-                navigationPrefix="/agency/agent"
-                embedded
-                urlSearch={search}
-              />
-            </TabsContent>
 
             <TabsContent value="agencies" className="mt-6">
               <AgencySelectionTable
@@ -103,6 +92,17 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/')({
                 navigationPrefix="/agency"
                 urlSearch={search}
                 showActionButtons
+              />
+            </TabsContent>
+
+            <TabsContent value="agents" className="mt-6">
+              <AgentSelectionTable
+                basePath="/agency"
+                cleanSearchParams={cleanSearchParams}
+                DEFAULTS={DEFAULTS}
+                navigationPrefix="/agency/agent"
+                embedded
+                urlSearch={search}
               />
             </TabsContent>
           </Tabs>
