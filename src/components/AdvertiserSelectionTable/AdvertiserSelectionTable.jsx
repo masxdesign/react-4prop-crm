@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, X, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -232,7 +232,12 @@ const AdvertiserSelectionTable = ({
           header: 'Advertiser',
           cell: (info) => (
             <div className="flex flex-col">
-              <span className="font-semibold text-base text-gray-900">{info.getValue()}</span>
+              <button
+                onClick={(e) => handleEditClick(info.row.original, e)}
+                className="font-semibold text-base text-gray-900 hover:underline text-left cursor-pointer"
+              >
+                {info.getValue()}
+              </button>
               {info.row.original.email ? (
                 <button
                   onClick={(e) => handleCopyEmail(info.row.original.email, e)}
@@ -308,7 +313,7 @@ const AdvertiserSelectionTable = ({
         baseColumns.push(
           columnHelper.display({
             id: 'actions',
-            header: 'Actions',
+            header: '',
             cell: ({ row }) => (
               <div className="flex items-center gap-2">
                 {showActionButtons && (
@@ -342,14 +347,13 @@ const AdvertiserSelectionTable = ({
                   </Button>
                 )}
                 {showManageButtons && (
-                  <Button
-                    variant="destructive"
-                    size="icon"
+                  <button
                     onClick={(e) => handleDeleteClick(row.original, e)}
                     title="Delete"
+                    className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
             ),
