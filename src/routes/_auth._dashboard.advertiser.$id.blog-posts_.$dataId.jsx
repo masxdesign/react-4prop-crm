@@ -67,6 +67,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
     };
 
     const handleSelectionChange = (items) => {
+      console.log('Selected items:', items);
       setSelectedItems(items);
     };
 
