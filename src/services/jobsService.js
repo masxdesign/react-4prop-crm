@@ -35,3 +35,10 @@ export const fetchJobOutput = async (jobId) => {
   const { data } = await propertyPubClient.get(`/api/jobs/${jobId}/output`);
   return data;
 };
+
+export const fetchStreetPostEstimate = async ({ postcode, street }) => {
+  const { data } = await propertyPubClient.get(`/api/ai/street-post/estimate`, {
+    params: { postcode, street }
+  });
+  return data;
+};
