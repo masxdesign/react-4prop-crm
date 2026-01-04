@@ -1,9 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { streetPostJobsQuery } from "./jobs.queries";
+import { streetPostJobsQuery, jobOutputQuery } from "./jobs.queries";
 import { createStreetPostJob, cancelJob } from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
   return useQuery(streetPostJobsQuery(advertiserId, filters));
+}
+
+export function useJobOutput(jobId) {
+  return useQuery(jobOutputQuery(jobId));
 }
 
 export function useCreateStreetPostJobMutation() {

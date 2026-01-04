@@ -30,3 +30,8 @@ export const cancelJob = async (jobId) => {
   const { data } = await propertyPubClient.delete(`/api/jobs/${jobId}`);
   return data;
 };
+
+export const fetchJobOutput = async (jobId) => {
+  const { data } = await propertyPubClient.get(`/api/jobs/${jobId}/output`);
+  return data;
+};
