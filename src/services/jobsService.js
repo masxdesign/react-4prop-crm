@@ -42,3 +42,16 @@ export const fetchStreetPostEstimate = async ({ postcode, street }) => {
   });
   return data;
 };
+
+export const fetchRelatedJobs = async ({ postcode, street, advertiserId }) => {
+  const { data } = await propertyPubClient.get(`/api/jobs`, {
+    params: {
+      postcode,
+      street,
+      advertiser_id: advertiserId,
+      type: "street_post",
+      status: "completed"
+    }
+  });
+  return data;
+};

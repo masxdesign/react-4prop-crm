@@ -1,5 +1,35 @@
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useRelatedJobs } from '@/features/jobs/jobs.hooks';
+
+// Format relative time
+const formatRelativeTime = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+// Format cost in USD
+const formatCostUSD = (cost) => {
+  if (cost == null) return '';
+  return `$${cost.toFixed(4)}`;
+};
 
 // Markdown-style section renderer
 function MarkdownSection({ heading, content }) {
@@ -63,12 +93,54 @@ function EmptyState() {
   return <p className="text-gray-400 text-sm">No output data available</p>;
 }
 
+// Dropdown for navigating between related jobs
+function RelatedJobsDropdown({ jobs, currentJobId, onJobChange }) {
+  if (!jobs || jobs.length <= 1) return null;
+
+  return (
+    <div className="mb-4">
+      <Select value={currentJobId} onValueChange={onJobChange}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Select version" />
+        </SelectTrigger>
+        <SelectContent>
+          {jobs.map((job) => (
+            <SelectItem key={job.id} value={job.id}>
+              <span className="flex items-center gap-2">
+                <span>{formatRelativeTime(job.completed_at || job.created_at)}</span>
+                {job.cost_usd != null && (
+                  <span className="text-emerald-600">{formatCostUSD(job.cost_usd)}</span>
+                )}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 // Displays job output with tabs. Usable in dialogs or standalone pages.
 export default function JobOutputContent({
   outputData,
   isLoading = false,
-  defaultTab = 'overview'
+  defaultTab = 'overview',
+  job = null,
+  advertiserId = null,
+  onJobChange = null,
 }) {
+  const postcode = job?.input_data?.postcode;
+  const street = job?.input_data?.street;
+
+  const { jobs: relatedJobs } = useRelatedJobs(postcode, street, advertiserId);
+
+  const handleJobChange = (jobId) => {
+    const selectedJob = relatedJobs.find((j) => j.id === jobId);
+    if (selectedJob && onJobChange) {
+      onJobChange(selectedJob);
+    }
+  };
+
   if (isLoading) {
     return <LoadingState />;
   }
@@ -82,19 +154,27 @@ export default function JobOutputContent({
   }
 
   return (
-    <Tabs defaultValue={defaultTab} className="w-full">
-      <TabsList>
-        <TabsTrigger value="overview">Overview</TabsTrigger>
-        <TabsTrigger value="raw">Raw JSON</TabsTrigger>
-      </TabsList>
+    <div className="w-full">
+      <RelatedJobsDropdown
+        jobs={relatedJobs}
+        currentJobId={job?.id}
+        onJobChange={handleJobChange}
+      />
 
-      <TabsContent value="overview" className="mt-4">
-        <OverviewTab outputData={outputData} />
-      </TabsContent>
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="raw">Raw JSON</TabsTrigger>
+        </TabsList>
 
-      <TabsContent value="raw" className="mt-4">
-        <RawJsonTab outputData={outputData} />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="overview" className="mt-4">
+          <OverviewTab outputData={outputData} />
+        </TabsContent>
+
+        <TabsContent value="raw" className="mt-4">
+          <RawJsonTab outputData={outputData} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

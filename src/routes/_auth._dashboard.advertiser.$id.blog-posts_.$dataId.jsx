@@ -287,6 +287,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
                   jobs={jobsData?.jobs}
                   count={jobsData?.count || 0}
                   totalCostUSD={jobsData?.totalCostUSD || 0}
+                  advertiserId={advertiserId}
                   onCancelJob={handleCancelJob}
                 />
               </div>

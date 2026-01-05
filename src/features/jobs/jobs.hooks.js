@@ -1,5 +1,5 @@
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
-import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery } from "./jobs.queries";
+import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery, relatedJobsQuery } from "./jobs.queries";
 import { createStreetPostJob, cancelJob } from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
@@ -64,4 +64,30 @@ export function useStreetPostEstimates(items = []) {
   }
 
   return { estimates, totalEstimate, isLoading };
+}
+
+// Get related jobs (same postcode-street) from cache or backend
+export function useRelatedJobs(postcode, street, advertiserId) {
+  const queryClient = useQueryClient();
+
+  // Try to get jobs from cache first
+  const cachedData = queryClient.getQueryData(["streetPostJobs", advertiserId, {}]);
+
+  // If cache has jobs, filter locally
+  const cachedJobs = cachedData?.jobs?.filter(
+    (j) =>
+      j.input_data?.postcode === postcode &&
+      j.input_data?.street === street &&
+      j.status === "completed"
+  ) || [];
+
+  // Use backend query as fallback when cache is empty
+  const { data: fetchedData, isLoading } = useQuery({
+    ...relatedJobsQuery({ postcode, street, advertiserId }),
+    enabled: cachedJobs.length === 0 && !!postcode && !!street && !!advertiserId,
+  });
+
+  const jobs = cachedJobs.length > 0 ? cachedJobs : (fetchedData?.jobs || []);
+
+  return { jobs, isLoading: cachedJobs.length === 0 && isLoading };
 }

@@ -109,7 +109,7 @@ function JobItem({ job, onCancel, onClick }) {
   );
 }
 
-function JobOutputDialog({ jobId, job, open, onOpenChange }) {
+function JobOutputDialog({ jobId, job, advertiserId, open, onOpenChange, onJobChange }) {
   const { data: outputData, isLoading } = useJobOutput(open ? jobId : null);
 
   return (
@@ -121,14 +121,20 @@ function JobOutputDialog({ jobId, job, open, onOpenChange }) {
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-auto">
-          <JobOutputContent outputData={outputData} isLoading={isLoading} />
+          <JobOutputContent
+            outputData={outputData}
+            isLoading={isLoading}
+            job={job}
+            advertiserId={advertiserId}
+            onJobChange={onJobChange}
+          />
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, onCancelJob }) {
+export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, advertiserId, onCancelJob }) {
   const [selectedJob, setSelectedJob] = useState(null);
 
   const handleJobClick = (job) => {
@@ -137,6 +143,10 @@ export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, onCan
 
   const handleCloseDialog = () => {
     setSelectedJob(null);
+  };
+
+  const handleJobChange = (job) => {
+    setSelectedJob(job);
   };
 
   return (
@@ -172,8 +182,10 @@ export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, onCan
       <JobOutputDialog
         jobId={selectedJob?.id}
         job={selectedJob}
+        advertiserId={advertiserId}
         open={!!selectedJob}
         onOpenChange={(open) => !open && handleCloseDialog()}
+        onJobChange={handleJobChange}
       />
     </>
   );
