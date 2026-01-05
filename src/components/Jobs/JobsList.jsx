@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useJobOutput } from '@/features/jobs/jobs.hooks';
+import JobOutputContent from './JobOutputContent';
 
 const JOB_STATUS_CONFIG = {
   pending: {
@@ -120,21 +121,7 @@ function JobOutputDialog({ jobId, job, open, onOpenChange }) {
           </DialogTitle>
         </DialogHeader>
         <div className="flex-1 overflow-auto">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-            </div>
-          ) : outputData?.error_message ? (
-            <div className="p-4 bg-red-50 rounded-lg">
-              <p className="text-red-600 text-sm">{outputData.error_message}</p>
-            </div>
-          ) : outputData?.output_data ? (
-            <pre className="p-4 bg-gray-50 rounded-lg text-xs overflow-auto">
-              {JSON.stringify(outputData.output_data, null, 2)}
-            </pre>
-          ) : (
-            <p className="text-gray-400 text-sm">No output data available</p>
-          )}
+          <JobOutputContent outputData={outputData} isLoading={isLoading} />
         </div>
       </DialogContent>
     </Dialog>
