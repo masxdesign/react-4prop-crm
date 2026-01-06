@@ -16,10 +16,71 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useStatsExpand } from '../context/StatsExpandContext';
-import { fetchAgencyAdvertiserProperties } from '../api';
+import { useAgencyAdvertiserProperties } from '../stats.hooks';
 import PropertyRow from '../PropertyRow/PropertyRow';
 
 const columnHelper = createColumnHelper();
+
+/**
+ * ExpandableAdvertiserRow Component
+ * Handles data fetching for a single advertiser row when expanded
+ */
+const ExpandableAdvertiserRow = ({
+  row,
+  columns,
+  agencyId,
+  startDate,
+  endDate,
+  isExpanded
+}) => {
+  const advertiserId = row.original.advertiser_id;
+
+  // Fetch properties only when expanded
+  const { data: properties = [], isLoading, error } = useAgencyAdvertiserProperties(
+    agencyId,
+    advertiserId,
+    startDate,
+    endDate,
+    { enabled: isExpanded }
+  );
+
+  return (
+    <>
+      {/* Expanded properties section */}
+      {isExpanded && (
+        <TableRow>
+          <TableCell colSpan={columns.length} className="p-0">
+            <div className="bg-muted/30 p-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+                  <span className="text-gray-600">Loading properties...</span>
+                </div>
+              ) : error ? (
+                <div className="text-center py-8 text-red-500">
+                  Error loading properties: {error.message}
+                </div>
+              ) : properties.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    Properties ({properties.length})
+                  </h4>
+                  {properties.map((property) => (
+                    <PropertyRow key={property.pid} property={property} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  No properties found for this advertiser
+                </div>
+              )}
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+};
 
 /**
  * AdvertiserBreakdownTable Component
@@ -41,42 +102,13 @@ const AdvertiserBreakdownTable = ({
 }) => {
   const {
     isEntityExpanded,
-    getEntityData,
-    setEntityLoading,
-    setEntityProperties,
     toggleEntity,
   } = useStatsExpand();
 
-  // Handle advertiser row click - toggle expand and lazy load properties
-  const handleAdvertiserClick = async (advertiser) => {
+  // Handle advertiser row click - toggle expand
+  const handleAdvertiserClick = (advertiser) => {
     const advertiserId = advertiser.advertiser_id;
-    const isCurrentlyExpanded = isEntityExpanded(advertiserId);
-
-    // If already expanded, just collapse
-    if (isCurrentlyExpanded) {
-      toggleEntity(advertiserId);
-      return;
-    }
-
-    // Expand and start loading
-    toggleEntity(advertiserId, null); // null indicates loading state
-
-    try {
-      // Fetch properties for this advertiser
-      const properties = await fetchAgencyAdvertiserProperties(
-        agencyId,
-        advertiserId,
-        startDate,
-        endDate
-      );
-
-      // Store properties in context
-      setEntityProperties(advertiserId, properties);
-    } catch (error) {
-      console.error('Error loading advertiser properties:', error);
-      // On error, collapse the row
-      toggleEntity(advertiserId);
-    }
+    toggleEntity(advertiserId);
   };
 
   // Define columns
@@ -87,14 +119,11 @@ const AdvertiserBreakdownTable = ({
         header: '',
         cell: ({ row }) => {
           const advertiserId = row.original.advertiser_id;
-          const entityData = getEntityData(advertiserId);
           const isExpanded = isEntityExpanded(advertiserId);
 
           return (
             <div className="flex items-center justify-center w-6">
-              {entityData?.isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-              ) : isExpanded ? (
+              {isExpanded ? (
                 <ChevronDown className="h-4 w-4" />
               ) : (
                 <ChevronRight className="h-4 w-4" />
@@ -134,7 +163,7 @@ const AdvertiserBreakdownTable = ({
         cell: (info) => info.getValue()?.toLocaleString() || 0,
       }),
     ],
-    [getEntityData, isEntityExpanded]
+    [isEntityExpanded]
   );
 
   const table = useReactTable({
@@ -194,8 +223,6 @@ const AdvertiserBreakdownTable = ({
           {table.getRowModel().rows.map((row) => {
             const advertiserId = row.original.advertiser_id;
             const isExpanded = isEntityExpanded(advertiserId);
-            const entityData = getEntityData(advertiserId);
-            const properties = entityData?.properties || [];
 
             return (
               <React.Fragment key={row.id}>
@@ -211,34 +238,15 @@ const AdvertiserBreakdownTable = ({
                   ))}
                 </TableRow>
 
-                {/* Expanded properties section */}
-                {isExpanded && (
-                  <TableRow>
-                    <TableCell colSpan={columns.length} className="p-0">
-                      <div className="bg-muted/30 p-4">
-                        {entityData?.isLoading ? (
-                          <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-                            <span className="text-gray-600">Loading properties...</span>
-                          </div>
-                        ) : properties.length > 0 ? (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-gray-900 mb-3">
-                              Properties ({properties.length})
-                            </h4>
-                            {properties.map((property) => (
-                              <PropertyRow key={property.pid} property={property} />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-gray-500">
-                            No properties found for this advertiser
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
+                {/* Expandable properties row with data fetching */}
+                <ExpandableAdvertiserRow
+                  row={row}
+                  columns={columns}
+                  agencyId={agencyId}
+                  startDate={startDate}
+                  endDate={endDate}
+                  isExpanded={isExpanded}
+                />
               </React.Fragment>
             );
           })}

@@ -11,6 +11,7 @@ import BookingStatusBadge from './BookingStatusBadge';
 import { pluralizeWeeks } from '../util/pluralize';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import propertyParse from '@/utils/propertyParse';
 
 const columnHelper = createColumnHelper();
 
@@ -31,10 +32,23 @@ const BookingHistoryTable = ({ bookings, isAdvertiser, pagination, onPageChange 
         sortingFn: 'datetime',
       }),
       columnHelper.accessor('pid', {
-        header: 'Property ID',
-        cell: (info) => (
-          <span className="font-mono text-sm">{info.getValue() || 'N/A'}</span>
-        ),
+        header: 'Property',
+        cell: (info) => {
+          const booking = info.row.original;
+          // Format address using propertyParse utility
+          const address = propertyParse.addressText({
+            showMore: true,
+            showBuilding: true,
+            showPostcode: true
+          })(booking);
+
+          return (
+            <div className="flex flex-col">
+              <span className="text-sm text-gray-900">{address || 'N/A'}</span>
+              <span className="font-mono text-xs text-gray-500">ID: {info.getValue() || 'N/A'}</span>
+            </div>
+          );
+        },
       }),
     ];
 
@@ -162,11 +176,18 @@ const BookingHistoryTable = ({ bookings, isAdvertiser, pagination, onPageChange 
             <tbody className="bg-white divide-y divide-gray-200">
               {table.getRowModel().rows.map((row) => (
                 <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    // Allow property column to wrap, keep others nowrap
+                    const isPropertyColumn = cell.column.id === 'pid';
+                    return (
+                      <td
+                        key={cell.id}
+                        className={`px-6 py-4 text-sm text-gray-900 ${isPropertyColumn ? '' : 'whitespace-nowrap'}`}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
