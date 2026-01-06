@@ -8,7 +8,7 @@ import { JobsList } from '@/components/Jobs';
 import { fetchAdvertiserById, fetchPostcodesTreeFull } from '@/components/Magazine/api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { BLOG_POST_DATA_LIST } from '@/constants';
-import { useStreetPostJobs, useCreateStreetPostJobMutation, useCancelJobMutation, useStreetPostEstimates } from '@/features/jobs/jobs.hooks';
+import { useStreetPostJobsInfinite, useCreateStreetPostJobMutation, useCancelJobMutation, useStreetPostEstimates } from '@/features/jobs/jobs.hooks';
 
 // Custom icon renderer based on depth
 const getTreeIcon = (_item, depth) => {
@@ -92,9 +92,25 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
     };
 
     // Jobs hooks
-    const { data: jobsData } = useStreetPostJobs(advertiserId);
+    const {
+      data: jobsData,
+      hasNextPage,
+      isFetchingNextPage,
+      fetchNextPage,
+    } = useStreetPostJobsInfinite(advertiserId);
     const createJobMutation = useCreateStreetPostJobMutation();
     const cancelJobMutation = useCancelJobMutation();
+
+    // Flatten pages into single jobs array
+    const jobs = useMemo(
+      () => jobsData?.pages?.flatMap((page) => page.jobs) || [],
+      [jobsData]
+    );
+    const totalCount = jobsData?.pages?.[0]?.total || 0;
+    const totalCostUSD = useMemo(
+      () => jobsData?.pages?.reduce((sum, page) => sum + (page.totalCostUSD || 0), 0) || 0,
+      [jobsData]
+    );
 
     // Prepare items for estimation
     const estimateItems = useMemo(
@@ -284,11 +300,14 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
                 </form>
 
                 <JobsList
-                  jobs={jobsData?.jobs}
-                  count={jobsData?.count || 0}
-                  totalCostUSD={jobsData?.totalCostUSD || 0}
+                  jobs={jobs}
+                  count={totalCount}
+                  totalCostUSD={totalCostUSD}
                   advertiserId={advertiserId}
                   onCancelJob={handleCancelJob}
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  fetchNextPage={fetchNextPage}
                 />
               </div>
             </div>

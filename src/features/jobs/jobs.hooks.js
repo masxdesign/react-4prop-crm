@@ -1,9 +1,26 @@
-import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery, relatedJobsQuery } from "./jobs.queries";
-import { createStreetPostJob, cancelJob } from "@/services/jobsService";
+import { createStreetPostJob, cancelJob, fetchJobsByAdvertiserId } from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
   return useQuery(streetPostJobsQuery(advertiserId, filters));
+}
+
+const PAGE_SIZE = 20;
+
+export function useStreetPostJobsInfinite(advertiserId, filters = {}) {
+  return useInfiniteQuery({
+    queryKey: ["streetPostJobs", advertiserId, filters],
+    queryFn: ({ pageParam = 0 }) => fetchJobsByAdvertiserId(advertiserId, {
+      ...filters,
+      limit: PAGE_SIZE,
+      offset: pageParam
+    }),
+    getNextPageParam: (lastPage) =>
+      lastPage.hasNextPage ? lastPage.offset + lastPage.limit : undefined,
+    initialPageParam: 0,
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
+  });
 }
 
 export function useJobOutput(jobId) {

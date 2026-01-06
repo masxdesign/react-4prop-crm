@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Clock, Loader2, CheckCircle, XCircle, Ban, X } from 'lucide-react';
 import {
   Dialog,
@@ -134,8 +134,43 @@ function JobOutputDialog({ jobId, job, advertiserId, open, onOpenChange, onJobCh
   );
 }
 
-export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, advertiserId, onCancelJob }) {
+export default function JobsList({
+  jobs = [],
+  count = 0,
+  totalCostUSD = 0,
+  advertiserId,
+  onCancelJob,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  fetchNextPage = null,
+}) {
   const [selectedJob, setSelectedJob] = useState(null);
+  const sentinelRef = useRef(null);
+
+  // Intersection observer for auto-loading
+  useEffect(() => {
+    if (!fetchNextPage || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const sentinel = sentinelRef.current;
+    if (sentinel) {
+      observer.observe(sentinel);
+    }
+
+    return () => {
+      if (sentinel) {
+        observer.unobserve(sentinel);
+      }
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleJobClick = (job) => {
     setSelectedJob(job);
@@ -163,18 +198,27 @@ export default function JobsList({ jobs = [], count = 0, totalCostUSD = 0, adver
           )}
         </div>
 
-        <div className="p-4 space-y-2 max-h-[600px] overflow-auto">
+        <div className="p-4 space-y-2 max-h-[400px] overflow-auto">
           {!jobs.length ? (
             <p className="text-gray-400 text-sm">No jobs yet</p>
           ) : (
-            jobs.map((job) => (
-              <JobItem
-                key={job.id}
-                job={job}
-                onCancel={onCancelJob}
-                onClick={handleJobClick}
-              />
-            ))
+            <>
+              {jobs.map((job) => (
+                <JobItem
+                  key={job.id}
+                  job={job}
+                  onCancel={onCancelJob}
+                  onClick={handleJobClick}
+                />
+              ))}
+              {/* Sentinel for infinite scroll */}
+              <div ref={sentinelRef} className="h-1" />
+              {isFetchingNextPage && (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
