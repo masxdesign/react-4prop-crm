@@ -3,6 +3,7 @@ import { Clock, Loader2, CheckCircle, XCircle, Ban, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -119,6 +120,9 @@ function JobOutputDialog({ jobId, job, advertiserId, open, onOpenChange, onJobCh
           <DialogTitle>
             Job Output: {job?.input_data?.postcode} - {job?.input_data?.street}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            View and edit job output for this street post
+          </DialogDescription>
         </DialogHeader>
         <div className="flex-1 overflow-auto">
           <JobOutputContent

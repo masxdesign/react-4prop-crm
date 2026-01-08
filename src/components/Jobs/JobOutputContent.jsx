@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -7,6 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import RemixPopover from '@/components/ui-custom/RemixPopover';
+import AutoResizeTextarea from '@/components/ui-custom/AutoResizeTextarea';
 import { useRelatedJobs } from '@/features/jobs/jobs.hooks';
 
 // Format relative time
@@ -70,6 +73,49 @@ function RawJsonTab({ outputData }) {
   );
 }
 
+// Edit tab with editable textareas and AI rewrite buttons
+function EditTab({ outputData, onRemix, onUpdate }) {
+  const result = outputData?.output_data?.result || {};
+  const [demographic, setDemographic] = useState(result.demographic || '');
+  const [description, setDescription] = useState(result.description || '');
+
+  const handleBlur = (field, value) => {
+    onUpdate(field, value);
+  };
+
+  return (
+    <div className="space-y-6 p-1">
+      {/* Demographic field */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-900">Demographic</label>
+          <RemixPopover field="demographic" onRemix={onRemix} />
+        </div>
+        <AutoResizeTextarea
+          value={demographic}
+          onChange={(e) => setDemographic(e.target.value)}
+          onBlur={() => handleBlur('demographic', demographic)}
+          minRows={3}
+        />
+      </div>
+
+      {/* Description field */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-sm font-medium text-gray-900">Description</label>
+          <RemixPopover field="description" onRemix={onRemix} />
+        </div>
+        <AutoResizeTextarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onBlur={() => handleBlur('description', description)}
+          minRows={4}
+        />
+      </div>
+    </div>
+  );
+}
+
 // Loading state
 function LoadingState() {
   return (
@@ -124,7 +170,6 @@ function RelatedJobsDropdown({ jobs, currentJobId, onJobChange }) {
 export default function JobOutputContent({
   outputData,
   isLoading = false,
-  defaultTab = 'overview',
   job = null,
   advertiserId = null,
   onJobChange = null,
@@ -153,6 +198,18 @@ export default function JobOutputContent({
     return <EmptyState />;
   }
 
+  // Placeholder remix handler - backend integration later
+  const handleRemix = (field, prompt) => {
+    console.log('Remix requested:', { field, prompt, job });
+    // TODO: Call API endpoint to create remix job
+  };
+
+  // Placeholder update handler - backend integration later
+  const handleUpdate = (field, value) => {
+    console.log('Update requested:', { field, value, job });
+    // TODO: Call API endpoint to update field
+  };
+
   return (
     <div className="w-full">
       <RelatedJobsDropdown
@@ -161,13 +218,18 @@ export default function JobOutputContent({
         onJobChange={handleJobChange}
       />
 
-      <Tabs defaultValue={defaultTab} className="w-full">
+      <Tabs defaultValue="edit" className="w-full">
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="edit">Edit</TabsTrigger>
+          <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="raw">Raw JSON</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-4">
+        <TabsContent value="edit" className="mt-4">
+          <EditTab outputData={outputData} onRemix={handleRemix} onUpdate={handleUpdate} />
+        </TabsContent>
+
+        <TabsContent value="preview" className="mt-4">
           <OverviewTab outputData={outputData} />
         </TabsContent>
 
