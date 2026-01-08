@@ -121,3 +121,8 @@ export const updateSelectedVersion = async (jobId, fieldName, version) => {
   const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/selected-version/${fieldName}`, { version });
   return data;
 };
+
+export const publishJob = async (jobId, { unpublish = false } = {}) => {
+  const { data } = await propertyPubClient.post(`/api/jobs/${jobId}/publish`, { unpublish });
+  return data;
+};

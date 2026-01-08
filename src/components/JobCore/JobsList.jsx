@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { useJobOutput } from '@/features/jobCore';
+import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { formatCostUSD } from './utils';
 import { JobItem, JobOutputDialog } from './components';
 
@@ -87,6 +87,34 @@ export default function JobsList({
   // Fetch job output for selected job
   const { data: outputData, isLoading: isLoadingOutput } = useJobOutput(selectedJob?.id);
 
+  // Publish mutation
+  const publishMutation = usePublishJobMutation();
+
+  const handlePush = () => {
+    if (selectedJob?.id) {
+      publishMutation.mutate({ jobId: selectedJob.id });
+    }
+  };
+
+  const handleUnpublish = () => {
+    if (selectedJob?.id) {
+      publishMutation.mutate({ jobId: selectedJob.id, unpublish: true });
+    }
+  };
+
+  // handlePublish re-publishes an unpublished blog post (same as push but semantically different)
+  const handlePublish = () => {
+    if (selectedJob?.id) {
+      publishMutation.mutate({ jobId: selectedJob.id });
+    }
+  };
+
+  const blogPostId = outputData?.output_data?.result?.blog_post_id;
+  const isPublished = outputData?.output_data?.result?.is_published === 'true';
+  const blogSyncedAt = outputData?.output_data?.result?.blog_synced_at;
+  const jobUpdatedAt = outputData?.updated_at;
+  const needsSync = blogPostId && jobUpdatedAt && blogSyncedAt && new Date(jobUpdatedAt) > new Date(blogSyncedAt);
+
   return (
     <>
       <div className="border-2 border-gray-300 rounded-xl bg-white mt-6">
@@ -133,6 +161,13 @@ export default function JobsList({
         onOpenChange={(open) => !open && handleCloseDialog()}
         getTitle={getTitle}
         getDescription={getDescription}
+        blogPostId={blogPostId}
+        isPublished={isPublished}
+        needsSync={needsSync}
+        onPush={handlePush}
+        onUnpublish={handleUnpublish}
+        onPublish={handlePublish}
+        isPublishing={publishMutation.isPending}
       >
         {OutputContentComponent && (
           <OutputContentComponent

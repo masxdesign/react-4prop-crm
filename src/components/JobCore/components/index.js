@@ -11,3 +11,4 @@ export { default as EditTab } from './EditTab';
 export { default as OverviewTab } from './OverviewTab';
 export { default as JobItem } from './JobItem';
 export { default as JobOutputDialog } from './JobOutputDialog';
+export { default as BlogPostActions } from './BlogPostActions';

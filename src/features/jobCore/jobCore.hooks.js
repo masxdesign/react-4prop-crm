@@ -10,7 +10,8 @@ import {
   updateRevisionContent,
   updateJobResultField,
   fetchRemixJobsInProgressByType,
-  updateSelectedVersion
+  updateSelectedVersion,
+  publishJob
 } from "@/services/jobCoreService";
 
 const PAGE_SIZE = 20;
@@ -160,8 +161,13 @@ export function useUpdateRevisionMutation() {
 
   return useMutation({
     mutationFn: ({ revisionId, content }) => updateRevisionContent(revisionId, content),
-    onSuccess: () => {
+    onSuccess: (_, { jobId }) => {
       queryClient.invalidateQueries({ queryKey: ["revisions"] });
+      if (jobId) {
+        queryClient.setQueryData(["jobOutput", jobId], (old) =>
+          old ? { ...old, updated_at: new Date().toISOString() } : old
+        );
+      }
     }
   });
 }
@@ -174,9 +180,12 @@ export function useUpdateJobResultMutation() {
 
   return useMutation({
     mutationFn: ({ jobId, fieldName, content }) => updateJobResultField(jobId, fieldName, content),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobOutput", variables.jobId] });
-      queryClient.invalidateQueries({ queryKey: ["revisions", variables.jobId] });
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: ["jobOutput", jobId] });
+      queryClient.invalidateQueries({ queryKey: ["revisions", jobId] });
+      queryClient.setQueryData(["jobOutput", jobId], (old) =>
+        old ? { ...old, updated_at: new Date().toISOString() } : old
+      );
     }
   });
 }
@@ -212,6 +221,10 @@ export function useRemixJobsInProgress(remixType, originalJobId) {
   useEffect(() => {
     if (prevHadJobsRef.current && !hasInProgress) {
       queryClient.invalidateQueries({ queryKey: ["revisions", originalJobId] });
+      // Bump updated_at for needsSync detection when remix completes
+      queryClient.setQueryData(["jobOutput", originalJobId], (old) =>
+        old ? { ...old, updated_at: new Date().toISOString() } : old
+      );
     }
     prevHadJobsRef.current = hasInProgress;
   }, [hasInProgress, originalJobId, queryClient]);
@@ -245,12 +258,31 @@ export function useUpdateSelectedVersionMutation() {
         selected_version: version
       }));
 
+      // Optimistically update jobOutput.updated_at for needsSync detection
+      queryClient.setQueryData(["jobOutput", jobId], (old) =>
+        old ? { ...old, updated_at: new Date().toISOString() } : old
+      );
+
       return { previousData, queryKey };
     },
     onError: (_err, _variables, context) => {
       if (context?.previousData) {
         queryClient.setQueryData(context.queryKey, context.previousData);
       }
+    }
+  });
+}
+
+/**
+ * Publish job content to blog post (create, update, or unpublish)
+ */
+export function usePublishJobMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ jobId, unpublish }) => publishJob(jobId, { unpublish }),
+    onSuccess: (_, { jobId }) => {
+      queryClient.invalidateQueries({ queryKey: ["jobOutput", jobId] });
     }
   });
 }

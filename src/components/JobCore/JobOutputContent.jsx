@@ -84,7 +84,8 @@ export default function JobOutputContent({
     } else {
       updateRevisionMutation.mutate({
         revisionId: revisionInfo.revisionId,
-        content: value
+        content: value,
+        jobId: job.id
       });
     }
   };
