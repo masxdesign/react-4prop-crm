@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { fetchAgentBookings } from '@/components/Magazine/api';
+import { fetchAgencyBookings } from '@/components/Magazine/api';
 import AgencyBookingHistoryPage from '@/components/Magazine/BookingHistory/AgencyBookingHistoryPage/AgencyBookingHistoryPage';
 import { Loader2 } from 'lucide-react';
 
@@ -26,9 +26,10 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings')({
     }
 
     const queryOptions = {
-      queryKey: ['bookings', 'agency', agencyId, status, page, pageSize],
-      queryFn: () => fetchAgentBookings(agencyId, { status, page, pageSize }),
+      queryKey: ['bookings', 'company', agencyId, status, page, pageSize],
+      queryFn: () => fetchAgencyBookings(agencyId, { status, page, pageSize }),
       enabled: !!agencyId,
+      staleTime: 1000 * 30, // 30 seconds - prevents refetch on component mount
     };
 
     return {
@@ -39,7 +40,7 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings')({
   },
   loader: async ({ context }) => {
     if (context.bookingsQueryOptions?.enabled) {
-      return context.queryClient.ensureQueryData(context.bookingsQueryOptions);
+      await context.queryClient.ensureQueryData(context.bookingsQueryOptions);
     }
     return null;
   },
@@ -54,7 +55,8 @@ export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings')({
   component: function AgencyBookingsRoute() {
     const { id: agencyId } = Route.useParams();
     const search = Route.useSearch();
-    return <AgencyBookingHistoryPage search={search} agencyId={agencyId} />;
+    const { bookingsQueryOptions } = Route.useRouteContext();
+    return <AgencyBookingHistoryPage search={search} agencyId={agencyId} bookingsQueryOptions={bookingsQueryOptions} />;
   },
   errorComponent: ({ error }) => (
     <div className="flex items-center justify-center min-h-screen">

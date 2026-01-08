@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
+import { useParams, useNavigate, useSearch, useRouteContext } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAdvertiserBookings, fetchAdvertiserById } from '@/components/Magazine/api';
 import { useAuth } from '@/components/Auth/Auth-context';
@@ -19,7 +19,7 @@ import { ChevronLeft } from 'lucide-react';
  * - search: URL search params (status, page, pageSize)
  * - advertiserId: The advertiser ID from route params
  */
-const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAdvertiserId }) => {
+const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAdvertiserId, bookingsQueryOptions: propQueryOptions }) => {
   const auth = useAuth();
   // Use prop if provided, otherwise fall back to useParams for backwards compatibility
   const params = useParams({ strict: false });
@@ -35,16 +35,17 @@ const AdvertiserBookingHistoryPage = ({ search: propSearch, advertiserId: propAd
   const page = search.page || 1;
   const pageSize = search.pageSize || 10;
 
-  // Fetch bookings using the same query key from beforeLoad
-  const { data, isLoading } = useQuery({
+  // Get query options from route context if not passed as prop
+  const routeContext = useRouteContext({ strict: false });
+  const bookingsQueryOptions = propQueryOptions || routeContext?.bookingsQueryOptions || {
     queryKey: ['bookings', 'advertiser', advertiserId, status, page, pageSize],
-    queryFn: () => fetchAdvertiserBookings(advertiserId, {
-      status,
-      page,
-      pageSize
-    }),
+    queryFn: () => fetchAdvertiserBookings(advertiserId, { status, page, pageSize }),
     enabled: !!advertiserId,
-  });
+    staleTime: 1000 * 30,
+  };
+
+  // Fetch bookings using preloaded query options from route
+  const { data } = useQuery(bookingsQueryOptions);
 
   // Fetch advertiser details for super admin to display name
   const { data: advertiserData } = useQuery({

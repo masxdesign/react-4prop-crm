@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate, useRouteContext, useSearch } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAgencyById } from '@/components/Stats/api';
-import { fetchAgentBookings } from '@/components/Magazine/api';
+import { fetchAgencyBookings } from '@/components/Magazine/api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryTable from '../BookingHistoryTable';
 import BookingStatusFilter from '../BookingStatusFilter';
@@ -40,13 +40,14 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
   // Get query options from route context if not passed as prop
   const routeContext = useRouteContext({ strict: false });
   const bookingsQueryOptions = propQueryOptions || routeContext?.bookingsQueryOptions || {
-    queryKey: ['bookings', 'agency', agencyId, status, page, pageSize],
-    queryFn: () => fetchAgentBookings(agencyId, { status, page, pageSize }),
+    queryKey: ['bookings', 'company', agencyId, status, page, pageSize],
+    queryFn: () => fetchAgencyBookings(agencyId, { status, page, pageSize }),
     enabled: !!agencyId,
+    staleTime: 1000 * 30,
   };
 
   // Fetch bookings using preloaded query options from route
-  const { data, isLoading } = useQuery(bookingsQueryOptions);
+  const { data } = useQuery(bookingsQueryOptions);
 
   // Fetch agency details for super admin to display name
   const { data: agencyData } = useQuery({

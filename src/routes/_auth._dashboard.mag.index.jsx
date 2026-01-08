@@ -1,7 +1,6 @@
-import React, { useState } from "react"
-import { createFileRoute, useParams, useSearch, useNavigate, useRouterState } from "@tanstack/react-router"
+import React from "react"
+import { createFileRoute} from "@tanstack/react-router"
 import { useAuth } from "@/components/Auth/Auth"
-import AgentPaginatedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedTable"
 import { fetchAgentPaginatedProperties } from "@/components/Magazine/api"
 import AgentPaginatedEnhancedTable from "@/components/Magazine/AgentPropertiesTable/AgentPaginatedEnhancedTable"
 

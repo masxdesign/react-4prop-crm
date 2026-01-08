@@ -29,6 +29,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/bookings'
       queryKey: ['bookings', 'advertiser', advertiserId, status, page, pageSize],
       queryFn: () => fetchAdvertiserBookings(advertiserId, { status, page, pageSize }),
       enabled: !!advertiserId,
+      staleTime: 1000 * 30,
     };
 
     return {
@@ -54,7 +55,8 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/bookings'
   component: function AdvertiserBookingsRoute() {
     const { id: advertiserId } = Route.useParams();
     const search = Route.useSearch();
-    return <AdvertiserBookingHistoryPage search={search} advertiserId={advertiserId} />;
+    const { bookingsQueryOptions } = Route.useRouteContext();
+    return <AdvertiserBookingHistoryPage search={search} advertiserId={advertiserId} bookingsQueryOptions={bookingsQueryOptions} />;
   },
   errorComponent: ({ error }) => (
     <div className="flex items-center justify-center min-h-screen">

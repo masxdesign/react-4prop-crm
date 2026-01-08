@@ -281,6 +281,17 @@ export const fetchAgentBookings = async (agentNid, options = {}) => {
   return response.data;
 };
 
+export const fetchAgencyBookings = async (companyId, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}`,
+    {
+      params: { status, page, pageSize }
+    }
+  );
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object
