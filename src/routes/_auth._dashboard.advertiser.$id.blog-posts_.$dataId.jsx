@@ -135,10 +135,12 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
         const street = streetWithCount.replace(/\s*\(\d+\)$/, '');
 
         await createJobMutation.mutateAsync({
-          postcode,
-          street,
-          advertiserId: Number(advertiserId),
-          createdBy: auth.user?.id
+          createdBy: auth.user?.id,
+          inputData: {
+            postcode,
+            street,
+            advertiser_id: Number(advertiserId)
+          }
         });
       }
 

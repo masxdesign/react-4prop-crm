@@ -6,7 +6,8 @@ import {
   useCreateRemixJobMutation,
   useUpdateRevisionMutation,
   useUpdateJobResultMutation,
-  useUpdateSelectedVersionMutation
+  useUpdateSelectedVersionMutation,
+  useRemixJobsInProgress
 } from '@/features/jobCore';
 import {
   LoadingState,
@@ -42,6 +43,9 @@ export default function JobOutputContent({
     const { data } = useFieldRevisionHistory(job?.id, field.name);
     revisionHistories[field.name] = data;
   }
+
+  // Track remix job completion to bump updated_at for sync detection
+  useRemixJobsInProgress(remixType, job?.id);
 
   // Mutations
   const createRemixMutation = useCreateRemixJobMutation(remixType, jobType);
