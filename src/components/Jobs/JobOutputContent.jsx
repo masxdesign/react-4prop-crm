@@ -138,6 +138,24 @@ function RevisionNavigator({ total, currentIndex, onNavigate }) {
   );
 }
 
+// Skeleton textarea for loading state
+function SkeletonTextarea({ minRows = 3 }) {
+  const height = minRows * 24 + 16; // Approximate height based on rows
+  return (
+    <div
+      className="w-full rounded-md border border-gray-200 bg-gray-50 animate-pulse"
+      style={{ height: `${height}px` }}
+    >
+      <div className="p-3 space-y-2">
+        <div className="h-3 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-full" />
+        <div className="h-3 bg-gray-200 rounded w-5/6" />
+        {minRows > 3 && <div className="h-3 bg-gray-200 rounded w-2/3" />}
+      </div>
+    </div>
+  );
+}
+
 // RevisionField - encapsulates a single field with revision navigation
 function RevisionField({
   label,
@@ -155,24 +173,36 @@ function RevisionField({
     [originalContent, revisionHistory]
   );
 
+  // Add skeleton slide when remixing
+  const displayRevisions = useMemo(() => {
+    if (isRemixing) {
+      return [...revisions, { version: 'pending', content: '', isPending: true }];
+    }
+    return revisions;
+  }, [revisions, isRemixing]);
+
   // Track current revision index (default to latest)
-  const [currentIndex, setCurrentIndex] = useState(revisions.length - 1);
+  const [currentIndex, setCurrentIndex] = useState(displayRevisions.length - 1);
 
   // Local editable state
   const [value, setValue] = useState('');
 
-  // Update index when revisions change (new revision added)
+  // Update index when revisions change (new revision added) or remix starts
   useEffect(() => {
-    setCurrentIndex(revisions.length - 1);
-  }, [revisions.length]);
+    setCurrentIndex(displayRevisions.length - 1);
+  }, [displayRevisions.length]);
 
   // Sync local state when navigating revisions
   useEffect(() => {
-    setValue(revisions[currentIndex]?.content || '');
-  }, [currentIndex, revisions]);
+    const current = displayRevisions[currentIndex];
+    if (current && !current.isPending) {
+      setValue(current.content || '');
+    }
+  }, [currentIndex, displayRevisions]);
 
   // Get current revision info for API calls
-  const currentRevision = revisions[currentIndex];
+  const currentRevision = displayRevisions[currentIndex];
+  const isPendingSlide = currentRevision?.isPending;
   const revisionInfo = {
     isOriginal: currentRevision?.isOriginal ?? false,
     revisionId: currentRevision?.id ?? null
@@ -184,7 +214,7 @@ function RevisionField({
         <label className="text-sm font-medium text-gray-900">{label}</label>
         <div className="flex items-center gap-2">
           <RevisionNavigator
-            total={revisions.length}
+            total={displayRevisions.length}
             currentIndex={currentIndex}
             onNavigate={setCurrentIndex}
           />
@@ -196,12 +226,16 @@ function RevisionField({
           />
         </div>
       </div>
-      <AutoResizeTextarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={() => onUpdate(fieldName, value, revisionInfo)}
-        minRows={minRows}
-      />
+      {isPendingSlide ? (
+        <SkeletonTextarea minRows={minRows} />
+      ) : (
+        <AutoResizeTextarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onBlur={() => onUpdate(fieldName, value, revisionInfo)}
+          minRows={minRows}
+        />
+      )}
     </div>
   );
 }

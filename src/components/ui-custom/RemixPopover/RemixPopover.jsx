@@ -16,6 +16,16 @@ export default function RemixPopover({ field, revisionId, onRemix, isLoading }) 
     reset();
   };
 
+  // When loading, show spinner on button and disable popover
+  if (isLoading) {
+    return (
+      <Button variant="outline" size="sm" disabled>
+        <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        Rewriting...
+      </Button>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -42,8 +52,7 @@ export default function RemixPopover({ field, revisionId, onRemix, isLoading }) 
               <p className="text-red-500 text-xs mt-1">{errors.feedback.message}</p>
             )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+          <Button type="submit" className="w-full">
             Remix
           </Button>
         </form>

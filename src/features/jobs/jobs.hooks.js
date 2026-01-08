@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useQuery, useQueries, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery, relatedJobsQuery } from "./jobs.queries";
 import {
@@ -167,6 +168,9 @@ export function useUpdateJobResultMutation() {
 
 // Track in-progress remix jobs for a specific original job
 export function useRemixJobsInProgress(originalJobId) {
+  const queryClient = useQueryClient();
+  const prevHadJobsRef = useRef(false);
+
   const { data, isLoading } = useQuery({
     queryKey: ["remixJobsInProgress", originalJobId],
     queryFn: () => fetchRemixJobsInProgress(originalJobId),
@@ -185,10 +189,20 @@ export function useRemixJobsInProgress(originalJobId) {
     }
   }
 
+  const hasInProgress = jobs.length > 0;
+
+  // When remix jobs complete (had jobs -> no jobs), invalidate revision history
+  useEffect(() => {
+    if (prevHadJobsRef.current && !hasInProgress) {
+      queryClient.invalidateQueries({ queryKey: ["revisions", originalJobId] });
+    }
+    prevHadJobsRef.current = hasInProgress;
+  }, [hasInProgress, originalJobId, queryClient]);
+
   return {
     jobs,
     fieldStatus,
     isLoading,
-    hasInProgress: jobs.length > 0
+    hasInProgress
   };
 }
