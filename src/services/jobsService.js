@@ -102,3 +102,9 @@ export const fetchRemixJobsInProgress = async (originalJobId) => {
   });
   return data;
 };
+
+// Update selected revision version for a field
+export const updateSelectedVersion = async (jobId, fieldName, version) => {
+  const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/selected-version/${fieldName}`, { version });
+  return data;
+};

@@ -9,7 +9,8 @@ import {
   fetchRevisionHistory,
   updateRevisionContent,
   updateJobResultField,
-  fetchRemixJobsInProgress
+  fetchRemixJobsInProgress,
+  updateSelectedVersion
 } from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
@@ -120,11 +121,18 @@ export function useRelatedJobs(postcode, street, advertiserId) {
 }
 
 // Revision history for a specific field
+// Polls every 3s when there's a pending remix
+// Returns revisions and selected_version from backend
 export function useFieldRevisionHistory(jobId, fieldName) {
   return useQuery({
     queryKey: ["revisions", jobId, "history", fieldName],
     queryFn: () => fetchRevisionHistory(jobId, fieldName),
     enabled: !!jobId && !!fieldName,
+    refetchInterval: (data) => {
+      // Poll while there's a pending revision
+      const hasPending = data.state.data?.revisions?.some(r => r.is_pending) ?? false;
+      return hasPending ? 3000 : false;
+    }
   });
 }
 
@@ -205,4 +213,37 @@ export function useRemixJobsInProgress(originalJobId) {
     isLoading,
     hasInProgress
   };
+}
+
+// Update selected revision version for a field
+export function useUpdateSelectedVersionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ jobId, fieldName, version }) => updateSelectedVersion(jobId, fieldName, version),
+    onMutate: async (variables) => {
+      const { jobId, fieldName, version } = variables;
+      const queryKey = ["revisions", jobId, "history", fieldName];
+
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey });
+
+      // Snapshot previous value
+      const previousData = queryClient.getQueryData(queryKey);
+
+      // Optimistically update cache
+      queryClient.setQueryData(queryKey, (old) => ({
+        ...old,
+        selected_version: version
+      }));
+
+      return { previousData, queryKey };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+    }
+  });
 }

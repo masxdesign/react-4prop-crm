@@ -17,7 +17,7 @@ import {
   useCreateRemixJobMutation,
   useUpdateRevisionMutation,
   useUpdateJobResultMutation,
-  useRemixJobsInProgress
+  useUpdateSelectedVersionMutation
 } from '@/features/jobs/jobs.hooks';
 import { useAuth } from '@/components/Auth/Auth-context';
 
@@ -44,6 +44,7 @@ const formatCostUSD = (cost) => {
 };
 
 // Build revision array from original content + revision history
+// Backend includes pending placeholder when remix is in progress
 const buildRevisionArray = (originalContent, revisionHistory) => {
   const revisions = [
     { version: 0, content: originalContent, isOriginal: true, id: null }
@@ -51,16 +52,31 @@ const buildRevisionArray = (originalContent, revisionHistory) => {
 
   if (revisionHistory?.revisions) {
     revisionHistory.revisions
-      .sort((a, b) => a.version - b.version)
+      .sort((a, b) => {
+        // Keep pending at the end
+        if (a.version === 'pending') return 1;
+        if (b.version === 'pending') return -1;
+        return a.version - b.version;
+      })
       .forEach(rev => {
-        revisions.push({
-          version: rev.version,
-          content: rev.new_content,
-          feedback: rev.user_feedback,
-          createdAt: rev.created_at,
-          id: rev.id,
-          isOriginal: false
-        });
+        if (rev.is_pending) {
+          // Pending revision from backend
+          revisions.push({
+            version: 'pending',
+            content: '',
+            isPending: true,
+            id: null
+          });
+        } else {
+          revisions.push({
+            version: rev.version,
+            content: rev.new_content,
+            feedback: rev.user_feedback,
+            createdAt: rev.created_at,
+            id: rev.id,
+            isOriginal: false
+          });
+        }
       });
   }
 
@@ -107,19 +123,19 @@ function RawJsonTab({ outputData }) {
 }
 
 // Revision navigator (prev/next buttons)
-function RevisionNavigator({ total, currentIndex, onNavigate }) {
+function RevisionNavigator({ total, currentIndex, onNavigate, disabled = false }) {
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
 
   if (total <= 1) return null;
 
   return (
-    <div className="flex items-center gap-1">
+    <div className={`flex items-center gap-1 ${disabled ? 'opacity-50' : ''}`}>
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onNavigate(currentIndex - 1)}
-        disabled={isFirst}
+        disabled={isFirst || disabled}
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
@@ -130,7 +146,7 @@ function RevisionNavigator({ total, currentIndex, onNavigate }) {
         variant="ghost"
         size="sm"
         onClick={() => onNavigate(currentIndex + 1)}
-        disabled={isLast}
+        disabled={isLast || disabled}
       >
         <ChevronRight className="h-4 w-4" />
       </Button>
@@ -156,7 +172,15 @@ function SkeletonTextarea({ minRows = 3 }) {
   );
 }
 
+// Helper to find index by version number
+const findIndexByVersion = (revisions, version) => {
+  if (version == null) return revisions.length - 1;
+  const idx = revisions.findIndex(r => r.version === version);
+  return idx >= 0 ? idx : revisions.length - 1;
+};
+
 // RevisionField - encapsulates a single field with revision navigation
+// currentIndex is derived from revisionHistory.selected_version (query cache)
 function RevisionField({
   label,
   fieldName,
@@ -164,44 +188,51 @@ function RevisionField({
   revisionHistory,
   onRemix,
   onUpdate,
-  isRemixing,
+  onVersionChange,
   minRows = 3
 }) {
-  // Build revision array (index 0 = original, 1+ = revisions)
+  // Build revision array (index 0 = original, 1+ = revisions, pending from backend)
   const revisions = useMemo(
     () => buildRevisionArray(originalContent, revisionHistory),
     [originalContent, revisionHistory]
   );
 
-  // Add skeleton slide when remixing
-  const displayRevisions = useMemo(() => {
-    if (isRemixing) {
-      return [...revisions, { version: 'pending', content: '', isPending: true }];
-    }
-    return revisions;
-  }, [revisions, isRemixing]);
+  // Check if there's a pending revision (from backend)
+  const hasPending = revisions.some(r => r.isPending);
 
-  // Track current revision index (default to latest)
-  const [currentIndex, setCurrentIndex] = useState(displayRevisions.length - 1);
+  // Get selected version from query cache (backend response)
+  const selectedVersion = revisionHistory?.selected_version;
+
+  // Derive currentIndex from selected_version or show last slide if pending
+  const currentIndex = useMemo(() => {
+    if (hasPending) {
+      // Show skeleton slide when remix is in progress
+      return revisions.length - 1;
+    }
+    return findIndexByVersion(revisions, selectedVersion);
+  }, [hasPending, revisions, selectedVersion]);
 
   // Local editable state
   const [value, setValue] = useState('');
 
-  // Update index when revisions change (new revision added) or remix starts
+  // Sync local state when currentIndex or revisions change
   useEffect(() => {
-    setCurrentIndex(displayRevisions.length - 1);
-  }, [displayRevisions.length]);
-
-  // Sync local state when navigating revisions
-  useEffect(() => {
-    const current = displayRevisions[currentIndex];
+    const current = revisions[currentIndex];
     if (current && !current.isPending) {
       setValue(current.content || '');
     }
-  }, [currentIndex, displayRevisions]);
+  }, [currentIndex, revisions]);
+
+  // Handle navigation - persist to backend, which updates query cache on next poll
+  const handleNavigate = (newIndex) => {
+    const revision = revisions[newIndex];
+    if (revision && !revision.isPending && onVersionChange) {
+      onVersionChange(fieldName, revision.version);
+    }
+  };
 
   // Get current revision info for API calls
-  const currentRevision = displayRevisions[currentIndex];
+  const currentRevision = revisions[currentIndex];
   const isPendingSlide = currentRevision?.isPending;
   const revisionInfo = {
     isOriginal: currentRevision?.isOriginal ?? false,
@@ -214,15 +245,16 @@ function RevisionField({
         <label className="text-sm font-medium text-gray-900">{label}</label>
         <div className="flex items-center gap-2">
           <RevisionNavigator
-            total={displayRevisions.length}
+            total={revisions.length}
             currentIndex={currentIndex}
-            onNavigate={setCurrentIndex}
+            onNavigate={handleNavigate}
+            disabled={hasPending}
           />
           <RemixPopover
             field={fieldName}
             revisionId={revisionInfo.revisionId}
             onRemix={onRemix}
-            isLoading={isRemixing}
+            isLoading={hasPending}
           />
         </div>
       </div>
@@ -241,10 +273,10 @@ function RevisionField({
 }
 
 // Edit tab with revision navigation
-function EditTab({ outputData, jobId, onRemix, onUpdate, remixFieldStatus }) {
+function EditTab({ outputData, jobId, onRemix, onUpdate, onVersionChange }) {
   const result = outputData?.output_data?.result || {};
 
-  // Fetch revision history for each field
+  // Fetch revision history for each field (includes pending and selected_version from backend)
   const { data: demoHistory } = useFieldRevisionHistory(jobId, 'demographic');
   const { data: descHistory } = useFieldRevisionHistory(jobId, 'description');
 
@@ -257,7 +289,7 @@ function EditTab({ outputData, jobId, onRemix, onUpdate, remixFieldStatus }) {
         revisionHistory={demoHistory}
         onRemix={onRemix}
         onUpdate={onUpdate}
-        isRemixing={!!remixFieldStatus?.demographic}
+        onVersionChange={onVersionChange}
         minRows={3}
       />
 
@@ -268,7 +300,7 @@ function EditTab({ outputData, jobId, onRemix, onUpdate, remixFieldStatus }) {
         revisionHistory={descHistory}
         onRemix={onRemix}
         onUpdate={onUpdate}
-        isRemixing={!!remixFieldStatus?.description}
+        onVersionChange={onVersionChange}
         minRows={4}
       />
     </div>
@@ -339,13 +371,11 @@ export default function JobOutputContent({
 
   const { jobs: relatedJobs } = useRelatedJobs(postcode, street, advertiserId);
 
-  // Track in-progress remix jobs for this job
-  const { fieldStatus: remixFieldStatus } = useRemixJobsInProgress(job?.id);
-
   // Mutations
   const createRemixMutation = useCreateRemixJobMutation();
   const updateRevisionMutation = useUpdateRevisionMutation();
   const updateJobResultMutation = useUpdateJobResultMutation();
+  const updateSelectedVersionMutation = useUpdateSelectedVersionMutation();
 
   const handleJobChange = (jobId) => {
     const selectedJob = relatedJobs.find((j) => j.id === jobId);
@@ -377,6 +407,17 @@ export default function JobOutputContent({
       updateRevisionMutation.mutate({
         revisionId: revisionInfo.revisionId,
         content: value
+      });
+    }
+  };
+
+  // Version change handler - persists selected version to backend
+  const handleVersionChange = (fieldName, version) => {
+    if (job?.id) {
+      updateSelectedVersionMutation.mutate({
+        jobId: job.id,
+        fieldName,
+        version
       });
     }
   };
@@ -414,7 +455,7 @@ export default function JobOutputContent({
             jobId={job?.id}
             onRemix={handleRemix}
             onUpdate={handleUpdate}
-            remixFieldStatus={remixFieldStatus}
+            onVersionChange={handleVersionChange}
           />
         </TabsContent>
 
