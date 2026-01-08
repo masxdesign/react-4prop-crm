@@ -1,10 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
-import { fetchJobsByAdvertiserId, fetchJobOutput, fetchStreetPostEstimate, fetchRelatedJobs } from "@/services/jobsService";
+import { fetchJobsByType, fetchJobOutput } from "@/services/jobCoreService";
+import { fetchStreetPostEstimate, fetchRelatedJobs } from "@/services/jobsService";
 
 export const streetPostJobsQuery = (advertiserId, filters = {}) => queryOptions({
   queryKey: ["streetPostJobs", advertiserId, filters],
-  queryFn: () => fetchJobsByAdvertiserId(advertiserId, filters),
-  refetchInterval: 5000,  // Auto-refresh every 5 seconds
+  queryFn: () => fetchJobsByType("street_post", advertiserId, filters),
+  refetchInterval: 5000,
 });
 
 export const jobOutputQuery = (jobId) => queryOptions({

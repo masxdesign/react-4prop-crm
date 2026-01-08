@@ -1,63 +1,80 @@
-import { useRef, useEffect } from "react";
-import { useQuery, useQueries, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery, relatedJobsQuery } from "./jobs.queries";
+import { useQueries } from "@tanstack/react-query";
+import { streetPostEstimateQuery } from "./jobs.queries";
 import {
-  createStreetPostJob,
-  cancelJob,
-  fetchJobsByAdvertiserId,
-  createRemixJob,
-  fetchRevisionHistory,
-  updateRevisionContent,
-  updateJobResultField,
-  fetchRemixJobsInProgress,
-  updateSelectedVersion
-} from "@/services/jobsService";
+  useJobsQuery,
+  useJobsInfiniteQuery,
+  useJobOutput,
+  useCreateJobMutation,
+  useCancelJobMutation as useCancelJobMutationCore,
+  useRelatedJobsQuery,
+  useFieldRevisionHistory,
+  useCreateRemixJobMutation as useCreateRemixJobMutationCore,
+  useUpdateRevisionMutation,
+  useUpdateJobResultMutation,
+  useRemixJobsInProgress,
+  useUpdateSelectedVersionMutation
+} from "@/features/jobCore";
 
+// ============================================
+// STREET-POST SPECIFIC HOOKS
+// These wrap the generic hooks with street-post defaults
+// ============================================
+
+const STREET_POST_TYPE = 'street_post';
+const STREET_POST_REMIX_TYPE = 'street_post_remix';
+
+/**
+ * Fetch street post jobs for an advertiser
+ */
 export function useStreetPostJobs(advertiserId, filters = {}) {
-  return useQuery(streetPostJobsQuery(advertiserId, filters));
+  return useJobsQuery(STREET_POST_TYPE, advertiserId, filters);
 }
 
-const PAGE_SIZE = 20;
-
+/**
+ * Fetch street post jobs with infinite scroll pagination
+ */
 export function useStreetPostJobsInfinite(advertiserId, filters = {}) {
-  return useInfiniteQuery({
-    queryKey: ["streetPostJobs", advertiserId, filters],
-    queryFn: ({ pageParam = 0 }) => fetchJobsByAdvertiserId(advertiserId, {
-      ...filters,
-      limit: PAGE_SIZE,
-      offset: pageParam
-    }),
-    getNextPageParam: (lastPage) =>
-      lastPage.hasNextPage ? lastPage.offset + lastPage.limit : undefined,
-    initialPageParam: 0,
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
-  });
+  return useJobsInfiniteQuery(STREET_POST_TYPE, advertiserId, filters);
 }
 
-export function useJobOutput(jobId) {
-  return useQuery(jobOutputQuery(jobId));
-}
-
+/**
+ * Create a new street post job
+ */
 export function useCreateStreetPostJobMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createStreetPostJob,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["streetPostJobs"] });
-    }
-  });
+  return useCreateJobMutation(STREET_POST_TYPE);
 }
 
+/**
+ * Cancel a job (backward compatible - invalidates street post jobs)
+ */
 export function useCancelJobMutation() {
-  const queryClient = useQueryClient();
+  return useCancelJobMutationCore(STREET_POST_TYPE);
+}
 
-  return useMutation({
-    mutationFn: (jobId) => cancelJob(jobId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["streetPostJobs"] });
-    }
-  });
+/**
+ * Get related jobs (same postcode-street) from cache or backend
+ */
+export function useRelatedJobs(postcode, street, advertiserId) {
+  return useRelatedJobsQuery(
+    STREET_POST_TYPE,
+    advertiserId,
+    { postcode, street },
+    'streetPostJobs'
+  );
+}
+
+/**
+ * Create a street post remix job
+ */
+export function useCreateRemixJobMutation() {
+  return useCreateRemixJobMutationCore(STREET_POST_REMIX_TYPE, STREET_POST_TYPE);
+}
+
+/**
+ * Track in-progress street post remix jobs
+ */
+export function useStreetPostRemixJobsInProgress(originalJobId) {
+  return useRemixJobsInProgress(STREET_POST_REMIX_TYPE, originalJobId);
 }
 
 /**
@@ -94,156 +111,15 @@ export function useStreetPostEstimates(items = []) {
   return { estimates, totalEstimate, isLoading };
 }
 
-// Get related jobs (same postcode-street) from cache or backend
-export function useRelatedJobs(postcode, street, advertiserId) {
-  const queryClient = useQueryClient();
+// ============================================
+// RE-EXPORT GENERIC HOOKS
+// These work with any job type and are re-exported for convenience
+// ============================================
 
-  // Try to get jobs from cache first
-  const cachedData = queryClient.getQueryData(["streetPostJobs", advertiserId, {}]);
-
-  // If cache has jobs, filter locally
-  const cachedJobs = cachedData?.jobs?.filter(
-    (j) =>
-      j.input_data?.postcode === postcode &&
-      j.input_data?.street === street &&
-      j.status === "completed"
-  ) || [];
-
-  // Use backend query as fallback when cache is empty
-  const { data: fetchedData, isLoading } = useQuery({
-    ...relatedJobsQuery({ postcode, street, advertiserId }),
-    enabled: cachedJobs.length === 0 && !!postcode && !!street && !!advertiserId,
-  });
-
-  const jobs = cachedJobs.length > 0 ? cachedJobs : (fetchedData?.jobs || []);
-
-  return { jobs, isLoading: cachedJobs.length === 0 && isLoading };
-}
-
-// Revision history for a specific field
-// Polls every 3s when there's a pending remix
-// Returns revisions and selected_version from backend
-export function useFieldRevisionHistory(jobId, fieldName) {
-  return useQuery({
-    queryKey: ["revisions", jobId, "history", fieldName],
-    queryFn: () => fetchRevisionHistory(jobId, fieldName),
-    enabled: !!jobId && !!fieldName,
-    refetchInterval: (data) => {
-      // Poll while there's a pending revision
-      const hasPending = data.state.data?.revisions?.some(r => r.is_pending) ?? false;
-      return hasPending ? 3000 : false;
-    }
-  });
-}
-
-// Create remix job mutation
-export function useCreateRemixJobMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: createRemixJob,
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["streetPostJobs"] });
-      queryClient.invalidateQueries({ queryKey: ["revisions", variables.originalJobId] });
-    }
-  });
-}
-
-// Update revision content mutation
-export function useUpdateRevisionMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ revisionId, content }) => updateRevisionContent(revisionId, content),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["revisions"] });
-    }
-  });
-}
-
-// Update original job result field mutation
-export function useUpdateJobResultMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ jobId, fieldName, content }) => updateJobResultField(jobId, fieldName, content),
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["jobOutput", variables.jobId] });
-      queryClient.invalidateQueries({ queryKey: ["revisions", variables.jobId] });
-    }
-  });
-}
-
-// Track in-progress remix jobs for a specific original job
-export function useRemixJobsInProgress(originalJobId) {
-  const queryClient = useQueryClient();
-  const prevHadJobsRef = useRef(false);
-
-  const { data, isLoading } = useQuery({
-    queryKey: ["remixJobsInProgress", originalJobId],
-    queryFn: () => fetchRemixJobsInProgress(originalJobId),
-    enabled: !!originalJobId,
-    refetchInterval: 3000, // Poll every 3 seconds for faster feedback
-  });
-
-  const jobs = data?.jobs || [];
-
-  // Map of fieldName -> job status for easy lookup
-  const fieldStatus = {};
-  for (const job of jobs) {
-    const fieldName = job.input_data?.field_name;
-    if (fieldName) {
-      fieldStatus[fieldName] = job.status;
-    }
-  }
-
-  const hasInProgress = jobs.length > 0;
-
-  // When remix jobs complete (had jobs -> no jobs), invalidate revision history
-  useEffect(() => {
-    if (prevHadJobsRef.current && !hasInProgress) {
-      queryClient.invalidateQueries({ queryKey: ["revisions", originalJobId] });
-    }
-    prevHadJobsRef.current = hasInProgress;
-  }, [hasInProgress, originalJobId, queryClient]);
-
-  return {
-    jobs,
-    fieldStatus,
-    isLoading,
-    hasInProgress
-  };
-}
-
-// Update selected revision version for a field
-export function useUpdateSelectedVersionMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ jobId, fieldName, version }) => updateSelectedVersion(jobId, fieldName, version),
-    onMutate: async (variables) => {
-      const { jobId, fieldName, version } = variables;
-      const queryKey = ["revisions", jobId, "history", fieldName];
-
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey });
-
-      // Snapshot previous value
-      const previousData = queryClient.getQueryData(queryKey);
-
-      // Optimistically update cache
-      queryClient.setQueryData(queryKey, (old) => ({
-        ...old,
-        selected_version: version
-      }));
-
-      return { previousData, queryKey };
-    },
-    onError: (_err, _variables, context) => {
-      // Rollback on error
-      if (context?.previousData) {
-        queryClient.setQueryData(context.queryKey, context.previousData);
-      }
-    }
-  });
-}
+export {
+  useJobOutput,
+  useFieldRevisionHistory,
+  useUpdateRevisionMutation,
+  useUpdateJobResultMutation,
+  useUpdateSelectedVersionMutation
+};
