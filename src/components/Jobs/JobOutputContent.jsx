@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -8,9 +8,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import RemixPopover from '@/components/ui-custom/RemixPopover';
 import AutoResizeTextarea from '@/components/ui-custom/AutoResizeTextarea';
-import { useRelatedJobs } from '@/features/jobs/jobs.hooks';
+import {
+  useRelatedJobs,
+  useFieldRevisionHistory,
+  useCreateRemixJobMutation,
+  useUpdateRevisionMutation,
+  useUpdateJobResultMutation
+} from '@/features/jobs/jobs.hooks';
+import { useAuth } from '@/components/Auth/Auth-context';
 
 // Format relative time
 const formatRelativeTime = (dateString) => {
@@ -32,6 +40,30 @@ const formatRelativeTime = (dateString) => {
 const formatCostUSD = (cost) => {
   if (cost == null) return '';
   return `$${cost.toFixed(4)}`;
+};
+
+// Build revision array from original content + revision history
+const buildRevisionArray = (originalContent, revisionHistory) => {
+  const revisions = [
+    { version: 0, content: originalContent, isOriginal: true, id: null }
+  ];
+
+  if (revisionHistory?.revisions) {
+    revisionHistory.revisions
+      .sort((a, b) => a.version - b.version)
+      .forEach(rev => {
+        revisions.push({
+          version: rev.version,
+          content: rev.new_content,
+          feedback: rev.user_feedback,
+          createdAt: rev.created_at,
+          id: rev.id,
+          isOriginal: false
+        });
+      });
+  }
+
+  return revisions;
 };
 
 // Markdown-style section renderer
@@ -73,45 +105,137 @@ function RawJsonTab({ outputData }) {
   );
 }
 
-// Edit tab with editable textareas and AI rewrite buttons
-function EditTab({ outputData, onRemix, onUpdate }) {
-  const result = outputData?.output_data?.result || {};
-  const [demographic, setDemographic] = useState(result.demographic || '');
-  const [description, setDescription] = useState(result.description || '');
+// Revision navigator (prev/next buttons)
+function RevisionNavigator({ total, currentIndex, onNavigate }) {
+  const isFirst = currentIndex === 0;
+  const isLast = currentIndex === total - 1;
 
-  const handleBlur = (field, value) => {
-    onUpdate(field, value);
+  if (total <= 1) return null;
+
+  return (
+    <div className="flex items-center gap-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onNavigate(currentIndex - 1)}
+        disabled={isFirst}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-xs text-gray-500 min-w-[40px] text-center">
+        {currentIndex + 1} / {total}
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => onNavigate(currentIndex + 1)}
+        disabled={isLast}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
+// RevisionField - encapsulates a single field with revision navigation
+function RevisionField({
+  label,
+  fieldName,
+  originalContent,
+  revisionHistory,
+  onRemix,
+  onUpdate,
+  isRemixing,
+  minRows = 3
+}) {
+  // Build revision array (index 0 = original, 1+ = revisions)
+  const revisions = useMemo(
+    () => buildRevisionArray(originalContent, revisionHistory),
+    [originalContent, revisionHistory]
+  );
+
+  // Track current revision index (default to latest)
+  const [currentIndex, setCurrentIndex] = useState(revisions.length - 1);
+
+  // Local editable state
+  const [value, setValue] = useState('');
+
+  // Update index when revisions change (new revision added)
+  useEffect(() => {
+    setCurrentIndex(revisions.length - 1);
+  }, [revisions.length]);
+
+  // Sync local state when navigating revisions
+  useEffect(() => {
+    setValue(revisions[currentIndex]?.content || '');
+  }, [currentIndex, revisions]);
+
+  // Get current revision info for API calls
+  const currentRevision = revisions[currentIndex];
+  const revisionInfo = {
+    isOriginal: currentRevision?.isOriginal ?? false,
+    revisionId: currentRevision?.id ?? null
   };
 
   return (
-    <div className="space-y-6 p-1">
-      {/* Demographic field */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-900">Demographic</label>
-          <RemixPopover field="demographic" onRemix={onRemix} />
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <label className="text-sm font-medium text-gray-900">{label}</label>
+        <div className="flex items-center gap-2">
+          <RevisionNavigator
+            total={revisions.length}
+            currentIndex={currentIndex}
+            onNavigate={setCurrentIndex}
+          />
+          <RemixPopover
+            field={fieldName}
+            revisionId={revisionInfo.revisionId}
+            onRemix={onRemix}
+            isLoading={isRemixing}
+          />
         </div>
-        <AutoResizeTextarea
-          value={demographic}
-          onChange={(e) => setDemographic(e.target.value)}
-          onBlur={() => handleBlur('demographic', demographic)}
-          minRows={3}
-        />
       </div>
+      <AutoResizeTextarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => onUpdate(fieldName, value, revisionInfo)}
+        minRows={minRows}
+      />
+    </div>
+  );
+}
 
-      {/* Description field */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-gray-900">Description</label>
-          <RemixPopover field="description" onRemix={onRemix} />
-        </div>
-        <AutoResizeTextarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onBlur={() => handleBlur('description', description)}
-          minRows={4}
-        />
-      </div>
+// Edit tab with revision navigation
+function EditTab({ outputData, jobId, onRemix, onUpdate, isRemixing }) {
+  const result = outputData?.output_data?.result || {};
+
+  // Fetch revision history for each field
+  const { data: demoHistory } = useFieldRevisionHistory(jobId, 'demographic');
+  const { data: descHistory } = useFieldRevisionHistory(jobId, 'description');
+
+  return (
+    <div className="space-y-6 p-1">
+      <RevisionField
+        label="Demographic"
+        fieldName="demographic"
+        originalContent={result.demographic}
+        revisionHistory={demoHistory}
+        onRemix={onRemix}
+        onUpdate={onUpdate}
+        isRemixing={isRemixing}
+        minRows={3}
+      />
+
+      <RevisionField
+        label="Description"
+        fieldName="description"
+        originalContent={result.description}
+        revisionHistory={descHistory}
+        onRemix={onRemix}
+        onUpdate={onUpdate}
+        isRemixing={isRemixing}
+        minRows={4}
+      />
     </div>
   );
 }
@@ -174,15 +298,48 @@ export default function JobOutputContent({
   advertiserId = null,
   onJobChange = null,
 }) {
+  const auth = useAuth();
   const postcode = job?.input_data?.postcode;
   const street = job?.input_data?.street;
 
   const { jobs: relatedJobs } = useRelatedJobs(postcode, street, advertiserId);
 
+  // Mutations
+  const createRemixMutation = useCreateRemixJobMutation();
+  const updateRevisionMutation = useUpdateRevisionMutation();
+  const updateJobResultMutation = useUpdateJobResultMutation();
+
   const handleJobChange = (jobId) => {
     const selectedJob = relatedJobs.find((j) => j.id === jobId);
     if (selectedJob && onJobChange) {
       onJobChange(selectedJob);
+    }
+  };
+
+  // Remix handler - creates a new remix job
+  const handleRemix = (field, prompt, revisionId) => {
+    createRemixMutation.mutate({
+      originalJobId: job.id,
+      fieldName: field,
+      userFeedback: prompt,
+      revisionId,
+      createdBy: auth.user?.id
+    });
+  };
+
+  // Update handler - updates original or revision content
+  const handleUpdate = (field, value, revisionInfo) => {
+    if (revisionInfo.isOriginal) {
+      updateJobResultMutation.mutate({
+        jobId: job.id,
+        fieldName: field,
+        content: value
+      });
+    } else {
+      updateRevisionMutation.mutate({
+        revisionId: revisionInfo.revisionId,
+        content: value
+      });
     }
   };
 
@@ -197,18 +354,6 @@ export default function JobOutputContent({
   if (!outputData?.output_data) {
     return <EmptyState />;
   }
-
-  // Placeholder remix handler - backend integration later
-  const handleRemix = (field, prompt) => {
-    console.log('Remix requested:', { field, prompt, job });
-    // TODO: Call API endpoint to create remix job
-  };
-
-  // Placeholder update handler - backend integration later
-  const handleUpdate = (field, value) => {
-    console.log('Update requested:', { field, value, job });
-    // TODO: Call API endpoint to update field
-  };
 
   return (
     <div className="w-full">
@@ -226,7 +371,13 @@ export default function JobOutputContent({
         </TabsList>
 
         <TabsContent value="edit" className="mt-4">
-          <EditTab outputData={outputData} onRemix={handleRemix} onUpdate={handleUpdate} />
+          <EditTab
+            outputData={outputData}
+            jobId={job?.id}
+            onRemix={handleRemix}
+            onUpdate={handleUpdate}
+            isRemixing={createRemixMutation.isPending}
+          />
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">

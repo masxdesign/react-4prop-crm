@@ -55,3 +55,38 @@ export const fetchRelatedJobs = async ({ postcode, street, advertiserId }) => {
   });
   return data;
 };
+
+// Create remix job (AI regeneration with feedback)
+export const createRemixJob = async ({ originalJobId, fieldName, userFeedback, revisionId, createdBy }) => {
+  const { data } = await propertyPubClient.post(`/api/jobs`, {
+    type: "street_post_remix",
+    created_by: createdBy,
+    data: {
+      original_job_id: originalJobId,
+      field_name: fieldName,
+      user_feedback: userFeedback,
+      ...(revisionId && { revision_id: revisionId })
+    }
+  });
+  return data;
+};
+
+// Get revision history for a field
+export const fetchRevisionHistory = async (jobId, fieldName) => {
+  const { data } = await propertyPubClient.get(`/api/revisions/${jobId}/history`, {
+    params: { field_name: fieldName }
+  });
+  return data;
+};
+
+// Manual update: revision content (when viewing a revision)
+export const updateRevisionContent = async (revisionId, content) => {
+  const { data } = await propertyPubClient.patch(`/api/revisions/${revisionId}`, { content });
+  return data;
+};
+
+// Manual update: original job result field (when viewing original)
+export const updateJobResultField = async (jobId, fieldName, content) => {
+  const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/result/${fieldName}`, { content });
+  return data;
+};

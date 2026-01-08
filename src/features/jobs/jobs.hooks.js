@@ -1,6 +1,14 @@
 import { useQuery, useQueries, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { streetPostJobsQuery, jobOutputQuery, streetPostEstimateQuery, relatedJobsQuery } from "./jobs.queries";
-import { createStreetPostJob, cancelJob, fetchJobsByAdvertiserId } from "@/services/jobsService";
+import {
+  createStreetPostJob,
+  cancelJob,
+  fetchJobsByAdvertiserId,
+  createRemixJob,
+  fetchRevisionHistory,
+  updateRevisionContent,
+  updateJobResultField
+} from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
   return useQuery(streetPostJobsQuery(advertiserId, filters));
@@ -107,4 +115,51 @@ export function useRelatedJobs(postcode, street, advertiserId) {
   const jobs = cachedJobs.length > 0 ? cachedJobs : (fetchedData?.jobs || []);
 
   return { jobs, isLoading: cachedJobs.length === 0 && isLoading };
+}
+
+// Revision history for a specific field
+export function useFieldRevisionHistory(jobId, fieldName) {
+  return useQuery({
+    queryKey: ["revisions", jobId, "history", fieldName],
+    queryFn: () => fetchRevisionHistory(jobId, fieldName),
+    enabled: !!jobId && !!fieldName,
+  });
+}
+
+// Create remix job mutation
+export function useCreateRemixJobMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createRemixJob,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["streetPostJobs"] });
+      queryClient.invalidateQueries({ queryKey: ["revisions", variables.originalJobId] });
+    }
+  });
+}
+
+// Update revision content mutation
+export function useUpdateRevisionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ revisionId, content }) => updateRevisionContent(revisionId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["revisions"] });
+    }
+  });
+}
+
+// Update original job result field mutation
+export function useUpdateJobResultMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ jobId, fieldName, content }) => updateJobResultField(jobId, fieldName, content),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["jobOutput", variables.jobId] });
+      queryClient.invalidateQueries({ queryKey: ["revisions", variables.jobId] });
+    }
+  });
 }
