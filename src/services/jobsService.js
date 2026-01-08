@@ -90,3 +90,15 @@ export const updateJobResultField = async (jobId, fieldName, content) => {
   const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/result/${fieldName}`, { content });
   return data;
 };
+
+// Fetch in-progress remix jobs for a specific original job
+export const fetchRemixJobsInProgress = async (originalJobId) => {
+  const { data } = await propertyPubClient.get(`/api/jobs`, {
+    params: {
+      type: "street_post_remix",
+      original_job_id: originalJobId,
+      status: "pending,running"
+    }
+  });
+  return data;
+};

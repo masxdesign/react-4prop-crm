@@ -7,7 +7,8 @@ import {
   createRemixJob,
   fetchRevisionHistory,
   updateRevisionContent,
-  updateJobResultField
+  updateJobResultField,
+  fetchRemixJobsInProgress
 } from "@/services/jobsService";
 
 export function useStreetPostJobs(advertiserId, filters = {}) {
@@ -162,4 +163,32 @@ export function useUpdateJobResultMutation() {
       queryClient.invalidateQueries({ queryKey: ["revisions", variables.jobId] });
     }
   });
+}
+
+// Track in-progress remix jobs for a specific original job
+export function useRemixJobsInProgress(originalJobId) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["remixJobsInProgress", originalJobId],
+    queryFn: () => fetchRemixJobsInProgress(originalJobId),
+    enabled: !!originalJobId,
+    refetchInterval: 3000, // Poll every 3 seconds for faster feedback
+  });
+
+  const jobs = data?.jobs || [];
+
+  // Map of fieldName -> job status for easy lookup
+  const fieldStatus = {};
+  for (const job of jobs) {
+    const fieldName = job.input_data?.field_name;
+    if (fieldName) {
+      fieldStatus[fieldName] = job.status;
+    }
+  }
+
+  return {
+    jobs,
+    fieldStatus,
+    isLoading,
+    hasInProgress: jobs.length > 0
+  };
 }

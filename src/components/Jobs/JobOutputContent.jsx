@@ -16,7 +16,8 @@ import {
   useFieldRevisionHistory,
   useCreateRemixJobMutation,
   useUpdateRevisionMutation,
-  useUpdateJobResultMutation
+  useUpdateJobResultMutation,
+  useRemixJobsInProgress
 } from '@/features/jobs/jobs.hooks';
 import { useAuth } from '@/components/Auth/Auth-context';
 
@@ -206,7 +207,7 @@ function RevisionField({
 }
 
 // Edit tab with revision navigation
-function EditTab({ outputData, jobId, onRemix, onUpdate, isRemixing }) {
+function EditTab({ outputData, jobId, onRemix, onUpdate, remixFieldStatus }) {
   const result = outputData?.output_data?.result || {};
 
   // Fetch revision history for each field
@@ -222,7 +223,7 @@ function EditTab({ outputData, jobId, onRemix, onUpdate, isRemixing }) {
         revisionHistory={demoHistory}
         onRemix={onRemix}
         onUpdate={onUpdate}
-        isRemixing={isRemixing}
+        isRemixing={!!remixFieldStatus?.demographic}
         minRows={3}
       />
 
@@ -233,7 +234,7 @@ function EditTab({ outputData, jobId, onRemix, onUpdate, isRemixing }) {
         revisionHistory={descHistory}
         onRemix={onRemix}
         onUpdate={onUpdate}
-        isRemixing={isRemixing}
+        isRemixing={!!remixFieldStatus?.description}
         minRows={4}
       />
     </div>
@@ -303,6 +304,9 @@ export default function JobOutputContent({
   const street = job?.input_data?.street;
 
   const { jobs: relatedJobs } = useRelatedJobs(postcode, street, advertiserId);
+
+  // Track in-progress remix jobs for this job
+  const { fieldStatus: remixFieldStatus } = useRemixJobsInProgress(job?.id);
 
   // Mutations
   const createRemixMutation = useCreateRemixJobMutation();
@@ -376,7 +380,7 @@ export default function JobOutputContent({
             jobId={job?.id}
             onRemix={handleRemix}
             onUpdate={handleUpdate}
-            isRemixing={createRemixMutation.isPending}
+            remixFieldStatus={remixFieldStatus}
           />
         </TabsContent>
 
