@@ -31,6 +31,16 @@ const AgencyBookingHistoryByAdvertiserPage = ({ search: propSearch, companyId: p
 
   // Default values for search params
   const status = search.status || 'all';
+  const returnPage = search.returnPage;
+  const returnSearch = search.returnSearch;
+
+  // Build search params for back navigation
+  const getBackSearchParams = () => {
+    const params = { tab: 'agencies' };
+    if (returnPage) params.page = returnPage;
+    if (returnSearch) params.search = returnSearch;
+    return params;
+  };
 
   // Navigate to chronological view
   const handleViewAllBookings = () => {
@@ -66,7 +76,7 @@ const AgencyBookingHistoryByAdvertiserPage = ({ search: propSearch, companyId: p
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate({ to: '/agency' })}
+              onClick={() => navigate({ to: '/agency', search: getBackSearchParams() })}
               className="self-start -ml-2 text-gray-600 hover:text-gray-900"
             >
               <ChevronLeft className="h-4 w-4 mr-1" />

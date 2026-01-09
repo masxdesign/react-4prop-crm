@@ -439,7 +439,7 @@ const AdvertiserSelectionTable = ({
   // Handle action button clicks
   const handleBookingsClick = (advertiser, e) => {
     e.stopPropagation();
-    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/bookings`, search: getReturnSearchParams() });
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/bookings/by-agency`, search: getReturnSearchParams() });
   };
 
   const handleStatsClick = (advertiser, e) => {

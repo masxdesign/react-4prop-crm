@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from '@tanstack/react-router';
 import AgencyBookingHistoryByAdvertiserPage from '@/components/Magazine/BookingHistory/AgencyBookingHistoryByAdvertiserPage/AgencyBookingHistoryByAdvertiserPage';
 import { Loader2 } from 'lucide-react';
 
-export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings/by-advertiser')({
+export const Route = createFileRoute('/_auth/_dashboard/agency/$id/bookings_/by-advertiser')({
   validateSearch: (search) => ({
     status: search.status || 'all',
     returnPage: search.returnPage ? Number(search.returnPage) : undefined,

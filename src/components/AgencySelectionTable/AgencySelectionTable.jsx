@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useDebounce } from '@uidotdev/usehooks';
@@ -66,7 +66,13 @@ const AgencySelectionTable = ({
   // Local search input state
   const [searchInput, setSearchInput] = useState(urlSearch.search || '');
 
-  // Sync local search input with URL when tab becomes active
+  // Keep a ref to the latest URL search value for use in callbacks
+  const urlSearchRef = useRef(urlSearch.search);
+  useEffect(() => {
+    urlSearchRef.current = urlSearch.search;
+  }, [urlSearch.search]);
+
+  // Sync local search input with URL when URL search param changes
   useEffect(() => {
     if (isActive) {
       setSearchInput(urlSearch.search || '');
@@ -185,8 +191,10 @@ const AgencySelectionTable = ({
     if (urlSearch.page && urlSearch.page !== 1) {
       searchParams.returnPage = urlSearch.page;
     }
-    if (urlSearch.search) {
-      searchParams.returnSearch = urlSearch.search;
+    // Use ref for latest URL value, fallback to searchInput (for pending debounce)
+    const currentSearch = urlSearchRef.current || searchInput;
+    if (currentSearch) {
+      searchParams.returnSearch = currentSearch;
     }
     return searchParams;
   };
@@ -199,7 +207,7 @@ const AgencySelectionTable = ({
   // Handle action button clicks
   const handleBookingsClick = (agency, e) => {
     e.stopPropagation();
-    navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/bookings`, search: getReturnSearchParams() });
+    navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/bookings/by-advertiser`, search: getReturnSearchParams() });
   };
 
   const handleStatsClick = (agency, e) => {
