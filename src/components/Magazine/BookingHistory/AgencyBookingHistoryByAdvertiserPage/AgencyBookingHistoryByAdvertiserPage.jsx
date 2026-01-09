@@ -1,5 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { fetchAgencyById } from '@/components/Stats/api';
 import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryByAdvertiserTable from '../BookingHistoryByAdvertiserTable';
 import BookingStatusFilter from '../BookingStatusFilter';
@@ -33,6 +35,16 @@ const AgencyBookingHistoryByAdvertiserPage = ({ search: propSearch, companyId: p
   const status = search.status || 'all';
   const returnPage = search.returnPage;
   const returnSearch = search.returnSearch;
+
+  // Fetch agency details for super admin to display name
+  const { data: agencyData } = useQuery({
+    queryKey: ['agency', companyId],
+    queryFn: () => fetchAgencyById(companyId),
+    enabled: !!companyId && auth.user?.is_admin,
+  });
+
+  // Get agency name from API response (structure: {data: {...}, success: true})
+  const agencyName = agencyData?.data?.name;
 
   // Build search params for back navigation
   const getBackSearchParams = () => {
@@ -86,9 +98,14 @@ const AgencyBookingHistoryByAdvertiserPage = ({ search: propSearch, companyId: p
           <div className="flex items-start justify-between">
             <div className="flex flex-col">
               <h1 className="text-xl font-bold text-gray-900">Booking History by Advertiser</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                View your bookings grouped by advertiser
-              </p>
+              {auth.user?.is_admin && agencyName && (
+                <p className="text-sm text-gray-600 mt-1">{agencyName}</p>
+              )}
+              {!auth.user?.is_admin && (
+                <p className="text-sm text-gray-600 mt-1">
+                  View your bookings grouped by advertiser
+                </p>
+              )}
             </div>
             <Button
               variant="outline"
