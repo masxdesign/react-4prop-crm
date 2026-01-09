@@ -52,6 +52,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
     const navigate = useNavigate();
     const auth = useAuth();
     const [selectedItems, setSelectedItems] = useState([]);
+    const [resetFilterTrigger, setResetFilterTrigger] = useState(0);
 
     // Derive selectedIds Set from selectedItems for controlled tree selection
     const selectedIds = useMemo(
@@ -118,6 +119,9 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
 
     const handleGenerate = async (e) => {
       e.preventDefault();
+
+      // Reset filter to 'All' to show pending/running jobs
+      setResetFilterTrigger((prev) => prev + 1);
 
       // Process each selected item
       for (const item of selectedItems) {
@@ -306,6 +310,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
                   fetchNextPage={fetchNextPage}
+                  resetFilterTrigger={resetFilterTrigger}
                 />
               </div>
             </div>

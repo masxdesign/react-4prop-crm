@@ -14,6 +14,7 @@ export default function StreetPostJobsList({
   hasNextPage = false,
   isFetchingNextPage = false,
   fetchNextPage = null,
+  resetFilterTrigger = 0,
 }) {
   return (
     <JobsList
@@ -27,6 +28,7 @@ export default function StreetPostJobsList({
       jobType="street_post"
       jobTypeConfig={STREET_POST_JOB_CONFIG}
       OutputContentComponent={StreetPostJobOutputContent}
+      resetFilterTrigger={resetFilterTrigger}
     />
   );
 }

@@ -1,9 +1,18 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Search } from 'lucide-react';
 import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { JOB_STATUS_CONFIG, formatRelativeTime, formatCostUSD } from './utils';
 import { JobOutputDialog } from './components';
+
+// Filter options for the job list
+const FILTER_OPTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'failed', label: 'Failed' },
+  { id: 'not_posted', label: 'Not posted' },
+  { id: 'published', label: 'Published' },
+  { id: 'unpublished', label: 'Unpublished' },
+];
 
 // Blog status badge configuration
 const BLOG_STATUS_CONFIG = {
@@ -53,9 +62,19 @@ export default function JobsList({
   jobTypeConfig = {},
   OutputContentComponent,
   outputContentProps = {},
+  resetFilterTrigger = 0,
 }) {
   const [selectedJob, setSelectedJob] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
   const parentRef = useRef(null);
+
+  // Reset filter to 'all' when resetFilterTrigger changes
+  useEffect(() => {
+    if (resetFilterTrigger > 0) {
+      setActiveFilter('all');
+    }
+  }, [resetFilterTrigger]);
 
   const {
     displayName = 'job',
@@ -64,9 +83,37 @@ export default function JobsList({
     getDescription = () => 'View and edit job output',
   } = jobTypeConfig;
 
+  // Filter jobs based on search query and active filter
+  const filteredJobs = useMemo(() => {
+    return jobs.filter((job) => {
+      // Search filter - match title
+      const title = getTitle ? getTitle(job) : job.id;
+      const matchesSearch = !searchQuery ||
+        String(title).toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Status/blog filter
+      let matchesFilter = true;
+      if (activeFilter !== 'all') {
+        if (activeFilter === 'failed') {
+          matchesFilter = job.status === 'failed';
+        } else {
+          // Blog status filters only apply to completed jobs
+          if (job.status !== 'completed') {
+            matchesFilter = false;
+          } else {
+            const blogStatus = getBlogStatus(job);
+            matchesFilter = blogStatus === activeFilter;
+          }
+        }
+      }
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [jobs, searchQuery, activeFilter, getTitle]);
+
   // Virtualizer for jobs
   const rowVirtualizer = useVirtualizer({
-    count: hasNextPage ? jobs.length + 1 : jobs.length,
+    count: hasNextPage ? filteredJobs.length + 1 : filteredJobs.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 52,
     overscan: 5,
@@ -78,7 +125,7 @@ export default function JobsList({
     if (!lastItem) return;
 
     if (
-      lastItem.index >= jobs.length - 1 &&
+      lastItem.index >= filteredJobs.length - 1 &&
       hasNextPage &&
       !isFetchingNextPage &&
       fetchNextPage
@@ -88,7 +135,7 @@ export default function JobsList({
   }, [
     hasNextPage,
     fetchNextPage,
-    jobs.length,
+    filteredJobs.length,
     isFetchingNextPage,
     rowVirtualizer.getVirtualItems(),
   ]);
@@ -140,9 +187,44 @@ export default function JobsList({
   return (
     <>
       <div className="border-2 border-gray-300 rounded-xl bg-white mt-6">
-        <div className="flex items-center justify-between p-4 border-b">
+        {/* Search and filters header */}
+        <div className="flex items-center gap-3 p-4 border-b">
+          {/* Search input */}
+          <div className="relative flex-shrink-0 w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Filter buttons */}
+          <div className="flex items-center gap-1">
+            {FILTER_OPTIONS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilter(filter.id)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                  activeFilter === filter.id
+                    ? 'bg-blue-100 text-blue-700 border-blue-200'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Count and total */}
           <span className="text-sm text-gray-500">
-            {count} {count !== 1 ? pluralName : displayName}
+            {filteredJobs.length}{filteredJobs.length !== count ? `/${count}` : ''} {count !== 1 ? pluralName : displayName}
           </span>
           {totalCostUSD > 0 && (
             <span className="text-sm text-emerald-600 font-medium">
@@ -151,9 +233,13 @@ export default function JobsList({
           )}
         </div>
 
-        {!jobs.length ? (
+        {!filteredJobs.length ? (
           <div className="p-4">
-            <p className="text-gray-400 text-sm">No {pluralName} yet</p>
+            <p className="text-gray-400 text-sm">
+              {jobs.length === 0
+                ? `No ${pluralName} yet`
+                : `No ${pluralName} match the current filters`}
+            </p>
           </div>
         ) : (
           <div
@@ -178,8 +264,8 @@ export default function JobsList({
               }}
             >
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const isLoaderRow = virtualRow.index > jobs.length - 1;
-                const job = jobs[virtualRow.index];
+                const isLoaderRow = virtualRow.index > filteredJobs.length - 1;
+                const job = filteredJobs[virtualRow.index];
 
                 if (isLoaderRow) {
                   return (

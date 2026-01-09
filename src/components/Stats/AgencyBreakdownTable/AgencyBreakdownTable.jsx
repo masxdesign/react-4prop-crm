@@ -167,7 +167,7 @@ const AgencyBreakdownTable = ({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     initialState: {
-      sorting: [{ id: 'totalProperties', desc: true }],
+      sorting: [{ id: 'search_clicks', desc: true }],
     },
   });
 
