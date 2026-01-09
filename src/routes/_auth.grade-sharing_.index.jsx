@@ -19,7 +19,7 @@ import { takeRight } from "lodash"
 import { recentGradeSharesQueryOptions } from "@/features/gradeSharing/services"
 import { ArrowTopRightIcon } from "@radix-ui/react-icons"
 
-export const Route = createFileRoute('/_auth/grade-sharing/')({
+export const Route = createFileRoute('/_auth/grade-sharing_/')({
   component: GradeSharingConfirmComponent
 })
 

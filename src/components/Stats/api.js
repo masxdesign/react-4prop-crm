@@ -1,11 +1,7 @@
 import propertyPubClient from '@/services/propertyPubClient';
 
 /**
- * Fetch advertiser statistics summary with agency breakdown
- * @param {string} advertiserId - The advertiser ID
- * @param {string} startDate - Start date in YYYY-MM-DD format
- * @param {string} endDate - End date in YYYY-MM-DD format
- * @returns {Promise} Response data containing daily summary and agency breakdown
+ * Fetch advertiser stats with agency breakdown
  */
 export const fetchAdvertiserStats = async (advertiserId, startDate, endDate) => {
   const response = await propertyPubClient.get(
@@ -18,12 +14,7 @@ export const fetchAdvertiserStats = async (advertiserId, startDate, endDate) => 
 };
 
 /**
- * Fetch properties for a specific agency under an advertiser (lazy loaded)
- * @param {string} advertiserId - The advertiser ID
- * @param {string} agencyId - The agency ID
- * @param {string} startDate - Start date in YYYY-MM-DD format
- * @param {string} endDate - End date in YYYY-MM-DD format
- * @returns {Promise} Array of properties with enquirers
+ * Fetch properties for an agency under an advertiser
  */
 export const fetchAdvertiserAgencyProperties = async (advertiserId, agencyId, startDate, endDate) => {
   const response = await propertyPubClient.get(
@@ -36,11 +27,7 @@ export const fetchAdvertiserAgencyProperties = async (advertiserId, agencyId, st
 };
 
 /**
- * Fetch agency statistics summary with advertiser breakdown
- * @param {string} agencyId - The agency ID
- * @param {string} startDate - Start date in YYYY-MM-DD format
- * @param {string} endDate - End date in YYYY-MM-DD format
- * @returns {Promise} Response data containing daily summary and advertiser breakdown
+ * Fetch agency stats with advertiser breakdown
  */
 export const fetchAgencyStats = async (agencyId, startDate, endDate) => {
   const response = await propertyPubClient.get(
@@ -53,12 +40,7 @@ export const fetchAgencyStats = async (agencyId, startDate, endDate) => {
 };
 
 /**
- * Fetch properties for a specific advertiser under an agency (lazy loaded)
- * @param {string} agencyId - The agency ID
- * @param {string} advertiserId - The advertiser ID
- * @param {string} startDate - Start date in YYYY-MM-DD format
- * @param {string} endDate - End date in YYYY-MM-DD format
- * @returns {Promise} Array of properties with enquirers
+ * Fetch properties for an advertiser under an agency
  */
 export const fetchAgencyAdvertiserProperties = async (agencyId, advertiserId, startDate, endDate) => {
   const response = await propertyPubClient.get(
@@ -71,12 +53,7 @@ export const fetchAgencyAdvertiserProperties = async (agencyId, advertiserId, st
 };
 
 /**
- * Fetch paginated list of advertisers for selection
- * @param {Object} options - Query options
- * @param {number} options.page - Page number (1-indexed)
- * @param {number} options.limit - Items per page (max 100)
- * @param {string} options.search - Search query for company name
- * @returns {Promise} Response data with advertisers and pagination
+ * Fetch paginated advertisers
  */
 export const fetchAdvertisers = async ({ page = 1, limit = 20, search = '' }) => {
   const response = await propertyPubClient.get('/api/advertisers', {
@@ -92,12 +69,15 @@ export const fetchAdvertisers = async ({ page = 1, limit = 20, search = '' }) =>
 };
 
 /**
- * Fetch paginated list of agencies for selection
- * @param {Object} options - Query options
- * @param {number} options.page - Page number (1-indexed)
- * @param {number} options.limit - Items per page (max 100)
- * @param {string} options.search - Search query for agency name
- * @returns {Promise} Response data with agencies and pagination
+ * Fetch single agency by ID
+ */
+export const fetchAgencyById = async (agencyId) => {
+  const response = await propertyPubClient.get(`/api/agencies/${agencyId}`);
+  return response.data;
+};
+
+/**
+ * Fetch paginated agencies
  */
 export const fetchAgencies = async ({ page = 1, limit = 20, search = '' }) => {
   const response = await propertyPubClient.get('/api/agencies', {

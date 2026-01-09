@@ -2,8 +2,8 @@ import React from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import AdvertiserSelectionTable from '../AdvertiserSelectionTable/AdvertiserSelectionTable';
-import AgencySelectionTable from '../AgencySelectionTable/AgencySelectionTable';
+import AdvertiserSelectionTable from '@/components/AdvertiserSelectionTable';
+import AgencySelectionTable from '@/components/AgencySelectionTable';
 
 // Default values for search params
 const DEFAULTS = {
@@ -73,7 +73,7 @@ export { DEFAULTS };
  * Only non-default values are included in the URL to keep it clean.
  */
 const StatsSelectionPage = () => {
-  const navigate = useNavigate({ from: '/crm/stats/select' });
+  const navigate = useNavigate({ from: '/stats/select' });
   const urlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
 
   // Apply defaults to URL search params
@@ -119,17 +119,27 @@ const StatsSelectionPage = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={search.tab} onValueChange={handleTabChange} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full max-w-lg grid-cols-2">
                 <TabsTrigger value="advertisers">Advertiser Statistics</TabsTrigger>
                 <TabsTrigger value="agencies">Agency Statistics</TabsTrigger>
               </TabsList>
 
               <TabsContent value="advertisers" className="mt-6">
-                <AdvertiserSelectionTable />
+                <AdvertiserSelectionTable
+                  variant="stats"
+                  basePath="/stats/select"
+                  cleanSearchParams={cleanSearchParams}
+                  DEFAULTS={DEFAULTS}
+                />
               </TabsContent>
 
               <TabsContent value="agencies" className="mt-6">
-                <AgencySelectionTable />
+                <AgencySelectionTable
+                  variant="stats"
+                  basePath="/stats/select"
+                  cleanSearchParams={cleanSearchParams}
+                  DEFAULTS={DEFAULTS}
+                />
               </TabsContent>
             </Tabs>
           </CardContent>

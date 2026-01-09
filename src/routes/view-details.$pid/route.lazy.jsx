@@ -46,7 +46,7 @@ function RouteComponent () {
       />
       <div className='sticky bottom-0 p-8 float-right'>
         <Button size="lg" className="flex flex-col gap-1 h-16" asChild>
-          <Link to={`/crm/user/active`}>
+          <Link to={`/user/active`}>
             <EnvelopeClosedIcon className='size-6' />
             <span>All enquiries</span>
           </Link>

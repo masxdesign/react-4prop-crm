@@ -20,6 +20,11 @@ export const fetchAllAdvertisers = async () => {
   return response.data;
 };
 
+export const fetchAdvertiserById = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}`);
+  return response.data;
+};
+
 export const createAdvertiser = async (advertiserData) => {
   const response = await bizchatClient.post('/api/crm/mag/advertisers', advertiserData);
   return response.data;
@@ -276,6 +281,17 @@ export const fetchAgentBookings = async (agentNid, options = {}) => {
   return response.data;
 };
 
+export const fetchAgencyBookings = async (companyId, options = {}) => {
+  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}`,
+    {
+      params: { status, page, pageSize }
+    }
+  );
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object
@@ -298,4 +314,18 @@ export const normalizeScheduleData = (scheduleData, advertisers = []) => {
     advertiser_company,
     end_date
   };
+};
+
+// AI Postcodes API - returns districts grouped by prefix: [{ prefix, districts }]
+export const fetchPostcodesTree = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree', { params });
+  return response.data;
+};
+
+// AI Postcodes API - returns 4-level tree: prefix → district → source → streets
+export const fetchPostcodesTreeFull = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree-full', { params });
+  return response.data;
 };

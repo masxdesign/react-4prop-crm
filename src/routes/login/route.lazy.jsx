@@ -23,8 +23,8 @@ function LoginComponent() {
 
       console.log(search.redirect);
 
-      // Default to /crm if no redirect path is provided
-      navigate({ to: search.redirect || '/crm' })
+      // Default to / if no redirect path is provided
+      navigate({ to: search.redirect || '/' })
 
     } catch (e) {
 

@@ -23,8 +23,8 @@ import { fetchAgentsForSelection } from '../api';
 
 const columnHelper = createColumnHelper();
 
-// Default values for search params
-const DEFAULTS = {
+// Default values for standalone mode
+const STANDALONE_DEFAULTS = {
   search: '',
   limit: 20,
   page: 1,
@@ -32,93 +32,82 @@ const DEFAULTS = {
   order: 'asc',
 };
 
-/**
- * Remove default values from search params to keep URLs clean
- */
-const cleanSearchParams = (params) => {
+// Remove default values from search params to keep URLs clean
+const standaloneCleanSearchParams = (params) => {
   const cleaned = {};
-
-  // Only add search if it's not empty
-  if (params.search && params.search !== DEFAULTS.search) {
-    cleaned.search = params.search;
-  }
-
-  // Only add limit if it's not the default
-  if (params.limit && params.limit !== DEFAULTS.limit) {
-    cleaned.limit = params.limit;
-  }
-
-  // Only add page if it's not the default
-  if (params.page && params.page !== DEFAULTS.page) {
-    cleaned.page = params.page;
-  }
-
-  // Only add sortBy if it's not the default
-  if (params.sortBy && params.sortBy !== DEFAULTS.sortBy) {
-    cleaned.sortBy = params.sortBy;
-  }
-
-  // Only add order if it's not the default
-  if (params.order && params.order !== DEFAULTS.order) {
-    cleaned.order = params.order;
-  }
-
+  if (params.search && params.search !== STANDALONE_DEFAULTS.search) cleaned.search = params.search;
+  if (params.limit && params.limit !== STANDALONE_DEFAULTS.limit) cleaned.limit = params.limit;
+  if (params.page && params.page !== STANDALONE_DEFAULTS.page) cleaned.page = params.page;
+  if (params.sortBy && params.sortBy !== STANDALONE_DEFAULTS.sortBy) cleaned.sortBy = params.sortBy;
+  if (params.order && params.order !== STANDALONE_DEFAULTS.order) cleaned.order = params.order;
   return cleaned;
 };
 
 /**
- * AgentSelectionTable Component
- *
- * Admin-only component for searching and selecting agents by name, email, or company.
- * Allows super admins to view any agent's department properties.
- * Uses debounced search with minimum 2 characters required.
- * Supports pagination and sorting via URL parameters.
+ * Agent search/selection table. Works standalone or embedded in AgencyHub.
  */
-const AgentSelectionTable = () => {
-  const navigate = useNavigate({ from: '/crm/mag/agent/select' });
-  const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/mag/agent/select' });
+const AgentSelectionTable = ({
+  basePath,
+  cleanSearchParams: externalCleanSearchParams,
+  DEFAULTS: externalDefaults,
+  navigationPrefix,
+  embedded = false,
+  urlSearch: externalUrlSearch // Accept search params from parent
+}) => {
+  // Use standalone or external config
+  const isStandalone = !embedded;
+  const defaults = externalDefaults || STANDALONE_DEFAULTS;
+  const cleanFn = externalCleanSearchParams || standaloneCleanSearchParams;
+  const routePath = basePath || '/mag/agent/select';
+  const searchFrom = isStandalone ? '/_auth/_dashboard/mag/agent/select' : undefined;
+  const navTarget = navigationPrefix || '/mag/agent';
 
-  // Apply defaults to URL search params
-  const urlSearch = {
-    search: rawUrlSearch.search || DEFAULTS.search,
-    limit: rawUrlSearch.limit || DEFAULTS.limit,
-    page: rawUrlSearch.page || DEFAULTS.page,
-    sortBy: rawUrlSearch.sortBy || DEFAULTS.sortBy,
-    order: rawUrlSearch.order || DEFAULTS.order,
+  const navigate = useNavigate({ from: routePath });
+  // Only use internal useSearch for standalone mode
+  const rawUrlSearch = isStandalone ? useSearch({ from: searchFrom }) : {};
+
+  // Use external search params if provided, or fall back to internal search
+  const urlSearch = externalUrlSearch || {
+    tab: rawUrlSearch.tab || defaults.tab,
+    search: rawUrlSearch.search || defaults.search || '',
+    limit: rawUrlSearch.limit || defaults.limit || 20,
+    page: rawUrlSearch.page || defaults.page || 1,
+    sortBy: rawUrlSearch.sortBy || (defaults.sortBy?.agents || defaults.sortBy || 'surname'),
+    order: rawUrlSearch.order || defaults.order || 'asc',
   };
 
-  // Local search input state (not debounced)
+  // Check if this tab is active (for embedded mode)
+  const isActive = isStandalone || urlSearch.tab === 'agents';
+
+  // Local search input state
   const [searchInput, setSearchInput] = useState(urlSearch.search);
 
-  // Sync local search input with URL on mount
+  // Sync local search input with URL
   useEffect(() => {
-    setSearchInput(urlSearch.search);
-  }, [urlSearch.search]);
+    if (isActive) {
+      setSearchInput(urlSearch.search);
+    }
+  }, [isActive, urlSearch.search]);
 
-  // Debounce search input to reduce API calls
+  // Debounce search input
   const debouncedSearch = useDebounce(searchInput, 500);
 
   // Update URL when debounced search changes
   useEffect(() => {
-    if (debouncedSearch !== urlSearch.search) {
-      const params = cleanSearchParams({
+    if (isActive && debouncedSearch !== urlSearch.search) {
+      const params = cleanFn({
+        ...urlSearch,
         search: debouncedSearch,
-        limit: urlSearch.limit,
-        page: DEFAULTS.page, // Reset to page 1 when search changes
-        sortBy: urlSearch.sortBy,
-        order: urlSearch.order,
-      });
+        page: 1,
+      }, urlSearch.tab);
 
-      navigate({
-        search: params,
-        replace: true,
-      });
+      navigate({ search: params, replace: true });
     }
-  }, [debouncedSearch, navigate, urlSearch.limit, urlSearch.search, urlSearch.sortBy, urlSearch.order]);
+  }, [debouncedSearch, isActive, navigate, urlSearch, cleanFn]);
 
-  // Fetch agents with TanStack Query (only if search term is >= 2 chars)
-  const shouldFetch = debouncedSearch.length >= 2;
-  const { data, isLoading, isFetching } = useQuery({
+  // Fetch agents (only if search >= 2 chars and tab is active)
+  const shouldFetch = isActive && debouncedSearch.length >= 2;
+  const { data, isFetching } = useQuery({
     queryKey: ['agents-selection', debouncedSearch, urlSearch.limit, urlSearch.page, urlSearch.sortBy, urlSearch.order],
     queryFn: () => fetchAgentsForSelection({
       search: debouncedSearch,
@@ -131,39 +120,31 @@ const AgentSelectionTable = () => {
   });
 
   const agents = data?.data || [];
-  const pagination = data?.pagination || null;
 
-  // Define table columns
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor('nid', {
-        header: 'NID',
-        cell: (info) => (
-          <span className="font-mono text-sm">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor('email', {
-        header: 'Email',
-        cell: (info) => (
-          <span className="font-medium text-gray-900">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor((row) => `${row.firstname} ${row.surname}`, {
-        id: 'name',
-        header: 'Name',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('company', {
-        header: 'Company',
-        cell: (info) => info.getValue() || '-',
-      }),
-      columnHelper.accessor('position', {
-        header: 'Position',
-        cell: (info) => info.getValue() || '-',
-      }),
-    ],
-    []
-  );
+  // Table columns
+  const columns = useMemo(() => [
+    columnHelper.accessor('nid', {
+      header: 'NID',
+      cell: (info) => <span className="font-mono text-sm">{info.getValue()}</span>,
+    }),
+    columnHelper.accessor('email', {
+      header: 'Email',
+      cell: (info) => <span className="font-medium text-gray-900">{info.getValue()}</span>,
+    }),
+    columnHelper.accessor((row) => `${row.firstname} ${row.surname}`, {
+      id: 'name',
+      header: 'Name',
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor('company', {
+      header: 'Company',
+      cell: (info) => info.getValue() || '-',
+    }),
+    columnHelper.accessor('position', {
+      header: 'Position',
+      cell: (info) => info.getValue() || '-',
+    }),
+  ], []);
 
   const table = useReactTable({
     data: agents,
@@ -171,135 +152,143 @@ const AgentSelectionTable = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click - navigate to agent's properties page
   const handleRowClick = (agent) => {
-    navigate({ to: `/crm/mag/agent/${agent.nid}` });
+    // Pass current search term so back button can restore it
+    const searchParams = { page: 1, pageSize: 10 };
+    if (debouncedSearch) {
+      searchParams.returnSearch = debouncedSearch;
+    }
+    navigate({ to: `${navTarget}/${agent.nid}`, search: searchParams });
   };
 
-  return (
-    <div className="flex flex-col h-full overflow-auto">
-      <div className="flex-1 p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">View Agent Properties</h1>
-          <p className="text-gray-600 mt-1">Search for an agent by name, email, or company to view their department properties</p>
-        </div>
-
-        {/* Search Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Search Agents</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search by name, email, or company (minimum 2 characters)..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-
-            {/* Results Info */}
-            {searchInput.length > 0 && searchInput.length < 2 && (
-              <p className="text-sm text-gray-500">
-                Please enter at least 2 characters to search
-              </p>
-            )}
-
-            {shouldFetch && (
-              <p className="text-sm text-gray-500">
-                {isFetching ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Searching...
-                  </span>
-                ) : (
-                  <span>
-                    Found {agents.length} agent{agents.length !== 1 ? 's' : ''}{' '}
-                    {agents.length === urlSearch.limit && `(limited to ${urlSearch.limit} results)`}
-                  </span>
-                )}
-              </p>
-            )}
-
-            {/* Table */}
-            {shouldFetch && (
-              <div className="relative">
-                {isFetching && (
-                  <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
-                    <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                      <span className="text-gray-700 font-medium">Searching...</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="border rounded-lg">
-                  <Table>
-                    <TableHeader>
-                      {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id}>
-                          {headerGroup.headers.map((header) => (
-                            <TableHead key={header.id}>
-                              {header.isPlaceholder
-                                ? null
-                                : flexRender(header.column.columnDef.header, header.getContext())}
-                            </TableHead>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableHeader>
-                    <TableBody>
-                      {agents.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={columns.length} className="h-32 text-center">
-                            <div className="flex flex-col items-center justify-center text-gray-500">
-                              <UserSearch className="h-12 w-12 mb-3 text-gray-400" />
-                              <p className="font-medium">No agents found</p>
-                              <p className="text-sm mt-1">Try a different search term</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        table.getRowModel().rows.map((row) => (
-                          <TableRow
-                            key={row.id}
-                            className="hover:bg-muted/50 cursor-pointer transition-colors"
-                            onClick={() => handleRowClick(row.original)}
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              <TableCell key={cell.id}>
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-
-            {/* Initial State */}
-            {!shouldFetch && searchInput.length < 2 && (
-              <div className="border rounded-lg p-12">
-                <div className="flex flex-col items-center justify-center text-gray-500">
-                  <UserSearch className="h-16 w-16 mb-4 text-gray-400" />
-                  <p className="font-medium text-lg">Search for an agent</p>
-                  <p className="text-sm mt-2">Enter a name, email, or company to find agents</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+  // Content to render
+  const content = (
+    <div className="space-y-4">
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search by name, email, or company (minimum 2 characters)..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          className="pl-10"
+        />
       </div>
+
+      {/* Results Info */}
+      {searchInput.length > 0 && searchInput.length < 2 && (
+        <p className="text-sm text-gray-500">Please enter at least 2 characters to search</p>
+      )}
+
+      {shouldFetch && (
+        <p className="text-sm text-gray-500">
+          {isFetching ? (
+            <span className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Searching...
+            </span>
+          ) : (
+            <span>
+              Found {agents.length} agent{agents.length !== 1 ? 's' : ''}{' '}
+              {agents.length === urlSearch.limit && `(limited to ${urlSearch.limit} results)`}
+            </span>
+          )}
+        </p>
+      )}
+
+      {/* Table */}
+      {shouldFetch && (
+        <div className="relative">
+          {isFetching && (
+            <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
+              <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                <span className="text-gray-700 font-medium">Searching...</span>
+              </div>
+            </div>
+          )}
+
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {agents.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-gray-500">
+                        <UserSearch className="h-12 w-12 mb-3 text-gray-400" />
+                        <p className="font-medium">No agents found</p>
+                        <p className="text-sm mt-1">Try a different search term</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className="hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => handleRowClick(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {/* Initial State */}
+      {!shouldFetch && searchInput.length < 2 && (
+        <div className="border rounded-lg p-12">
+          <div className="flex flex-col items-center justify-center text-gray-500">
+            <UserSearch className="h-16 w-16 mb-4 text-gray-400" />
+            <p className="font-medium text-lg">Search for an agent</p>
+            <p className="text-sm mt-2">Enter a name, email, or company to find agents</p>
+          </div>
+        </div>
+      )}
     </div>
   );
+
+  // Standalone mode: wrap in full page layout
+  if (isStandalone) {
+    return (
+      <div className="flex flex-col h-full overflow-auto">
+        <div className="flex-1 p-6 space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">View Agent Properties</h1>
+            <p className="text-gray-600 mt-1">Search for an agent by name, email, or company to view their department properties</p>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Search Agents</CardTitle>
+            </CardHeader>
+            <CardContent>{content}</CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Embedded mode: just the content
+  return content;
 };
 
 export default AgentSelectionTable;

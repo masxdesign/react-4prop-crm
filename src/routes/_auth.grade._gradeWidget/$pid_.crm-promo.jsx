@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouterState } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 
-export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/crm-promo')({
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid_/crm-promo')({
   component: PromoComponent
 })
 

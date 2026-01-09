@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useDebounce } from '@uidotdev/usehooks';
 import {
   useReactTable,
@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3 } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -19,36 +19,51 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { fetchAgencies } from '../api';
-import { cleanSearchParams, DEFAULTS } from '../StatsSelectionPage/StatsSelectionPage';
+import { fetchAgencies } from '@/components/Stats/api';
 
 const columnHelper = createColumnHelper();
 
 /**
- * AgencySelectionTable Component
+ * Searchable, paginated agency selection table
  *
- * Displays a searchable, paginated list of agencies for admin selection.
- * All state (page, search, sorting) is synced with URL search parameters.
- * Clicking a row navigates to that agency's statistics page.
+ * @param {boolean} showActionButtons - When true, shows Bookings/Stats buttons instead of row click
  */
-const AgencySelectionTable = () => {
-  const navigate = useNavigate({ from: '/crm/stats/select' });
-  const rawUrlSearch = useSearch({ from: '/_auth/_dashboard/stats/select' });
+const AgencySelectionTable = ({
+  variant = 'stats',
+  basePath,
+  cleanSearchParams,
+  DEFAULTS,
+  navigationPrefix,
+  urlSearch: externalUrlSearch, // Accept search params from parent
+  showActionButtons = false, // Show action buttons instead of row click
+}) => {
+  const navigate = useNavigate();
 
-  // Apply defaults to URL search params
-  const urlSearch = {
-    tab: rawUrlSearch.tab || DEFAULTS.tab,
-    page: rawUrlSearch.page || DEFAULTS.page,
-    limit: rawUrlSearch.limit || DEFAULTS.limit,
-    search: rawUrlSearch.search || DEFAULTS.search,
-    sortBy: rawUrlSearch.sortBy || DEFAULTS.sortBy[rawUrlSearch.tab || DEFAULTS.tab],
-    order: rawUrlSearch.order || DEFAULTS.order,
+  // Determine navigation target based on variant and navigationPrefix
+  const navigationPath = navigationPrefix
+    ? `${navigationPrefix}`
+    : variant === 'stats'
+      ? '/stats/agency'
+      : '/booking-history/agency';
+
+  const navigationSuffix = navigationPrefix
+    ? variant === 'stats' ? '/stats' : '/bookings'
+    : '';
+
+  // Use external search params if provided, or fall back to DEFAULTS
+  const urlSearch = externalUrlSearch || {
+    tab: DEFAULTS.tab,
+    page: DEFAULTS.page,
+    limit: DEFAULTS.limit,
+    search: DEFAULTS.search,
+    sortBy: DEFAULTS.sortBy[DEFAULTS.tab],
+    order: DEFAULTS.order,
   };
 
-  // Only use this table's state if we're on the agencies tab
-  const isActive = urlSearch.tab === 'agencies';
+  // Only use this table's state if we're on the correct tab
+  const isActive = urlSearch.tab === 'agencies' || urlSearch.tab === 'bookings' || urlSearch.tab === 'stats';
 
-  // Local search input state (not debounced)
+  // Local search input state
   const [searchInput, setSearchInput] = useState(urlSearch.search || '');
 
   // Sync local search input with URL when tab becomes active
@@ -58,7 +73,7 @@ const AgencySelectionTable = () => {
     }
   }, [isActive, urlSearch.search]);
 
-  // Debounce search input to reduce API calls
+  // Debounce search input
   const debouncedSearch = useDebounce(searchInput, 500);
 
   // Update URL when debounced search changes
@@ -67,17 +82,18 @@ const AgencySelectionTable = () => {
       const params = cleanSearchParams({
         ...urlSearch,
         search: debouncedSearch,
-        page: 1, // Reset to first page on search
+        page: 1,
       }, urlSearch.tab);
 
       navigate({
+        to: basePath,
         search: params,
         replace: true,
       });
     }
-  }, [debouncedSearch, isActive, navigate, urlSearch]);
+  }, [debouncedSearch, isActive, navigate, urlSearch, cleanSearchParams, basePath]);
 
-  // Fetch agencies with TanStack Query (only when this tab is active)
+  // Fetch agencies with TanStack Query
   const { data, isLoading, isFetching, isPlaceholderData } = useQuery({
     queryKey: ['agencies-list', urlSearch.page, urlSearch.limit, urlSearch.search],
     queryFn: () => fetchAgencies({
@@ -86,7 +102,7 @@ const AgencySelectionTable = () => {
       search: urlSearch.search
     }),
     placeholderData: keepPreviousData,
-    enabled: isActive, // Only fetch when this tab is active
+    enabled: isActive,
   });
 
   const agencies = data?.data || [];
@@ -100,27 +116,61 @@ const AgencySelectionTable = () => {
 
   // Define table columns
   const columns = useMemo(
-    () => [
-      columnHelper.accessor('cid', {
-        header: 'ID',
-        cell: (info) => info.getValue(),
-      }),
-      columnHelper.accessor('name', {
-        header: 'Agency Name',
-        cell: (info) => (
-          <span className="font-medium text-gray-900">{info.getValue()}</span>
-        ),
-      }),
-      columnHelper.accessor('type', {
-        header: 'Type',
-        cell: (info) => info.getValue() || '-',
-      }),
-      columnHelper.accessor('phone', {
-        header: 'Phone',
-        cell: (info) => info.getValue() || '-',
-      }),
-    ],
-    []
+    () => {
+      const baseColumns = [
+        columnHelper.accessor('cid', {
+          header: 'ID',
+          cell: (info) => info.getValue(),
+        }),
+        columnHelper.accessor('name', {
+          header: 'Agency Name',
+          cell: (info) => (
+            <span className="font-medium text-gray-900">{info.getValue()}</span>
+          ),
+        }),
+        columnHelper.accessor('type', {
+          header: 'Type',
+          cell: (info) => info.getValue() || '-',
+        }),
+        columnHelper.accessor('phone', {
+          header: 'Phone',
+          cell: (info) => info.getValue() || '-',
+        }),
+      ];
+
+      // Add action buttons column when showActionButtons is true
+      if (showActionButtons) {
+        baseColumns.push(
+          columnHelper.display({
+            id: 'actions',
+            header: 'Actions',
+            cell: ({ row }) => (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="gradient"
+                  size="default"
+                  onClick={(e) => handleBookingsClick(row.original, e)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Bookings
+                </Button>
+                <Button
+                  variant="gradient"
+                  size="default"
+                  onClick={(e) => handleStatsClick(row.original, e)}
+                >
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Stats
+                </Button>
+              </div>
+            ),
+          })
+        );
+      }
+
+      return baseColumns;
+    },
+    [showActionButtons]
   );
 
   const table = useReactTable({
@@ -129,12 +179,35 @@ const AgencySelectionTable = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  // Handle row click - navigate to agency stats page
-  const handleRowClick = (agency) => {
-    navigate({ to: `/crm/stats/agency/${agency.cid}` });
+  // Build return search params for back button navigation
+  const getReturnSearchParams = () => {
+    const searchParams = {};
+    if (urlSearch.page && urlSearch.page !== 1) {
+      searchParams.returnPage = urlSearch.page;
+    }
+    if (urlSearch.search) {
+      searchParams.returnSearch = urlSearch.search;
+    }
+    return searchParams;
   };
 
-  // Handle page change - update URL
+  // Handle row click (only used when showActionButtons is false)
+  const handleRowClick = (agency) => {
+    navigate({ to: `${navigationPath}/${agency.cid}${navigationSuffix}`, search: getReturnSearchParams() });
+  };
+
+  // Handle action button clicks
+  const handleBookingsClick = (agency, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/bookings`, search: getReturnSearchParams() });
+  };
+
+  const handleStatsClick = (agency, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/stats`, search: getReturnSearchParams() });
+  };
+
+  // Handle page change
   const handlePrevPage = () => {
     const newPage = Math.max(1, urlSearch.page - 1);
     const params = cleanSearchParams({
@@ -143,6 +216,7 @@ const AgencySelectionTable = () => {
     }, urlSearch.tab);
 
     navigate({
+      to: basePath,
       search: params,
       replace: true,
     });
@@ -156,6 +230,7 @@ const AgencySelectionTable = () => {
       }, urlSearch.tab);
 
       navigate({
+        to: basePath,
         search: params,
         replace: true,
       });
@@ -177,7 +252,7 @@ const AgencySelectionTable = () => {
   return (
     <div className="space-y-4">
       {/* Search Input */}
-      <div className="relative">
+      <div className="relative w-full max-w-sm">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
           type="text"
@@ -231,8 +306,8 @@ const AgencySelectionTable = () => {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => handleRowClick(row.original)}
+                    className={showActionButtons ? "hover:bg-muted/50 transition-colors" : "hover:bg-muted/50 cursor-pointer transition-colors"}
+                    onClick={showActionButtons ? undefined : () => handleRowClick(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

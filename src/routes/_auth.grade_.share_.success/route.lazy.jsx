@@ -1,7 +1,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { CheckCircle, CheckCircle2Icon, StarIcon } from 'lucide-react'
 
-export const Route = createLazyFileRoute('/_auth/grade/share/success')({
+export const Route = createLazyFileRoute('/_auth/grade_/share_/success')({
   component: SuccessComponent
 })
 
