@@ -237,27 +237,75 @@ const AdvertiserSelectionTable = ({
     has_prev: false,
   };
 
+  // Build return search params for back button navigation
+  const getReturnSearchParams = () => {
+    const searchParams = {};
+    if (urlSearch.page && urlSearch.page !== 1) {
+      searchParams.returnPage = urlSearch.page;
+    }
+    if (urlSearch.search) {
+      searchParams.returnSearch = urlSearch.search;
+    }
+    return searchParams;
+  };
+
+  // Handle row click (only used when showActionButtons is false)
+  const handleRowClick = (advertiser) => {
+    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}`, search: getReturnSearchParams() });
+  };
+
+  // Handle action button clicks
+  const handleBookingsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/bookings/by-agency`, search: getReturnSearchParams() });
+  };
+
+  const handleStatsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/stats`, search: getReturnSearchParams() });
+  };
+
+  const handleBlogPostsClick = (advertiser, e) => {
+    e.stopPropagation();
+    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/blog-posts`, search: getReturnSearchParams() });
+  };
+
+  // Handle Edit button click
+  const handleEditClick = (advertiser, e) => {
+    e.stopPropagation();
+    setEditingAdvertiser(advertiser);
+    setIsFormOpen(true);
+  };
+
+  // Handle Delete button click
+  const handleDeleteClick = (advertiser, e) => {
+    e.stopPropagation();
+    setAdvertiserToDelete(advertiser);
+    setDeleteConfirmOpen(true);
+  };
+
   // Define table columns
+  // Use table.options.meta to access handlers with fresh state (TanStack Table pattern)
   const columns = useMemo(
     () => {
       const baseColumns = [
         columnHelper.accessor('company', {
           header: 'Advertiser',
-          cell: (info) => (
+          cell: ({ getValue, row, table }) => (
             <div className="flex flex-col">
               <button
-                onClick={(e) => handleEditClick(info.row.original, e)}
+                onClick={(e) => table.options.meta?.onEditClick(row.original, e)}
                 className="font-semibold text-base text-gray-900 hover:underline text-left cursor-pointer"
               >
-                {info.getValue()}
+                {getValue()}
               </button>
-              {info.row.original.email ? (
+              {row.original.email ? (
                 <button
-                  onClick={(e) => handleCopyEmail(info.row.original.email, e)}
+                  onClick={(e) => handleCopyEmail(row.original.email, e)}
                   className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 group text-left"
                   title="Click to copy email"
                 >
-                  <span className="truncate max-w-[200px]">{info.row.original.email}</span>
+                  <span className="truncate max-w-[200px]">{row.original.email}</span>
                   <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
                 </button>
               ) : (
@@ -322,12 +370,13 @@ const AdvertiserSelectionTable = ({
       ];
 
       // Add action buttons column when showActionButtons or showManageButtons is true
+      // Use table.options.meta to access handlers with fresh state (TanStack Table pattern)
       if (showActionButtons || showManageButtons) {
         baseColumns.push(
           columnHelper.display({
             id: 'actions',
             header: '',
-            cell: ({ row }) => (
+            cell: ({ row, table }) => (
               <div className="flex items-center gap-2">
                 {showActionButtons && (
                   <TooltipProvider delayDuration={0}>
@@ -336,7 +385,7 @@ const AdvertiserSelectionTable = ({
                         <Button
                           variant="gradient"
                           size="icon"
-                          onClick={(e) => handleBlogPostsClick(row.original, e)}
+                          onClick={(e) => table.options.meta?.onBlogPostsClick(row.original, e)}
                         >
                           <FileText className="h-4 w-4" />
                         </Button>
@@ -350,7 +399,7 @@ const AdvertiserSelectionTable = ({
                         <Button
                           variant="gradient"
                           size="icon"
-                          onClick={(e) => handleBookingsClick(row.original, e)}
+                          onClick={(e) => table.options.meta?.onBookingsClick(row.original, e)}
                         >
                           <Calendar className="h-4 w-4" />
                         </Button>
@@ -364,7 +413,7 @@ const AdvertiserSelectionTable = ({
                         <Button
                           variant="gradient"
                           size="icon"
-                          onClick={(e) => handleStatsClick(row.original, e)}
+                          onClick={(e) => table.options.meta?.onStatsClick(row.original, e)}
                         >
                           <BarChart3 className="h-4 w-4" />
                         </Button>
@@ -387,13 +436,13 @@ const AdvertiserSelectionTable = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => handleEditClick(row.original, e)}>
+                      <DropdownMenuItem onClick={(e) => table.options.meta?.onEditClick(row.original, e)}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={(e) => handleDeleteClick(row.original, e)}
+                        onClick={(e) => table.options.meta?.onDeleteClick(row.original, e)}
                         className="text-red-600 focus:text-red-600"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -417,54 +466,14 @@ const AdvertiserSelectionTable = ({
     data: advertisers,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    meta: {
+      onBookingsClick: handleBookingsClick,
+      onStatsClick: handleStatsClick,
+      onBlogPostsClick: handleBlogPostsClick,
+      onEditClick: handleEditClick,
+      onDeleteClick: handleDeleteClick,
+    },
   });
-
-  // Build return search params for back button navigation
-  const getReturnSearchParams = () => {
-    const searchParams = {};
-    if (urlSearch.page && urlSearch.page !== 1) {
-      searchParams.returnPage = urlSearch.page;
-    }
-    if (urlSearch.search) {
-      searchParams.returnSearch = urlSearch.search;
-    }
-    return searchParams;
-  };
-
-  // Handle row click (only used when showActionButtons is false)
-  const handleRowClick = (advertiser) => {
-    navigate({ to: `${navigationPath}/${advertiser.id}${navigationSuffix}`, search: getReturnSearchParams() });
-  };
-
-  // Handle action button clicks
-  const handleBookingsClick = (advertiser, e) => {
-    e.stopPropagation();
-    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/bookings/by-agency`, search: getReturnSearchParams() });
-  };
-
-  const handleStatsClick = (advertiser, e) => {
-    e.stopPropagation();
-    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/stats`, search: getReturnSearchParams() });
-  };
-
-  const handleBlogPostsClick = (advertiser, e) => {
-    e.stopPropagation();
-    navigate({ to: `${navigationPrefix || '/advertiser'}/${advertiser.id}/blog-posts`, search: getReturnSearchParams() });
-  };
-
-  // Handle Edit button click
-  const handleEditClick = (advertiser, e) => {
-    e.stopPropagation();
-    setEditingAdvertiser(advertiser);
-    setIsFormOpen(true);
-  };
-
-  // Handle Delete button click
-  const handleDeleteClick = (advertiser, e) => {
-    e.stopPropagation();
-    setAdvertiserToDelete(advertiser);
-    setDeleteConfirmOpen(true);
-  };
 
   // Handle form submission for edit
   const handleFormSubmit = (data) => {

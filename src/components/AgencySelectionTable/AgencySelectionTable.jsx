@@ -66,12 +66,6 @@ const AgencySelectionTable = ({
   // Local search input state
   const [searchInput, setSearchInput] = useState(urlSearch.search || '');
 
-  // Keep a ref to the latest URL search value for use in callbacks
-  const urlSearchRef = useRef(urlSearch.search);
-  useEffect(() => {
-    urlSearchRef.current = urlSearch.search;
-  }, [urlSearch.search]);
-
   // Sync local search input with URL when URL search param changes
   useEffect(() => {
     if (isActive) {
@@ -145,17 +139,18 @@ const AgencySelectionTable = ({
       ];
 
       // Add action buttons column when showActionButtons is true
+      // Use table.options.meta to access handlers with fresh state (TanStack Table pattern)
       if (showActionButtons) {
         baseColumns.push(
           columnHelper.display({
             id: 'actions',
             header: 'Actions',
-            cell: ({ row }) => (
+            cell: ({ row, table }) => (
               <div className="flex items-center gap-2">
                 <Button
                   variant="gradient"
                   size="default"
-                  onClick={(e) => handleBookingsClick(row.original, e)}
+                  onClick={(e) => table.options.meta?.onBookingsClick(row.original, e)}
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Bookings
@@ -163,7 +158,7 @@ const AgencySelectionTable = ({
                 <Button
                   variant="gradient"
                   size="default"
-                  onClick={(e) => handleStatsClick(row.original, e)}
+                  onClick={(e) => table.options.meta?.onStatsClick(row.original, e)}
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
                   Stats
@@ -179,22 +174,14 @@ const AgencySelectionTable = ({
     [showActionButtons]
   );
 
-  const table = useReactTable({
-    data: agencies,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
   // Build return search params for back button navigation
   const getReturnSearchParams = () => {
     const searchParams = {};
     if (urlSearch.page && urlSearch.page !== 1) {
       searchParams.returnPage = urlSearch.page;
     }
-    // Use ref for latest URL value, fallback to searchInput (for pending debounce)
-    const currentSearch = urlSearchRef.current || searchInput;
-    if (currentSearch) {
-      searchParams.returnSearch = currentSearch;
+    if (urlSearch.search) {
+      searchParams.returnSearch = urlSearch.search;
     }
     return searchParams;
   };
@@ -204,7 +191,7 @@ const AgencySelectionTable = ({
     navigate({ to: `${navigationPath}/${agency.cid}${navigationSuffix}`, search: getReturnSearchParams() });
   };
 
-  // Handle action button clicks
+  // Handle action button clicks - passed via meta to avoid stale closures in columns
   const handleBookingsClick = (agency, e) => {
     e.stopPropagation();
     navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/bookings/by-advertiser`, search: getReturnSearchParams() });
@@ -214,6 +201,16 @@ const AgencySelectionTable = ({
     e.stopPropagation();
     navigate({ to: `${navigationPrefix || '/agency'}/${agency.cid}/stats`, search: getReturnSearchParams() });
   };
+
+  const table = useReactTable({
+    data: agencies,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    meta: {
+      onBookingsClick: handleBookingsClick,
+      onStatsClick: handleStatsClick,
+    },
+  });
 
   // Handle page change
   const handlePrevPage = () => {
