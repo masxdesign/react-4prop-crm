@@ -11,7 +11,6 @@ export default function StreetPostJobsList({
   count = 0,
   totalCostUSD = 0,
   advertiserId,
-  onCancelJob,
   hasNextPage = false,
   isFetchingNextPage = false,
   fetchNextPage = null,
@@ -22,7 +21,6 @@ export default function StreetPostJobsList({
       count={count}
       totalCostUSD={totalCostUSD}
       advertiserId={advertiserId}
-      onCancelJob={onCancelJob}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={fetchNextPage}

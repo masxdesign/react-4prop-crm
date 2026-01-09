@@ -107,10 +107,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
       [jobsData]
     );
     const totalCount = jobsData?.pages?.[0]?.total || 0;
-    const totalCostUSD = useMemo(
-      () => jobsData?.pages?.reduce((sum, page) => sum + (page.totalCostUSD || 0), 0) || 0,
-      [jobsData]
-    );
+    const totalCostUSD = jobsData?.pages?.[0]?.totalCostUSD || 0;
 
     // Prepare items for estimation
     const estimateItems = useMemo(
@@ -306,7 +303,6 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
                   count={totalCount}
                   totalCostUSD={totalCostUSD}
                   advertiserId={advertiserId}
-                  onCancelJob={handleCancelJob}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
                   fetchNextPage={fetchNextPage}
