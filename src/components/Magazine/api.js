@@ -319,6 +319,33 @@ export const fetchAgencyBookingsForAdvertiser = async (advertiserId, agencyId, o
   return response.data;
 };
 
+// Company Grouped by Advertiser View API functions
+export const fetchCompanyAdvertisers = async (companyId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}/advertisers`,
+    { params }
+  );
+  return response.data;
+};
+
+export const fetchAdvertiserBookingsForCompany = async (companyId, advertiserId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}/advertisers/${advertiserId}/bookings`,
+    { params }
+  );
+  return response.data;
+};
+
 // Data normalization utilities
 export const normalizeScheduleData = (scheduleData, advertisers = []) => {
   // Handle the case where scheduleData might be nested in a response object

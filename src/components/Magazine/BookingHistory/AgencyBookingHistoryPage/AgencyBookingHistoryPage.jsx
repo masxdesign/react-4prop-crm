@@ -7,7 +7,7 @@ import { useAuth } from '@/components/Auth/Auth-context';
 import BookingHistoryTable from '../BookingHistoryTable';
 import BookingStatusFilter from '../BookingStatusFilter';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Users } from 'lucide-react';
 
 /**
  * AgencyBookingHistoryPage Component
@@ -77,6 +77,15 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
     navigate({ search: { status, page: newPage, pageSize } });
   };
 
+  // Navigate to grouped by advertiser view
+  const handleViewByAdvertiser = () => {
+    navigate({
+      to: '/agency/$id/bookings/by-advertiser',
+      params: { id: agencyId },
+      search: { status }
+    });
+  };
+
   if (!agencyId) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -110,16 +119,27 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
             Back to Agencies
           </Button>
         )}
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-gray-900">Booking History</h1>
-          {auth.user?.is_admin && agencyName && (
-            <p className="text-sm text-gray-600 mt-1">{agencyName}</p>
-          )}
-          {!auth.user?.is_admin && (
-            <p className="text-sm text-gray-600 mt-1">
-              View all property bookings from advertisers with active subscriptions
-            </p>
-          )}
+        <div className="flex items-start justify-between">
+          <div className="flex flex-col">
+            <h1 className="text-xl font-bold text-gray-900">Booking History</h1>
+            {auth.user?.is_admin && agencyName && (
+              <p className="text-sm text-gray-600 mt-1">{agencyName}</p>
+            )}
+            {!auth.user?.is_admin && (
+              <p className="text-sm text-gray-600 mt-1">
+                View all property bookings from advertisers with active subscriptions
+              </p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleViewByAdvertiser}
+            className="flex items-center gap-2"
+          >
+            <Users className="h-4 w-4" />
+            View by Advertiser
+          </Button>
         </div>
       </div>
 
