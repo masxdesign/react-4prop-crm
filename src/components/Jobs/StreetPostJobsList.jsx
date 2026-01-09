@@ -11,10 +11,10 @@ export default function StreetPostJobsList({
   count = 0,
   totalCostUSD = 0,
   advertiserId,
-  onCancelJob,
   hasNextPage = false,
   isFetchingNextPage = false,
   fetchNextPage = null,
+  resetFilterTrigger = 0,
 }) {
   return (
     <JobsList
@@ -22,12 +22,13 @@ export default function StreetPostJobsList({
       count={count}
       totalCostUSD={totalCostUSD}
       advertiserId={advertiserId}
-      onCancelJob={onCancelJob}
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={fetchNextPage}
+      jobType="street_post"
       jobTypeConfig={STREET_POST_JOB_CONFIG}
       OutputContentComponent={StreetPostJobOutputContent}
+      resetFilterTrigger={resetFilterTrigger}
     />
   );
 }
