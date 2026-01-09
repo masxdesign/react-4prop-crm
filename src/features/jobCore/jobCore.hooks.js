@@ -16,6 +16,36 @@ import {
 
 const PAGE_SIZE = 20;
 
+/** Helper to update job list cache updated_at for needsSync badge */
+function updateJobListUpdatedAt(queryClient, jobType, jobId, timestamp) {
+  queryClient.setQueriesData(
+    { queryKey: [`${jobType}Jobs`] },
+    (old) => {
+      if (!old) return old;
+      if (old.pages) {
+        return {
+          ...old,
+          pages: old.pages.map(page => ({
+            ...page,
+            jobs: page.jobs.map(job =>
+              job.id === jobId ? { ...job, updated_at: timestamp } : job
+            )
+          }))
+        };
+      }
+      if (old.jobs) {
+        return {
+          ...old,
+          jobs: old.jobs.map(job =>
+            job.id === jobId ? { ...job, updated_at: timestamp } : job
+          )
+        };
+      }
+      return old;
+    }
+  );
+}
+
 // ============================================
 // GENERIC HOOKS - Work with any job type
 // ============================================
@@ -155,18 +185,24 @@ export function useCreateRemixJobMutation(remixType, jobType) {
 
 /**
  * Update revision content mutation
+ * @param {string} jobType - Job type (for cache update, e.g., 'street_post')
  */
-export function useUpdateRevisionMutation() {
+export function useUpdateRevisionMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ revisionId, content }) => updateRevisionContent(revisionId, content),
     onSuccess: (_, { jobId }) => {
+      const now = new Date().toISOString();
       queryClient.invalidateQueries({ queryKey: ["revisions"] });
       if (jobId) {
         queryClient.setQueryData(["jobOutput", jobId], (old) =>
-          old ? { ...old, updated_at: new Date().toISOString() } : old
+          old ? { ...old, updated_at: now } : old
         );
+        // Update job list cache
+        if (jobType) {
+          updateJobListUpdatedAt(queryClient, jobType, jobId, now);
+        }
       }
     }
   });
@@ -174,18 +210,24 @@ export function useUpdateRevisionMutation() {
 
 /**
  * Update original job result field mutation
+ * @param {string} jobType - Job type (for cache update, e.g., 'street_post')
  */
-export function useUpdateJobResultMutation() {
+export function useUpdateJobResultMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ jobId, fieldName, content }) => updateJobResultField(jobId, fieldName, content),
     onSuccess: (_, { jobId }) => {
+      const now = new Date().toISOString();
       queryClient.invalidateQueries({ queryKey: ["jobOutput", jobId] });
       queryClient.invalidateQueries({ queryKey: ["revisions", jobId] });
       queryClient.setQueryData(["jobOutput", jobId], (old) =>
-        old ? { ...old, updated_at: new Date().toISOString() } : old
+        old ? { ...old, updated_at: now } : old
       );
+      // Update job list cache
+      if (jobType) {
+        updateJobListUpdatedAt(queryClient, jobType, jobId, now);
+      }
     }
   });
 }
@@ -239,8 +281,9 @@ export function useRemixJobsInProgress(remixType, originalJobId) {
 
 /**
  * Update selected revision version for a field
+ * @param {string} jobType - Job type (for cache update, e.g., 'street_post')
  */
-export function useUpdateSelectedVersionMutation() {
+export function useUpdateSelectedVersionMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -248,6 +291,7 @@ export function useUpdateSelectedVersionMutation() {
     onMutate: async (variables) => {
       const { jobId, fieldName, version } = variables;
       const queryKey = ["revisions", jobId, "history", fieldName];
+      const now = new Date().toISOString();
 
       await queryClient.cancelQueries({ queryKey });
 
@@ -260,10 +304,15 @@ export function useUpdateSelectedVersionMutation() {
 
       // Optimistically update jobOutput.updated_at for needsSync detection
       queryClient.setQueryData(["jobOutput", jobId], (old) =>
-        old ? { ...old, updated_at: new Date().toISOString() } : old
+        old ? { ...old, updated_at: now } : old
       );
 
-      return { previousData, queryKey };
+      // Also update job list cache updated_at for needsSync badge
+      if (jobType) {
+        updateJobListUpdatedAt(queryClient, jobType, jobId, now);
+      }
+
+      return { previousData, queryKey, jobId };
     },
     onError: (_err, _variables, context) => {
       if (context?.previousData) {
@@ -275,14 +324,81 @@ export function useUpdateSelectedVersionMutation() {
 
 /**
  * Publish job content to blog post (create, update, or unpublish)
+ * @param {string} jobType - Job type (for cache update, e.g., 'street_post')
  */
-export function usePublishJobMutation() {
+export function usePublishJobMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ jobId, unpublish }) => publishJob(jobId, { unpublish }),
-    onSuccess: (_, { jobId }) => {
-      queryClient.invalidateQueries({ queryKey: ["jobOutput", jobId] });
+    onSuccess: (response, { jobId }) => {
+      const { blog_post_id, is_published } = response;
+      const now = new Date().toISOString();
+
+      // Update job output cache
+      queryClient.setQueryData(["jobOutput", jobId], (old) =>
+        old ? {
+          ...old,
+          output_data: {
+            ...old.output_data,
+            result: {
+              ...old.output_data?.result,
+              blog_post_id: String(blog_post_id),
+              is_published: String(is_published),
+              blog_synced_at: is_published ? now : old.output_data?.result?.blog_synced_at,
+            }
+          }
+        } : old
+      );
+
+      // Update job list cache if jobType is provided
+      if (jobType) {
+        queryClient.setQueriesData(
+          { queryKey: [`${jobType}Jobs`] },
+          (old) => {
+            if (!old) return old;
+
+            // Handle infinite query structure (pages array)
+            if (old.pages) {
+              return {
+                ...old,
+                pages: old.pages.map(page => ({
+                  ...page,
+                  jobs: page.jobs.map(job =>
+                    job.id === jobId
+                      ? {
+                          ...job,
+                          blog_post_id: String(blog_post_id),
+                          is_published,
+                          blog_synced_at: is_published ? now : job.blog_synced_at,
+                        }
+                      : job
+                  )
+                }))
+              };
+            }
+
+            // Handle regular query structure
+            if (old.jobs) {
+              return {
+                ...old,
+                jobs: old.jobs.map(job =>
+                  job.id === jobId
+                    ? {
+                        ...job,
+                        blog_post_id: String(blog_post_id),
+                        is_published,
+                        blog_synced_at: is_published ? now : job.blog_synced_at,
+                      }
+                    : job
+                )
+              };
+            }
+
+            return old;
+          }
+        );
+      }
     }
   });
 }

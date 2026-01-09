@@ -49,9 +49,9 @@ export default function JobOutputContent({
 
   // Mutations
   const createRemixMutation = useCreateRemixJobMutation(remixType, jobType);
-  const updateRevisionMutation = useUpdateRevisionMutation();
-  const updateJobResultMutation = useUpdateJobResultMutation();
-  const updateSelectedVersionMutation = useUpdateSelectedVersionMutation();
+  const updateRevisionMutation = useUpdateRevisionMutation(jobType);
+  const updateJobResultMutation = useUpdateJobResultMutation(jobType);
+  const updateSelectedVersionMutation = useUpdateSelectedVersionMutation(jobType);
 
   const handleJobChange = (jobId) => {
     const selectedJob = relatedJobs.find((j) => j.id === jobId);

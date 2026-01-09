@@ -6,23 +6,6 @@ import { JobItem, JobOutputDialog } from './components';
 
 /**
  * Generic JobsList component with infinite scroll and output dialog.
- *
- * @param {Object} props
- * @param {Array} props.jobs - Array of job objects
- * @param {number} props.count - Total count of jobs
- * @param {number} props.totalCostUSD - Total cost in USD
- * @param {string} props.advertiserId - Advertiser ID
- * @param {Function} props.onCancelJob - Cancel job callback
- * @param {boolean} props.hasNextPage - Whether there are more pages
- * @param {boolean} props.isFetchingNextPage - Whether fetching next page
- * @param {Function} props.fetchNextPage - Fetch next page callback
- * @param {Object} props.jobTypeConfig - Job type configuration
- * @param {string} props.jobTypeConfig.displayName - Human-readable name (e.g., 'street post')
- * @param {string} props.jobTypeConfig.pluralName - Plural name (e.g., 'street post jobs')
- * @param {Function} props.jobTypeConfig.getTitle - Function to get job title from job object
- * @param {Function} props.jobTypeConfig.getDescription - Function to get job description
- * @param {React.ComponentType} props.OutputContentComponent - Component to render job output content
- * @param {Object} props.outputContentProps - Additional props to pass to OutputContentComponent
  */
 export default function JobsList({
   jobs = [],
@@ -33,6 +16,7 @@ export default function JobsList({
   hasNextPage = false,
   isFetchingNextPage = false,
   fetchNextPage = null,
+  jobType,
   jobTypeConfig = {},
   OutputContentComponent,
   outputContentProps = {},
@@ -88,7 +72,7 @@ export default function JobsList({
   const { data: outputData, isLoading: isLoadingOutput } = useJobOutput(selectedJob?.id);
 
   // Publish mutation
-  const publishMutation = usePublishJobMutation();
+  const publishMutation = usePublishJobMutation(jobType);
 
   const handlePush = () => {
     if (selectedJob?.id) {

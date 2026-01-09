@@ -26,6 +26,7 @@ export default function StreetPostJobsList({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       fetchNextPage={fetchNextPage}
+      jobType="street_post"
       jobTypeConfig={STREET_POST_JOB_CONFIG}
       OutputContentComponent={StreetPostJobOutputContent}
     />
