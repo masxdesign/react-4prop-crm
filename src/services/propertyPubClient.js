@@ -9,4 +9,12 @@ const propertyPubClient = axios.create({
     withCredentials: true
 })
 
+// Add cache buster to all GET requests to bypass Azure Front Door caching
+propertyPubClient.interceptors.request.use((config) => {
+  if (config.method === 'get') {
+    config.params = { ...config.params, ts: Date.now() }
+  }
+  return config
+})
+
 export default propertyPubClient
