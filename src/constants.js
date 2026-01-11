@@ -23,7 +23,7 @@ export const BLOG_POST_DATA_LIST = [
   {
     id: 1,
     title: 'London Postcode - 3 Busiest Shopping Streets',
-    description: 'Generate blog posts featuring the top 3 busiest shopping streets in each London postcode area.',
+    description: 'Select a postcode to generate a blog post about its busiest shopping streets.',
     list: '4AI-london-postcodes'
   },
 ]

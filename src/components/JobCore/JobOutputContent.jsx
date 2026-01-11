@@ -109,11 +109,12 @@ export default function JobOutputContent({
     return <LoadingState />;
   }
 
-  if (outputData?.error_message) {
-    return <ErrorState message={outputData.error_message} />;
-  }
-
+  // Only show error state if there's no output data
+  // A job can have both error_message (e.g., retry info) AND valid output_data
   if (!outputData?.output_data) {
+    if (outputData?.error_message) {
+      return <ErrorState message={outputData.error_message} />;
+    }
     return <EmptyState />;
   }
 
@@ -122,6 +123,13 @@ export default function JobOutputContent({
 
   return (
     <div className="w-full">
+      {/* Show informational message if present (e.g., retry info) */}
+      {outputData?.error_message && (
+        <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+          <p className="text-amber-700 text-xs">{outputData.error_message}</p>
+        </div>
+      )}
+
       <RelatedJobsDropdown
         jobs={relatedJobs}
         currentJobId={job?.id}
