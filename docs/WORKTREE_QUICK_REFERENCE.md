@@ -4,7 +4,7 @@
 
 ### Create New Worktree
 ```bash
-./create-worktree.sh feature/my-feature ../4prop-crm-react-myfeature
+./scripts/create-worktree.sh feature/my-feature ../4prop-crm-react-myfeature
 ```
 
 ### List All Worktrees
@@ -14,12 +14,12 @@ git worktree list
 
 ### Remove Worktree Safely
 ```bash
-./safe-remove-worktree.sh ../4prop-crm-react-myfeature
+./scripts/safe-remove-worktree.sh ../4prop-crm-react-myfeature
 ```
 
 ### Recover Deleted Worktree
 ```bash
-./recover-worktree.sh
+./scripts/recover-worktree.sh
 ```
 
 ---
@@ -28,9 +28,9 @@ git worktree list
 
 | Script | Purpose | When to Use |
 |--------|---------|-------------|
-| `create-worktree.sh` | Create new worktree | Starting new feature/fix |
-| `safe-remove-worktree.sh` | Delete worktree safely | Feature complete/merged |
-| `recover-worktree.sh` | Recover deleted worktree | Accidental deletion |
+| `scripts/create-worktree.sh` | Create new worktree | Starting new feature/fix |
+| `scripts/safe-remove-worktree.sh` | Delete worktree safely | Feature complete/merged |
+| `scripts/recover-worktree.sh` | Recover deleted worktree | Accidental deletion |
 
 ---
 
@@ -39,7 +39,7 @@ git worktree list
 ### Start New Feature
 ```bash
 # 1. Create worktree
-./create-worktree.sh feature/user-auth ../4prop-crm-react-auth
+./scripts/create-worktree.sh feature/user-auth ../4prop-crm-react-auth
 
 # 2. Start developing
 cd ../4prop-crm-react-auth
@@ -71,7 +71,7 @@ git checkout develop
 git merge feature/my-feature
 
 # 4. Remove worktree
-./safe-remove-worktree.sh ../4prop-crm-react-myfeature
+./scripts/safe-remove-worktree.sh ../4prop-crm-react-myfeature
 ```
 
 ---
@@ -109,8 +109,8 @@ git status
 ## ⚠️ Important Rules
 
 ### ✅ DO:
-- Use `create-worktree.sh` to create new worktrees
-- Use `safe-remove-worktree.sh` to remove worktrees
+- Use `scripts/create-worktree.sh` to create new worktrees
+- Use `scripts/safe-remove-worktree.sh` to remove worktrees
 - Commit normally with `git add .` and `git commit`
 - Each worktree can run on a different port
 
@@ -134,7 +134,7 @@ git worktree list  # See where it's checked out
 ```bash
 # Worktree missing package.json workaround
 cd /path/to/worktree
-./create-worktree.sh  # Use the script!
+./scripts/create-worktree.sh  # Use the script!
 ```
 
 ### "Port already in use"
@@ -146,7 +146,7 @@ PORT=5177 npm run dev:crm
 
 ### Accidentally deleted worktree
 ```bash
-./recover-worktree.sh
+./scripts/recover-worktree.sh
 # Follow interactive prompts
 ```
 
