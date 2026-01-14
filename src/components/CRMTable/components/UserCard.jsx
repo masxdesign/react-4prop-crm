@@ -16,16 +16,16 @@ const UserCard = ({ data, onView, hideView, hideContact, clickable, className })
         className={cn('text-xs bg-sky-900/90 text-white p-2 rounded-md flex gap-1', className)} 
         onClick={handleOpen}
       >
-        <div className="w-[7rem]">
+        <div className="w-28">
           <div className="text-nowrap truncate">{data.first} {data.last}</div>
           <h5 className="font-bold">{data.company}</h5>
         </div>
-        <div className="w-[12rem]">
+        <div className="w-48">
           <div className="text-nowrap truncate">{data.email}</div>
           <div className="text-nowrap truncate">{data.phone}</div>
           <div className="text-nowrap truncate">{data.mobile}</div>
         </div>
-        <div className="w-[3rem]">
+        <div className="w-12">
           <Button className="bg-emerald-600 hover:bg-emerald-500" size="xs">View</Button>
         </div>
 

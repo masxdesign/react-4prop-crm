@@ -218,7 +218,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/blog-post
           {treeData?.data && (
             <div className="flex gap-6">
               {/* Left: Tree view */}
-              <div className="w-96 flex-shrink-0">
+              <div className="w-96 shrink-0">
                 <VirtualizedTree
                   data={treeData.data}
                   getIcon={getTreeIcon}

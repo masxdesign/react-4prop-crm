@@ -266,7 +266,7 @@ const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => 
                                 </div>
                             </div>
                             <div className='flex flex-row gap-3 items-end'>
-                                <div className='flex-grow flex flex-col gap-1 text-muted-foreground'>
+                                <div className='grow flex flex-col gap-1 text-muted-foreground'>
                                     <BadgeTag tagId={original.grade_tag_id} />
                                     <span>
                                         {tenureText}

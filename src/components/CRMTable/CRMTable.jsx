@@ -154,7 +154,7 @@ export default function CRMTable ({
             )}
             {enableMassBizchat && <SendBizchatDialog.ButtonSm model={sendBizchatDialog} />}
           </div>
-          <div className='flex flex-grow items-center justify-center gap-4 w-1/3'>
+          <div className='flex grow items-center justify-center gap-4 w-1/3'>
             <GlobalFilter 
               table={table} 
               globalFilter={tableModel.tableState.globalFilter}  

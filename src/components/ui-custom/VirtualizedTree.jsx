@@ -394,7 +394,7 @@ export default function VirtualizedTree({
 
                 {/* Icon */}
                 {getIcon && (
-                  <span className="mr-2 flex-shrink-0">
+                  <span className="mr-2 shrink-0">
                     {getIcon(node, node.depth)}
                   </span>
                 )}

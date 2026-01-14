@@ -95,7 +95,7 @@ const ExpandableAgencyBookingRow = ({ item, agency: agencyProp, advertiserId, st
               {/* Header row */}
               <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted sticky top-0 z-50">
                 <div className="flex-1 min-w-[120px] text-xs font-medium text-muted-foreground">Start Date</div>
-                <div className="flex-[2] min-w-[200px] text-xs font-medium text-muted-foreground">Property</div>
+                <div className="flex-2 min-w-[200px] text-xs font-medium text-muted-foreground">Property</div>
                 <div className="flex-1 min-w-[80px] text-xs font-medium text-muted-foreground">Duration</div>
                 <div className="flex-1 min-w-[100px] text-xs font-medium text-muted-foreground">Status</div>
               </div>
@@ -136,7 +136,7 @@ const ExpandableAgencyBookingRow = ({ item, agency: agencyProp, advertiserId, st
                                 : 'N/A'}
                             </span>
                           </div>
-                          <div className="flex-[2] min-w-[200px]">
+                          <div className="flex-2 min-w-[200px]">
                             <div className="flex flex-col">
                               <span className="text-sm text-gray-900">
                                 {propertyParse.addressText({

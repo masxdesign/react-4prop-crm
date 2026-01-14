@@ -182,7 +182,7 @@ function TagItem ({ tag }) {
       className={cx(
         'rounded-lg cursor-pointer inline-block px-3 py-2', 
         'border-transparent bg-sky-100/80 text-sky-500 hover:bg-sky-100',
-        '[&.active]:font-bold [&.active]:border [&.active]:border-sky-500 [&.active]:!bg-transparent'
+        '[&.active]:font-bold [&.active]:border [&.active]:border-sky-500 [&.active]:bg-transparent!'
       )}
     >
       {tag.name}

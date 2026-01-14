@@ -62,7 +62,7 @@ const PropertyDetails = ({ property, agentId }) => {
   });
 
   return (
-    <div className="bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
+    <div className="bg-linear-to-b from-slate-50 to-slate-100 p-6 border-t">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Property Information */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

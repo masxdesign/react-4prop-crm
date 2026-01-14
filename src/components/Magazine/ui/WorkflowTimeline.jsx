@@ -53,7 +53,7 @@ const TimelineStep = ({
       <div className="flex items-start gap-2.5">
         {/* Status indicator */}
         <div className={cn(
-          "flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-white relative z-10",
+          "shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-white relative z-10",
           step.id === 'cancelled' ? "bg-amber-500" :
             isFinished 
               ? "bg-green-500" 
@@ -89,7 +89,7 @@ const TimelineStep = ({
           {agent && !isCollapsed && (
             <div className="flex items-center gap-1.5 mt-0.5">
               {/* Tiny profile picture */}
-              <div className="flex-shrink-0 w-4 h-4 rounded-full overflow-hidden">
+              <div className="shrink-0 w-4 h-4 rounded-full overflow-hidden">
                 {getAgentAvatar(agent) && !imageError ? (
                   <img
                     src={getAgentAvatar(agent)}
@@ -98,7 +98,7 @@ const TimelineStep = ({
                     onError={() => setImageError(true)}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-medium">
                     {getAgentInitials(agent.firstname, agent.surname)}
                   </div>
                 )}
@@ -251,7 +251,7 @@ const WorkflowTimeline = ({
             onClick={() => setIsExpanded(true)}
             className="flex items-start gap-2 text-xs hover:bg-gray-50 transition-colors w-full p-1 rounded -ml-1"
           >
-            <ChevronDown className="w-3 h-3 flex-shrink-0 mt-0.5 text-gray-400" />
+            <ChevronDown className="w-3 h-3 shrink-0 mt-0.5 text-gray-400" />
             <div className="flex-1 text-left">
               <TimelineStep
                 step={currentStep}

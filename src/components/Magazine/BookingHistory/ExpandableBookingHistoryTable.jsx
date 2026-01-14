@@ -94,12 +94,12 @@ const ExpandableBookingHistoryTable = ({
     <div ref={parentRef} className="border rounded-lg overflow-auto max-h-[calc(100vh-300px)]">
       {/* Header row */}
       <div className="flex items-center border-b bg-muted/50 sticky top-0 z-10">
-        <div className="w-[40px] flex-shrink-0 p-4"></div>
+        <div className="w-[40px] shrink-0 p-4"></div>
         <div className="flex-1 font-medium text-sm text-muted-foreground p-4">{entityName} Name</div>
-        <div className="w-[100px] text-center flex-shrink-0 font-medium text-sm text-muted-foreground p-4">Bookings</div>
-        <div className="w-[80px] text-center flex-shrink-0 font-medium text-sm text-muted-foreground p-4">Active</div>
-        <div className="w-[100px] text-center flex-shrink-0 font-medium text-sm text-muted-foreground p-4">Upcoming</div>
-        <div className="w-[80px] text-center flex-shrink-0 font-medium text-sm text-muted-foreground p-4">Past</div>
+        <div className="w-[100px] text-center shrink-0 font-medium text-sm text-muted-foreground p-4">Bookings</div>
+        <div className="w-[80px] text-center shrink-0 font-medium text-sm text-muted-foreground p-4">Active</div>
+        <div className="w-[100px] text-center shrink-0 font-medium text-sm text-muted-foreground p-4">Upcoming</div>
+        <div className="w-[80px] text-center shrink-0 font-medium text-sm text-muted-foreground p-4">Past</div>
         <div className="flex-1 font-medium text-sm text-muted-foreground p-4">Date Range</div>
       </div>
 
@@ -114,7 +114,7 @@ const ExpandableBookingHistoryTable = ({
               className="flex items-center border-b hover:bg-muted/50 cursor-pointer transition-colors"
               onClick={() => handleRowClick(item)}
             >
-              <div className="w-[40px] flex-shrink-0 p-4">
+              <div className="w-[40px] shrink-0 p-4">
                 {isExpanded ? (
                   <ChevronDown className="h-4 w-4" />
                 ) : (
@@ -124,16 +124,16 @@ const ExpandableBookingHistoryTable = ({
               <div className="flex-1 font-medium p-4">
                 {getEntityName(item) || 'N/A'}
               </div>
-              <div className="w-[100px] text-center flex-shrink-0 p-4">
+              <div className="w-[100px] text-center shrink-0 p-4">
                 {item.booking_count}
               </div>
-              <div className="w-[80px] text-center flex-shrink-0 p-4">
+              <div className="w-[80px] text-center shrink-0 p-4">
                 {item.active_bookings}
               </div>
-              <div className="w-[100px] text-center flex-shrink-0 p-4">
+              <div className="w-[100px] text-center shrink-0 p-4">
                 {item.upcoming_bookings}
               </div>
-              <div className="w-[80px] text-center flex-shrink-0 p-4">
+              <div className="w-[80px] text-center shrink-0 p-4">
                 {item.past_bookings}
               </div>
               <div className="flex-1 p-4">

@@ -306,7 +306,7 @@ const AdvertiserSelectionTable = ({
                   title="Click to copy email"
                 >
                   <span className="truncate max-w-[200px]">{row.original.email}</span>
-                  <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                  <Copy className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </button>
               ) : (
                 <span className="text-sm text-gray-400 italic">No email</span>

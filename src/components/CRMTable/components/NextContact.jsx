@@ -42,7 +42,7 @@ const NextContact = ({ open, value, placeholder = "Pick a date", onClear, onSele
             )}
           </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-[999]" align="start" portalled={portalled}>
+      <PopoverContent className="w-auto p-0 z-999" align="start" portalled={portalled}>
         <Calendar
           mode="single"
           // locale={enGB}
