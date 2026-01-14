@@ -190,7 +190,7 @@ export default function JobsList({
         {/* Search and filters header */}
         <div className="flex items-center gap-3 p-4 border-b">
           {/* Search input */}
-          <div className="relative flex-shrink-0 w-48">
+          <div className="relative shrink-0 w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
