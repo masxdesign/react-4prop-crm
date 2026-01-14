@@ -169,7 +169,7 @@ const PropertySizeTenure = ({ color, status, size, tenure }) => {
   )
 }
 
-const PropertyTitle = React.memo(({ isAgent, row, url_link_path = `/crm/view-details/$pid` }) => {
+const PropertyTitle = React.memo(({ isAgent, row, url_link_path = `/view-details/$pid` }) => {
   let url_link = url_link_path.replace(/\$pid/, row.id)
 
   if (/^http(s):\/\//.test(url_link_path)) {

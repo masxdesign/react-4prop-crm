@@ -1,9 +1,11 @@
+import PendingComponent from '@/components/PendingComponent'
 import EnquiriesPage, { useEnquiryList } from '@/routes/_auth._com/-ui/EnquiriesPage'
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { produce } from 'immer'
 
 export const Route = createLazyFileRoute('/_auth/_com/user/$sub')({
-    component: RouteComponent
+    component: RouteComponent,
+    pendingComponent: PendingComponent
 })
 
 function RouteComponent() {
