@@ -8,7 +8,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
   const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
 
   return (
-    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-gradient-to-l from-blue-900 to-blue-950">
+    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
       <div className='p-3'>
         <span className='text-2xl font-bold text-emerald-500 tracking-tighter'>
           CRM

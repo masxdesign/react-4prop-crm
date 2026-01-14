@@ -124,7 +124,7 @@ const DataTableBody = ({ table }) => (
                 <TableRow
                     key={row.id}
                     data-state={row.getIsSelected() && "selected"}
-                    className={cx("flex items-center w-[fit-content]", {
+                    className={cx("flex items-center w-fit", {
                         "bg-sky-50/50 hover:bg-sky-50": table.options.meta.authUserId === row.original.id
                     })}
                 >
@@ -204,7 +204,7 @@ const DataTableDnd = ({ table, style, containerClassName, ...props }) => {
             >
                 <TableHeader className="z-40 sticky top-0">
                     {table.getHeaderGroups().map((headerGroup) => (
-                        <TableRow key={headerGroup.id} className="flex items-center w-[fit-content] bg-gradient-to-b to-blue-100 from-sky-100">
+                        <TableRow key={headerGroup.id} className="flex items-center w-fit bg-linear-to-b to-blue-100 from-sky-100">
                             <SortableContext
                                 items={table.getState().columnOrder}
                                 strategy={horizontalListSortingStrategy}

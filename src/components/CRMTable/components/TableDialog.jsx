@@ -148,7 +148,7 @@ const ResizeableLeftSide = ({ info, model }) => {
         <MetricsComponent 
             info={info} 
             model={model} 
-            className="flex-grow" 
+            className="grow" 
         />
     )
 }

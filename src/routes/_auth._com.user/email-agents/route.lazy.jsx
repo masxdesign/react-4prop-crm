@@ -183,7 +183,7 @@ function Component () {
               />
             </div>
 
-            <div className='space-y-2 rounded -mx-2 sm:-mx-0'>
+            <div className='space-y-2 rounded -mx-2 sm:mx-0'>
               <div className='text-sm flex flex-wrap sm:gap-2 justify-center sm:justify-start items-center'>
                 <span className='font-bold'>Enquire on {data.length} properties</span>
                 <span className='text-center text-xs font-normal text-muted-foreground'>scroll right if more 'Search References'</span>

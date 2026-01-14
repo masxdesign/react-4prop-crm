@@ -99,7 +99,7 @@ export default function RemixPopover({ field, revisionId, onRemix, isLoading }) 
       <Button
         size="sm"
         disabled
-        className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 via-sky-500 to-teal-400 bg-[length:200%_200%] animate-gradient-shift text-white disabled:opacity-100 disabled:pointer-events-none"
+        className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 bg-size-[200%_200%] animate-gradient-shift text-white disabled:opacity-100 disabled:pointer-events-none"
       >
         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
         <TypingLoader />
@@ -112,7 +112,7 @@ export default function RemixPopover({ field, revisionId, onRemix, isLoading }) 
       <PopoverTrigger asChild>
         <Button
           size="sm"
-          className="relative overflow-hidden border-0 bg-gradient-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-lg hover:shadow-sky-500/25 transition-shadow"
+          className="relative overflow-hidden border-0 bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-lg hover:shadow-sky-500/25 transition-shadow"
         >
           <Sparkles className="h-3 w-3 mr-1" />
           AI Rewrite

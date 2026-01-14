@@ -76,7 +76,7 @@ const ImageWithFallbackExample = () => {
                 alt="Jane Smith"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
                     JS
                   </div>
                 }
@@ -93,7 +93,7 @@ const ImageWithFallbackExample = () => {
                 alt="Mike Johnson"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
                     MJ
                   </div>
                 }
@@ -110,7 +110,7 @@ const ImageWithFallbackExample = () => {
                 alt="Sarah Wilson"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-sm font-medium">
                     SW
                   </div>
                 }
@@ -127,7 +127,7 @@ const ImageWithFallbackExample = () => {
                 alt="Emma Thompson"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-gray-500 to-gray-600 flex items-center justify-center text-white text-sm font-medium">
                     ET
                   </div>
                 }
@@ -151,7 +151,7 @@ const ImageWithFallbackExample = () => {
                 alt="Small Avatar"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
                     TB
                   </div>
                 }
@@ -168,7 +168,7 @@ const ImageWithFallbackExample = () => {
                 alt="Medium Avatar"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-sm font-medium">
                     AD
                   </div>
                 }
@@ -185,7 +185,7 @@ const ImageWithFallbackExample = () => {
                 alt="Large Avatar"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-lg font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center text-white text-lg font-medium">
                     RM
                   </div>
                 }
@@ -245,7 +245,7 @@ const ImageWithFallbackExample = () => {
                 alt="Complex Fallback"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 flex flex-col items-center justify-center text-white">
+                  <div className="w-full h-full bg-linear-to-br from-indigo-500 to-purple-600 flex flex-col items-center justify-center text-white">
                     <svg className="w-6 h-6 mb-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                     </svg>
@@ -266,13 +266,13 @@ const ImageWithFallbackExample = () => {
         {/* Agent Card Example */}
         <div className="bg-white rounded-lg border p-4 max-w-md">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
               <ImageWithFallback
                 src="https://broken-url.com/agent.jpg"
                 alt="Agent Profile"
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
+                  <div className="w-full h-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-sm font-medium">
                     ET
                   </div>
                 }

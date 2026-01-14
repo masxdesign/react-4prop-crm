@@ -531,7 +531,7 @@ export function ViewAllMessagesButton({ chat_id, bz_hash, dteam, ...props }) {
   return (
     <Dialog>
       <DialogTrigger {...props}/>
-      <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:-right-0 rounded-lg">
+      <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:right-0 rounded-lg">
         <iframe src={conversation_url} className='h-full w-full rounded-lg'></iframe>
       </DialogContent>
     </Dialog>

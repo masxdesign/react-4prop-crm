@@ -169,7 +169,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
   });
 
   return (
-    <div className="relative z-10 bg-gradient-to-b from-slate-50 to-slate-100 p-6 border-t">
+    <div className="relative z-10 bg-linear-to-b from-slate-50 to-slate-100 p-6 border-t">
       {/* Enhanced Property Overview */}
       <div className="grid grid-cols-[20%_1fr] gap-6 mb-6">
         {/* Property Information - Using Enhanced Data */}
@@ -198,13 +198,13 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
                     
                     return (
                       <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
-                        <div className="flex-shrink-0 size-6 rounded-full overflow-hidden">
+                        <div className="shrink-0 size-6 rounded-full overflow-hidden">
                           <ImageWithFallback
                             src={getAgentAvatar(agent)}
                             alt={getAgentFullName(agent)}
                             className="w-full h-full object-cover"
                             fallback={
-                              <div className="w-full h-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
+                              <div className="w-full h-full bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white text-[9px] font-medium">
                                 {agent ? getAgentInitials(agent.firstname, agent.surname) : agentNid.toString().slice(-1)}
                               </div>
                             }

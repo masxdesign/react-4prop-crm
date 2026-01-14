@@ -61,7 +61,7 @@ const labelVariants = cva(
 );
 
 const avatarVariants = cva(
-  "flex-shrink-0 rounded-full overflow-hidden",
+  "shrink-0 rounded-full overflow-hidden",
   {
     variants: {
       size: {
@@ -76,7 +76,7 @@ const avatarVariants = cva(
 );
 
 const avatarTextVariants = cva(
-  "w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
+  "w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
   {
     variants: {
       size: {
@@ -372,7 +372,7 @@ const AgentEmailSearchField = ({
                               
                               {/* Selection Indicator */}
                               {selectedAgent?.nid === agent.nid && (
-                                <div className={cn("flex-shrink-0 text-blue-600", size === "default" ? "ml-1" : "ml-0.5")}>
+                                <div className={cn("shrink-0 text-blue-600", size === "default" ? "ml-1" : "ml-0.5")}>
                                   <Check className={cn(checkIconVariants({ size }))} />
                                 </div>
                               )}
@@ -388,13 +388,13 @@ const AgentEmailSearchField = ({
               {selectedAgent && (
                 <div className="mt-2 flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                   {/* Avatar */}
-                  <div className="w-6 h-6 flex-shrink-0 rounded-full overflow-hidden">
+                  <div className="w-6 h-6 shrink-0 rounded-full overflow-hidden">
                     <ImageWithFallback
                       src={selectedAgent.picture}
                       alt={`${selectedAgent.firstname} ${selectedAgent.surname}`}
                       className="w-full h-full object-cover"
                       fallback={
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-[10px]">
+                        <div className="w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium text-[10px]">
                           {selectedAgent.firstname?.charAt(0)?.toUpperCase() || ''}{selectedAgent.surname?.charAt(0)?.toUpperCase() || ''}
                         </div>
                       }
@@ -417,7 +417,7 @@ const AgentEmailSearchField = ({
                   <button
                     type="button"
                     onClick={() => handleClearSelection(onChange)}
-                    className="flex-shrink-0 p-1 hover:bg-blue-100 rounded transition-colors"
+                    className="shrink-0 p-1 hover:bg-blue-100 rounded transition-colors"
                     aria-label="Clear selection"
                   >
                     <X className="w-3 h-3 text-blue-600" />
