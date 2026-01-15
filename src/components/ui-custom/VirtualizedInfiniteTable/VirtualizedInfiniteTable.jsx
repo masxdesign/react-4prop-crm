@@ -18,6 +18,7 @@ const VirtualizedInfiniteTable = ({
   errorMessage = 'Error loading data',
   className,
   queryOptions = {},
+  onTotalChange,
 }) => {
   const parentRef = useRef(null);
 
@@ -36,6 +37,14 @@ const VirtualizedInfiniteTable = ({
   });
 
   const allItems = data?.pages.flatMap((page) => page.data) ?? [];
+  const total = data?.pages[0]?.total;
+
+  // Notify parent of total count when it changes
+  useEffect(() => {
+    if (total !== undefined && onTotalChange) {
+      onTotalChange(total);
+    }
+  }, [total, onTotalChange]);
 
   const rowVirtualizer = useVirtualizer({
     count: hasNextPage ? allItems.length + 1 : allItems.length,
