@@ -53,7 +53,7 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId }
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 w-full mx-auto">
+    <div className="flex flex-col gap-6 p-6 w-full mx-auto min-w-0">
       {/* Header */}
       <div className="flex flex-col gap-2">
         {auth.user?.is_admin && (

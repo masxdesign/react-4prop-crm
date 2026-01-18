@@ -14,6 +14,7 @@ const VirtualizedInfiniteTable = ({
   estimateRowSize = 60,
   overscan = 5,
   maxHeight = '400px',
+  minWidth = '1400px',
   emptyMessage = 'No data found',
   errorMessage = 'Error loading data',
   className,
@@ -112,69 +113,71 @@ const VirtualizedInfiniteTable = ({
   }
 
   return (
-    <div
-      ref={parentRef}
-      className={cn('overflow-auto border rounded-md bg-background', className)}
-      style={{ maxHeight }}
-    >
-      {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted sticky top-0 z-50">
-        {columns.map((col) => (
-          <div
-            key={col.key}
-            className={cn('text-xs font-medium text-muted-foreground', getColumnClasses(col))}
-            style={getColumnStyle(col)}
-          >
-            {col.header}
-          </div>
-        ))}
-      </div>
-
-      {/* Virtualized rows */}
+    <div className={cn('overflow-x-auto border rounded-md min-w-0 w-full', className)}>
       <div
-        style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
-          width: '100%',
-          position: 'relative',
-        }}
+        ref={parentRef}
+        className="overflow-y-auto bg-background"
+        style={{ maxHeight, minWidth }}
       >
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-          const isLoaderRow = virtualRow.index > allItems.length - 1;
-          const item = allItems[virtualRow.index];
-
-          return (
+        {/* Header */}
+        <div className="flex items-center gap-4 px-4 py-2 border-b bg-muted sticky top-0 z-50">
+          {columns.map((col) => (
             <div
-              key={isLoaderRow ? 'loader' : getRowKey(item)}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: `${virtualRow.size}px`,
-                transform: `translateY(${virtualRow.start}px)`,
-              }}
-              className="border-b"
+              key={col.key}
+              className={cn('text-xs font-medium text-muted-foreground', getColumnClasses(col))}
+              style={getColumnStyle(col)}
             >
-              {isLoaderRow ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="flex items-center gap-4 px-4 h-full">
-                  {columns.map((col) => (
-                    <div
-                      key={col.key}
-                      className={cn('text-sm', getColumnClasses(col))}
-                      style={getColumnStyle(col)}
-                    >
-                      {col.render(item)}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {col.header}
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* Virtualized rows */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const isLoaderRow = virtualRow.index > allItems.length - 1;
+            const item = allItems[virtualRow.index];
+
+            return (
+              <div
+                key={isLoaderRow ? 'loader' : getRowKey(item)}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+                className="border-b"
+              >
+                {isLoaderRow ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4 px-4 h-full">
+                    {columns.map((col) => (
+                      <div
+                        key={col.key}
+                        className={cn('text-sm', getColumnClasses(col))}
+                        style={getColumnStyle(col)}
+                      >
+                        {col.render(item)}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

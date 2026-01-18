@@ -91,9 +91,9 @@ const ExpandableBookingHistoryTable = ({
   }
 
   return (
-    <div ref={parentRef} className="border rounded-lg overflow-auto max-h-[calc(100vh-300px)]">
+    <div ref={parentRef} className="border rounded-lg overflow-auto max-h-[calc(100vh-232px)]">
       {/* Header row */}
-      <div className="flex items-center border-b bg-muted/50 sticky top-0 z-10">
+      <div className="flex items-center border-b bg-muted sticky top-0 z-10">
         <div className="w-[40px] shrink-0 p-4"></div>
         <div className="flex-1 font-medium text-sm text-muted-foreground p-4">{entityName} Name</div>
         <div className="w-[100px] text-center shrink-0 font-medium text-sm text-muted-foreground p-4">Bookings</div>

@@ -77,6 +77,14 @@ const BookingHistoryTable = ({ queryKey, queryFn, isAdvertiser, onTotalChange })
           booking.week_no ? pluralizeWeeks(booking.week_no) : 'N/A',
       },
       {
+        key: 'weeklyRate',
+        header: 'Week rate',
+        flex: 1,
+        minWidth: '80px',
+        render: (booking) =>
+          booking.fixed_week_rate != null ? `£${booking.fixed_week_rate}` : 'N/A',
+      },
+      {
         key: 'status',
         header: 'Status',
         flex: 1,
@@ -94,7 +102,7 @@ const BookingHistoryTable = ({ queryKey, queryFn, isAdvertiser, onTotalChange })
       queryFn={queryFn}
       columns={columns}
       getRowKey={(booking) => booking.id || `${booking.pid}-${booking.start_date}`}
-      maxHeight="calc(100vh - 350px)"
+      maxHeight="calc(100vh - 230px)"
       emptyMessage={
         isAdvertiser
           ? "You don't have any active subscriptions yet."

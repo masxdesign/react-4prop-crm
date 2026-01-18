@@ -48,6 +48,14 @@ const ExpandableAdvertiserBookingRow = ({ item, advertiser: advertiserProp, comp
         booking.week_no ? pluralizeWeeks(booking.week_no) : 'N/A',
     },
     {
+      key: 'weeklyRate',
+      header: 'Week rate',
+      flex: 1,
+      minWidth: '80px',
+      render: (booking) =>
+        booking.fixed_week_rate != null ? `£${booking.fixed_week_rate}` : 'N/A',
+    },
+    {
       key: 'status',
       header: 'Status',
       flex: 1,
