@@ -28,6 +28,22 @@ export default class Size {
     get unit () {
         return this.units[this._unit]
     }
+    get text () {
+        if(!this.isDefined) return null
+
+        const minVal = Math.min(this._min, this._max)
+        const maxVal = Math.max(this._min, this._max)
+
+        // If it's a range (both min and max > 0)
+        if(this.isRange) {
+            const minFormatted = minVal > 999 ? number_format(minVal) : minVal
+            const maxFormatted = maxVal > 999 ? number_format(maxVal) : maxVal
+            return `${minFormatted} - ${maxFormatted} ${this.unit}`
+        }
+
+        // Single value (nonRangeLabel style)
+        return this.nonRangeLabel
+    }
     get size () {
         if(!this.isDefined) return null
 
@@ -35,7 +51,8 @@ export default class Size {
             min: Math.min(this._min, this._max),
             max: Math.max(this._min, this._max),
             unit: this.unit,
-            nonRangeLabel: this.nonRangeLabel
+            nonRangeLabel: this.nonRangeLabel,
+            text: this.text
         }
     }
 }
