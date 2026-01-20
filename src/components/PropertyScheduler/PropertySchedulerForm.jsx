@@ -165,31 +165,30 @@ export default function PropertySchedulerForm() {
   // Table columns
   const columns = [
     {
-      key: 'status',
-      header: 'Status',
-      width: '80px',
+      key: 'action',
+      header: 'Action',
+      width: 60,
       render: (item) => (
         <span
-          className={`px-2 py-0.5 rounded text-xs font-medium ${
-            item.status === 'insert'
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800'
-          }`}
+          className={`px-2 py-0.5 rounded text-xs font-medium ${item.action === 'insert'
+            ? 'bg-green-100 text-green-800'
+            : 'bg-yellow-100 text-yellow-800'
+            }`}
         >
-          {item.status === 'insert' ? 'Insert' : 'Skip'}
+          {item.action === 'insert' ? 'Insert' : 'Skip'}
         </span>
       ),
     },
     {
       key: 'pid',
       header: 'PID',
-      width: '100px',
+      width: 100,
       render: (item) => <span className="font-mono text-xs">{item.pid}</span>,
     },
     {
       key: 'address',
       header: 'Address',
-      flex: 2,
+      width: 500,
       render: (item) => (
         <span className="truncate" title={formatAddress(item)}>
           {formatAddress(item) || '-'}
@@ -199,7 +198,7 @@ export default function PropertySchedulerForm() {
     {
       key: 'subtypes',
       header: 'Subtypes',
-      flex: 1,
+      width: 600,
       render: (item) => {
         if (!hasSubtypeData || !item.pstids) return '-'
         const labels = getSubtypeLabels(item.pstids)
@@ -214,13 +213,13 @@ export default function PropertySchedulerForm() {
     {
       key: 'size',
       header: 'Size',
-      width: '150px',
+      width: 200,
       render: (item) => formatSize(item),
     },
     {
       key: 'tenure',
       header: 'Tenure/Price',
-      width: '150px',
+      width: 200,
       render: (item) => formatTenure(item),
     },
   ]
@@ -236,26 +235,48 @@ export default function PropertySchedulerForm() {
               <FormField
                 control={form.control}
                 name="advertiser_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Advertiser Query</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} disabled={queriesLoading}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={queriesLoading ? 'Loading...' : 'Select a query...'} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {queries.map((query) => (
-                          <SelectItem key={query} value={query}>
-                            {query.charAt(0).toUpperCase() + query.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  // Find the selected query to display its title
+                  const selectedQuery = queries.find(q =>
+                    (typeof q === 'string' ? q : q.advertiser_id) === field.value
+                  )
+                  const selectedLabel = selectedQuery
+                    ? (typeof selectedQuery === 'string' ? selectedQuery : selectedQuery.title || selectedQuery.advertiser_id)
+                    : null
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Advertiser Query</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={queriesLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={queriesLoading ? 'Loading...' : 'Select a query...'}>
+                              {selectedLabel || (queriesLoading ? 'Loading...' : 'Select a query...')}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {queries
+                            .map((query) => {
+                              // Query objects now have advertiser_id and title properties
+                              const queryValue = typeof query === 'string' ? query : (query.advertiser_id || '')
+                              const queryLabel = typeof query === 'string' ? query : (query.title || query.advertiser_id || '')
+
+                              return { queryValue, queryLabel }
+                            })
+                            .filter(({ queryValue }) => queryValue !== '') // Filter out empty values
+                            .map(({ queryValue, queryLabel }) => (
+                              <SelectItem key={queryValue} value={queryValue}>
+                                {queryLabel}
+                              </SelectItem>
+                            ))
+                          }
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
 
               <InlineCalendar
@@ -316,9 +337,8 @@ export default function PropertySchedulerForm() {
             <div className="flex items-center gap-2.5">
               <CardTitle className="text-lg">Result</CardTitle>
               <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}
+                className={`px-3 py-1 rounded-full text-xs font-medium ${result.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}
               >
                 {result.success ? 'Success' : 'Error'}
               </span>
@@ -389,7 +409,7 @@ export default function PropertySchedulerForm() {
                 pageSize={50}
                 estimateRowSize={48}
                 maxHeight="400px"
-                minWidth="900px"
+                minWidth={2000}
                 emptyMessage="No properties found"
                 errorMessage="Error loading preview"
               />
