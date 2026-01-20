@@ -44,5 +44,9 @@ export function useNavigation(negId, auth) {
     return navigationConfig.magazine.filter(hasAccess)
   }, [negId, auth?.isAdvertiser])
 
-  return { mainNavItems, portalItems, magazineItems }
+  const adminItems = useMemo(() => {
+    return navigationConfig.admin.filter(hasAccess)
+  }, [negId, auth?.isAdvertiser])
+
+  return { mainNavItems, portalItems, magazineItems, adminItems }
 }

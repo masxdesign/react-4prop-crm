@@ -5,7 +5,7 @@ import { useAuth } from '../Auth/Auth-context'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
   const auth = useAuth()
-  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
+  const { mainNavItems, portalItems, magazineItems, adminItems } = useNavigation(negId, auth)
 
   return (
     <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
@@ -46,12 +46,27 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         </div>
       )}
 
+      {adminItems.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
+            Admin
+          </h3>
+          {adminItems.map((item) => (
+            <NavLink
+              key={item.id}
+              {...item}
+              context={context}
+            />
+          ))}
+        </div>
+      )}
+
       <div className='flex flex-col gap-2'>
         <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
           Portals
         </h3>
         {portalItems.map((item) => (
-          <NavLink 
+          <NavLink
             key={item.id}
             {...item}
             context={context}
