@@ -14,6 +14,8 @@ dist
 dist-ssr
 *.local
 
+docs/plans/
+
 # TanStack Router generated files
 src/routeTree.gen.ts
 
