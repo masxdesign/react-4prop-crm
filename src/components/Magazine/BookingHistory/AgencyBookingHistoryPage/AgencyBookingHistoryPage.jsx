@@ -1,5 +1,5 @@
-import React from 'react';
-import { useParams, useNavigate, useRouteContext, useSearch } from '@tanstack/react-router';
+import React, { useState } from 'react';
+import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { fetchAgencyById } from '@/components/Stats/api';
 import { fetchAgencyBookings } from '@/components/Magazine/api';
@@ -9,45 +9,16 @@ import BookingStatusFilter from '../BookingStatusFilter';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, Users } from 'lucide-react';
 
-/**
- * AgencyBookingHistoryPage Component
- *
- * Displays booking history for a specific agency.
- * Shows status filter tabs and paginated booking history table.
- * All state (status, page) is synced with URL search parameters.
- *
- * Props passed from route file:
- * - search: URL search params (status, page, pageSize)
- * - agencyId: The agency ID from route params
- * - bookingsQueryOptions: Query options from route context (optional)
- */
-const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, bookingsQueryOptions: propQueryOptions }) => {
+const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId }) => {
   const auth = useAuth();
-  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
   const params = useParams({ strict: false });
   const agencyId = propAgencyId || params.id || params.agencyId;
   const navigate = useNavigate();
+  const [totalBookings, setTotalBookings] = useState();
 
-  // Use prop search if provided, otherwise use useSearch as fallback
   const routeSearch = useSearch({ strict: false });
   const search = propSearch || routeSearch || {};
-
-  // Default values for search params
   const status = search.status || 'all';
-  const page = search.page || 1;
-  const pageSize = search.pageSize || 10;
-
-  // Get query options from route context if not passed as prop
-  const routeContext = useRouteContext({ strict: false });
-  const bookingsQueryOptions = propQueryOptions || routeContext?.bookingsQueryOptions || {
-    queryKey: ['bookings', 'company', agencyId, status, page, pageSize],
-    queryFn: () => fetchAgencyBookings(agencyId, { status, page, pageSize }),
-    enabled: !!agencyId,
-    staleTime: 1000 * 30,
-  };
-
-  // Fetch bookings using preloaded query options from route
-  const { data } = useQuery(bookingsQueryOptions);
 
   // Fetch agency details for super admin to display name
   const { data: agencyData } = useQuery({
@@ -56,28 +27,12 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
     enabled: !!agencyId && auth.user?.is_admin,
   });
 
-  const bookings = data?.data || [];
-  const pagination = data ? {
-    page: data.page,
-    pageSize: data.pageSize,
-    total: data.total,
-    totalPages: data.totalPages
-  } : null;
-
-  // Get agency name from API response (structure: {data: {...}, success: true})
   const agencyName = agencyData?.data?.name;
 
-  // Handle status change
   const handleStatusChange = (newStatus) => {
-    navigate({ search: { status: newStatus, page: 1, pageSize } });
+    navigate({ search: { ...search, status: newStatus } });
   };
 
-  // Handle page change
-  const handlePageChange = (newPage) => {
-    navigate({ search: { status, page: newPage, pageSize } });
-  };
-
-  // Navigate to grouped by advertiser view
   const handleViewByAdvertiser = () => {
     navigate({
       to: '/agency/$id/bookings/by-advertiser',
@@ -98,7 +53,7 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 w-full mx-auto">
+    <div className="flex flex-col gap-6 p-6 w-full mx-auto min-w-0">
       {/* Header */}
       <div className="flex flex-col gap-2">
         {auth.user?.is_admin && (
@@ -147,15 +102,21 @@ const AgencyBookingHistoryPage = ({ search: propSearch, agencyId: propAgencyId, 
       <BookingStatusFilter
         currentStatus={status}
         onStatusChange={handleStatusChange}
-        currentTotal={pagination?.total}
+        currentTotal={totalBookings}
       />
 
       {/* Bookings Table */}
       <BookingHistoryTable
-        bookings={bookings}
+        queryKey={['bookings', 'company', agencyId, status]}
+        queryFn={({ pageParam, pageSize }) =>
+          fetchAgencyBookings(agencyId, {
+            status,
+            cursor: pageParam,
+            pageSize,
+          })
+        }
         isAdvertiser={false}
-        pagination={pagination}
-        onPageChange={handlePageChange}
+        onTotalChange={setTotalBookings}
       />
     </div>
   );

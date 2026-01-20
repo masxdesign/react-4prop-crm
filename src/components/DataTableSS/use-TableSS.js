@@ -31,8 +31,8 @@ const useTableSS = ({
     const [columnVisibility, setColumnVisibility] = useLocalstorageState([tableName, tableVersion, 'visibility'], defaultColumnVisibility)
 
     const table = useReactTable({
-        columns, 
-        data, 
+        columns,
+        data,
         meta,
         state: {
             ...state,
@@ -62,10 +62,10 @@ const useTableSS = ({
     })
 
     const isFirstRender = useIsFirstRender()
-    
+
     useEffect(() => {
 
-        if(!isFirstRender) {
+        if (!isFirstRender) {
             table.setColumnSizing(columnSizing)
             table.setColumnOrder(columnOrder)
         }
@@ -75,21 +75,31 @@ const useTableSS = ({
     return table
 }
 
-function _o (newValue, onChange) {
+function _o(newValue, onChange) {
     return (fn) => onChange(functionalUpdate(fn, newValue))
 }
 
-export function useLoadData (queryOptions, tableState) {
+export function useLoadData(queryOptions, tableState) {
     const { pageSize } = tableState.pagination
 
-    const queryOptions_ = useMemo(() => 
-        functionalUpdate(queryOptions, tableState), 
+    const queryOptions_ = useMemo(() =>
+        functionalUpdate(queryOptions, tableState),
         [queryOptions, tableState]
     )
 
-    const { data } = useSuspenseQuery(queryOptions_)
+    const { data, error } = useSuspenseQuery(queryOptions_)
+
+    // Validate data structure to provide user-friendly error messages
+    if (!data || !Array.isArray(data) || data.length < 2) {
+        throw new Error('Unable to load data. The server may be unavailable or experiencing issues. Please try again later or contact support if the problem persists.')
+    }
 
     const [{ count }, data_] = data
+
+    // Additional validation
+    if (typeof count === 'undefined' || !Array.isArray(data_)) {
+        throw new Error('Unable to load data. The server returned an unexpected response. Please try again later or contact support if the problem persists.')
+    }
 
     const pageCount = useMemo(() => Math.ceil(count / pageSize), [count, pageSize])
 

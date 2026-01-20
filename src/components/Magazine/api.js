@@ -260,34 +260,40 @@ export const processAllSettlements = async () => {
 
 // Booking History API functions (schedules with active subscriptions)
 export const fetchAdvertiserBookings = async (advertiserId, options = {}) => {
-  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/advertiser/${advertiserId}`,
-    {
-      params: { status, page, pageSize }
-    }
+    { params }
   );
   return response.data;
 };
 
 export const fetchAgentBookings = async (agentNid, options = {}) => {
-  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/agent/${agentNid}`,
-    {
-      params: { status, page, pageSize }
-    }
+    { params }
   );
   return response.data;
 };
 
 export const fetchAgencyBookings = async (companyId, options = {}) => {
-  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/company/${companyId}`,
-    {
-      params: { status, page, pageSize }
-    }
+    { params }
   );
   return response.data;
 };

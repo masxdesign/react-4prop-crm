@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, Building2, Users } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, Building2, Users, CalendarClock } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -97,6 +97,15 @@ export const navigationConfig = {
       icon: TrendingUp,
       label: "Statistics",
       excludedRoles: ['admin']
+    },
+  ],
+  admin: [
+    {
+      id: 'admin-property-scheduler',
+      to: '/admin/property-scheduler',
+      icon: CalendarClock,
+      label: 'Property Scheduler',
+      allowedNegIds: RESTRICTED_NEG_IDS,
     },
   ],
   portals: [
