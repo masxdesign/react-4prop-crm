@@ -35,11 +35,10 @@ export function DashboardSidebar({ negId, onLogout, context }) {
               <span className="text-amber-400 ml-1">(Impersonating)</span>
             )}
           </span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded w-fit ${
-            isImpersonating
+          <span className={`text-[10px] px-1.5 py-0.5 rounded w-fit ${isImpersonating
               ? 'bg-amber-600/30 text-amber-400'
               : 'bg-emerald-600/30 text-emerald-400'
-          }`}>
+            }`}>
             {auth.user?.is_admin ? 'Admin' : auth.isAgent ? 'Agent' : auth.isAdvertiser ? 'Advertiser' : 'User'}
           </span>
         </div>
@@ -71,7 +70,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
 
       <nav className='flex flex-col gap-2'>
         {mainNavItems.map((item) => (
-          <NavLink 
+          <NavLink
             key={item.id}
             {...item}
             context={context}
@@ -85,7 +84,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
             Marketing
           </h3>
           {magazineItems.map((item) => (
-            <NavLink 
+            <NavLink
               key={item.id}
               {...item}
               context={context}

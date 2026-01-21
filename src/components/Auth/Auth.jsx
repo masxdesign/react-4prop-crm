@@ -74,7 +74,10 @@ const AuthProvider = ({ children }) => {
         return authWhoisonlineQueryOptions(search.get('i'))
     })
     const { data } = useSuspenseQuery(_authWhoisonlineQueryOptions)
-    const [state, setState] = useState(() => authCombiner(data))
+    const [state, setState] = useState(() => authCombiner(data, {
+        isImpersonating: data?.impersonating,
+        originalUser: data?.originalUser
+    }))
     // const [state, dispatch] = useReducer(authReducer, data, initializer)
 
     // Listen for session expired events from JWT auth interceptor
@@ -111,10 +114,13 @@ export const useAuth = () => {
     const handleLoginSubmit = async (variables) => {
         const data = await login.mutateAsync(variables)
 
-        if(data.error) throw new Error(data.error)
+        if (data.error) throw new Error(data.error)
 
         flushSync(() => {
-            setState(authCombiner(data))
+            setState(authCombiner(data, {
+                isImpersonating: data.impersonating,
+                originalUser: data.originalUser
+            }))
         })
     }
 

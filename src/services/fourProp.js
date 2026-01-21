@@ -12,9 +12,8 @@ import useListing, { propertyCombiner, propertyTypescombiner } from "@/store/use
 import { getTime } from "date-fns";
 import { fourPropClient, FOURPROP_BASEURL } from "./fourPropClient";
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "@/store/listing.queries";
-import delay from "@/utils/delay";
 import { setToken, clearToken } from "./createAuthClient";
-import { withTokenRefresh, getAuthHeaders } from "./withTokenRefresh";
+import { withTokenRefresh } from "./withTokenRefresh";
 
 export const authWhoisonlineQueryOptions = (hash) => queryOptions({
     queryKey: ['whoisonline', hash],

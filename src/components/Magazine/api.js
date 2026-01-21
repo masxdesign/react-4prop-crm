@@ -79,7 +79,7 @@ export const searchAgents = async (searchTerm) => {
     params: {
       search: searchTerm,
       page: 1,
-      limit: 10,
+      limit: 100,
       sortBy: 'surname',
       order: 'asc'
     }
@@ -110,7 +110,7 @@ export const fetchAgentDetails = async (nid) => {
  */
 export const fetchAgentsForSelection = async ({
   search = '',
-  limit = 20,
+  limit = 100,
   page = 1,
   sortBy = 'surname',
   order = 'asc'
@@ -187,7 +187,7 @@ export const assignApprover = async (scheduleId, assignData) => {
 export const fetchUsersByNids = async (nids) => {
   const filteredNids = nids.filter(Boolean);
   if (filteredNids.length === 0) return [];
-  
+
   const response = await bizchatClient.post('/api/users', {
     ids: filteredNids.join(',')
   });
