@@ -293,7 +293,7 @@ const VirtualizedExpandableTable = ({
                     {/* Expanded content */}
                     {expanded && renderExpandedContent && (
                       <div
-                        className="bg-muted/30 border-t overflow-auto"
+                        className="bg-muted/80 border overflow-auto"
                         style={{ height: expandedRowHeight }}
                       >
                         {renderExpandedContent(item)}

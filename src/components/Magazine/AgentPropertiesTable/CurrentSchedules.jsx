@@ -82,7 +82,7 @@ const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid, onSched
             Total spent: £{summaryData?.data?.total_spent?.toFixed(2) || '0.00'}
           </div>
         </div>
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4">
           {summaryData?.data && (
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1">
@@ -106,6 +106,17 @@ const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid, onSched
               </div>
             </div>
           )}
+          <Button
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onScheduleNewAdvertiser?.();
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white gap-1.5 text-xs"
+          >
+            <CalendarPlus className="w-4 h-4" />
+            New Booking
+          </Button>
           <div className="flex rounded-md border" role="radiogroup" aria-label="View options">
             <Button
               variant={viewMode === 'table' ? 'secondary' : 'ghost'}

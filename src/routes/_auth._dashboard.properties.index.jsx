@@ -80,7 +80,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
     advertisersError: null,
     getSubtypeLabels: () => [],
     renderPillsWithShowMore: () => null,
-    onSelectAdvertiser: () => {}
+    onSelectAdvertiser: () => { }
   })
 
   const handleOpenAdvertiserSheet = useCallback((sheetData) => {
@@ -425,7 +425,7 @@ function PropertiesTableWithTransform({
       getRowKey={(item) => item.pid}
       pageSize={20}
       estimateRowSize={56}
-      expandedRowHeight={700}
+      expandedRowHeight={560}
       maxHeight="calc(100vh - 100px)"
       minWidth="900px"
       emptyMessage="No properties found for your department"

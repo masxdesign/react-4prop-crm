@@ -42,7 +42,7 @@ export const navigationConfig = {
   magazine: [
     {
       id: 'mag-agents-list',
-      to: "/mag",
+      to: "/properties",
       icon: NewspaperIcon,
       label: "Properties",
       excludedRoles: ['advertiser']
