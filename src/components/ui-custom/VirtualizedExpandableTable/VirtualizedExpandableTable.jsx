@@ -29,6 +29,7 @@ const VirtualizedExpandableTable = ({
 }) => {
   const parentRef = useRef(null)
   const [expandedRows, setExpandedRows] = useState(new Set())
+  const [pendingScrollRowKey, setPendingScrollRowKey] = useState(null)
 
   const {
     data,
@@ -58,8 +59,10 @@ const VirtualizedExpandableTable = ({
       const next = new Set(prev)
       if (next.has(rowKey)) {
         next.delete(rowKey)
+        setPendingScrollRowKey(null)
       } else {
         next.add(rowKey)
+        setPendingScrollRowKey(rowKey)
         onRowExpand?.(rowKey)
       }
       return next
@@ -107,6 +110,33 @@ const VirtualizedExpandableTable = ({
   useEffect(() => {
     rowVirtualizer.measure()
   }, [expandedRows, rowVirtualizer])
+
+  // Smooth scroll expanded row to top of view after expansion completes
+  useEffect(() => {
+    if (!pendingScrollRowKey || !parentRef.current) return
+
+    const rowIndex = allItems.findIndex((item) => getRowKey(item) === pendingScrollRowKey)
+    if (rowIndex === -1) return
+
+    // Use requestAnimationFrame to wait for the DOM to update after measure
+    requestAnimationFrame(() => {
+      // Calculate the offset for the row
+      let offset = 0
+      for (let i = 0; i < rowIndex; i++) {
+        offset += getItemSize(i)
+      }
+
+      // Account for the sticky header height (approximately 40px based on py-2 + content)
+      const headerHeight = 40
+
+      parentRef.current?.scrollTo({
+        top: offset - headerHeight,
+        behavior: 'smooth',
+      })
+
+      setPendingScrollRowKey(null)
+    })
+  }, [pendingScrollRowKey, allItems, getRowKey, getItemSize])
 
   const handleColumnSort = useCallback((col) => {
     if (!col.sortKey || !onSortChange) return
