@@ -1,15 +1,13 @@
-import { useAuth } from "@/components/Auth/Auth"
 import { crmValidateEmail } from "@/services/bizchat"
 import { useQuery } from "@tanstack/react-query"
 
 const initialData = null
 
+// NEW: JWT-authenticated - crmValidateEmail no longer needs authUserId
 export default function useValidateEmailQuery (email, pid = null, enabled = true) {
-  const auth = useAuth()
-
   const query = useQuery({
-      queryKey: ['validateEmail', auth.authUserId, email, pid],
-      queryFn: () => crmValidateEmail(auth.authUserId, email, pid),
+      queryKey: ['validateEmail', email, pid],
+      queryFn: () => crmValidateEmail(email, pid),
       enabled: enabled,
       initialData
   })

@@ -51,8 +51,9 @@ function RouteComponent() {
     resolver: yupResolver(validateSchema)
   })
 
+  // NEW: JWT-authenticated - crmUpdateTag no longer needs authUserId
   const updateTag = useMutation({
-    mutationFn: (variables) => crmUpdateTag(auth.authUserId, variables.tag_id, variables.newName)
+    mutationFn: (variables) => crmUpdateTag(variables.tag_id, variables.newName)
   })
 
   const listingDispatch = useListing.use.dispatch()

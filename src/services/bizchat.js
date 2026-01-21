@@ -16,34 +16,35 @@ const schemaEmail = yup.string().email(emailErrorMessage).required()
 const defaultCrmStatsIncludes = `all_enquiries,shared_properties,new_message,pdf,view,none,suitable`
 const defaultCrmInclude = `id,ownerUid,bz_id,next_contact,first,last,email,company,phone,created,hash,u_hash,hash_bz,ownerNid,owner_first,owner_last,${defaultCrmStatsIncludes}`
 
-export const fetchTagsByUserId = async (user_id) => {
-    const { data } = await bizchatClient.get(`/api/crm/v2/${user_id}/tags`)
+// NEW: Use JWT-authenticated routes (user ID from token, not URL)
+export const fetchTagsByUserId = async () => {
+    const { data } = await bizchatClient.get(`/api/crm/v2/tags`)
     return data
 }
 
-export const fetchTagsByUserIdEnquired = async (bz_user_id) => {
-    const { data } = await bizchatClient.get(`/api/crm/v2/${bz_user_id}/tags/enquired`)
+export const fetchTagsByUserIdEnquired = async () => {
+    const { data } = await bizchatClient.get(`/api/crm/v2/tags/enquired`)
     return data
 }
 
-export const crmUpdateTag = async (bz_user_id, tag_id, newName) => {
-    const { data } = await bizchatClient.put(`/api/crm/v2/${bz_user_id}/tags/${tag_id}`, { newName })
+export const crmUpdateTag = async (tag_id, newName) => {
+    const { data } = await bizchatClient.put(`/api/crm/v2/tags/${tag_id}`, { newName })
     return data
 }
 
-export const getMassBizchatList = async ({ from }) => {
-    const { data } = await bizchatClient.get(`/api/crm/mass_list/${from}`)
+export const getMassBizchatList = async () => {
+    const { data } = await bizchatClient.get(`/api/crm/mass_list`)
     return data
 }
 
-export const getMassBizchatStat = async ({ from }) => {
-    const { data } = await bizchatClient.get(`/api/crm/mass_stat/${from}`)
+export const getMassBizchatStat = async () => {
+    const { data } = await bizchatClient.get(`/api/crm/mass_stat`)
     return data
 }
 
-export const getListUnreadTotal = async ({ from, recipients }) => {
+export const getListUnreadTotal = async ({ recipients }) => {
     const params = { recipients: `${recipients}` }
-    const { data } = await bizchatClient.get(`/api/crm/list_unread_total/${from}`, { params })
+    const { data } = await bizchatClient.get(`/api/crm/list_unread_total`, { params })
     return data
 }
 
@@ -101,52 +102,49 @@ export const formDataFilesMergeAsync = async (formData, { files = [], message, f
     return formData
 }
 
-export const sendBizchatMessage = async ({ files = [], from, recipient, message, dteamNid = null, context }) => {
-    if (_.isEqual(from, recipient)) throw new Error('from and recipient match')
-
+// NEW: Use JWT-authenticated route (from user ID extracted from token)
+export const sendBizchatMessage = async ({ files = [], recipient, message, dteamNid = null, context }) => {
     const formData = new FormData
 
     await formDataFilesMergeAsync(formData, {
-        files, 
-        message, 
-        filename: () => `${from}-${recipient}crm-${nanoid()}`
+        files,
+        message,
+        filename: () => `crm-${recipient}-${nanoid()}`
     })
 
-    formData.append('from', from)
     formData.append('recipient', recipient)
-    
+
     if (dteamNid) {
         formData.append('dteamNid', dteamNid)
     }
 
     if (context) formData.append('context', JSON.stringify(context))
-    
-    const { data } = await bizchatClient.post(`/api/crm/create_chat_attachments`, formData)
+
+    const { data } = await bizchatClient.post(`/api/crm/create_chat`, formData)
 
     return data
 }
 
-export const sendMassBizchat = async ({ files = [], from, recipients, subjectLine, message }) => {
+// NEW: Use JWT-authenticated route (from user ID extracted from token)
+export const sendMassBizchat = async ({ files = [], recipients, subjectLine, message }) => {
     try {
-        
-        const safe_recipients = `${recipients}`.split(',').filter(id => id !== from)
+        const safe_recipients = `${recipients}`.split(',')
 
         if (safe_recipients.length < 1) throw new Error('recipients is empty')
 
         const formData = new FormData
 
         await formDataFilesMergeAsync(formData, {
-            files, 
+            files,
             message,
-            filename: () => `${from}mcrm-${nanoid()}`
+            filename: () => `mcrm-${nanoid()}`
         })
-    
-        formData.append('from', from)
+
         formData.append('recipients', safe_recipients)
         formData.append('subjectLine', subjectLine)
-        
-        const { data } = await bizchatClient.post(`/api/crm/send_mass_attachments`, formData)
-    
+
+        const { data } = await bizchatClient.post(`/api/crm/send_mass`, formData)
+
         await delay(1000)
         return data
 
@@ -218,8 +216,9 @@ export const verifyShareApplicantUser = async (email, password) => {
     }
 }
 
-export const crmImport = async (list, authUserId) => {
-    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/import`, list)
+// NEW: Use JWT-authenticated route (user ID from token)
+export const crmImport = async (list) => {
+    const { data } = await bizchatClient.post(`/api/crm/import`, list)
 
     await delay(600)
 
@@ -228,10 +227,11 @@ export const crmImport = async (list, authUserId) => {
     return data
 }
 
-export const crmFacetList = async (column, authUserId) => {
+// NEW: Use JWT-authenticated route (user ID from token)
+export const crmFacetList = async (column) => {
     try {
 
-        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/facet/${column}`)
+        const { data } = await bizchatClient.get(`/api/crm/facet/${column}`)
 
         return data
 
@@ -242,7 +242,8 @@ export const crmFacetList = async (column, authUserId) => {
     }
 }
 
-export const crmList = async ({ columnFilters, sorting, pagination, globalFilter }, authUserId) => {
+// NEW: Use JWT-authenticated route (user ID from token)
+export const crmList = async ({ columnFilters, sorting, pagination, globalFilter }) => {
     try {
         const defaultInclude = defaultCrmInclude
 
@@ -272,7 +273,7 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
         for(const filter of columnFilters) {
             const { id, value } = filter
             let [toSearch] = value
-            
+
             column.push(id)
 
             if (['a', 'company'].includes(id)) {
@@ -295,32 +296,13 @@ export const crmList = async ({ columnFilters, sorting, pagination, globalFilter
             }
         }
 
-        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list`, { params })
-        
-        // let { data } = await fourProp.get('api/crud/CRM--EACH_db', { params })
-
-        // if (authUserId) {
-        //     let d2 = []
-            
-        //     if (data[1].length > 0) {
-        //         const recipients = map(data[1], 'id')
-        //         d2 = await getListUnreadTotal({ from: authUserId, recipients })
-        //     }
-
-        //     const data2 = [data[0], data[1].map(item => ({
-        //         ...item,
-        //         unread_total: find(d2, { recipient: item.id })?.unread_total ?? 0
-        //     }))]
-
-        //     return data2
-        // }
+        const { data } = await bizchatClient.get(`/api/crm/list`, { params })
 
         return data
 
     } catch (e) {
 
         console.log(e);
-        
 
         return { error: "Please contact administrator. Apologies for any inconvenience." }
 
@@ -333,23 +315,25 @@ export async function crmOwnerUidInfo (ownerUid) {
         return data
     }
 
-    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/owner`)
+    const { data } = await bizchatClient.get(`/api/crm/owner`)
     return data
 }
 
-export async function crmFilterByEmail (authUserId, search, pid = null) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/filterByEmail`, { params: { search, pid } })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmFilterByEmail (search, pid = null) {
+    const { data } = await bizchatClient.get(`/api/crm/filterByEmail`, { params: { search, pid } })
     return data
 }
 
-export async function crmValidateEmail (authUserId, email, pid = null) {
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmValidateEmail (email, pid = null) {
 
     try {
 
         schemaEmail.validateSync(email)
 
-        const { data } = await bizchatClient.get(`/api/crm/${authUserId}/validate-email`, { params: { email, pid } })
-    
+        const { data } = await bizchatClient.get(`/api/crm/validate-email`, { params: { email, pid } })
+
         await delay(400)
 
         return data
@@ -371,49 +355,58 @@ export const getUsersByIdsAsync = async (userIds) => {
 	return data
 }
 
-export async function crmListByIds (ids, authUserId) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-ids`, { params: { include: defaultCrmInclude, ids } })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmListByIds (ids) {
+    const { data } = await bizchatClient.get(`/api/crm/list-ids`, { params: { include: defaultCrmInclude, ids } })
     return data
 }
 
-export async function crmContactByHash (ownerUid, hash) {
-    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/contactByHash`, { params: { include: defaultCrmInclude, hash } })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmContactByHash (hash) {
+    const { data } = await bizchatClient.get(`/api/crm/contactByHash`, { params: { include: defaultCrmInclude, hash } })
     return data
 }
 
-export async function crmGenHash (authUserId, import_id) {
-    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/gen-hash/${import_id}`)
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmGenHash (import_id) {
+    const { data } = await bizchatClient.post(`/api/crm/gen-hash/${import_id}`)
     await delay(400)
     return data
 }
 
-export async function crmSharedPids (authUserId, import_id, tag_id = null) {
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/list-sharedPids/${import_id}`, { params: { tag_id } })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmSharedPids (import_id, tag_id = null) {
+    const { data } = await bizchatClient.get(`/api/crm/list-sharedPids/${import_id}`, { params: { tag_id } })
     return data
 }
 
-export async function crmSharedTagPids (from_uid) {
-    const { data } = await bizchatClient.get(`/api/crm/listSharedTagPids/${from_uid}`)
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmSharedTagPids () {
+    const { data } = await bizchatClient.get(`/api/crm/listSharedTagPids`)
     return data
 }
 
-export async function crmRecentGradeShares (from_uid) {
-    const { data } = await bizchatClient.get(`/api/crm/getRecentGradeShares/${from_uid}`)
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmRecentGradeShares () {
+    const { data } = await bizchatClient.get(`/api/crm/getRecentGradeShares`)
     return data
 }
 
-export async function crmListUpdateDetails (ownerUid, import_id, name, newValue) {
-    const { data } = await bizchatClient.patch(`/api/crm/${ownerUid}/list/${import_id}`, { name, newValue })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmListUpdateDetails (import_id, name, newValue) {
+    const { data } = await bizchatClient.patch(`/api/crm/list/${import_id}`, { name, newValue })
     return data
 }
 
-export async function crmListById (id, authUserId) {
-    const rows = await crmListByIds([id], authUserId)
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmListById (id) {
+    const rows = await crmListByIds([id])
     return rows[0]
 }
 
-export async function getCrmEnquiries(import_id, ownerUid, filterBy) {
-    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/list/${import_id}/enquiries`, { params: filterBy })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function getCrmEnquiries(import_id, filterBy) {
+    const { data } = await bizchatClient.get(`/api/crm/list/${import_id}/enquiries`, { params: filterBy })
     return data
 }
 
@@ -426,13 +419,14 @@ export const lastMessageForNotes = (lastMessage) => {
     }
 }
 
+// NEW: Use JWT-authenticated route (user ID from token)
 export async function crmFetchNotes (info, auth) {
 
     const from = info.ownernid ?? auth.bzUserId
 
     let [{ data: notes }, lastMessage] = await Promise.all([
-        bizchatClient.get(`/api/crm/${auth.authUserId}/${info.id}/notes`),
-        info.bz_id 
+        bizchatClient.get(`/api/crm/notes/${info.id}`),
+        info.bz_id
             ? getBizchatLastMessage({ from, recipient: info.bz_id })
             : Promise.resolve(false)
     ])
@@ -451,8 +445,9 @@ export async function crmFetchNotes (info, auth) {
     return [notes, {}, null, lastMessage, []]
 }
 
-export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
-    const { data } = await bizchatClient.post(`/api/crm/${authUserId}/note`, {
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function addNoteAsync (import_id, { type, body, dt }) {
+    const { data } = await bizchatClient.post(`/api/crm/note`, {
         type,
         body,
         import_id,
@@ -462,27 +457,28 @@ export async function addNoteAsync (authUserId, import_id, { type, body, dt }) {
     return data
 }
 
+// Updated to use JWT-authenticated routes
 export async function crmAddNote (variables, auth) {
     const { message = '', files, _button, info } = variables
     const import_id = info.id
-    
+
     if (_button === "bizchat") {
-        
+
         if (files.length < 1 && isEmpty(message)) throw new Error('Attachment(s) and/or message are required')
-            
+
         if(!auth.bzUserId) throw new Error('Your account is not set up correctly contact admin')
-                
+
         let bzId = info.bz_id
 
         if (!bzId) {
-            const { uid, nid }  = await getUidByImportId(info.owneruid, import_id, true)
+            const { uid, nid }  = await getUidByImportId(import_id, true)
 
             if (!uid) {
                 throw new Error(`Failed to generate bz_id for id: ${import_id} `)
-            }    
+            }
 
             bzId = nid ? `${nid}`: `U${uid}`
-            
+
             queryClient
                 .getQueriesData()
                 .filter(([queryKey]) => {
@@ -494,9 +490,9 @@ export async function crmAddNote (variables, auth) {
                 })
                 .forEach(([queryKey]) => {
                     queryClient.setQueryData(
-                        queryKey, 
+                        queryKey,
                         util_pagin_update(
-                            { id: import_id }, 
+                            { id: import_id },
                             { bz_id: bzId }
                         )
                     )
@@ -512,7 +508,7 @@ export async function crmAddNote (variables, auth) {
                 })
                 .forEach(([queryKey]) => {
                     queryClient.setQueryData(
-                        queryKey, 
+                        queryKey,
                         (data) => ({
                             ...data,
                             bz_id: bzId
@@ -522,42 +518,38 @@ export async function crmAddNote (variables, auth) {
 
         }
 
-        const from = info.ownernid ?? auth.bzUserId
-
-        return sendBizchatMessage({ 
+        return sendBizchatMessage({
             files,
             message,
-            from,
             recipient: bzId,
-            dteamNid: auth.bzUserId === from.replace('N', '')
-                ? null
-                : auth.bzUserId,
+            dteamNid: auth.bzUserId,
         })
 
     }
 
     if (_.isEmpty(message)) throw new Error('Message is required')
 
-    return addNoteAsync(auth.authUserId, import_id, {
+    return addNoteAsync(import_id, {
         type: 0,
         body: message,
         dt: null
     })
 }
 
-export const crmAddNextContact = async (variables, import_id, authUserId) => {
+// NEW: Use JWT-authenticated route (user ID from token)
+export const crmAddNextContact = async (variables, import_id) => {
     try {
         const { next_contact, message = '' } = variables
-    
+
         let type = 4
         let dt = null
-    
+
         if (next_contact) {
             type = _.isEmpty(message) ? 3 : 2
             dt = next_contact
         }
 
-        return addNoteAsync(authUserId, import_id, {
+        return addNoteAsync(import_id, {
             type,
             body: message,
             dt
@@ -565,17 +557,18 @@ export const crmAddNextContact = async (variables, import_id, authUserId) => {
 
     } catch (e) {
         console.log(e);
-        
+
     }
 }
 
-export const crmAddLastContact = async (variables, import_id, authUserId) => {
+// NEW: Use JWT-authenticated route (user ID from token)
+export const crmAddLastContact = async (variables, import_id) => {
     try {
         const { last_contact, message = '' } = variables
 
         if (isEmpty(last_contact)) throw new Error('last_contact is empty')
 
-        return addNoteAsync(authUserId, import_id, {
+        return addNoteAsync(import_id, {
             type: 1,
             body: message,
             dt: last_contact
@@ -583,37 +576,30 @@ export const crmAddLastContact = async (variables, import_id, authUserId) => {
 
     } catch (e) {
         console.log(e);
-        
+
     }
 }
 
-export async function crmTagList (ownerUid) {
-    const { data } = await bizchatClient.get(`/api/crm/${ownerUid}/tags`)
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmTagList () {
+    const { data } = await bizchatClient.get(`/api/crm/tags`)
     return data
 }
 
-export async function crmAddTag (ownerUid, name) {
-    const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/tag`, { name })
+// NEW: Use JWT-authenticated route (user ID from token)
+export async function crmAddTag (name) {
+    const { data } = await bizchatClient.post(`/api/crm/tag`, { name })
     return data
 }
 
-export async function crmShareGrade (ownerUid, recipient_import_id, tag_id, pidGrades) {
-
-    console.log(
-        ownerUid,
+// NEW: JWT-authenticated - user ID from token, not ownerUid param
+export async function crmShareGrade (recipient_import_id, tag_id, pidGrades) {
+    const { data } = await bizchatClient.post(`/api/crm/share-grade`, {
         recipient_import_id,
         tag_id,
         pidGrades
-    );
-    
-    return null
-
-    // const { data } = await bizchatClient.post(`/api/crm/${ownerUid}/share-grade`, { 
-    //     recipient_import_id,
-    //     tag_id,
-    //     pidGrades
-    //  })
-    // return data
+     })
+    return data
 }
 
 export const getEnquiryRoomAsync = async (userId, type, i) => {
@@ -632,9 +618,10 @@ export const uploadAttachmentsAsync = async (formDataOrBody, config = {}) => {
     return data
 }
 
-export const propertyGradeShareAsync = async (uid, pid, grade, from_uid, tag) => {
-    const body = { grade, from_uid, tag }
-	const { data } = await bizchatClient.post(`/api/crm/propertyGradeShare/${uid}/${pid}`, body, { withCredentials: true })
+// NEW: Use JWT-authenticated route (from_uid extracted from token)
+export const propertyGradeShareAsync = async (uid, pid, grade, tag) => {
+    const body = { uid, grade, tag }
+	const { data } = await bizchatClient.post(`/api/crm/propertyGradeShare/${pid}`, body, { withCredentials: true })
     return data
 }
 
@@ -643,9 +630,10 @@ export const propertyGradeShareOneEmailAsync = async (variables) => {
     return data
 }
 
-export const getUidByImportId = async (authUserId, import_id, createUser = false) => {
+// NEW: Use JWT-authenticated route (user ID from token)
+export const getUidByImportId = async (import_id, createUser = false) => {
     const params = { createUser }
-    const { data } = await bizchatClient.get(`/api/crm/${authUserId}/uidByImportId/${import_id}`, { params })
+    const { data } = await bizchatClient.get(`/api/crm/uidByImportId/${import_id}`, { params })
     return data
 }
 

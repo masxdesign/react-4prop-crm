@@ -205,7 +205,7 @@ const TwoColumnResizeable = ({ autoSaveId, info, model, rightsideContent }) => {
 
 const EnquiriesSharedRightSide = ({ model, info }) => {
     const auth = useAuth()
-    const stats = useSuspenseQuery(model.enquiriesQueryOptions(info.owneruid, {
+    const stats = useSuspenseQuery(model.enquiriesQueryOptions({
         suitables: model.openEnquiry.suitables,
         shared: model.openEnquiry.shared
     }))

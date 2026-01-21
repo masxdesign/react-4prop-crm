@@ -24,9 +24,10 @@ export const Route = createFileRoute('/access/$hash/$ownerUid')({
     return {
       lastLocation,
       isAuthPreview: context.auth.authUserId === ownerUid,
+      // NEW: JWT-authenticated - crmContactByHash no longer needs ownerUid
       resolveContactDetails: {
-        queryKey: ['crmContactByHash', ownerUid, hash],
-        queryFn: () => crmContactByHash(ownerUid, hash),
+        queryKey: ['crmContactByHash', hash],
+        queryFn: () => crmContactByHash(hash),
         initialData: info,
         enabled: !info
       },
