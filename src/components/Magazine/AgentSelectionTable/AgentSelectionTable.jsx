@@ -157,6 +157,13 @@ const AgentSelectionTable = ({
   const handleRowClick = (agent) => {
     // In embedded mode (agency hub), impersonate the agent and redirect to properties
     if (embedded) {
+      // Save current page state to localStorage for "Switch back" functionality
+      const returnState = {
+        pathname: '/crm/agency',
+        search: debouncedSearch ? `?tab=agents&search=${encodeURIComponent(debouncedSearch)}` : '?tab=agents'
+      };
+      localStorage.setItem('impersonation_return_state', JSON.stringify(returnState));
+
       impersonate({ targetNegId: agent.nid, redirectTo: '/crm/properties' });
       return;
     }

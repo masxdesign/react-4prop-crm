@@ -30,6 +30,20 @@ export const useImpersonation = () => {
             //     isImpersonating: false,
             //     originalUser: null
             // }))
+
+            // Check for saved return state from impersonation
+            const savedReturnState = localStorage.getItem('impersonation_return_state')
+            if (savedReturnState) {
+                try {
+                    const returnState = JSON.parse(savedReturnState)
+                    localStorage.removeItem('impersonation_return_state')
+                    window.location.href = returnState.pathname + (returnState.search || '')
+                    return
+                } catch (e) {
+                    localStorage.removeItem('impersonation_return_state')
+                }
+            }
+
             window.location.reload()
         }
     })
