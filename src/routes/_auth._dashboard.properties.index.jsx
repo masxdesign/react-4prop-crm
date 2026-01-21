@@ -1,14 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useAuth } from '@/components/Auth/Auth'
-import { useMemo, useCallback, Suspense, useState } from 'react'
+import { useMemo, useCallback, Suspense, useState, useEffect } from 'react'
 import { fetchAgentPropertiesCursor } from '@/components/Magazine/api'
 import VirtualizedExpandableTable from '@/components/ui-custom/VirtualizedExpandableTable'
 import LazyPropertyDetails from '@/components/Magazine/AgentPropertiesTable/LazyPropertyDetails'
 import { enhancedPropertyCombiner, propertyUtils } from '@/hooks/propertyDetails-hooks'
 import { propertyTypescombiner } from '@/store/use-listing'
 import { typesQuery, subtypesQuery } from '@/store/listing.queries'
-import { Building, RefreshCw } from 'lucide-react'
+import { Building, RefreshCw, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
 
 export const Route = createFileRoute('/_auth/_dashboard/properties/')({
@@ -57,8 +58,23 @@ function PropertiesPage() {
 }
 
 function PropertiesTableContent({ agentId, queryClient }) {
-  const queryKey = ['agent-properties-infinite', agentId]
   const [total, setTotal] = useState(null)
+  const [inputValue, setInputValue] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  // Debounce search input (300ms delay)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(inputValue)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [inputValue])
+
+  // Include debouncedSearch in queryKey so query refetches when search changes
+  const queryKey = useMemo(
+    () => ['agent-properties-infinite', agentId, debouncedSearch],
+    [agentId, debouncedSearch]
+  )
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey })
@@ -71,6 +87,16 @@ function PropertiesTableContent({ agentId, queryClient }) {
   // Column definitions
   const columns = useMemo(
     () => [
+      {
+        key: 'area',
+        header: 'Area',
+        width: '60px',
+        render: (item) => (
+          <span className="text-muted-foreground">
+            {item.original?.matchpostcode || '-'}
+          </span>
+        ),
+      },
       {
         key: 'address',
         header: 'Address',
@@ -168,10 +194,10 @@ function PropertiesTableContent({ agentId, queryClient }) {
     []
   )
 
-  // Query function for infinite scroll
+  // Query function for infinite scroll (includes search param for backend filtering)
   const queryFn = useCallback(
-    ({ cursor, pageSize }) => fetchAgentPropertiesCursor(agentId, { cursor, pageSize }),
-    [agentId]
+    ({ cursor, pageSize }) => fetchAgentPropertiesCursor(agentId, { cursor, pageSize, search: debouncedSearch }),
+    [agentId, debouncedSearch]
   )
 
   // Render expanded content with lazy loading
@@ -193,10 +219,30 @@ function PropertiesTableContent({ agentId, queryClient }) {
             )}
           </h1>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Filter by address or subtype..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="pl-9 pr-8 w-64"
+            />
+            {inputValue && (
+              <button
+                onClick={() => setInputValue('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Table with transformation wrapper */}
