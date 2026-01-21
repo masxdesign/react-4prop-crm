@@ -14,6 +14,17 @@ export const fetchAgentPaginatedProperties = async (nid, options = {}) => {
   return response.data;
 };
 
+/** Agent Properties with cursor-based infinite scroll (hybrid API) */
+export const fetchAgentPropertiesCursor = async (nid, options = {}) => {
+  const { cursor, pageSize = 20 } = options;
+  const params = { pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`, { params });
+  return response.data;
+};
+
 // Advertiser Management API functions
 export const fetchAllAdvertisers = async () => {
   const response = await bizchatClient.get('/api/crm/mag/advertisers');
