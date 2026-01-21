@@ -19,18 +19,12 @@ const processQueue = (error, token = null) => {
     failedQueue = []
 }
 
-/**
- * Get the stored JWT token
- * @returns {string|null}
- */
+/** Get stored JWT token */
 export const getToken = () => {
     return sessionStorage.getItem(TOKEN_KEY)
 }
 
-/**
- * Set the JWT token
- * @param {string} token
- */
+/** Set JWT token (pass null to clear) */
 export const setToken = (token) => {
     if (token) {
         sessionStorage.setItem(TOKEN_KEY, token)
@@ -39,43 +33,52 @@ export const setToken = (token) => {
     }
 }
 
-/**
- * Clear the JWT token (logout)
- */
+/** Clear JWT token */
 export const clearToken = () => {
     sessionStorage.removeItem(TOKEN_KEY)
 }
 
-/**
- * Refresh the access token using the httpOnly refresh token cookie
- * @returns {Promise<string>} New access token
- */
+/** Raw refresh call (no queue) */
+const refreshAccessTokenRaw = async () => {
+    const response = await axios.post(
+        `${FOURPROP_BASEURL}/api/refresh-token`,
+        {},
+        { withCredentials: true }
+    )
+    return response.data.token
+}
+
+/** Refresh access token with queue (prevents duplicate calls) */
 export const refreshAccessToken = async () => {
+    // If already refreshing, wait for the current refresh to complete
+    if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject })
+        })
+    }
+
+    isRefreshing = true
+
     try {
-        const response = await axios.post(
-            `${FOURPROP_BASEURL}/api/refresh-token`,
-            {},
-            { withCredentials: true }
-        )
-        return response.data.token
+        const newToken = await refreshAccessTokenRaw()
+        setToken(newToken)
+        processQueue(null, newToken)
+        return newToken
     } catch (error) {
+        processQueue(error, null)
         // Log CORS/network errors for debugging
         if (!error.response) {
             console.warn('Token refresh failed - network/CORS error:', error.message)
         }
         throw error
+    } finally {
+        isRefreshing = false
     }
 }
 
 window.refreshAccessToken = refreshAccessToken
 
-/**
- * Create an axios client with JWT authentication and auto-refresh
- * @param {string} baseURL - The base URL for the API
- * @param {Object} options - Additional options
- * @param {boolean} options.cacheBuster - Add timestamp to GET requests (default: true)
- * @returns {AxiosInstance}
- */
+/** Create axios client with JWT auth and auto-refresh */
 export const createAuthClient = (baseURL, options = {}) => {
     const { cacheBuster = true } = options
 
@@ -121,39 +124,20 @@ export const createAuthClient = (baseURL, options = {}) => {
                     return Promise.reject(error)
                 }
 
-                // Token exists but got 401 - try to refresh
-                if (isRefreshing) {
-                    // Wait for the refresh to complete
-                    return new Promise((resolve, reject) => {
-                        failedQueue.push({ resolve, reject })
-                    }).then(token => {
-                        originalRequest.headers.Authorization = `Bearer ${token}`
-                        return client(originalRequest)
-                    }).catch(err => {
-                        return Promise.reject(err)
-                    })
-                }
-
                 originalRequest._retry = true
-                isRefreshing = true
 
                 try {
+                    // refreshAccessToken has built-in queue mechanism
                     const newToken = await refreshAccessToken()
-                    setToken(newToken)
-                    processQueue(null, newToken)
-
                     originalRequest.headers.Authorization = `Bearer ${newToken}`
                     return client(originalRequest)
                 } catch (refreshError) {
-                    processQueue(refreshError, null)
                     // Refresh failed - clear token and dispatch session expired event
                     clearToken()
                     if (!isOnLoginPage) {
                         window.dispatchEvent(new CustomEvent('auth:session-expired'))
                     }
                     return Promise.reject(refreshError)
-                } finally {
-                    isRefreshing = false
                 }
             }
 
