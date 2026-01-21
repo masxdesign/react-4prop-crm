@@ -4,7 +4,7 @@ import { useNavigation } from './use-navigation'
 import { NavLink } from './NavLink'
 import { useAuth } from '../Auth/Auth-context'
 import { useImpersonation } from '@/hooks/useImpersonation'
-import { ImpersonateDialog } from '../Impersonation'
+import { ImpersonateSheet } from '../Impersonation'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
   const auth = useAuth()
@@ -131,8 +131,8 @@ export function DashboardSidebar({ negId, onLogout, context }) {
         </button>
       </div>
 
-      {/* Impersonate Dialog */}
-      <ImpersonateDialog
+      {/* Impersonate Sheet */}
+      <ImpersonateSheet
         open={impersonateDialogOpen}
         onOpenChange={setImpersonateDialogOpen}
       />
