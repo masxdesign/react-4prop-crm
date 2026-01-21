@@ -9,13 +9,17 @@ export const useImpersonation = () => {
     const setAuth = useAuthDispatch()
 
     const impersonateMutation = useMutation({
-        mutationFn: impersonate,
-        onSuccess: (data) => {
+        mutationFn: ({ targetNegId, redirectTo }) => impersonate(targetNegId),
+        onSuccess: (data, variables) => {
             // setAuth(authCombiner(data.targetUser, {
             //     isImpersonating: true,
             //     originalUser: data.originalUser
             // }))
-            window.location.reload()
+            if (variables.redirectTo) {
+                window.location.href = variables.redirectTo
+            } else {
+                window.location.reload()
+            }
         }
     })
 

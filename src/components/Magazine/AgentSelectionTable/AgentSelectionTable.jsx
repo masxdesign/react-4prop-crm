@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchAgentsForSelection } from '../api';
+import { useImpersonation } from '@/hooks/useImpersonation';
 
 const columnHelper = createColumnHelper();
 
@@ -63,6 +64,7 @@ const AgentSelectionTable = ({
   const navTarget = navigationPrefix || '/mag/agent';
 
   const navigate = useNavigate({ from: routePath });
+  const { impersonate, isImpersonatePending } = useImpersonation();
   // Only use internal useSearch for standalone mode
   const rawUrlSearch = isStandalone ? useSearch({ from: searchFrom }) : {};
 
@@ -153,6 +155,12 @@ const AgentSelectionTable = ({
   });
 
   const handleRowClick = (agent) => {
+    // In embedded mode (agency hub), impersonate the agent and redirect to properties
+    if (embedded) {
+      impersonate({ targetNegId: agent.nid, redirectTo: '/crm/properties' });
+      return;
+    }
+
     // Pass current search term so back button can restore it
     const searchParams = { page: 1, pageSize: 10 };
     if (debouncedSearch) {
@@ -200,11 +208,13 @@ const AgentSelectionTable = ({
       {/* Table */}
       {shouldFetch && (
         <div className="relative">
-          {isFetching && (
+          {(isFetching || isImpersonatePending) && (
             <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg">
               <div className="bg-white p-4 rounded-lg shadow-lg flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
-                <span className="text-gray-700 font-medium">Searching...</span>
+                <span className="text-gray-700 font-medium">
+                  {isImpersonatePending ? 'Switching to agent...' : 'Searching...'}
+                </span>
               </div>
             </div>
           )}
