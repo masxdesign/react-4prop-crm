@@ -5,7 +5,7 @@ import { propReqContentsQuery } from '@/store/listing.queries'
 import EnhancedPropertyDetails from './EnhancedPropertyDetails'
 
 /** Lazy-load property content when row is expanded */
-const LazyPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid }) => {
+const LazyPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid, onOpenAdvertiserSheet }) => {
   const pid = property?.pid
 
   // Fetch content only when this component mounts (i.e., when row expands)
@@ -56,6 +56,7 @@ const LazyPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNi
       agentId={agentId}
       isAdminViewing={isAdminViewing}
       viewingAgentNid={viewingAgentNid}
+      onOpenAdvertiserSheet={onOpenAdvertiserSheet}
     />
   )
 }

@@ -7,10 +7,18 @@ import LazyPropertyDetails from '@/components/Magazine/AgentPropertiesTable/Lazy
 import { enhancedPropertyCombiner, propertyUtils } from '@/hooks/propertyDetails-hooks'
 import { propertyTypescombiner } from '@/store/use-listing'
 import { typesQuery, subtypesQuery } from '@/store/listing.queries'
-import { Building, RefreshCw, Search, X } from 'lucide-react'
+import { Building, RefreshCw, Search, X, ShoppingCartIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
+import AdvertiserCard from '@/components/ui/AdvertiserCard'
 
 export const Route = createFileRoute('/_auth/_dashboard/properties/')({
   component: PropertiesPage,
@@ -63,6 +71,28 @@ function PropertiesTableContent({ agentId, queryClient }) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortBy, setSortBy] = useState(null)
   const [sortOrder, setSortOrder] = useState(null)
+
+  // Sheet state lifted to route level so it persists when rows collapse
+  const [advertiserSheetState, setAdvertiserSheetState] = useState({
+    isOpen: false,
+    advertisers: [],
+    advertisersLoading: false,
+    advertisersError: null,
+    getSubtypeLabels: () => [],
+    renderPillsWithShowMore: () => null,
+    onSelectAdvertiser: () => {}
+  })
+
+  const handleOpenAdvertiserSheet = useCallback((sheetData) => {
+    setAdvertiserSheetState({
+      isOpen: true,
+      ...sheetData
+    })
+  }, [])
+
+  const handleCloseAdvertiserSheet = useCallback(() => {
+    setAdvertiserSheetState(prev => ({ ...prev, isOpen: false }))
+  }, [])
 
   // Debounce search input (300ms delay)
   useEffect(() => {
@@ -230,62 +260,117 @@ function PropertiesTableContent({ agentId, queryClient }) {
 
   // Render expanded content with lazy loading
   const renderExpandedContent = useCallback(
-    (item) => <LazyPropertyDetails property={item} agentId={agentId} />,
-    [agentId]
+    (item) => (
+      <LazyPropertyDetails
+        property={item}
+        agentId={agentId}
+        onOpenAdvertiserSheet={handleOpenAdvertiserSheet}
+      />
+    ),
+    [agentId, handleOpenAdvertiserSheet]
   )
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Building className="h-6 w-6" />
-          <h1 className="text-xl font-bold">
-            My Department Properties
-            {total !== null && (
-              <span className="ml-2 text-muted-foreground font-normal">({total})</span>
-            )}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Filter by address or subtype..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              className="pl-9 pr-8 w-64"
-            />
-            {inputValue && (
-              <button
-                onClick={() => setInputValue('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+    <>
+      <div className="flex flex-col gap-4 p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building className="h-6 w-6" />
+            <h1 className="text-xl font-bold">
+              My Department Properties
+              {total !== null && (
+                <span className="ml-2 text-muted-foreground font-normal">({total})</span>
+              )}
+            </h1>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Filter by address or subtype..."
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                className="pl-9 pr-8 w-64"
+              />
+              {inputValue && (
+                <button
+                  onClick={() => setInputValue('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
+
+        {/* Table with transformation wrapper */}
+        <PropertiesTableWithTransform
+          queryKey={queryKey}
+          queryFn={queryFn}
+          columns={columns}
+          renderExpandedContent={renderExpandedContent}
+          agentId={agentId}
+          onTotalChange={handleTotalChange}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
+        />
       </div>
 
-      {/* Table with transformation wrapper */}
-      <PropertiesTableWithTransform
-        queryKey={queryKey}
-        queryFn={queryFn}
-        columns={columns}
-        renderExpandedContent={renderExpandedContent}
-        agentId={agentId}
-        onTotalChange={handleTotalChange}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
-        onSortChange={handleSortChange}
-      />
-    </div>
+      {/* Advertiser Selection Sheet - lifted to route level so it persists when rows collapse */}
+      <Sheet open={advertiserSheetState.isOpen} onOpenChange={(open) => !open && handleCloseAdvertiserSheet()}>
+        <SheetContent side="right" className="w-full sm:max-w-xl lg:max-w-2xl overflow-y-auto">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="flex items-center gap-2">
+              <ShoppingCartIcon className="size-5" strokeWidth={1.5} />
+              Available Advertisers for New Booking
+            </SheetTitle>
+            <SheetDescription>
+              Select an advertiser to schedule a booking for this property
+            </SheetDescription>
+          </SheetHeader>
+
+          {advertiserSheetState.advertisersLoading && (
+            <div className="text-sm text-gray-500 py-8 text-center">Loading advertisers...</div>
+          )}
+
+          {advertiserSheetState.advertisersError && (
+            <div className="text-sm text-red-500 py-8 text-center">Error loading advertisers</div>
+          )}
+
+          {advertiserSheetState.advertisers.length === 0 && !advertiserSheetState.advertisersLoading && (
+            <div className="text-sm text-gray-500 py-8 text-center bg-gray-50 rounded">
+              No advertisers available for this property type
+            </div>
+          )}
+
+          {advertiserSheetState.advertisers.length > 0 && (
+            <div className="space-y-4">
+              {advertiserSheetState.advertisers.map((advertiser) => (
+                <AdvertiserCard
+                  key={advertiser.id}
+                  advertiser={advertiser}
+                  subtypeLabels={advertiserSheetState.getSubtypeLabels(advertiser.pstids)}
+                  onBook={(selectedAdvertiser) => {
+                    advertiserSheetState.onSelectAdvertiser(selectedAdvertiser);
+                    handleCloseAdvertiserSheet();
+                  }}
+                  renderPillsWithShowMore={advertiserSheetState.renderPillsWithShowMore}
+                  variant="stacked"
+                />
+              ))}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
 

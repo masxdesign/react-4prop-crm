@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import usePropertyTypeLabels from '@/hooks/usePropertyTypeLabels';
@@ -12,7 +12,7 @@ import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
-const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid }) => {
+const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid, onOpenAdvertiserSheet }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
   const [createdScheduleForPayment, setCreatedScheduleForPayment] = useState(null);
@@ -286,6 +286,19 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
             propertyId={property.pid}
             isAdminViewing={isAdminViewing}
             viewingAgentNid={viewingAgentNid}
+            onScheduleNewAdvertiser={() => {
+              onOpenAdvertiserSheet?.({
+                advertisers,
+                advertisersLoading,
+                advertisersError,
+                getSubtypeLabels,
+                renderPillsWithShowMore,
+                onSelectAdvertiser: (selectedAdvertiser) => {
+                  setSelectedAdvertiserForBooking(selectedAdvertiser);
+                  setIsScheduleModalOpen(true);
+                }
+              });
+            }}
           />
         </div>
       </div>
@@ -388,6 +401,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
         isAdminViewing={isAdminViewing}
         viewingAgentNid={viewingAgentNid}
       />
+
     </div>
   );
 };

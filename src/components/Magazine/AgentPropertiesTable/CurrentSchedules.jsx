@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { parseISO } from 'date-fns';
-import { Calendar, Grid2X2Icon, LayoutGrid, Table2, Table2Icon } from 'lucide-react';
+import { Calendar, Grid2X2Icon, Table2Icon, CalendarPlus, Sparkles } from 'lucide-react';
 import { fetchPropertySchedules, fetchPropertySchedulesSummary } from '../api';
 import { Button } from '@/components/ui/button';
 import ScheduleCardView from './ScheduleCardView';
 import ScheduleTableView from './ScheduleTableView';
 
 // Current Schedules Component - Updated for week-based system
-const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid }) => {
+const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid, onScheduleNewAdvertiser }) => {
   const [viewMode, setViewMode] = useState('table');
   const {
     data: schedulesData,
@@ -48,8 +47,25 @@ const CurrentSchedules = ({ propertyId, isAdminViewing, viewingAgentNid }) => {
 
   if (schedules.length === 0) {
     return (
-      <div className="text-sm text-gray-500 p-4 bg-gray-50 rounded border">
-        No schedules booked for this property yet.
+      <div className="flex flex-col items-center justify-center py-12 px-6 bg-gradient-to-b from-slate-50 to-white rounded-lg border border-dashed border-gray-300">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <CalendarPlus className="w-8 h-8 text-green-600" strokeWidth={1.5} />
+        </div>
+        <h5 className="text-lg font-semibold text-gray-900 mb-2">No bookings yet</h5>
+        <p className="text-sm text-gray-500 text-center max-w-sm mb-6">
+          Get your property noticed by scheduling your first advertiser booking.
+          Reach more potential buyers and tenants today.
+        </p>
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            onScheduleNewAdvertiser?.();
+          }}
+          className="bg-green-600 hover:bg-green-700 text-white gap-2"
+        >
+          <Sparkles className="w-4 h-4" />
+          Schedule New Advertiser
+        </Button>
       </div>
     );
   }
