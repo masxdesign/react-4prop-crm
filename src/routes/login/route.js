@@ -12,7 +12,7 @@ export const Route = createFileRoute('/login')({
         // 2. User has a valid JWT token (prevents redirect loop when JWT expired but session valid)
         const hasJwtToken = !!getToken()
 
-        if(!context.auth.user?.need_to_login && context.auth.isAuthenticated && hasJwtToken) {
+        if (!context.auth.user?.need_to_login && context.auth.isAuthenticated && hasJwtToken) {
             const { auth } = context;
 
             // Admin redirect - users with restricted neg_id go to Clients (list page)
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/login')({
             }
 
             // Estate Agent redirect (default) - all other authenticated users go to Properties (Marketing)
-            throw redirect({ to: '/mag' });
+            throw redirect({ to: '/properties' });
         }
     }
 })
