@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Loader2, ChevronRight, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronRight, ChevronDown, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /** Virtualized table with infinite scrolling and expandable rows */
@@ -23,6 +23,9 @@ const VirtualizedExpandableTable = ({
   onTotalChange,
   renderExpandedContent,
   onRowExpand,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }) => {
   const parentRef = useRef(null)
   const [expandedRows, setExpandedRows] = useState(new Set())
@@ -105,6 +108,33 @@ const VirtualizedExpandableTable = ({
     rowVirtualizer.measure()
   }, [expandedRows, rowVirtualizer])
 
+  const handleColumnSort = useCallback((col) => {
+    if (!col.sortKey || !onSortChange) return
+
+    if (sortBy === col.sortKey) {
+      // Toggle order or clear sort
+      if (sortOrder === 'asc') {
+        onSortChange(col.sortKey, 'desc')
+      } else {
+        onSortChange(null, null) // Clear sort
+      }
+    } else {
+      // New column, start with ascending
+      onSortChange(col.sortKey, 'asc')
+    }
+  }, [sortBy, sortOrder, onSortChange])
+
+  const getSortIcon = (col) => {
+    if (!col.sortKey) return null
+
+    if (sortBy === col.sortKey) {
+      return sortOrder === 'asc'
+        ? <ArrowUp className="h-3 w-3 ml-1" />
+        : <ArrowDown className="h-3 w-3 ml-1" />
+    }
+    return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />
+  }
+
   const getColumnStyle = (col) => {
     const style = {}
     if (col.width) style.width = col.width
@@ -158,10 +188,16 @@ const VirtualizedExpandableTable = ({
           {columns.map((col) => (
             <div
               key={col.key}
-              className={cn('text-xs font-medium text-muted-foreground', getColumnClasses(col))}
+              className={cn(
+                'text-xs font-medium text-muted-foreground flex items-center',
+                getColumnClasses(col),
+                col.sortKey && onSortChange && 'cursor-pointer hover:text-foreground select-none'
+              )}
               style={getColumnStyle(col)}
+              onClick={col.sortKey && onSortChange ? () => handleColumnSort(col) : undefined}
             >
               {col.header}
+              {getSortIcon(col)}
             </div>
           ))}
         </div>

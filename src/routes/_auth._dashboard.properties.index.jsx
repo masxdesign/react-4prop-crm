@@ -61,6 +61,8 @@ function PropertiesTableContent({ agentId, queryClient }) {
   const [total, setTotal] = useState(null)
   const [inputValue, setInputValue] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [sortBy, setSortBy] = useState(null)
+  const [sortOrder, setSortOrder] = useState(null)
 
   // Debounce search input (300ms delay)
   useEffect(() => {
@@ -70,11 +72,16 @@ function PropertiesTableContent({ agentId, queryClient }) {
     return () => clearTimeout(timer)
   }, [inputValue])
 
-  // Include debouncedSearch in queryKey so query refetches when search changes
+  // Include debouncedSearch and sort in queryKey so query refetches when they change
   const queryKey = useMemo(
-    () => ['agent-properties-infinite', agentId, debouncedSearch],
-    [agentId, debouncedSearch]
+    () => ['agent-properties-infinite', agentId, debouncedSearch, sortBy, sortOrder],
+    [agentId, debouncedSearch, sortBy, sortOrder]
   )
+
+  const handleSortChange = useCallback((newSortBy, newSortOrder) => {
+    setSortBy(newSortBy)
+    setSortOrder(newSortOrder)
+  }, [])
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey })
@@ -90,7 +97,8 @@ function PropertiesTableContent({ agentId, queryClient }) {
       {
         key: 'area',
         header: 'Area',
-        width: '60px',
+        width: '70px',
+        sortKey: 'area',
         render: (item) => (
           <span className="text-muted-foreground">
             {item.original?.matchpostcode || '-'}
@@ -133,10 +141,27 @@ function PropertiesTableContent({ agentId, queryClient }) {
         ),
       },
       {
+        key: 'size',
+        header: 'Size',
+        flex: 1.5,
+        minWidth: '100px',
+        sortKey: 'size',
+        render: (item) => {
+          const parts = [item.sizeText, item.landText].filter(Boolean)
+          const sizeDisplay = parts.join(' / ') || '-'
+          return (
+            <span className="text-muted-foreground" title={sizeDisplay}>
+              {sizeDisplay}
+            </span>
+          )
+        },
+      },
+      {
         key: 'tenure',
-        header: 'Tenure',
-        flex: 1,
+        header: 'Price/Rent',
+        flex: 1.5,
         minWidth: '120px',
+        sortKey: 'tenure',
         render: (item) => (
           <span className="font-medium text-green-600">{item.tenureText || 'N/A'}</span>
         ),
@@ -162,6 +187,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         header: 'Total',
         width: '70px',
         align: 'center',
+        sortKey: 'total',
         render: (item) => (
           <span className="bg-slate-100 text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_total || 0}
@@ -173,6 +199,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         header: 'Approve',
         width: '70px',
         align: 'center',
+        sortKey: 'approve',
         render: (item) => (
           <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_approve || 0}
@@ -184,6 +211,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         header: 'Pay',
         width: '70px',
         align: 'center',
+        sortKey: 'pay',
         render: (item) => (
           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_pay || 0}
@@ -194,10 +222,10 @@ function PropertiesTableContent({ agentId, queryClient }) {
     []
   )
 
-  // Query function for infinite scroll (includes search param for backend filtering)
+  // Query function for infinite scroll (includes search and sort params for backend)
   const queryFn = useCallback(
-    ({ cursor, pageSize }) => fetchAgentPropertiesCursor(agentId, { cursor, pageSize, search: debouncedSearch }),
-    [agentId, debouncedSearch]
+    ({ cursor, pageSize }) => fetchAgentPropertiesCursor(agentId, { cursor, pageSize, search: debouncedSearch, sortBy, sortOrder }),
+    [agentId, debouncedSearch, sortBy, sortOrder]
   )
 
   // Render expanded content with lazy loading
@@ -253,6 +281,9 @@ function PropertiesTableContent({ agentId, queryClient }) {
         renderExpandedContent={renderExpandedContent}
         agentId={agentId}
         onTotalChange={handleTotalChange}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSortChange={handleSortChange}
       />
     </div>
   )
@@ -266,6 +297,9 @@ function PropertiesTableWithTransform({
   renderExpandedContent,
   agentId,
   onTotalChange,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }) {
   // Fetch types and subtypes for property transformation
   const [typesResult, subtypesResult] = useSuspenseQueries({
@@ -313,6 +347,9 @@ function PropertiesTableWithTransform({
       errorMessage="Error loading properties"
       renderExpandedContent={renderExpandedContent}
       onTotalChange={onTotalChange}
+      sortBy={sortBy}
+      sortOrder={sortOrder}
+      onSortChange={onSortChange}
     />
   )
 }
