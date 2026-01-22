@@ -289,7 +289,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Filter by address or subtype..."
+                placeholder="Find by address or subtype..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 className="pl-9 pr-8 w-64"
