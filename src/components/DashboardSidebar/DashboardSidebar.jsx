@@ -16,28 +16,18 @@ export function DashboardSidebar({ negId, onLogout, context }) {
   const canImpersonate = auth.user?.is_admin || isImpersonating
 
   return (
-    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
-      {/* Impersonation Banner */}
-      {isImpersonating && (
-        <div className="bg-amber-500 text-amber-950 px-3 py-2 text-xs font-medium flex items-center justify-between">
-          <span>Viewing as {auth.displayName}</span>
-        </div>
-      )}
-
+    <div className="flex flex-col gap-6 items-stretch text-sm text-white h-full bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
       <div className='p-3'>
-        <span className='text-2xl font-bold text-emerald-500 tracking-tighter'>
+        <span className='text-lg font-bold text-emerald-500 tracking-tighter'>
           CRM
         </span>
         <div className='mt-2 flex flex-col gap-1'>
           <span className='text-xs text-white/70 truncate'>
             {auth.displayName}
-            {isImpersonating && (
-              <span className="text-amber-400 ml-1">(Impersonating)</span>
-            )}
           </span>
           <span className={`text-[10px] px-1.5 py-0.5 rounded w-fit ${isImpersonating
-              ? 'bg-amber-600/30 text-amber-400'
-              : 'bg-emerald-600/30 text-emerald-400'
+            ? 'bg-amber-600/30 text-amber-400'
+            : 'bg-emerald-600/30 text-emerald-400'
             }`}>
             {auth.user?.is_admin ? 'Admin' : auth.isAgent ? 'Agent' : auth.isAdvertiser ? 'Advertiser' : 'User'}
           </span>
@@ -45,12 +35,12 @@ export function DashboardSidebar({ negId, onLogout, context }) {
 
         {/* Impersonation Controls */}
         {canImpersonate && (
-          <div className="mt-3 flex flex-col gap-1">
+          <div className="mt-4 flex flex-col gap-1">
             <button
               onClick={() => setImpersonateDialogOpen(true)}
               className="w-full text-left px-2 py-1.5 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded flex items-center gap-2"
             >
-              <UserCog className="h-3 w-3" />
+              <UserCog className="size-4" />
               Impersonate
             </button>
 

@@ -2,10 +2,11 @@ import { fourPropClient } from './fourPropClient'
 import { setToken } from './createAuthClient'
 import { withTokenRefresh } from './withTokenRefresh'
 
-/** Start impersonating a target agent by their neg_id */
-export const impersonate = async (targetNegId) => {
+/** Start impersonating a target user by their neg_id (agent) or user_id (advertiser) */
+export const impersonate = async ({ targetNegId, targetUserId }) => {
+    const payload = targetNegId ? { targetNegId } : { targetUserId }
     const data = await withTokenRefresh(async (headers) => {
-        const { data } = await fourPropClient.post('/api/impersonate', { targetNegId }, { headers })
+        const { data } = await fourPropClient.post('/api/impersonate', payload, { headers })
         return data
     })
     if (data.token) {

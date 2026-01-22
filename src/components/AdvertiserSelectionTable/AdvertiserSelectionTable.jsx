@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, CheckCircle, AlertCircle, Copy, UserCog } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -45,6 +45,7 @@ import { updateAdvertiser, deleteAdvertiser, getAdvertiserStripeStatus } from '@
 import AdvertiserForm from '@/components/Magazine/AdvertiserManagement/AdvertiserForm';
 import AdvertiserOnboarding from '@/components/Magazine/stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
+import { useImpersonation } from '@/hooks/useImpersonation';
 import { toast } from '@/components/ui/use-toast';
 
 const columnHelper = createColumnHelper();
@@ -110,6 +111,7 @@ const AdvertiserSelectionTable = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { getSubtypeLabels } = usePropertySubtypes();
+  const { impersonate, isImpersonatePending } = useImpersonation();
 
   // Edit/Delete state
   const [editingAdvertiser, setEditingAdvertiser] = useState(null);
@@ -284,6 +286,27 @@ const AdvertiserSelectionTable = ({
     setDeleteConfirmOpen(true);
   };
 
+  // Handle Impersonate button click
+  const handleImpersonateClick = (advertiser, e) => {
+    e.stopPropagation();
+    if (advertiser.user_id) {
+      // Save current page state for "Switch back" functionality
+      const returnState = {
+        pathname: '/crm/advertiser',
+        search: urlSearch.search ? `?search=${encodeURIComponent(urlSearch.search)}` : ''
+      };
+      localStorage.setItem('impersonation_return_state', JSON.stringify(returnState));
+      impersonate({ targetUserId: advertiser.user_id });
+    } else {
+      toast({
+        title: 'Cannot impersonate',
+        description: 'This advertiser does not have a user account',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
+
   // Define table columns
   // Use table.options.meta to access handlers with fresh state (TanStack Table pattern)
   const columns = useMemo(
@@ -422,6 +445,21 @@ const AdvertiserSelectionTable = ({
                         <p>Stats</p>
                       </TooltipContent>
                     </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="gradient-amber"
+                          size="icon"
+                          onClick={(e) => table.options.meta?.onImpersonateClick(row.original, e)}
+                          disabled={!row.original.user_id || table.options.meta?.isImpersonatePending}
+                        >
+                          <UserCog className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{row.original.user_id ? 'Impersonate' : 'No user account'}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </TooltipProvider>
                 )}
                 {showManageButtons && (
@@ -472,6 +510,8 @@ const AdvertiserSelectionTable = ({
       onBlogPostsClick: handleBlogPostsClick,
       onEditClick: handleEditClick,
       onDeleteClick: handleDeleteClick,
+      onImpersonateClick: handleImpersonateClick,
+      isImpersonatePending,
     },
   });
 

@@ -9,7 +9,7 @@ export const useImpersonation = () => {
     const setAuth = useAuthDispatch()
 
     const impersonateMutation = useMutation({
-        mutationFn: ({ targetNegId, redirectTo }) => impersonate(targetNegId),
+        mutationFn: ({ targetNegId, targetUserId, redirectTo }) => impersonate({ targetNegId, targetUserId }),
         onSuccess: (data, variables) => {
             // setAuth(authCombiner(data.targetUser, {
             //     isImpersonating: true,
