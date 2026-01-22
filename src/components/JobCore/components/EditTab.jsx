@@ -11,7 +11,7 @@ export default function EditTab({
   onLocalEdit,
   localEdits = {}
 }) {
-  const result = outputData?.output_data?.result || {};
+  const result = outputData?.output_data || {};
 
   return (
     <div className="space-y-6 p-1">

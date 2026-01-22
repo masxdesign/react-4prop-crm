@@ -178,9 +178,9 @@ export default function JobsList({
     }
   };
 
-  const blogPostId = outputData?.output_data?.result?.blog_post_id;
-  const isPublished = outputData?.output_data?.result?.is_published === 'true';
-  const blogSyncedAt = outputData?.output_data?.result?.blog_synced_at;
+  const blogPostId = outputData?.output_data?.blog_post_id;
+  const isPublished = outputData?.output_data?.is_published === 'true';
+  const blogSyncedAt = outputData?.output_data?.blog_synced_at;
   const jobUpdatedAt = outputData?.updated_at;
   const needsSync = blogPostId && jobUpdatedAt && blogSyncedAt && new Date(jobUpdatedAt) > new Date(blogSyncedAt);
 
