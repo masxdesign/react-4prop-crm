@@ -1,7 +1,7 @@
 import propertyPubClient from "./propertyPubClient";
 
 export const fetchJobsByAdvertiserId = async (advertiserId, filters = {}) => {
-  const { data } = await propertyPubClient.get(`/api/jobs`, {
+  const { data } = await propertyPubClient.get(`/api/bullmq/jobs`, {
     params: {
       advertiser_id: advertiserId,
       type: "street_post",
@@ -14,7 +14,7 @@ export const fetchJobsByAdvertiserId = async (advertiserId, filters = {}) => {
 };
 
 export const createStreetPostJob = async ({ postcode, street, advertiserId, createdBy }) => {
-  const { data } = await propertyPubClient.post(`/api/jobs`, {
+  const { data } = await propertyPubClient.post(`/api/bullmq/jobs`, {
     type: "street_post",
     created_by: createdBy,
     data: {
@@ -27,12 +27,12 @@ export const createStreetPostJob = async ({ postcode, street, advertiserId, crea
 };
 
 export const cancelJob = async (jobId) => {
-  const { data } = await propertyPubClient.delete(`/api/jobs/${jobId}`);
+  const { data } = await propertyPubClient.delete(`/api/bullmq/jobs/${jobId}`);
   return data;
 };
 
 export const fetchJobOutput = async (jobId) => {
-  const { data } = await propertyPubClient.get(`/api/jobs/${jobId}/output`);
+  const { data } = await propertyPubClient.get(`/api/bullmq/jobs/${jobId}/output`);
   return data;
 };
 
@@ -44,7 +44,7 @@ export const fetchStreetPostEstimate = async ({ postcode, street }) => {
 };
 
 export const fetchRelatedJobs = async ({ postcode, street, advertiserId }) => {
-  const { data } = await propertyPubClient.get(`/api/jobs`, {
+  const { data } = await propertyPubClient.get(`/api/bullmq/jobs`, {
     params: {
       postcode,
       street,
@@ -58,7 +58,7 @@ export const fetchRelatedJobs = async ({ postcode, street, advertiserId }) => {
 
 // Create remix job (AI regeneration with feedback)
 export const createRemixJob = async ({ originalJobId, fieldName, userFeedback, revisionId, createdBy }) => {
-  const { data } = await propertyPubClient.post(`/api/jobs`, {
+  const { data } = await propertyPubClient.post(`/api/bullmq/jobs`, {
     type: "street_post_remix",
     created_by: createdBy,
     data: {
@@ -73,7 +73,7 @@ export const createRemixJob = async ({ originalJobId, fieldName, userFeedback, r
 
 // Get revision history for a field
 export const fetchRevisionHistory = async (jobId, fieldName) => {
-  const { data } = await propertyPubClient.get(`/api/revisions/${jobId}/history`, {
+  const { data } = await propertyPubClient.get(`/api/bullmq/jobs/${jobId}/revisions`, {
     params: { field_name: fieldName }
   });
   return data;
@@ -81,19 +81,19 @@ export const fetchRevisionHistory = async (jobId, fieldName) => {
 
 // Manual update: revision content (when viewing a revision)
 export const updateRevisionContent = async (revisionId, content) => {
-  const { data } = await propertyPubClient.patch(`/api/revisions/${revisionId}`, { content });
+  const { data } = await propertyPubClient.patch(`/api/bullmq/revisions/${revisionId}`, { content });
   return data;
 };
 
 // Manual update: original job result field (when viewing original)
 export const updateJobResultField = async (jobId, fieldName, content) => {
-  const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/result/${fieldName}`, { content });
+  const { data } = await propertyPubClient.patch(`/api/bullmq/jobs/${jobId}/result/${fieldName}`, { content });
   return data;
 };
 
 // Fetch in-progress remix jobs for a specific original job
 export const fetchRemixJobsInProgress = async (originalJobId) => {
-  const { data } = await propertyPubClient.get(`/api/jobs`, {
+  const { data } = await propertyPubClient.get(`/api/bullmq/jobs`, {
     params: {
       type: "street_post_remix",
       original_job_id: originalJobId,
@@ -105,6 +105,6 @@ export const fetchRemixJobsInProgress = async (originalJobId) => {
 
 // Update selected revision version for a field
 export const updateSelectedVersion = async (jobId, fieldName, version) => {
-  const { data } = await propertyPubClient.patch(`/api/jobs/${jobId}/selected-version/${fieldName}`, { version });
+  const { data } = await propertyPubClient.patch(`/api/bullmq/jobs/${jobId}/selected-version/${fieldName}`, { version });
   return data;
 };
