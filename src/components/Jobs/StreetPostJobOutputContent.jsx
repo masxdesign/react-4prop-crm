@@ -1,4 +1,4 @@
-import { JobOutputContent } from '@/components/JobCore';
+import { DraftOutputContent } from '@/components/JobCore';
 import { useRelatedJobs } from '@/features/jobs/jobs.hooks';
 import {
   STREET_POST_EDITABLE_FIELDS,
@@ -7,15 +7,16 @@ import {
 } from './streetPostConfig';
 
 /**
- * Street-post specific wrapper for JobOutputContent.
+ * Street-post specific wrapper for DraftOutputContent.
+ * Uses the new draft/revision system for content editing.
  * Configures the generic component with street-post field schemas and related jobs.
  */
 export default function StreetPostJobOutputContent({
-  outputData,
-  isLoading = false,
   job = null,
   advertiserId = null,
   onJobChange = null,
+  onSyncStatusChange = null,
+  onPublishHandlersChange = null,
 }) {
   const postcode = job?.input_data?.postcode;
   const street = job?.input_data?.street;
@@ -24,11 +25,11 @@ export default function StreetPostJobOutputContent({
   const { jobs: relatedJobs } = useRelatedJobs(postcode, street, advertiserId);
 
   return (
-    <JobOutputContent
-      outputData={outputData}
-      isLoading={isLoading}
+    <DraftOutputContent
       job={job}
       onJobChange={onJobChange}
+      onSyncStatusChange={onSyncStatusChange}
+      onPublishHandlersChange={onPublishHandlersChange}
       editableFields={STREET_POST_EDITABLE_FIELDS}
       previewFields={STREET_POST_PREVIEW_FIELDS}
       jobType={STREET_POST_JOB_CONFIG.type}

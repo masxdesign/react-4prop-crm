@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Search } from 'lucide-react';
 import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { JOB_STATUS_CONFIG, formatRelativeTime, formatCostUSD } from './utils';
-import { JobOutputDialog } from './components';
+import { JobOutputSheet } from './components';
 
 // Filter options for the job list
 const FILTER_OPTIONS = [
@@ -68,6 +68,12 @@ export default function JobsList({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const parentRef = useRef(null);
+
+  // Draft sync status (overrides job-based sync status when drafts are used)
+  const [draftSyncStatus, setDraftSyncStatus] = useState(null);
+
+  // Draft publish handlers (provided by DraftOutputContent)
+  const [draftPublishHandlers, setDraftPublishHandlers] = useState(null);
 
   // Reset filter to 'all' when resetFilterTrigger changes
   useEffect(() => {
@@ -148,6 +154,8 @@ export default function JobsList({
 
   const handleCloseDialog = () => {
     setSelectedJob(null);
+    setDraftSyncStatus(null); // Reset draft sync status when closing
+    setDraftPublishHandlers(null); // Reset draft publish handlers when closing
   };
 
   const handleJobChange = (job) => {
@@ -160,29 +168,45 @@ export default function JobsList({
   // Publish mutation
   const publishMutation = usePublishJobMutation(jobType);
 
+  // Use draft handlers if available, otherwise fall back to job-based publish
   const handlePush = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onPush) {
+      draftPublishHandlers.onPush();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id });
     }
   };
 
   const handleUnpublish = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onUnpublish) {
+      draftPublishHandlers.onUnpublish();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id, unpublish: true });
     }
   };
 
   const handlePublish = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onPublish) {
+      draftPublishHandlers.onPublish();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id });
     }
   };
 
-  const blogPostId = outputData?.output_data?.blog_post_id;
-  const isPublished = outputData?.output_data?.is_published === 'true';
-  const blogSyncedAt = outputData?.output_data?.blog_synced_at;
-  const jobUpdatedAt = outputData?.updated_at;
-  const needsSync = blogPostId && jobUpdatedAt && blogSyncedAt && new Date(jobUpdatedAt) > new Date(blogSyncedAt);
+  // Combine loading states
+  const isPublishing = draftPublishHandlers?.isPublishing ?? publishMutation.isPending;
+
+  // Use draft sync status if available, otherwise fall back to job-based status
+  const blogPostId = draftSyncStatus?.blogPostId ?? outputData?.output_data?.blog_post_id;
+  const syncStatus = draftSyncStatus?.syncStatus;
+  // For drafts: use sync_status directly (based on hash comparison)
+  // For legacy jobs: fall back to timestamp comparison
+  const isPublished = syncStatus
+    ? (syncStatus === 'published' || syncStatus === 'modified')
+    : (outputData?.output_data?.is_published === 'true');
+  const needsSync = syncStatus
+    ? syncStatus === 'modified'
+    : needsSyncCheck({ ...selectedJob, ...outputData?.output_data });
 
   return (
     <>
@@ -364,7 +388,7 @@ export default function JobsList({
         )}
       </div>
 
-      <JobOutputDialog
+      <JobOutputSheet
         job={selectedJob}
         open={!!selectedJob}
         onOpenChange={(open) => !open && handleCloseDialog()}
@@ -376,7 +400,7 @@ export default function JobsList({
         onPush={handlePush}
         onUnpublish={handleUnpublish}
         onPublish={handlePublish}
-        isPublishing={publishMutation.isPending}
+        isPublishing={isPublishing}
       >
         {OutputContentComponent && (
           <OutputContentComponent
@@ -385,10 +409,12 @@ export default function JobsList({
             job={selectedJob}
             advertiserId={advertiserId}
             onJobChange={handleJobChange}
+            onSyncStatusChange={setDraftSyncStatus}
+            onPublishHandlersChange={setDraftPublishHandlers}
             {...outputContentProps}
           />
         )}
-      </JobOutputDialog>
+      </JobOutputSheet>
     </>
   );
 }

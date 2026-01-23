@@ -75,7 +75,7 @@ const ImpersonateSheet = ({ open, onOpenChange }) => {
 
     return (
         <Sheet open={open} onOpenChange={handleOpenChange}>
-            <SheetContent side="right" className="sm:max-w-md">
+            <SheetContent side="left" className="sm:max-w-md">
                 <SheetHeader>
                     <SheetTitle>Impersonate Agent</SheetTitle>
                     <SheetDescription>
