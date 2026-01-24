@@ -244,7 +244,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         width: '70px',
         align: 'center',
         sortKey: 'approve',
-        description: 'Bookings awaiting advertiser approval',
+        description: 'Bookings awaiting your approval',
         render: (item) => (
           <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_approve || 0}
@@ -257,7 +257,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         width: '70px',
         align: 'center',
         sortKey: 'pay',
-        description: 'Approved bookings pending payment',
+        description: 'Approved bookings waiting for you to complete payment',
         render: (item) => (
           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_pay || 0}
