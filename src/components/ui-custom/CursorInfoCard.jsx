@@ -2,7 +2,6 @@ import { createPortal } from 'react-dom';
 
 const OFFSET_X = 15; // pixels from cursor
 const OFFSET_Y = 15;
-const EDGE_PADDING = 10; // minimum distance from screen edge
 
 /**
  * Cursor-following info card component
@@ -13,30 +12,34 @@ const EDGE_PADDING = 10; // minimum distance from screen edge
  * @param {number} x - Mouse X position (clientX)
  * @param {number} y - Mouse Y position (clientY)
  * @param {number} [minWidth=200] - Minimum width of the tooltip in pixels
+ * @param {number} [edgePadding=10] - Minimum distance from screen edges in pixels
  * @param {React.ReactNode} children - Content to display in the card
  */
-export function CursorInfoCard({ visible, x, y, minWidth = 200, children }) {
+export function CursorInfoCard({ visible, x, y, minWidth = 200, edgePadding = 10, children }) {
   if (!visible || !children) return null;
 
   // Calculate position with screen-edge awareness
   const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
 
-  // Check if tooltip would overflow right edge
-  const wouldOverflowRight = x + OFFSET_X + minWidth + EDGE_PADDING > viewportWidth;
+  // Check if tooltip would overflow right edge using minWidth
+  const wouldOverflowRight = x + OFFSET_X + minWidth + edgePadding > viewportWidth;
 
   // Position tooltip to the left of cursor if it would overflow right
   const left = wouldOverflowRight
-    ? Math.max(EDGE_PADDING, x - OFFSET_X - minWidth)
+    ? Math.max(edgePadding, x - OFFSET_X - minWidth)
     : x + OFFSET_X;
+
+  // Calculate maxWidth to ensure tooltip never exceeds right edge with padding
+  const maxWidth = viewportWidth - left - edgePadding;
 
   // Check if tooltip would overflow bottom edge (estimate ~60px height)
   const estimatedHeight = 60;
-  const wouldOverflowBottom = y + OFFSET_Y + estimatedHeight + EDGE_PADDING > viewportHeight;
+  const wouldOverflowBottom = y + OFFSET_Y + estimatedHeight + edgePadding > viewportHeight;
 
   // Position tooltip above cursor if it would overflow bottom
   const top = wouldOverflowBottom
-    ? Math.max(EDGE_PADDING, y - OFFSET_Y - estimatedHeight)
+    ? Math.max(edgePadding, y - OFFSET_Y - estimatedHeight)
     : y + OFFSET_Y;
 
   return createPortal(
@@ -46,6 +49,7 @@ export function CursorInfoCard({ visible, x, y, minWidth = 200, children }) {
         left,
         top,
         minWidth,
+        maxWidth,
         transform: 'translate(0, 0)', // GPU acceleration hint
       }}
     >
