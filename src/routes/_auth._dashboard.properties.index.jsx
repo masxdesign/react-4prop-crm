@@ -231,6 +231,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         width: '70px',
         align: 'center',
         sortKey: 'total',
+        description: 'Total bookings scheduled for this property',
         render: (item) => (
           <span className="bg-slate-100 text-muted-foreground px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_total || 0}
@@ -243,6 +244,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         width: '70px',
         align: 'center',
         sortKey: 'approve',
+        description: 'Bookings awaiting advertiser approval',
         render: (item) => (
           <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_approve || 0}
@@ -255,6 +257,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
         width: '70px',
         align: 'center',
         sortKey: 'pay',
+        description: 'Approved bookings pending payment',
         render: (item) => (
           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
             {item.original?.schedules_to_pay || 0}
@@ -337,6 +340,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSortChange={handleSortChange}
+          headerTooltip={cursorCard}
         />
       </div>
 
@@ -401,6 +405,7 @@ function PropertiesTableWithTransform({
   sortBy,
   sortOrder,
   onSortChange,
+  headerTooltip,
 }) {
   // Fetch types and subtypes for property transformation
   const [typesResult, subtypesResult] = useSuspenseQueries({
@@ -451,6 +456,7 @@ function PropertiesTableWithTransform({
       sortBy={sortBy}
       sortOrder={sortOrder}
       onSortChange={onSortChange}
+      headerTooltip={headerTooltip}
     />
   )
 }

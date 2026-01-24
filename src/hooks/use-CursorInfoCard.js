@@ -23,7 +23,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
  *   {cursorCard.state.content}
  * </CursorInfoCard>
  */
-export function useCursorInfoCard({ showDelay = 300, hideDelay = 100 } = {}) {
+export function useCursorInfoCard({ showDelay = 0, hideDelay = 100 } = {}) {
   const [state, setState] = useState({
     visible: false,
     content: null,

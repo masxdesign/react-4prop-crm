@@ -26,6 +26,7 @@ const VirtualizedExpandableTable = ({
   sortBy,
   sortOrder,
   onSortChange,
+  headerTooltip = null, // { show: (content) => void, hide: () => void, updatePosition: (e) => void }
 }) => {
   const parentRef = useRef(null)
   const [expandedRows, setExpandedRows] = useState(new Set())
@@ -225,6 +226,9 @@ const VirtualizedExpandableTable = ({
               )}
               style={getColumnStyle(col)}
               onClick={col.sortKey && onSortChange ? () => handleColumnSort(col) : undefined}
+              onMouseEnter={col.description && headerTooltip ? () => headerTooltip.show(col.description) : undefined}
+              onMouseMove={col.description && headerTooltip ? headerTooltip.updatePosition : undefined}
+              onMouseLeave={col.description && headerTooltip ? headerTooltip.hide : undefined}
             >
               {col.header}
               {getSortIcon(col)}
