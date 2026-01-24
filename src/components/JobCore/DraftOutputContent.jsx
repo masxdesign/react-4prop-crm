@@ -59,8 +59,8 @@ export default function DraftOutputContent({
   // Mutations
   const createRemixMutation = useCreateRemixJobMutation(remixType, jobType);
   const updateFieldMutation = useUpdateDraftFieldMutation(jobType);
-  const selectRevisionMutation = useSelectDraftRevisionMutation();
-  const publishMutation = usePublishDraftMutation();
+  const selectRevisionMutation = useSelectDraftRevisionMutation(jobType);
+  const publishMutation = usePublishDraftMutation(jobType);
 
   // Report draft sync status to parent (for sheet header badges)
   // sync_status can be: 'draft', 'published', 'modified', 'unpublished'
@@ -79,13 +79,13 @@ export default function DraftOutputContent({
   useEffect(() => {
     if (onPublishHandlersChange && draft?.id) {
       onPublishHandlersChange({
-        onPublish: () => publishMutation.mutate({ draftId: draft.id }),
-        onPush: () => publishMutation.mutate({ draftId: draft.id }),
-        onUnpublish: () => publishMutation.mutate({ draftId: draft.id, unpublish: true }),
+        onPublish: () => publishMutation.mutate({ draftId: draft.id, sourceJobId: job?.id }),
+        onPush: () => publishMutation.mutate({ draftId: draft.id, sourceJobId: job?.id }),
+        onUnpublish: () => publishMutation.mutate({ draftId: draft.id, sourceJobId: job?.id, unpublish: true }),
         isPublishing: publishMutation.isPending
       });
     }
-  }, [draft?.id, publishMutation, onPublishHandlersChange]);
+  }, [draft?.id, job?.id, publishMutation, onPublishHandlersChange]);
 
   const handleJobChange = (jobId) => {
     const selectedJob = relatedJobs.find((j) => j.id === jobId);
@@ -125,7 +125,8 @@ export default function DraftOutputContent({
       draftId: draft.id,
       fieldName: field,
       content: value,
-      createdBy: auth.user?.id
+      createdBy: auth.user?.id,
+      sourceJobId: job?.id
     });
   };
 
@@ -141,7 +142,8 @@ export default function DraftOutputContent({
       selectRevisionMutation.mutate({
         draftId: draft.id,
         fieldName,
-        revisionId: revision.id
+        revisionId: revision.id,
+        sourceJobId: job?.id
       });
     }
   };

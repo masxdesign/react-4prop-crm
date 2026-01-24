@@ -53,6 +53,46 @@ export function useDraftRevisionHistory(draftId, fieldName) {
 }
 
 /**
+ * Helper to update jobs list cache with new draft_sync_status
+ */
+function updateJobsListSyncStatus(queryClient, jobType, sourceJobId, newSyncStatus) {
+  if (!jobType || !sourceJobId) return;
+
+  queryClient.setQueriesData(
+    { queryKey: [`${jobType}Jobs`] },
+    (old) => {
+      if (!old) return old;
+
+      const updateJob = (job) =>
+        job.id === sourceJobId
+          ? { ...job, draft_sync_status: newSyncStatus }
+          : job;
+
+      // Handle infinite query structure (pages array)
+      if (old.pages) {
+        return {
+          ...old,
+          pages: old.pages.map(page => ({
+            ...page,
+            jobs: page.jobs.map(updateJob)
+          }))
+        };
+      }
+
+      // Handle regular query structure
+      if (old.jobs) {
+        return {
+          ...old,
+          jobs: old.jobs.map(updateJob)
+        };
+      }
+
+      return old;
+    }
+  );
+}
+
+/**
  * Update draft field mutation (creates new revision)
  * @param {string} jobType - Original job type for cache invalidation
  */
@@ -62,7 +102,7 @@ export function useUpdateDraftFieldMutation(jobType) {
   return useMutation({
     mutationFn: ({ draftId, fieldName, content, createdBy }) =>
       updateDraftField(draftId, fieldName, content, createdBy),
-    onSuccess: (data, { draftId }) => {
+    onSuccess: (data, { draftId, sourceJobId }) => {
       const now = new Date().toISOString();
       // Invalidate draft and revision queries
       queryClient.invalidateQueries({ queryKey: ["draft", draftId] });
@@ -71,6 +111,7 @@ export function useUpdateDraftFieldMutation(jobType) {
 
       // Update draft cache with new content_hash and recalculate sync_status
       // Use synced_content_hash from server response if available, otherwise use cached value
+      let newSyncStatus = null;
       const updateWithSyncStatus = (old) => {
         if (!old) return old;
         const newHash = data.content_hash;
@@ -81,6 +122,7 @@ export function useUpdateDraftFieldMutation(jobType) {
         if (old.blog_post_id && syncedHash) {
           syncStatus = newHash === syncedHash ? 'published' : 'modified';
         }
+        newSyncStatus = syncStatus;
 
         return { ...old, updated_at: now, content_hash: newHash, synced_content_hash: syncedHash, sync_status: syncStatus };
       };
@@ -90,14 +132,20 @@ export function useUpdateDraftFieldMutation(jobType) {
         { queryKey: ["draft", "byJob"], exact: false },
         (old) => old?.id === draftId ? updateWithSyncStatus(old) : old
       );
+
+      // Update jobs list cache with new sync status
+      if (newSyncStatus) {
+        updateJobsListSyncStatus(queryClient, jobType, sourceJobId, newSyncStatus);
+      }
     }
   });
 }
 
 /**
  * Select revision mutation (switch which revision is active)
+ * @param {string} jobType - Job type for updating jobs list cache
  */
-export function useSelectDraftRevisionMutation() {
+export function useSelectDraftRevisionMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -139,9 +187,10 @@ export function useSelectDraftRevisionMutation() {
         queryClient.setQueryData(context.queryKey, context.previousData);
       }
     },
-    onSuccess: (data, { draftId }) => {
+    onSuccess: (data, { draftId, sourceJobId }) => {
       // Update content hash and recalculate sync_status based on hash comparison
       // Use synced_content_hash from server response if available, otherwise use cached value
+      let newSyncStatus = null;
       const updateWithSyncStatus = (old) => {
         if (!old) return old;
         const newHash = data.content_hash;
@@ -152,6 +201,7 @@ export function useSelectDraftRevisionMutation() {
         if (old.blog_post_id && syncedHash) {
           syncStatus = newHash === syncedHash ? 'published' : 'modified';
         }
+        newSyncStatus = syncStatus;
 
         return { ...old, content_hash: newHash, synced_content_hash: syncedHash, sync_status: syncStatus };
       };
@@ -161,21 +211,28 @@ export function useSelectDraftRevisionMutation() {
         { queryKey: ["draft", "byJob"], exact: false },
         (old) => old?.id === draftId ? updateWithSyncStatus(old) : old
       );
+
+      // Update jobs list cache with new sync status
+      if (newSyncStatus) {
+        updateJobsListSyncStatus(queryClient, jobType, sourceJobId, newSyncStatus);
+      }
     }
   });
 }
 
 /**
  * Publish draft mutation
+ * @param {string} jobType - Job type for updating jobs list cache (e.g., 'street_post')
  */
-export function usePublishDraftMutation() {
+export function usePublishDraftMutation(jobType) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ draftId, unpublish }) => publishDraft(draftId, { unpublish }),
-    onSuccess: (response, { draftId }) => {
+    onSuccess: (response, { draftId, sourceJobId }) => {
       const { blog_post_id, is_published } = response;
       const now = new Date().toISOString();
+      const newSyncStatus = is_published ? 'published' : 'unpublished';
 
       const updateDraftData = (old) => {
         if (!old) return old;
@@ -186,7 +243,7 @@ export function usePublishDraftMutation() {
           // On publish: snapshot current hash as synced_content_hash
           // On unpublish: clear synced_content_hash
           synced_content_hash: is_published ? old.content_hash : null,
-          sync_status: is_published ? 'published' : 'unpublished'
+          sync_status: newSyncStatus
         };
       };
 
@@ -198,6 +255,48 @@ export function usePublishDraftMutation() {
         { queryKey: ["draft", "byJob"], exact: false },
         (old) => old?.id === draftId ? updateDraftData(old) : old
       );
+
+      // Update jobs list cache with new draft_sync_status
+      if (jobType && sourceJobId) {
+        queryClient.setQueriesData(
+          { queryKey: [`${jobType}Jobs`] },
+          (old) => {
+            if (!old) return old;
+
+            const updateJob = (job) =>
+              job.id === sourceJobId
+                ? {
+                    ...job,
+                    draft_sync_status: newSyncStatus,
+                    blog_post_id,
+                    is_published,
+                    blog_synced_at: is_published ? now : job.blog_synced_at,
+                  }
+                : job;
+
+            // Handle infinite query structure (pages array)
+            if (old.pages) {
+              return {
+                ...old,
+                pages: old.pages.map(page => ({
+                  ...page,
+                  jobs: page.jobs.map(updateJob)
+                }))
+              };
+            }
+
+            // Handle regular query structure
+            if (old.jobs) {
+              return {
+                ...old,
+                jobs: old.jobs.map(updateJob)
+              };
+            }
+
+            return old;
+          }
+        );
+      }
     }
   });
 }

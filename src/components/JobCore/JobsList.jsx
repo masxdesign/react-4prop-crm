@@ -4,47 +4,51 @@ import { Loader2, Search } from 'lucide-react';
 import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { JOB_STATUS_CONFIG, formatRelativeTime, formatCostUSD } from './utils';
 import { JobOutputSheet } from './components';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 
 // Filter options for the job list
 const FILTER_OPTIONS = [
-  { id: 'all', label: 'All' },
-  { id: 'failed', label: 'Failed' },
-  { id: 'not_posted', label: 'Not posted' },
-  { id: 'published', label: 'Published' },
-  { id: 'unpublished', label: 'Unpublished' },
+  { id: 'all', label: 'All', description: 'Show all jobs regardless of status' },
+  { id: 'failed', label: 'Failed', description: 'Jobs that failed during processing' },
+  { id: 'draft', label: 'Draft', description: 'Content created but never published' },
+  { id: 'published', label: 'Published', description: 'Content live on the blog and in sync' },
+  { id: 'modified', label: 'Needs syncing', description: 'Published content with local changes not yet synced' },
+  { id: 'unpublished', label: 'Unpublished', description: 'Previously published content that was taken offline' },
 ];
 
 // Blog status badge configuration
+// Maps draft_sync_status values to display config
 const BLOG_STATUS_CONFIG = {
-  not_posted: {
-    label: 'Not posted',
+  draft: {
+    label: 'Draft',
     className: 'bg-gray-100 text-gray-600 border-gray-200',
   },
   published: {
     label: 'Published',
     className: 'bg-green-100 text-green-700 border-green-200',
   },
-  unpublished: {
-    label: 'Unpublished',
+  modified: {
+    label: 'Not synced',
     className: 'bg-amber-100 text-amber-700 border-amber-200',
   },
-  needs_sync: {
-    label: 'Needs sync',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
+  unpublished: {
+    label: 'Unpublished',
+    className: 'bg-red-100 text-red-700 border-red-200',
   },
 };
 
+/**
+ * Get blog status from job's draft_sync_status
+ * Falls back to legacy logic if no draft exists
+ */
 function getBlogStatus(job) {
-  if (!job.blog_post_id) return 'not_posted';
+  // Use draft_sync_status if available (new system)
+  if (job.draft_sync_status) {
+    return job.draft_sync_status;
+  }
+  // Legacy fallback for jobs without drafts
+  if (!job.blog_post_id) return 'draft';
   return job.is_published ? 'published' : 'unpublished';
-}
-
-function needsSyncCheck(job) {
-  return job.blog_post_id &&
-         job.is_published &&
-         job.updated_at &&
-         job.blog_synced_at &&
-         new Date(job.updated_at) > new Date(job.blog_synced_at);
 }
 
 /**
@@ -200,13 +204,11 @@ export default function JobsList({
   const blogPostId = draftSyncStatus?.blogPostId ?? outputData?.output_data?.blog_post_id;
   const syncStatus = draftSyncStatus?.syncStatus;
   // For drafts: use sync_status directly (based on hash comparison)
-  // For legacy jobs: fall back to timestamp comparison
+  // For legacy jobs: fall back to output_data fields
   const isPublished = syncStatus
     ? (syncStatus === 'published' || syncStatus === 'modified')
     : (outputData?.output_data?.is_published === 'true');
-  const needsSync = syncStatus
-    ? syncStatus === 'modified'
-    : needsSyncCheck({ ...selectedJob, ...outputData?.output_data });
+  const needsSync = syncStatus === 'modified';
 
   return (
     <>
@@ -226,22 +228,29 @@ export default function JobsList({
           </div>
 
           {/* Filter buttons */}
-          <div className="flex items-center gap-1">
-            {FILTER_OPTIONS.map((filter) => (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setActiveFilter(filter.id)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-                  activeFilter === filter.id
-                    ? 'bg-blue-100 text-blue-700 border-blue-200'
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+          <TooltipProvider delayDuration={300} skipDelayDuration={500}>
+            <div className="flex items-center gap-1">
+              {FILTER_OPTIONS.map((filter) => (
+                <Tooltip key={filter.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFilter(filter.id)}
+                      className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${activeFilter === filter.id
+                        ? 'bg-blue-100 text-blue-700 border-blue-200'
+                        : 'bg-white text-gray-600 border-gray-200 hover:bg-white hover:text-blue-700 hover:border-blue-200'
+                        }`}
+                    >
+                      {filter.label}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-gray-900 text-white border-gray-800 text-xs">
+                    <p>{filter.description}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </TooltipProvider>
 
           {/* Spacer */}
           <div className="flex-1" />
@@ -316,7 +325,6 @@ export default function JobsList({
                 const title = getTitle ? getTitle(job) : job.id;
                 const blogStatus = job.status === 'completed' ? getBlogStatus(job) : null;
                 const blogConfig = blogStatus ? BLOG_STATUS_CONFIG[blogStatus] : null;
-                const showNeedsSync = job.status === 'completed' && needsSyncCheck(job);
                 const displayCost = job.total_cost_usd ?? job.cost_usd;
 
                 return (
@@ -356,11 +364,6 @@ export default function JobsList({
                       {blogConfig && (
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${blogConfig.className}`}>
                           {blogConfig.label}
-                        </span>
-                      )}
-                      {showNeedsSync && (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border ${BLOG_STATUS_CONFIG.needs_sync.className}`}>
-                          !
                         </span>
                       )}
                     </div>
