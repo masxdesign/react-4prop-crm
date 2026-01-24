@@ -4,7 +4,8 @@ import { Loader2, Search } from 'lucide-react';
 import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { JOB_STATUS_CONFIG, formatRelativeTime, formatCostUSD } from './utils';
 import { JobOutputSheet } from './components';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
+import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard';
+import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard';
 
 // Filter options for the job list
 const FILTER_OPTIONS = [
@@ -72,6 +73,7 @@ export default function JobsList({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const parentRef = useRef(null);
+  const cursorCard = useCursorInfoCard({ showDelay: 0 });
 
   // Draft sync status (overrides job-based sync status when drafts are used)
   const [draftSyncStatus, setDraftSyncStatus] = useState(null);
@@ -212,6 +214,9 @@ export default function JobsList({
 
   return (
     <>
+      <CursorInfoCard visible={cursorCard.state.visible} x={cursorCard.state.x} y={cursorCard.state.y}>
+        {cursorCard.state.content}
+      </CursorInfoCard>
       <div className="border-2 border-gray-300 rounded-xl bg-white mt-6">
         {/* Search and filters header */}
         <div className="flex items-center gap-3 p-4 border-b">
@@ -228,29 +233,24 @@ export default function JobsList({
           </div>
 
           {/* Filter buttons */}
-          <TooltipProvider delayDuration={300} skipDelayDuration={500}>
-            <div className="flex items-center gap-1">
-              {FILTER_OPTIONS.map((filter) => (
-                <Tooltip key={filter.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setActiveFilter(filter.id)}
-                      className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${activeFilter === filter.id
-                        ? 'bg-blue-100 text-blue-700 border-blue-200'
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-white hover:text-blue-700 hover:border-blue-200'
-                        }`}
-                    >
-                      {filter.label}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-gray-900 text-white border-gray-800 text-xs">
-                    <p>{filter.description}</p>
-                  </TooltipContent>
-                </Tooltip>
-              ))}
-            </div>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            {FILTER_OPTIONS.map((filter) => (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilter(filter.id)}
+                onMouseEnter={() => cursorCard.show(filter.description)}
+                onMouseMove={cursorCard.updatePosition}
+                onMouseLeave={cursorCard.hide}
+                className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${activeFilter === filter.id
+                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-white hover:text-blue-700 hover:border-blue-200'
+                  }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
 
           {/* Spacer */}
           <div className="flex-1" />

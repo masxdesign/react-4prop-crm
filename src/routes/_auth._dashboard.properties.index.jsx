@@ -8,6 +8,8 @@ import { enhancedPropertyCombiner, propertyUtils } from '@/hooks/propertyDetails
 import { propertyTypescombiner } from '@/store/use-listing'
 import { typesQuery, subtypesQuery } from '@/store/listing.queries'
 import { Building, RefreshCw, Search, X, ShoppingCartIcon } from 'lucide-react'
+import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
+import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useQueryClient, useSuspenseQueries } from '@tanstack/react-query'
@@ -71,6 +73,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [sortBy, setSortBy] = useState(null)
   const [sortOrder, setSortOrder] = useState(null)
+  const cursorCard = useCursorInfoCard()
 
   // Sheet state lifted to route level so it persists when rows collapse
   const [advertiserSheetState, setAdvertiserSheetState] = useState({
@@ -141,7 +144,12 @@ function PropertiesTableContent({ agentId, queryClient }) {
         flex: 2,
         minWidth: '200px',
         render: (item) => (
-          <div className="flex items-center gap-2 max-w-xs">
+          <div
+            className="flex items-center gap-2 max-w-xs"
+            onMouseEnter={() => cursorCard.show(item.addressText || 'Address unavailable')}
+            onMouseMove={cursorCard.updatePosition}
+            onMouseLeave={cursorCard.hide}
+          >
             {item.thumbnail ? (
               <img
                 src={item.thumbnail}
@@ -153,7 +161,7 @@ function PropertiesTableContent({ agentId, queryClient }) {
                 <Building className="w-4 h-4 text-gray-400" />
               </div>
             )}
-            <div className="truncate" title={item.addressText}>
+            <div className="truncate">
               {item.addressText || 'Address unavailable'}
             </div>
           </div>
@@ -165,7 +173,12 @@ function PropertiesTableContent({ agentId, queryClient }) {
         flex: 3,
         minWidth: '120px',
         render: (item) => (
-          <div className="truncate" title={item.subtypesText}>
+          <div
+            className="truncate"
+            onMouseEnter={() => cursorCard.show(item.subtypesText || 'No subtypes')}
+            onMouseMove={cursorCard.updatePosition}
+            onMouseLeave={cursorCard.hide}
+          >
             {item.subtypesText || 'No subtypes'}
           </div>
         ),
@@ -272,6 +285,9 @@ function PropertiesTableContent({ agentId, queryClient }) {
 
   return (
     <>
+      <CursorInfoCard visible={cursorCard.state.visible} x={cursorCard.state.x} y={cursorCard.state.y}>
+        {cursorCard.state.content}
+      </CursorInfoCard>
       <div className="flex flex-col gap-4 p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
