@@ -375,3 +375,34 @@
     color: hsl(var(--foreground));
   }
 }
+
+/* Dark mode popup for CustomAnchorsMap */
+.custom-anchor-popup-dark .maplibregl-popup-content {
+  background-color: #1f2937;
+  color: #f3f4f6;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.custom-anchor-popup-dark .maplibregl-popup-close-button {
+  color: #9ca3af;
+  font-size: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  top: 0.25rem;
+  right: 0.25rem;
+}
+
+.custom-anchor-popup-dark .maplibregl-popup-close-button:hover {
+  color: #f3f4f6;
+  background-color: #374151;
+}
+
+.custom-anchor-popup-dark .maplibregl-popup-tip {
+  border-top-color: #1f2937;
+}
