@@ -1,4 +1,7 @@
+import axios from 'axios'
 import streetLocationsClient from './streetLocationsClient'
+
+const N8N_NEARBY_URL = import.meta.env.VITE_N8N_NEARBY_WEBHOOK_URL
 
 export const fetchStreetLocationsByPrefix = async (prefix) => {
   const { data } = await streetLocationsClient.post('', {
@@ -128,4 +131,14 @@ export const deleteStreetLocation = async (id) => {
     variables: { id: Number(id) },
   })
   return data.data.deleteStreetLocation
+}
+
+export const generateNearby = async (ids) => {
+  const { data } = await axios.post(`${N8N_NEARBY_URL}/generate`, { ids })
+  return data.data
+}
+
+export const fetchNearbyStatus = async (ids) => {
+  const { data } = await axios.post(`${N8N_NEARBY_URL}/status`, { ids })
+  return data.data
 }

@@ -1,14 +1,16 @@
-import { useMemo, useCallback, useState, useRef } from 'react'
+import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { ChevronLeft, Loader2, CheckCircle2, Circle, AlertCircle, Pencil } from 'lucide-react'
+import { ChevronLeft, Loader2, CheckCircle2, Circle, AlertCircle, Pencil, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
+import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
 import { streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
 import { updateStreetLocationCoordinates, updateStreetLocationFields } from '@/services/streetLocationService'
+import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
 
 function parseDate(value) {
   if (!value) return null
@@ -140,6 +142,14 @@ function NearestStationsTable({ value }) {
   }
 }
 
+const STREET_PROFILE_FIELDS = [
+  { key: 'footfall_signal', label: 'Footfall Signal' },
+  { key: 'retail_mix', label: 'Retail Mix' },
+  { key: 'evening_economy', label: 'Evening Economy' },
+  { key: 'connectivity', label: 'Connectivity' },
+  { key: 'blog_angle', label: 'Blog Angle' },
+]
+
 function CuratedNearbyDisplay({ value, showTitle = true }) {
   if (!value) return null
   try {
@@ -159,21 +169,46 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
         {data.street_profile && (
           <div className="space-y-1">
             <div className="text-xs text-gray-400">Street Profile</div>
-            <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2">
-              {typeof data.street_profile === 'object' ? JSON.stringify(data.street_profile, null, 2) : data.street_profile}
+            {typeof data.street_profile === 'object' ? (
+              <div className="space-y-1.5 bg-gray-50 rounded p-2">
+                {STREET_PROFILE_FIELDS.map(({ key, label }) =>
+                  data.street_profile[key] ? (
+                    <div key={key} className="text-sm">
+                      <span className="text-gray-500">{label}:</span>{' '}
+                      <span className="text-gray-900">{data.street_profile[key]}</span>
+                    </div>
+                  ) : null
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2">
+                {String(data.street_profile)}
+              </div>
+            )}
+          </div>
+        )}
+        {data.curated_anchors && Array.isArray(data.curated_anchors) && data.curated_anchors.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs text-gray-400">Curated Anchors</div>
+            <div className="flex flex-wrap gap-1">
+              {data.curated_anchors.map((anchor, i) => (
+                <span key={i} className="text-xs bg-gray-100 rounded px-2 py-0.5">
+                  {typeof anchor === 'object' ? JSON.stringify(anchor) : anchor}
+                </span>
+              ))}
             </div>
           </div>
         )}
-        {data.curated_anchors && (
-          <div className="space-y-1">
-            <div className="text-xs text-gray-400">Curated Anchors</div>
-            <JsonArrayDisplay value={data.curated_anchors} />
-          </div>
-        )}
-        {data.removed && (
+        {data.removed && Array.isArray(data.removed) && data.removed.length > 0 && (
           <div className="space-y-1">
             <div className="text-xs text-gray-400">Removed</div>
-            <JsonArrayDisplay value={data.removed} />
+            <div className="flex flex-wrap gap-1">
+              {data.removed.map((item, i) => (
+                <span key={i} className="text-xs bg-red-50 text-red-600 rounded px-2 py-0.5">
+                  {typeof item === 'object' ? JSON.stringify(item) : item}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -181,6 +216,47 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
   } catch {
     return <span className="text-xs text-gray-500 break-all">{String(value)}</span>
   }
+}
+
+function NearbyGenerateSection({ streetLocationId, children }) {
+  const { generate, checkStatus, statusMap, isGenerating, isPolling } = useNearbyGeneration()
+
+  useEffect(() => {
+    if (streetLocationId) {
+      checkStatus([streetLocationId])
+    }
+  }, [streetLocationId, checkStatus])
+
+  const status = statusMap.get(streetLocationId)
+  const isPending = status === 'pending'
+
+  return (
+    <div className="space-y-2 mt-3 border-t pt-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-gray-500 font-medium">Anchors & Curated</span>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={isGenerating || isPending}
+          onClick={() => generate([streetLocationId])}
+          className="h-7 text-xs gap-1"
+        >
+          {isGenerating || isPending ? (
+            <>
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Play className="h-3 w-3" />
+              Generate
+            </>
+          )}
+        </Button>
+      </div>
+      {children}
+    </div>
+  )
 }
 
 function PhaseSection({ title, completedAt, children }) {
@@ -327,21 +403,37 @@ export default function StreetDetail({ prefix, streetLocationId }) {
                       <NearestStationsTable value={location.nearest_stations} />
                     </AccordionContent>
                   </AccordionItem>
-                  <AccordionItem value="anchors">
-                    <AccordionTrigger className="py-2 text-sm text-gray-500">Key Anchors</AccordionTrigger>
-                    <AccordionContent>
-                      <JsonArrayDisplay value={location.key_anchors} />
-                    </AccordionContent>
-                  </AccordionItem>
-                  {location.curated_nearby && (
-                    <AccordionItem value="curated">
-                      <AccordionTrigger className="py-2 text-sm text-gray-500">Curated Nearby</AccordionTrigger>
+                </Accordion>
+
+                <NearbyGenerateSection streetLocationId={location.id}>
+                  <Accordion type="multiple" defaultValue={[]}>
+                    <AccordionItem value="anchors">
+                      <AccordionTrigger className="py-2 text-sm text-gray-500">Key Anchors</AccordionTrigger>
                       <AccordionContent>
-                        <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
+                        <KeyAnchorsMap
+                          anchors={location.key_anchors}
+                          centerLat={location.lat}
+                          centerLon={location.lon}
+                          height={350}
+                        />
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-400 cursor-pointer">Raw data</summary>
+                          <div className="mt-1">
+                            <JsonArrayDisplay value={location.key_anchors} />
+                          </div>
+                        </details>
                       </AccordionContent>
                     </AccordionItem>
-                  )}
-                </Accordion>
+                    {location.curated_nearby && (
+                      <AccordionItem value="curated">
+                        <AccordionTrigger className="py-2 text-sm text-gray-500">Curated Nearby</AccordionTrigger>
+                        <AccordionContent>
+                          <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
+                        </AccordionContent>
+                      </AccordionItem>
+                    )}
+                  </Accordion>
+                </NearbyGenerateSection>
               </PhaseSection>
             </CardContent>
           </Card>
