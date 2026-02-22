@@ -1,0 +1,131 @@
+import streetLocationsClient from './streetLocationsClient'
+
+export const fetchStreetLocationsByPrefix = async (prefix) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      query StreetLocationsByPrefix($prefix: String!) {
+        streetLocationsByPrefix(prefix: $prefix) {
+          id
+          prefix
+          postcode
+          street
+          suburb
+          lat
+          lon
+          nearby_completed_at
+          seo_completed_at
+          pre_blog_completed_at
+          post_blog_completed_at
+          image_completed_at
+          publish_completed_at
+          last_error
+        }
+      }
+    `,
+    variables: { prefix },
+  })
+  return data.data.streetLocationsByPrefix
+}
+
+export const fetchStreetLocation = async (id) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      query StreetLocation($id: Int!) {
+        streetLocation(id: $id) {
+          id
+          prefix
+          postcode
+          street
+          suburb
+          lat
+          lon
+          neighbourhood
+          borough
+          nearest_stations
+          key_anchors
+          curated_nearby
+          radius
+          nearby_completed_at
+          seed_tone_type
+          seed_title
+          seed_keyword
+          search_intent
+          writing_style
+          writing_tone
+          hidden_insight
+          target_audience
+          goal_of_article
+          semantic_analysis_common_subtopics
+          semantic_analysis_related_questions
+          keywords_primary_keyword
+          keywords_secondary_keywords
+          keywords_semantic_keywords
+          keywords_long_tail_keywords
+          seo_completed_at
+          new_title
+          key_takeaways
+          outline
+          pre_blog_completed_at
+          google_doc_article_id
+          nearest_stations_table_md
+          key_anchors_table_md
+          draft_markdown
+          post_blog_completed_at
+          featured_image_url
+          image_completed_at
+          blog_post_id
+          publish_completed_at
+          publish_updated_at
+          last_error
+        }
+      }
+    `,
+    variables: { id: Number(id) },
+  })
+  return data.data.streetLocation
+}
+
+export const updateStreetLocationCoordinates = async (id, lat, lon) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      mutation UpdateStreetLocationCoordinates($input: UpdateStreetLocationCoordinatesInput!) {
+        updateStreetLocationCoordinates(input: $input) {
+          success
+          rowsAffected
+        }
+      }
+    `,
+    variables: { input: { id: Number(id), lat, lon } },
+  })
+  return data.data.updateStreetLocationCoordinates
+}
+
+export const updateStreetLocationFields = async (id, fields) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      mutation UpdateStreetLocationFields($input: UpdateStreetLocationFieldsInput!) {
+        updateStreetLocationFields(input: $input) {
+          success
+          rowsAffected
+        }
+      }
+    `,
+    variables: { input: { id: Number(id), ...fields } },
+  })
+  return data.data.updateStreetLocationFields
+}
+
+export const deleteStreetLocation = async (id) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      mutation DeleteStreetLocation($id: Int!) {
+        deleteStreetLocation(id: $id) {
+          success
+          rowsAffected
+        }
+      }
+    `,
+    variables: { id: Number(id) },
+  })
+  return data.data.deleteStreetLocation
+}
