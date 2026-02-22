@@ -154,7 +154,7 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
     if (!data || typeof data !== 'object') return null
     return (
       <div className="space-y-3">
-        {showTitle && <div className="text-sm text-gray-500 font-medium">Curated Nearby</div>}
+        {showTitle && <div className="text-sm text-gray-500 font-medium">Featured Anchors</div>}
         {data.editorial_summary && (
           <div className="space-y-1">
             <div className="text-xs text-gray-400">Editorial Summary</div>
@@ -186,7 +186,7 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
         )}
         {data.curated_anchors && Array.isArray(data.curated_anchors) && data.curated_anchors.length > 0 && (
           <div className="space-y-1">
-            <div className="text-xs text-gray-400">Curated Anchors</div>
+            <div className="text-xs text-gray-400">Featured Anchors</div>
             <div className="flex flex-wrap gap-1">
               {data.curated_anchors.map((anchor, i) => (
                 <span key={i} className="text-xs bg-gray-100 rounded px-2 py-0.5">
@@ -230,7 +230,7 @@ function NearbyGenerateSection({ streetLocationId, children }) {
   return (
     <div className="space-y-2 mt-3 border-t pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500 font-medium">Anchors & Curated</span>
+        <span className="text-sm text-gray-500 font-medium">Blog Anchors</span>
         <Button
           size="sm"
           variant="outline"
@@ -251,6 +251,7 @@ function NearbyGenerateSection({ streetLocationId, children }) {
           )}
         </Button>
       </div>
+      <p className="text-xs text-gray-400">AI-generated street profile and featured anchors picked from the full list for the blog post.</p>
       {children}
     </div>
   )
@@ -286,27 +287,28 @@ function PhaseSheetContent({ streetId, phaseKey }) {
           </Accordion>
 
           <NearbyGenerateSection streetLocationId={location.id}>
+            <KeyAnchorsMap
+              anchors={location.key_anchors}
+              curatedNames={(() => {
+                try {
+                  const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
+                  return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
+                } catch { return null }
+              })()}
+              centerLat={location.lat}
+              centerLon={location.lon}
+              height={300}
+            />
             <Accordion type="multiple" defaultValue={[]}>
               <AccordionItem value="anchors">
-                <AccordionTrigger className="py-2 text-sm text-gray-500">Key Anchors</AccordionTrigger>
+                <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
                 <AccordionContent>
-                  <KeyAnchorsMap
-                    anchors={location.key_anchors}
-                    centerLat={location.lat}
-                    centerLon={location.lon}
-                    height={300}
-                  />
-                  <details className="mt-2">
-                    <summary className="text-xs text-gray-400 cursor-pointer">Raw data</summary>
-                    <div className="mt-1">
-                      <JsonArrayDisplay value={location.key_anchors} />
-                    </div>
-                  </details>
+                  <JsonArrayDisplay value={location.key_anchors} />
                 </AccordionContent>
               </AccordionItem>
               {location.curated_nearby && (
                 <AccordionItem value="curated">
-                  <AccordionTrigger className="py-2 text-sm text-gray-500">Curated Nearby</AccordionTrigger>
+                  <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
                   <AccordionContent>
                     <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
                   </AccordionContent>

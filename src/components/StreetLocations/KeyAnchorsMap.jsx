@@ -1,17 +1,28 @@
 import { useState, useRef, useCallback } from 'react'
 import { Map, Marker, Popup } from '@vis.gl/react-maplibre'
+import {
+  Building2,
+  TreePine,
+  Landmark,
+  Store,
+  ShoppingCart,
+  Dumbbell,
+  Drama,
+  MapPin,
+  Maximize2,
+} from 'lucide-react'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-const CATEGORY_COLORS = {
-  museum: '#8B5CF6',
-  park: '#22C55E',
-  landmark: '#F59E0B',
-  flagship_retail: '#3B82F6',
-  supermarket: '#EF4444',
-  health_club: '#EC4899',
-  theatre: '#F97316',
+const CATEGORY_CONFIG = {
+  museum:          { color: '#8B5CF6', Icon: Building2 },
+  park:            { color: '#22C55E', Icon: TreePine },
+  landmark:        { color: '#F59E0B', Icon: Landmark },
+  flagship_retail: { color: '#3B82F6', Icon: Store },
+  supermarket:     { color: '#EF4444', Icon: ShoppingCart },
+  health_club:     { color: '#EC4899', Icon: Dumbbell },
+  theatre:         { color: '#F97316', Icon: Drama },
 }
-const DEFAULT_COLOR = '#6B7280'
+const DEFAULT_CONFIG = { color: '#6B7280', Icon: MapPin }
 
 function formatCategory(cat) {
   return cat
@@ -19,14 +30,25 @@ function formatCategory(cat) {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-function PinSvg({ color, size = 'h-6 w-6' }) {
+function CategoryPin({ category }) {
+  const { color, Icon } = CATEGORY_CONFIG[category] || DEFAULT_CONFIG
+  return (
+    <div
+      className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-white shadow-md cursor-pointer"
+      style={{ backgroundColor: color }}
+    >
+      <Icon className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+    </div>
+  )
+}
+
+function StreetPin() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       fill="currentColor"
-      className={`${size} drop-shadow-lg`}
-      style={{ color }}
+      className="h-8 w-8 text-blue-600 drop-shadow-lg"
     >
       <path
         fillRule="evenodd"
@@ -37,9 +59,11 @@ function PinSvg({ color, size = 'h-6 w-6' }) {
   )
 }
 
-export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 400 }) {
+export default function KeyAnchorsMap({ anchors, curatedNames, centerLat, centerLon, height = 400 }) {
   const [selected, setSelected] = useState(null)
+  const [view, setView] = useState('all') // 'all' | 'blog'
   const mapRef = useRef(null)
+  const initialBoundsRef = useRef(null)
 
   // Parse anchors if string
   let items = anchors
@@ -53,9 +77,19 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
   if (!Array.isArray(items)) items = []
 
   // Filter to anchors with valid coordinates
-  const validAnchors = items.filter(
+  const allAnchors = items.filter(
     (a) => a.lat != null && a.lon != null && !isNaN(a.lat) && !isNaN(a.lon)
   )
+
+  // Build curated name set for filtering
+  const curatedSet = curatedNames && curatedNames.length > 0
+    ? new Set(curatedNames.map((n) => (typeof n === 'string' ? n : '').toLowerCase()))
+    : null
+
+  const hasCurated = curatedSet && allAnchors.some((a) => curatedSet.has(a.name?.toLowerCase()))
+  const validAnchors = view === 'blog' && curatedSet
+    ? allAnchors.filter((a) => curatedSet.has(a.name?.toLowerCase()))
+    : allAnchors
 
   const hasCenter = centerLat != null && centerLon != null && !isNaN(centerLat) && !isNaN(centerLon)
 
@@ -69,6 +103,7 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
     if (points.length === 0) return
 
     if (points.length === 1) {
+      initialBoundsRef.current = { center: points[0], zoom: 15 }
       map.flyTo({ center: points[0], zoom: 15 })
       return
     }
@@ -81,11 +116,22 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
       if (lat > maxLat) maxLat = lat
     }
 
-    map.fitBounds(
-      [[minLon, minLat], [maxLon, maxLat]],
-      { padding: 50, maxZoom: 16, duration: 0 }
-    )
+    const bounds = [[minLon, minLat], [maxLon, maxLat]]
+    initialBoundsRef.current = { bounds }
+    map.fitBounds(bounds, { padding: 50, maxZoom: 16, duration: 0 })
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const resetZoom = useCallback(() => {
+    const map = mapRef.current
+    const saved = initialBoundsRef.current
+    if (!map || !saved) return
+    setSelected(null)
+    if (saved.bounds) {
+      map.fitBounds(saved.bounds, { padding: 50, maxZoom: 16, duration: 300 })
+    } else {
+      map.flyTo({ center: saved.center, zoom: saved.zoom, duration: 300 })
+    }
   }, [])
 
   if (validAnchors.length === 0) {
@@ -108,7 +154,34 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
 
   return (
     <div className="space-y-2">
-      <div className="rounded-lg overflow-hidden border border-gray-200" style={{ height }}>
+      {hasCurated && (
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5 w-fit">
+          <button
+            onClick={() => { setView('all'); setSelected(null) }}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            All Anchors ({allAnchors.length})
+          </button>
+          <button
+            onClick={() => { setView('blog'); setSelected(null) }}
+            className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+              view === 'blog' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Blog Anchors ({allAnchors.filter((a) => curatedSet.has(a.name?.toLowerCase())).length})
+          </button>
+        </div>
+      )}
+      <div className="rounded-lg overflow-hidden border border-gray-200 relative" style={{ height }}>
+        <button
+          onClick={resetZoom}
+          className="absolute top-2 right-2 z-10 bg-white rounded shadow-md p-1.5 hover:bg-gray-50 text-gray-600"
+          title="Reset zoom"
+        >
+          <Maximize2 className="h-4 w-4" />
+        </button>
         <Map
           initialViewState={{
             longitude: defaultCenter.longitude,
@@ -120,43 +193,40 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
           attributionControl={false}
           onLoad={handleLoad}
         >
-          {/* Center pin for the street location */}
+          {/* Center pin — same as StreetLocationMap */}
           {hasCenter && (
             <Marker
               longitude={Number(centerLon)}
               latitude={Number(centerLat)}
               anchor="bottom"
             >
-              <PinSvg color="#2563EB" size="h-8 w-8" />
+              <StreetPin />
             </Marker>
           )}
 
-          {/* Anchor markers */}
-          {validAnchors.map((anchor, i) => {
-            const color = CATEGORY_COLORS[anchor.category] || DEFAULT_COLOR
-            return (
-              <Marker
-                key={i}
-                longitude={Number(anchor.lon)}
-                latitude={Number(anchor.lat)}
-                anchor="bottom"
-                onClick={(e) => {
-                  e.originalEvent.stopPropagation()
-                  setSelected(anchor)
-                  // Smoothly center the pin in the viewport
-                  const map = mapRef.current
-                  if (map) {
-                    map.easeTo({
-                      center: [Number(anchor.lon), Number(anchor.lat)],
-                      duration: 300,
-                    })
-                  }
-                }}
-              >
-                <PinSvg color={color} />
-              </Marker>
-            )
-          })}
+          {/* Anchor markers with category icons */}
+          {validAnchors.map((anchor, i) => (
+            <Marker
+              key={i}
+              longitude={Number(anchor.lon)}
+              latitude={Number(anchor.lat)}
+              anchor="center"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation()
+                setSelected(anchor)
+                // Smoothly center the pin in the viewport
+                const map = mapRef.current
+                if (map) {
+                  map.easeTo({
+                    center: [Number(anchor.lon), Number(anchor.lat)],
+                    duration: 300,
+                  })
+                }
+              }}
+            >
+              <CategoryPin category={anchor.category} />
+            </Marker>
+          ))}
 
           {/* Popup for selected anchor */}
           {selected && (
@@ -164,7 +234,7 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
               longitude={Number(selected.lon)}
               latitude={Number(selected.lat)}
               anchor="bottom"
-              offset={24}
+              offset={18}
               closeOnClick={false}
               onClose={() => setSelected(null)}
             >
@@ -174,7 +244,7 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
                   <div className="flex items-center gap-1.5">
                     <span
                       className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: CATEGORY_COLORS[selected.category] || DEFAULT_COLOR }}
+                      style={{ backgroundColor: (CATEGORY_CONFIG[selected.category] || DEFAULT_CONFIG).color }}
                     />
                     <span className="text-gray-600">{formatCategory(selected.category)}</span>
                   </div>
@@ -195,18 +265,25 @@ export default function KeyAnchorsMap({ anchors, centerLat, centerLon, height = 
       {categories.length > 0 && (
         <div className="flex flex-wrap gap-x-3 gap-y-1 px-1">
           <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0 bg-blue-600" />
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5 text-blue-600">
+              <path fillRule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 2.682 2.282 16.975 16.975 0 0 0 1.145.742ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clipRule="evenodd" />
+            </svg>
             <span className="text-xs text-gray-500">Street location</span>
           </div>
-          {categories.map((cat) => (
-            <div key={cat} className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-full shrink-0"
-                style={{ backgroundColor: CATEGORY_COLORS[cat] || DEFAULT_COLOR }}
-              />
-              <span className="text-xs text-gray-500">{formatCategory(cat)}</span>
-            </div>
-          ))}
+          {categories.map((cat) => {
+            const { color, Icon } = CATEGORY_CONFIG[cat] || DEFAULT_CONFIG
+            return (
+              <div key={cat} className="flex items-center gap-1.5">
+                <div
+                  className="flex items-center justify-center w-3.5 h-3.5 rounded-full"
+                  style={{ backgroundColor: color }}
+                >
+                  <Icon className="h-2 w-2 text-white" strokeWidth={3} />
+                </div>
+                <span className="text-xs text-gray-500">{formatCategory(cat)}</span>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

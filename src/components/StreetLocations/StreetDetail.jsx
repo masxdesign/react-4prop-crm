@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
 import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
 import { streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
@@ -157,7 +158,7 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
     if (!data || typeof data !== 'object') return null
     return (
       <div className="space-y-3">
-        {showTitle && <div className="text-sm text-gray-500 font-medium">Curated Nearby</div>}
+        {showTitle && <div className="text-sm text-gray-500 font-medium">Featured Anchors</div>}
         {data.editorial_summary && (
           <div className="space-y-1">
             <div className="text-xs text-gray-400">Editorial Summary</div>
@@ -189,7 +190,7 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
         )}
         {data.curated_anchors && Array.isArray(data.curated_anchors) && data.curated_anchors.length > 0 && (
           <div className="space-y-1">
-            <div className="text-xs text-gray-400">Curated Anchors</div>
+            <div className="text-xs text-gray-400">Featured Anchors</div>
             <div className="flex flex-wrap gap-1">
               {data.curated_anchors.map((anchor, i) => (
                 <span key={i} className="text-xs bg-gray-100 rounded px-2 py-0.5">
@@ -233,7 +234,7 @@ function NearbyGenerateSection({ streetLocationId, children }) {
   return (
     <div className="space-y-2 mt-3 border-t pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500 font-medium">Anchors & Curated</span>
+        <span className="text-sm text-gray-500 font-medium">Blog Anchors</span>
         <Button
           size="sm"
           variant="outline"
@@ -254,6 +255,7 @@ function NearbyGenerateSection({ streetLocationId, children }) {
           )}
         </Button>
       </div>
+      <p className="text-xs text-gray-400">AI-generated street profile and featured anchors picked from the full list for the blog post.</p>
       {children}
     </div>
   )
@@ -275,6 +277,7 @@ function PhaseSection({ title, completedAt, children }) {
 
 export default function StreetDetail({ prefix, streetLocationId }) {
   const queryClient = useQueryClient()
+  const [showCoordSheet, setShowCoordSheet] = useState(false)
   const { data: location, isLoading, error } = useQuery(
     streetLocationDetailQuery(streetLocationId)
   )
@@ -355,22 +358,9 @@ export default function StreetDetail({ prefix, streetLocationId }) {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Map */}
-        <div className="space-y-4">
-          <p className="text-xs text-gray-500">
-            Drag the map to move the pin to the correct location. When you release, click Save on the yellow bar to confirm the new coordinates, or Cancel to revert.
-          </p>
-          <CoordinatePickerMap
-            value={coordValue}
-            onSave={handleCoordsSave}
-            disabled={coordsMutation.isPending}
-            height={400}
-          />
-          {coordsMutation.isError && (
-            <p className="text-sm text-red-600">Failed to save coordinates: {coordsMutation.error?.message}</p>
-          )}
-
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left: Location info (1/3) */}
+        <div className="lg:col-span-1 space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Location</CardTitle>
@@ -383,15 +373,24 @@ export default function StreetDetail({ prefix, streetLocationId }) {
               <EditableDetailRow label="Suburb" value={location.suburb} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('suburb', v)} />
               <EditableDetailRow label="Neighbourhood" value={location.neighbourhood} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('neighbourhood', v)} />
               <EditableDetailRow label="Borough" value={location.borough} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('borough', v)} />
-              <DetailRow label="Latitude" value={location.lat} />
-              <DetailRow label="Longitude" value={location.lon} />
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-sm text-gray-500 shrink-0 w-32">Coordinates</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setShowCoordSheet(true)}
+                >
+                  Edit
+                </Button>
+              </div>
               <DetailRow label="Radius" value={location.radius != null ? `${location.radius}m` : null} />
             </CardContent>
           </Card>
         </div>
 
-        {/* Right: Pipeline phases */}
-        <div className="space-y-4">
+        {/* Right: Pipeline phases (2/3) */}
+        <div className="lg:col-span-2 space-y-4">
           {/* Nearby Phase */}
           <Card>
             <CardContent className="pt-6 space-y-4">
@@ -406,27 +405,28 @@ export default function StreetDetail({ prefix, streetLocationId }) {
                 </Accordion>
 
                 <NearbyGenerateSection streetLocationId={location.id}>
+                  <KeyAnchorsMap
+                    anchors={location.key_anchors}
+                    curatedNames={(() => {
+                      try {
+                        const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
+                        return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
+                      } catch { return null }
+                    })()}
+                    centerLat={location.lat}
+                    centerLon={location.lon}
+                    height={350}
+                  />
                   <Accordion type="multiple" defaultValue={[]}>
                     <AccordionItem value="anchors">
-                      <AccordionTrigger className="py-2 text-sm text-gray-500">Key Anchors</AccordionTrigger>
+                      <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
                       <AccordionContent>
-                        <KeyAnchorsMap
-                          anchors={location.key_anchors}
-                          centerLat={location.lat}
-                          centerLon={location.lon}
-                          height={350}
-                        />
-                        <details className="mt-2">
-                          <summary className="text-xs text-gray-400 cursor-pointer">Raw data</summary>
-                          <div className="mt-1">
-                            <JsonArrayDisplay value={location.key_anchors} />
-                          </div>
-                        </details>
+                        <JsonArrayDisplay value={location.key_anchors} />
                       </AccordionContent>
                     </AccordionItem>
                     {location.curated_nearby && (
                       <AccordionItem value="curated">
-                        <AccordionTrigger className="py-2 text-sm text-gray-500">Curated Nearby</AccordionTrigger>
+                        <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
                         <AccordionContent>
                           <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
                         </AccordionContent>
@@ -570,6 +570,33 @@ export default function StreetDetail({ prefix, streetLocationId }) {
           </Card>
         </div>
       </div>
+
+      <Sheet open={showCoordSheet} onOpenChange={setShowCoordSheet}>
+        <SheetContent side="right" className="sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>{location.street}</SheetTitle>
+            <SheetDescription>{location.postcode} — {location.suburb || location.borough || prefix}</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-2">
+            <p className="text-xs text-gray-500">
+              Drag the map to move the pin to the correct location. When you release, click Save on the yellow bar to confirm, or Cancel to revert.
+            </p>
+            {showCoordSheet && (
+              <CoordinatePickerMap
+                value={coordValue}
+                onSave={(val) => { handleCoordsSave(val); setShowCoordSheet(false) }}
+                disabled={coordsMutation.isPending}
+                height={400}
+              />
+            )}
+            {coordsMutation.isError && (
+              <p className="text-sm text-red-600 mt-2">
+                Failed to save: {coordsMutation.error?.message}
+              </p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
