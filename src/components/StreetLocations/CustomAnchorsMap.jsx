@@ -74,12 +74,6 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
     setCustomAnchors((prev) =>
       prev.map((a) => (a.id === anchor.id ? { ...a, lat, lon, distance_m: dist } : a))
     )
-    setEditingId(anchor.id)
-    setEditName(anchor.name)
-
-    // Center the repositioned pin so popup is fully visible
-    const map = mapRef.current
-    if (map) map.easeTo({ center: [lon, lat], duration: 300 })
   }, [centerLat, centerLon])
 
   // --- Save name ---

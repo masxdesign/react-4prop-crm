@@ -8,6 +8,9 @@ import {
   ShoppingCart,
   Dumbbell,
   Drama,
+  Plane,
+  ShoppingBag,
+  MapPinned,
   MapPin,
   Maximize2,
 } from 'lucide-react'
@@ -22,6 +25,9 @@ export const CATEGORY_CONFIG = {
   supermarket:     { color: '#EF4444', Icon: ShoppingCart },
   health_club:     { color: '#EC4899', Icon: Dumbbell },
   theatre:         { color: '#F97316', Icon: Drama },
+  airport:         { color: '#0EA5E9', Icon: Plane },
+  shopping:        { color: '#A855F7', Icon: ShoppingBag },
+  poi:             { color: '#14B8A6', Icon: MapPinned },
 }
 export const DEFAULT_CONFIG = { color: '#6B7280', Icon: MapPin }
 
