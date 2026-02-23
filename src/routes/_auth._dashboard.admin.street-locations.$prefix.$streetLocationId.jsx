@@ -22,7 +22,7 @@ export const Route = createFileRoute(
     const { filter } = Route.useSearch()
     return (
       <div className="flex flex-col h-full overflow-auto">
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-3 md:p-6">
           <StreetDetail prefix={prefix} streetLocationId={streetLocationId} filter={filter} />
         </div>
       </div>

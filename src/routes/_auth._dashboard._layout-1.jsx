@@ -10,7 +10,7 @@ function dashboardComponent() {
   const { title } = last(matches).context
   
   return (
-    <div className='grid grid-rows-[3rem_1fr] min-h-0 py-4'>
+    <div className='grid grid-rows-[3rem_1fr] min-h-0 py-2 md:py-4'>
       <div className='flex items-end py-4 gap-0 text-white px-3'>
           <div className='flex-1'>  
             <span className='text-xl font-bold'>
@@ -18,7 +18,7 @@ function dashboardComponent() {
             </span>
           </div>
       </div>
-      <div className='relative rounded-tl-2xl rounded-bl-2xl bg-white shadow-lg min-h-0 px-4 overflow-hidden'>
+      <div className='relative rounded-2xl md:rounded-tr-none md:rounded-br-none bg-white shadow-lg min-h-0 px-2 md:px-4 overflow-hidden'>
         <Outlet />
       </div>
     </div>

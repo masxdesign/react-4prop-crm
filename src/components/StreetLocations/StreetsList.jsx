@@ -599,7 +599,7 @@ export default function StreetsList({ prefix, filter = '' }) {
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
@@ -644,6 +644,7 @@ export default function StreetsList({ prefix, filter = '' }) {
         )}
       </div>
 
+      <div className="overflow-x-auto"><div className="min-w-[800px]">
       <Table>
         <TableHeader>
           <TableRow>
@@ -776,6 +777,7 @@ export default function StreetsList({ prefix, filter = '' }) {
           ))}
         </TableBody>
       </Table>
+      </div></div>
 
       <CursorInfoCard visible={cursorCard.state.visible} x={cursorCard.state.x} y={cursorCard.state.y}>
         {cursorCard.state.content}

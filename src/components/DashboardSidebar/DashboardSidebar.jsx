@@ -16,7 +16,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
   const canImpersonate = auth.user?.is_admin || isImpersonating
 
   return (
-    <div className="flex flex-col gap-6 items-stretch text-sm text-white h-full bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
+    <div className="flex flex-col gap-6 items-stretch text-sm text-white h-full overflow-y-auto bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
       <div className='p-3'>
         <span className='text-lg font-bold text-emerald-500 tracking-tighter'>
           CRM
