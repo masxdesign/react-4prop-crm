@@ -5,6 +5,9 @@ import StreetDetail from '@/components/StreetLocations/StreetDetail'
 export const Route = createFileRoute(
   '/_auth/_dashboard/admin/street-locations/$prefix/$streetLocationId'
 )({
+  validateSearch: (search) => ({
+    filter: search.filter || '',
+  }),
   beforeLoad: ({ context, params }) => {
     return {
       ...context,
@@ -16,10 +19,11 @@ export const Route = createFileRoute(
   },
   component: function StreetDetailPage() {
     const { prefix, streetLocationId } = Route.useParams()
+    const { filter } = Route.useSearch()
     return (
       <div className="flex flex-col h-full overflow-auto">
         <div className="flex-1 p-6">
-          <StreetDetail prefix={prefix} streetLocationId={streetLocationId} />
+          <StreetDetail prefix={prefix} streetLocationId={streetLocationId} filter={filter} />
         </div>
       </div>
     )

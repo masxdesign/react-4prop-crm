@@ -688,6 +688,7 @@ export default function StreetsList({ prefix, filter = '' }) {
                 navigate({
                   to: '/admin/street-locations/$prefix/$streetLocationId',
                   params: { prefix, streetLocationId: String(street.id) },
+                  search: filter ? { filter } : {},
                 })
               }
             >

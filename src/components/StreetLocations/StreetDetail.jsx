@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { ChevronLeft, Loader2, CheckCircle2, Circle, AlertCircle, Pencil, Play } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { ChevronLeft, ChevronRight, Loader2, CheckCircle2, Circle, AlertCircle, Pencil, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -9,7 +10,7 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
 import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
-import { streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
+import { streetLocationDetailQuery, streetLocationsByPrefixQuery } from '@/features/streetLocations/streetLocations.queries'
 import { updateStreetLocationCoordinates, updateStreetLocationFields, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
 import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
 
@@ -285,12 +286,42 @@ function PhaseSection({ title, completedAt, children }) {
   )
 }
 
-export default function StreetDetail({ prefix, streetLocationId }) {
+export default function StreetDetail({ prefix, streetLocationId, filter }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [showCoordSheet, setShowCoordSheet] = useState(false)
   const { data: location, isLoading, error } = useQuery(
     streetLocationDetailQuery(streetLocationId)
   )
+  const { data: allStreets } = useQuery(streetLocationsByPrefixQuery(prefix))
+
+  const { prevStreet, nextStreet, currentIndex, totalCount } = useMemo(() => {
+    if (!allStreets || !Array.isArray(allStreets)) return {}
+    const idx = allStreets.findIndex((s) => String(s.id) === String(streetLocationId))
+    if (idx === -1) return { totalCount: allStreets.length }
+    return {
+      prevStreet: idx > 0 ? allStreets[idx - 1] : null,
+      nextStreet: idx < allStreets.length - 1 ? allStreets[idx + 1] : null,
+      currentIndex: idx,
+      totalCount: allStreets.length,
+    }
+  }, [allStreets, streetLocationId])
+
+  const goToStreet = useCallback((id) => {
+    navigate({
+      to: '/admin/street-locations/$prefix/$streetLocationId',
+      params: { prefix, streetLocationId: String(id) },
+      search: filter ? { filter } : {},
+    })
+  }, [navigate, prefix, filter])
+
+  const goBack = useCallback(() => {
+    navigate({
+      to: '/admin/street-locations/$prefix',
+      params: { prefix },
+      search: filter ? { filter } : {},
+    })
+  }, [navigate, prefix, filter])
 
   // Format lat/lon as "lat,lon" string for CoordinatePickerMap
   const coordValue = useMemo(() => {
@@ -353,15 +384,43 @@ export default function StreetDetail({ prefix, streetLocationId }) {
 
   return (
     <div className="space-y-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => window.history.back()}
-        className="text-gray-600 hover:text-gray-900 -ml-2"
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        Back to {prefix} Streets
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={goBack}
+          className="text-gray-600 hover:text-gray-900 -ml-2"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to {prefix} Streets
+        </Button>
+
+        {totalCount > 0 && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!prevStreet}
+              onClick={() => goToStreet(prevStreet.id)}
+              className="h-7 px-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Prev
+            </Button>
+            <span className="text-xs text-gray-500 px-1">{currentIndex + 1} / {totalCount}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!nextStreet}
+              onClick={() => goToStreet(nextStreet.id)}
+              className="h-7 px-2"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </div>
 
       <div>
         <h1 className="text-2xl font-bold text-gray-900">{location.street}</h1>
