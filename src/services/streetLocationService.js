@@ -47,6 +47,7 @@ export const fetchStreetLocation = async (id) => {
           nearest_stations
           key_anchors
           curated_nearby
+          custom_anchors
           radius
           nearby_completed_at
           seed_tone_type
@@ -131,6 +132,26 @@ export const deleteStreetLocation = async (id) => {
     variables: { id: Number(id) },
   })
   return data.data.deleteStreetLocation
+}
+
+export const updateStreetLocationCustomAnchors = async (id, customAnchors) => {
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      mutation UpdateCustomAnchors($input: StreetLocationCustomAnchorsInput!) {
+        updateStreetLocationCustomAnchors(input: $input) {
+          success
+          rowsAffected
+        }
+      }
+    `,
+    variables: {
+      input: {
+        id: Number(id),
+        custom_anchors: JSON.stringify(customAnchors),
+      },
+    },
+  })
+  return data.data.updateStreetLocationCustomAnchors
 }
 
 export const generateNearby = async (ids) => {

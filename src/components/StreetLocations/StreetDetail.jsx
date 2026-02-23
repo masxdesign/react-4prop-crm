@@ -10,7 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
 import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
 import { streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
-import { updateStreetLocationCoordinates, updateStreetLocationFields } from '@/services/streetLocationService'
+import { updateStreetLocationCoordinates, updateStreetLocationFields, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
 import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
 
 function parseDate(value) {
@@ -29,13 +29,24 @@ function parseDate(value) {
   return null
 }
 
+function formatCompletedDate(date) {
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }) + ' at ' + date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 function PhaseStatus({ completedAt }) {
   if (completedAt) {
     const date = parseDate(completedAt)
     return (
       <Badge variant="secondary" className="gap-1">
         <CheckCircle2 className="h-3 w-3 text-green-600" />
-        {date ? date.toLocaleString() : 'Completed'}
+        Completed {date ? formatCompletedDate(date) : ''}
       </Badge>
     )
   }
@@ -49,7 +60,7 @@ function PhaseStatus({ completedAt }) {
 
 function DetailRow({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 text-sm border-b border-gray-100 pb-2">
+    <div className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1">
       <span className="text-gray-500 shrink-0">{label}</span>
       <span className="font-medium text-gray-900 text-right break-all">{value ?? '—'}</span>
     </div>
@@ -70,13 +81,13 @@ function EditableDetailRow({ label, value, onSave, saving }) {
 
   if (editing) {
     return (
-      <div className="flex justify-between gap-4 text-sm border-b border-gray-100 pb-2">
+      <div className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1">
         <span className="text-gray-500 shrink-0">{label}</span>
         <Input
           ref={inputRef}
           defaultValue={value ?? ''}
           autoFocus
-          className="h-7 text-sm text-right w-48"
+          className="h-6 text-sm text-right w-48"
           onBlur={handleSave}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSave()
@@ -90,7 +101,7 @@ function EditableDetailRow({ label, value, onSave, saving }) {
 
   return (
     <div
-      className="flex justify-between gap-4 text-sm border-b border-gray-100 pb-2 group cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
+      className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1 group cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
       onClick={() => setEditing(true)}
     >
       <span className="text-gray-500 shrink-0">{label}</span>
@@ -255,7 +266,6 @@ function NearbyGenerateSection({ streetLocationId, children }) {
           )}
         </Button>
       </div>
-      <p className="text-xs text-gray-400">AI-generated street profile and featured anchors picked from the full list for the blog post.</p>
       {children}
     </div>
   )
@@ -303,6 +313,13 @@ export default function StreetDetail({ prefix, streetLocationId }) {
 
   const coordsMutation = useMutation({
     mutationFn: ({ lat, lon }) => updateStreetLocationCoordinates(streetLocationId, lat, lon),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
+    },
+  })
+
+  const customAnchorsMutation = useMutation({
+    mutationFn: (anchors) => updateStreetLocationCustomAnchors(streetLocationId, anchors),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
     },
@@ -362,10 +379,10 @@ export default function StreetDetail({ prefix, streetLocationId }) {
         {/* Left: Location info (1/3) */}
         <div className="lg:col-span-1 space-y-4">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Location</CardTitle>
+            <CardHeader className="pb-1 pt-4 px-4">
+              <CardTitle className="text-sm">Location</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-0 px-4 pb-3">
               <DetailRow label="ID" value={location.id} />
               <DetailRow label="Prefix" value={location.prefix} />
               <EditableDetailRow label="Postcode" value={location.postcode} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('postcode', v)} />
@@ -373,8 +390,8 @@ export default function StreetDetail({ prefix, streetLocationId }) {
               <EditableDetailRow label="Suburb" value={location.suburb} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('suburb', v)} />
               <EditableDetailRow label="Neighbourhood" value={location.neighbourhood} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('neighbourhood', v)} />
               <EditableDetailRow label="Borough" value={location.borough} saving={fieldsMutation.isPending} onSave={(v) => handleFieldSave('borough', v)} />
-              <div className="flex items-center justify-between py-1.5">
-                <span className="text-sm text-gray-500 shrink-0 w-32">Coordinates</span>
+              <div className="flex items-center justify-between py-1 border-b border-gray-100">
+                <span className="text-sm text-gray-500 shrink-0">Coordinates</span>
                 <Button
                   variant="outline"
                   size="sm"
@@ -415,7 +432,10 @@ export default function StreetDetail({ prefix, streetLocationId }) {
                     })()}
                     centerLat={location.lat}
                     centerLon={location.lon}
-                    height={350}
+                    height={420}
+                    customAnchorsData={location.custom_anchors}
+                    onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate(anchors)}
+                    savingCustomAnchors={customAnchorsMutation.isPending}
                   />
                   <Accordion type="multiple" defaultValue={[]}>
                     <AccordionItem value="anchors">

@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Map, Marker, Popup } from '@vis.gl/react-maplibre'
 import { distance, point } from '@turf/turf'
-import { Maximize2, Trash2 } from 'lucide-react'
+import { Maximize2, Trash2, Loader2, Check } from 'lucide-react'
 import {
   CATEGORY_CONFIG,
   DEFAULT_CONFIG,
@@ -17,18 +17,44 @@ function calcDistance(centerLat, centerLon, lat, lon) {
   )
 }
 
-export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 }) {
-  const [customAnchors, setCustomAnchors] = useState([])
+const WHY_RELEVANT = {
+  supermarket: 'Major supermarket',
+  flagship_retail: 'Major flagship retail store',
+  airport: 'Airport nearby',
+  health_club_branded: 'Premium health club / gym',
+  health_club_generic: 'Health club / gym',
+  health_club: 'Health club / gym',
+  museum: 'Major cultural attraction',
+  attraction: 'Major tourist destination',
+  historic: 'Notable historic landmark',
+  theatre: 'High-footfall entertainment venue',
+  shopping: 'Large retail anchor',
+  park: 'Major public space nearby',
+  poi: 'Nearby point of interest',
+  landmark: 'Notable landmark',
+}
+
+function parseAnchors(raw) {
+  if (!raw) return []
+  let items = raw
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items) } catch { return [] }
+  }
+  return Array.isArray(items) ? items : []
+}
+
+export default function CustomAnchorsMap({ centerLat, centerLon, height = 400, initialAnchors, onSave, saving }) {
+  const parsed = useMemo(() => parseAnchors(initialAnchors), [initialAnchors])
+  const [customAnchors, setCustomAnchors] = useState(parsed)
   const [editingId, setEditingId] = useState(null)
   const [editName, setEditName] = useState('')
+  const [editWhy, setEditWhy] = useState('')
   const mapRef = useRef(null)
 
-  const hasCenter = centerLat != null && centerLon != null && !isNaN(centerLat) && !isNaN(centerLon)
+  // Track if local state differs from saved data
+  const isDirty = JSON.stringify(customAnchors) !== JSON.stringify(parsed)
 
-  // Log custom anchors on change
-  useEffect(() => {
-    if (customAnchors.length > 0) console.log('Custom anchors:', customAnchors)
-  }, [customAnchors])
+  const hasCenter = centerLat != null && centerLon != null && !isNaN(centerLat) && !isNaN(centerLon)
 
   const handleLoad = useCallback((e) => {
     mapRef.current = e.target
@@ -58,9 +84,11 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
     const dist = calcDistance(centerLat, centerLon, lat, lon)
     const id = Date.now()
 
-    setCustomAnchors((prev) => [...prev, { id, name: '', category, lat, lon, distance_m: dist }])
+    const why_relevant = WHY_RELEVANT[category] || ''
+    setCustomAnchors((prev) => [...prev, { id, name: '', category, lat, lon, distance_m: dist, why_relevant }])
     setEditingId(id)
     setEditName('')
+    setEditWhy(why_relevant)
 
     // Smoothly center the dropped pin so the popup is fully visible
     map.easeTo({ center: [lon, lat], duration: 300 })
@@ -76,22 +104,39 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
     )
   }, [centerLat, centerLon])
 
-  // --- Save name ---
-  const handleSave = useCallback(() => {
+  // --- Save name + why_relevant in popup ---
+  const handleNameSave = useCallback(() => {
     if (editingId == null) return
     setCustomAnchors((prev) =>
-      prev.map((a) => (a.id === editingId ? { ...a, name: editName } : a))
+      prev.map((a) => (a.id === editingId ? { ...a, name: editName, why_relevant: editWhy } : a))
     )
     setEditingId(null)
     setEditName('')
-  }, [editingId, editName])
+    setEditWhy('')
+  }, [editingId, editName, editWhy])
 
   // --- Delete anchor ---
   const handleDelete = useCallback((id) => {
     setCustomAnchors((prev) => prev.filter((a) => a.id !== id))
     setEditingId(null)
     setEditName('')
+    setEditWhy('')
   }, [])
+
+  // --- Auto-save with debounce ---
+  const onSaveRef = useRef(onSave)
+  onSaveRef.current = onSave
+  const parsedRef = useRef(parsed)
+  parsedRef.current = parsed
+
+  useEffect(() => {
+    const isDirty = JSON.stringify(customAnchors) !== JSON.stringify(parsedRef.current)
+    if (!isDirty || !onSaveRef.current) return
+    const timer = setTimeout(() => {
+      onSaveRef.current(customAnchors)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [customAnchors])
 
   if (!hasCenter) {
     return (
@@ -109,7 +154,7 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
   return (
     <div className="space-y-2">
       {/* Category toolbar — draggable icons */}
-      <div className="flex flex-wrap gap-2 px-1">
+      <div className="flex flex-wrap items-center gap-2 px-1">
         {Object.entries(CATEGORY_CONFIG).map(([cat]) => (
           <div
             key={cat}
@@ -125,6 +170,20 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
             <span className="text-xs text-gray-600">{formatCategory(cat)}</span>
           </div>
         ))}
+
+        {/* Auto-save status indicator */}
+        {saving && (
+          <div className="flex items-center gap-1.5 ml-auto text-xs text-gray-400">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            Saving...
+          </div>
+        )}
+        {!saving && customAnchors.length > 0 && !isDirty && (
+          <div className="flex items-center gap-1 ml-auto text-xs text-green-600">
+            <Check className="h-3.5 w-3.5" />
+            Saved
+          </div>
+        )}
       </div>
 
       {/* Map with drop zone */}
@@ -189,6 +248,7 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
                 e.originalEvent.stopPropagation()
                 setEditingId(anchor.id)
                 setEditName(anchor.name)
+                setEditWhy(anchor.why_relevant || '')
                 const map = mapRef.current
                 if (map) {
                   map.easeTo({ center: [Number(anchor.lon), Number(anchor.lat)], duration: 300 })
@@ -206,8 +266,7 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
               latitude={Number(editingAnchor.lat)}
               anchor="bottom"
               offset={18}
-              closeOnClick={false}
-              onClose={() => { setEditingId(null); setEditName('') }}
+              onClose={() => { setEditingId(null); setEditName(''); setEditWhy('') }}
               className="custom-anchor-popup-dark"
             >
               <div className="text-xs space-y-2 min-w-[180px]">
@@ -222,15 +281,23 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400 })
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSave() }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave() }}
                   placeholder="Anchor name..."
                   className="w-full border border-gray-600 bg-gray-700 text-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400"
                   autoFocus
                 />
+                <input
+                  type="text"
+                  value={editWhy}
+                  onChange={(e) => setEditWhy(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleNameSave() }}
+                  placeholder="Why relevant..."
+                  className="w-full border border-gray-600 bg-gray-700 text-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 placeholder:text-gray-400"
+                />
                 <div className="text-gray-400">{editingAnchor.distance_m}m from street</div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleSave}
+                    onClick={handleNameSave}
                     className="flex-1 bg-blue-600 text-white rounded px-2 py-1 text-xs font-medium hover:bg-blue-700 transition-colors"
                   >
                     Save

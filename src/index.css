@@ -376,6 +376,25 @@
   }
 }
 
+/* MapLibre popup close button — prominent style */
+.maplibregl-popup-close-button {
+  font-size: 1.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  top: 0.25rem;
+  right: 0.25rem;
+  color: #6b7280;
+}
+
+.maplibregl-popup-close-button:hover {
+  color: #1f2937;
+  background-color: #f3f4f6;
+}
+
 /* Dark mode popup for CustomAnchorsMap */
 .custom-anchor-popup-dark .maplibregl-popup-content {
   background-color: #1f2937;

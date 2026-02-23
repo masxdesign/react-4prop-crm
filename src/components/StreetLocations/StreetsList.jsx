@@ -35,7 +35,7 @@ import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
 import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
 import { streetLocationsByPrefixQuery, streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
-import { updateStreetLocationCoordinates, deleteStreetLocation } from '@/services/streetLocationService'
+import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
 import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
 
 const PHASES = [
@@ -251,7 +251,6 @@ function NearbyGenerateSection({ streetLocationId, children }) {
           )}
         </Button>
       </div>
-      <p className="text-xs text-gray-400">AI-generated street profile and featured anchors picked from the full list for the blog post.</p>
       {children}
     </div>
   )
@@ -297,7 +296,10 @@ function PhaseSheetContent({ streetId, phaseKey }) {
               })()}
               centerLat={location.lat}
               centerLon={location.lon}
-              height={300}
+              height={360}
+              customAnchorsData={location.custom_anchors}
+              onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate({ id: location.id, anchors })}
+              savingCustomAnchors={customAnchorsMutation.isPending}
             />
             <Accordion type="multiple" defaultValue={[]}>
               <AccordionItem value="anchors">
@@ -532,6 +534,13 @@ export default function StreetsList({ prefix, filter = '' }) {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteStreetLocation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
+    },
+  })
+
+  const customAnchorsMutation = useMutation({
+    mutationFn: ({ id, anchors }) => updateStreetLocationCustomAnchors(id, anchors),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
     },
