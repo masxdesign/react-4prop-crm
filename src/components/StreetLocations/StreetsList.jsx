@@ -493,19 +493,22 @@ function PhaseSheetContent({ streetId, phaseKey }) {
       )}
 
       {phaseKey === 'image_completed_at' && (
-        <div>
-          {location.featured_image_url ? (
-            <a href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`} target="_blank" rel="noopener noreferrer" className="block">
-              <img
-                src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
-                alt={`${location.street} featured`}
-                className="rounded border max-h-48 object-cover"
-              />
-            </a>
-          ) : (
-            <span className="text-sm text-gray-400">No image</span>
-          )}
-        </div>
+        <>
+          <div>
+            {location.featured_image_url ? (
+              <a href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`} target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
+                  alt={`${location.street} featured`}
+                  className="rounded border max-h-48 object-cover"
+                />
+              </a>
+            ) : (
+              <span className="text-sm text-gray-400">No image</span>
+            )}
+          </div>
+          <PhaseGenerateSection phase="image" label="Image Generation" streetLocationId={location.id} completedAt={location.image_completed_at} disabledReason={!location.post_blog_completed_at ? 'Requires Post-Blog to be completed first' : undefined} />
+        </>
       )}
 
       {phaseKey === 'publish_completed_at' && (
@@ -538,6 +541,7 @@ export default function StreetsList({ prefix, filter = '' }) {
   const seo = usePhaseGeneration('seo')
   const preBlog = usePhaseGeneration('pre-blog')
   const postBlog = usePhaseGeneration('post-blog')
+  const image = usePhaseGeneration('image')
 
   // On page load, check status for all visible street IDs
   useEffect(() => {
@@ -783,6 +787,24 @@ export default function StreetsList({ prefix, filter = '' }) {
                 <>
                   <Sparkles className="h-4 w-4 mr-1" />
                   Generate Post-Blog
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={image.isGenerating || image.isPolling}
+              onClick={() => image.generate([...selectedIds])}
+            >
+              {image.isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Generate Image
                 </>
               )}
             </Button>

@@ -693,7 +693,7 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
           </CollapsiblePhaseCard>
 
           {/* Image Phase */}
-          <CollapsiblePhaseCard title="Image" completedAt={location.image_completed_at}>
+          <CollapsiblePhaseCard title="Image" phase="image" completedAt={location.image_completed_at} streetLocationId={location.id} disabledReason={!location.post_blog_completed_at ? 'Requires Post-Blog to be completed first' : undefined}>
             {location.featured_image_url ? (
               <a
                 href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
