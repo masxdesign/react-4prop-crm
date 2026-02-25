@@ -1,18 +1,21 @@
 import { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, Loader2, CheckCircle2, Circle, AlertCircle, Pencil, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Loader2, CheckCircle2, Circle, AlertCircle, Pencil, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
 import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
 import { streetLocationDetailQuery, streetLocationsByPrefixQuery } from '@/features/streetLocations/streetLocations.queries'
 import { updateStreetLocationCoordinates, updateStreetLocationFields, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
-import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
+import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
+import ReactMarkdownPrimitive from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 function parseDate(value) {
   if (!value) return null
@@ -45,25 +48,22 @@ function PhaseStatus({ completedAt }) {
   if (completedAt) {
     const date = parseDate(completedAt)
     return (
-      <Badge variant="secondary" className="gap-1">
-        <CheckCircle2 className="h-3 w-3 text-green-600" />
-        Completed {date ? formatCompletedDate(date) : ''}
-      </Badge>
+      <CheckCircle2
+        className="h-4 w-4 text-green-500 shrink-0"
+        title={date ? `Completed ${formatCompletedDate(date)}` : 'Completed'}
+      />
     )
   }
   return (
-    <Badge variant="outline" className="gap-1 text-gray-400">
-      <Circle className="h-3 w-3" />
-      Pending
-    </Badge>
+    <Circle className="h-4 w-4 text-gray-300 shrink-0" />
   )
 }
 
 function DetailRow({ label, value }) {
   return (
-    <div className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1">
-      <span className="text-gray-500 shrink-0">{label}</span>
-      <span className="font-medium text-gray-900 text-right break-all">{value ?? '—'}</span>
+    <div className="space-y-0.5 border-b border-gray-100 py-2">
+      <div className="text-sm text-gray-400">{label}</div>
+      <div className="text-base text-gray-900 max-w-prose">{value ?? '—'}</div>
     </div>
   )
 }
@@ -82,13 +82,13 @@ function EditableDetailRow({ label, value, onSave, saving }) {
 
   if (editing) {
     return (
-      <div className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1">
-        <span className="text-gray-500 shrink-0">{label}</span>
+      <div className="space-y-0.5 border-b border-gray-100 py-2">
+        <div className="text-sm text-gray-400">{label}</div>
         <Input
           ref={inputRef}
           defaultValue={value ?? ''}
           autoFocus
-          className="h-6 text-sm text-right w-48"
+          className="h-8 text-base w-full"
           onBlur={handleSave}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleSave()
@@ -102,14 +102,14 @@ function EditableDetailRow({ label, value, onSave, saving }) {
 
   return (
     <div
-      className="flex justify-between gap-3 text-sm border-b border-gray-100 py-1 group cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
+      className="space-y-0.5 border-b border-gray-100 py-2 group cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded"
       onClick={() => setEditing(true)}
     >
-      <span className="text-gray-500 shrink-0">{label}</span>
-      <span className="font-medium text-gray-900 text-right break-all flex items-center gap-1">
+      <div className="text-sm text-gray-400">{label}</div>
+      <div className="text-base text-gray-900 flex items-center gap-1">
         {value || '—'}
-        <Pencil className="h-3 w-3 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-      </span>
+        <Pencil className="h-3.5 w-3.5 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+      </div>
     </div>
   )
 }
@@ -122,15 +122,84 @@ function JsonArrayDisplay({ value }) {
     return (
       <div className="space-y-1">
         {arr.map((item, i) => (
-          <div key={i} className="text-xs bg-gray-50 rounded px-2 py-1">
+          <div key={i} className="text-sm bg-gray-50 rounded px-2 py-1.5">
             {typeof item === 'object' ? JSON.stringify(item) : String(item)}
           </div>
         ))}
       </div>
     )
   } catch {
-    return <span className="text-xs text-gray-500 break-all">{String(value)}</span>
+    return <span className="text-sm text-gray-500 break-all">{String(value)}</span>
   }
+}
+
+const mdComponents = {
+  h1: ({ children }) => <h1 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-lg font-semibold text-gray-900 mt-3 mb-1.5">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-base font-semibold text-gray-800 mt-2 mb-1">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-sm font-semibold text-gray-800 mt-2 mb-1">{children}</h4>,
+  p: ({ children }) => <p className="text-sm text-gray-700 mb-2 leading-relaxed">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5 text-sm text-gray-700">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5 text-sm text-gray-700">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+  a: ({ children, ...props }) => <a {...props} className="underline text-blue-600" target="_blank" rel="noreferrer">{children}</a>,
+  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-3 italic text-gray-600 my-2">{children}</blockquote>,
+  table: ({ children }) => <table className="text-sm border-collapse w-full my-2">{children}</table>,
+  th: ({ children }) => <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-left font-medium text-gray-700">{children}</th>,
+  td: ({ children }) => <td className="border border-gray-200 px-2 py-1 text-gray-700">{children}</td>,
+}
+
+function MarkdownPreviewBox({ label, content }) {
+  const [expanded, setExpanded] = useState(false)
+  const boxRef = useRef(null)
+
+  useEffect(() => {
+    if (!expanded) return
+    const handleClickOutside = (e) => {
+      if (boxRef.current && !boxRef.current.contains(e.target)) {
+        setExpanded(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [expanded])
+
+  if (!content) {
+    return (
+      <div className="space-y-1">
+        <div className="text-sm text-gray-400">{label}</div>
+        <span className="text-sm text-gray-400">—</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="text-sm text-gray-400">{label}</div>
+      <div
+        ref={boxRef}
+        className={`relative rounded-lg border border-gray-200 shadow-sm cursor-pointer transition-all duration-300 ${expanded ? '' : 'max-h-32 overflow-hidden'}`}
+        onClick={() => {
+          setExpanded((v) => {
+            if (!v) {
+              setTimeout(() => boxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+            }
+            return !v
+          })
+        }}
+      >
+        <div className="p-3 max-w-prose">
+          <ReactMarkdownPrimitive components={mdComponents} remarkPlugins={[remarkGfm]}>
+            {content}
+          </ReactMarkdownPrimitive>
+        </div>
+        {!expanded && (
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-white to-transparent rounded-b-lg pointer-events-none" />
+        )}
+      </div>
+    </div>
+  )
 }
 
 function NearestStationsTable({ value }) {
@@ -231,8 +300,8 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
   }
 }
 
-function NearbyGenerateSection({ streetLocationId, children }) {
-  const { generate, checkStatus, statusMap, isGenerating, isPolling } = useNearbyGeneration()
+function PhaseGenerateButton({ phase, streetLocationId, disabledReason, completedAt, onGeneratingChange }) {
+  const { generate, checkStatus, statusMap, isGenerating } = usePhaseGeneration(phase)
 
   useEffect(() => {
     if (streetLocationId) {
@@ -240,49 +309,63 @@ function NearbyGenerateSection({ streetLocationId, children }) {
     }
   }, [streetLocationId, checkStatus])
 
-  const status = statusMap.get(streetLocationId)
-  const isPending = status === 'pending'
+  const isPending = statusMap.get(streetLocationId) === 'pending'
+  const busy = isGenerating || isPending
+
+  useEffect(() => {
+    onGeneratingChange?.(busy)
+  }, [busy, onGeneratingChange])
+
+  const blocked = !!disabledReason
+  const label = completedAt ? 'Regenerate' : 'Generate'
 
   return (
-    <div className="space-y-2 mt-3 border-t pt-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500 font-medium">Blog Anchors</span>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isGenerating || isPending}
-          onClick={() => generate([streetLocationId])}
-          className="h-7 text-xs gap-1"
-        >
-          {isGenerating || isPending ? (
-            <>
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Play className="h-3 w-3" />
-              Generate
-            </>
-          )}
-        </Button>
-      </div>
-      {children}
-    </div>
+    <Button
+      size="sm"
+      disabled={busy || blocked}
+      onClick={(e) => { e.stopPropagation(); generate([streetLocationId]) }}
+      title={blocked ? disabledReason : undefined}
+      className="h-7 text-xs gap-1 shrink-0 border-0 cursor-pointer bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-lg hover:shadow-sky-500/25 transition-shadow"
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Generating...
+        </>
+      ) : (
+        <>
+          <Sparkles className="h-3 w-3" />
+          {label}
+        </>
+      )}
+    </Button>
   )
 }
 
-function PhaseSection({ title, completedAt, children }) {
+function CollapsiblePhaseCard({ title, phase, completedAt, streetLocationId, defaultOpen = true, disabledReason, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  const [isBusy, setIsBusy] = useState(false)
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-gray-700">{title}</h3>
-        <PhaseStatus completedAt={completedAt} />
-      </div>
-      <div className="space-y-2 pl-2">
-        {children}
-      </div>
-    </div>
+    <Card className="group/card">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <div className="flex items-center gap-2 px-4 py-3">
+          <CollapsibleTrigger asChild>
+            <button type="button" className="flex items-center gap-2 flex-1 min-w-0 group cursor-pointer">
+              <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform ${open ? '' : '-rotate-90'}`} />
+              <PhaseStatus completedAt={completedAt} />
+              <h3 className="font-semibold text-sm text-gray-700 group-hover:text-gray-900 transition-colors">{title}</h3>
+            </button>
+          </CollapsibleTrigger>
+          {phase && <div className={isBusy ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100 transition-opacity'}><PhaseGenerateButton phase={phase} streetLocationId={streetLocationId} disabledReason={disabledReason} completedAt={completedAt} onGeneratingChange={setIsBusy} /></div>}
+        </div>
+        <CollapsibleContent>
+          <CardContent className="pt-2 space-y-4">
+            {children}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   )
 }
 
@@ -468,185 +551,175 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
         {/* Right: Pipeline phases (2/3) */}
         <div className="lg:col-span-2 space-y-4">
           {/* Nearby Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="Nearby" completedAt={location.nearby_completed_at}>
-                <Accordion type="multiple" defaultValue={[]}>
-                  <AccordionItem value="stations">
-                    <AccordionTrigger className="py-2 text-sm text-gray-500">Nearest Stations</AccordionTrigger>
-                    <AccordionContent>
-                      <NearestStationsTable value={location.nearest_stations} />
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-
-                <NearbyGenerateSection streetLocationId={location.id}>
-                  <KeyAnchorsMap
-                    anchors={location.key_anchors}
-                    curatedNames={(() => {
-                      try {
-                        const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
-                        return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
-                      } catch { return null }
-                    })()}
-                    centerLat={location.lat}
-                    centerLon={location.lon}
-                    height={420}
-                    customAnchorsData={location.custom_anchors}
-                    onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate(anchors)}
-                    savingCustomAnchors={customAnchorsMutation.isPending}
-                  />
-                  <Accordion type="multiple" defaultValue={[]}>
-                    <AccordionItem value="anchors">
-                      <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
-                      <AccordionContent>
-                        <JsonArrayDisplay value={location.key_anchors} />
-                      </AccordionContent>
-                    </AccordionItem>
-                    {location.curated_nearby && (
-                      <AccordionItem value="curated">
-                        <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
-                        <AccordionContent>
-                          <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
-                        </AccordionContent>
-                      </AccordionItem>
-                    )}
-                  </Accordion>
-                </NearbyGenerateSection>
-              </PhaseSection>
-            </CardContent>
-          </Card>
+          <CollapsiblePhaseCard title="Nearby" phase="nearby" completedAt={location.nearby_completed_at} streetLocationId={location.id}>
+            <Accordion type="multiple" defaultValue={[]}>
+              <AccordionItem value="stations">
+                <AccordionTrigger className="py-2 text-sm text-gray-500">Nearest Stations</AccordionTrigger>
+                <AccordionContent>
+                  <NearestStationsTable value={location.nearest_stations} />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            <KeyAnchorsMap
+              anchors={location.key_anchors}
+              curatedNames={(() => {
+                try {
+                  const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
+                  return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
+                } catch { return null }
+              })()}
+              centerLat={location.lat}
+              centerLon={location.lon}
+              height={420}
+              customAnchorsData={location.custom_anchors}
+              onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate(anchors)}
+              savingCustomAnchors={customAnchorsMutation.isPending}
+            />
+            <Accordion type="multiple" defaultValue={[]}>
+              <AccordionItem value="anchors">
+                <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
+                <AccordionContent>
+                  <JsonArrayDisplay value={location.key_anchors} />
+                </AccordionContent>
+              </AccordionItem>
+              {location.curated_nearby && (
+                <AccordionItem value="curated">
+                  <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
+                  <AccordionContent>
+                    <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+            </Accordion>
+          </CollapsiblePhaseCard>
 
           {/* SEO Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="SEO" completedAt={location.seo_completed_at}>
-                <DetailRow label="Seed Tone Type" value={location.seed_tone_type} />
-                <DetailRow label="Seed Title" value={location.seed_title} />
-                <DetailRow label="Seed Keyword" value={location.seed_keyword} />
-                <DetailRow label="Search Intent" value={location.search_intent} />
-                <DetailRow label="Writing Style" value={location.writing_style} />
-                <DetailRow label="Writing Tone" value={location.writing_tone} />
-                <DetailRow label="Hidden Insight" value={location.hidden_insight} />
-                <DetailRow label="Target Audience" value={location.target_audience} />
-                <DetailRow label="Goal of Article" value={location.goal_of_article} />
-                <DetailRow label="Primary Keyword" value={location.keywords_primary_keyword} />
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Secondary Keywords</div>
-                  <JsonArrayDisplay value={location.keywords_secondary_keywords} />
+          <CollapsiblePhaseCard title="SEO" phase="seo" completedAt={location.seo_completed_at} streetLocationId={location.id} defaultOpen={false}>
+            {/* Short fields in 2-col grid */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              <DetailRow label="Seed Tone Type" value={location.seed_tone_type} />
+              <DetailRow label="Search Intent" value={location.search_intent} />
+              <DetailRow label="Writing Style" value={location.writing_style} />
+              <DetailRow label="Writing Tone" value={location.writing_tone} />
+              <DetailRow label="Seed Keyword" value={location.seed_keyword} />
+              <DetailRow label="Primary Keyword" value={location.keywords_primary_keyword} />
+            </div>
+
+            {/* Full-width text fields in tabs */}
+            <DetailRow label="Seed Title" value={location.seed_title} />
+            <Tabs defaultValue="target-audience">
+              <TabsList className="h-8 w-full justify-start">
+                <TabsTrigger value="target-audience" className="text-xs px-2.5 py-1 h-6">Target Audience</TabsTrigger>
+                <TabsTrigger value="goal" className="text-xs px-2.5 py-1 h-6">Goal of Article</TabsTrigger>
+                <TabsTrigger value="insight" className="text-xs px-2.5 py-1 h-6">Hidden Insight</TabsTrigger>
+              </TabsList>
+              <TabsContent value="target-audience">
+                <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                  {location.target_audience || '—'}
                 </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Semantic Keywords</div>
-                  <JsonArrayDisplay value={location.keywords_semantic_keywords} />
+              </TabsContent>
+              <TabsContent value="goal">
+                <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                  {location.goal_of_article || '—'}
                 </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Long Tail Keywords</div>
-                  <JsonArrayDisplay value={location.keywords_long_tail_keywords} />
+              </TabsContent>
+              <TabsContent value="insight">
+                <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                  {location.hidden_insight || '—'}
                 </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Common Subtopics</div>
-                  <JsonArrayDisplay value={location.semantic_analysis_common_subtopics} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-sm text-gray-500">Related Questions</div>
-                  <JsonArrayDisplay value={location.semantic_analysis_related_questions} />
-                </div>
-              </PhaseSection>
-            </CardContent>
-          </Card>
+              </TabsContent>
+            </Tabs>
+
+            {/* Keywords & Analysis tabs */}
+            <Tabs defaultValue="secondary">
+              <TabsList className="h-8 w-full justify-start">
+                <TabsTrigger value="secondary" className="text-xs px-2.5 py-1 h-6">Secondary</TabsTrigger>
+                <TabsTrigger value="semantic" className="text-xs px-2.5 py-1 h-6">Semantic</TabsTrigger>
+                <TabsTrigger value="longtail" className="text-xs px-2.5 py-1 h-6">Long Tail</TabsTrigger>
+                <TabsTrigger value="subtopics" className="text-xs px-2.5 py-1 h-6">Subtopics</TabsTrigger>
+                <TabsTrigger value="questions" className="text-xs px-2.5 py-1 h-6">Questions</TabsTrigger>
+              </TabsList>
+              <TabsContent value="secondary">
+                <JsonArrayDisplay value={location.keywords_secondary_keywords} />
+              </TabsContent>
+              <TabsContent value="semantic">
+                <JsonArrayDisplay value={location.keywords_semantic_keywords} />
+              </TabsContent>
+              <TabsContent value="longtail">
+                <JsonArrayDisplay value={location.keywords_long_tail_keywords} />
+              </TabsContent>
+              <TabsContent value="subtopics">
+                <JsonArrayDisplay value={location.semantic_analysis_common_subtopics} />
+              </TabsContent>
+              <TabsContent value="questions">
+                <JsonArrayDisplay value={location.semantic_analysis_related_questions} />
+              </TabsContent>
+            </Tabs>
+          </CollapsiblePhaseCard>
 
           {/* Pre-Blog Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="Pre-Blog" completedAt={location.pre_blog_completed_at}>
-                <DetailRow label="New Title" value={location.new_title} />
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-500">Key Takeaways</div>
-                  <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2">
-                    {location.key_takeaways || '—'}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-500">Outline</div>
-                  <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-60 overflow-auto">
-                    {location.outline || '—'}
-                  </div>
-                </div>
-              </PhaseSection>
-            </CardContent>
-          </Card>
+          <CollapsiblePhaseCard title="Pre-Blog" phase="pre-blog" completedAt={location.pre_blog_completed_at} streetLocationId={location.id} defaultOpen={false} disabledReason={!location.seo_completed_at ? 'Requires SEO to be completed first' : undefined}>
+            <DetailRow label="New Title" value={location.new_title} />
+            <MarkdownPreviewBox label="Key Takeaways" content={location.key_takeaways} />
+            <MarkdownPreviewBox label="Outline" content={location.outline} />
+          </CollapsiblePhaseCard>
 
           {/* Post-Blog Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="Post-Blog" completedAt={location.post_blog_completed_at}>
-                <DetailRow label="Google Doc ID" value={location.google_doc_article_id} />
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-500">Draft Markdown</div>
-                  <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-60 overflow-auto">
-                    {location.draft_markdown
-                      ? location.draft_markdown.length > 500
-                        ? location.draft_markdown.slice(0, 500) + '...'
-                        : location.draft_markdown
-                      : '—'}
-                  </div>
+          <CollapsiblePhaseCard title="Post-Blog" phase="post-blog" completedAt={location.post_blog_completed_at} streetLocationId={location.id} disabledReason={(() => {
+            const missing = [
+              !location.nearby_completed_at && 'Nearby',
+              !location.seo_completed_at && 'SEO',
+              !location.pre_blog_completed_at && 'Pre-Blog',
+            ].filter(Boolean)
+            return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
+          })()}>
+            <MarkdownPreviewBox label="Draft Markdown" content={location.draft_markdown} />
+            {location.nearest_stations_table_md && (
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">Stations Table (MD)</div>
+                <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
+                  {location.nearest_stations_table_md}
                 </div>
-                {location.nearest_stations_table_md && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-gray-500">Stations Table (MD)</div>
-                    <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                      {location.nearest_stations_table_md}
-                    </div>
-                  </div>
-                )}
-                {location.key_anchors_table_md && (
-                  <div className="space-y-1">
-                    <div className="text-sm text-gray-500">Key Anchors Table (MD)</div>
-                    <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                      {location.key_anchors_table_md}
-                    </div>
-                  </div>
-                )}
-              </PhaseSection>
-            </CardContent>
-          </Card>
+              </div>
+            )}
+            {location.key_anchors_table_md && (
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">Key Anchors Table (MD)</div>
+                <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
+                  {location.key_anchors_table_md}
+                </div>
+              </div>
+            )}
+          </CollapsiblePhaseCard>
 
           {/* Image Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="Image" completedAt={location.image_completed_at}>
-                {location.featured_image_url ? (
-                  <a
-                    href={location.featured_image_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <img
-                      src={location.featured_image_url}
-                      alt={`${location.street} featured`}
-                      className="rounded border max-h-48 object-cover"
-                    />
-                  </a>
-                ) : (
-                  <span className="text-sm text-gray-400">No image</span>
-                )}
-              </PhaseSection>
-            </CardContent>
-          </Card>
+          <CollapsiblePhaseCard title="Image" completedAt={location.image_completed_at}>
+            {location.featured_image_url ? (
+              <a
+                href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <img
+                  src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
+                  alt={`${location.street} featured`}
+                  className="rounded border max-h-48 object-cover"
+                />
+              </a>
+            ) : (
+              <span className="text-sm text-gray-400">No image</span>
+            )}
+          </CollapsiblePhaseCard>
 
           {/* Publish Phase */}
-          <Card>
-            <CardContent className="pt-6 space-y-4">
-              <PhaseSection title="Publish" completedAt={location.publish_completed_at}>
-                <DetailRow label="Blog Post ID" value={location.blog_post_id} />
-                <DetailRow
-                  label="Last Updated"
-                  value={parseDate(location.publish_updated_at)?.toLocaleString()}
-                />
-              </PhaseSection>
-            </CardContent>
-          </Card>
+          <CollapsiblePhaseCard title="Publish" completedAt={location.publish_completed_at}>
+            <DetailRow label="Blog Post ID" value={location.blog_post_id} />
+            <DetailRow
+              label="Last Updated"
+              value={parseDate(location.publish_updated_at)?.toLocaleString()}
+            />
+          </CollapsiblePhaseCard>
         </div>
       </div>
 

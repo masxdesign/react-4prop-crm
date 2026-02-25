@@ -1,7 +1,7 @@
 import axios from 'axios'
 import streetLocationsClient from './streetLocationsClient'
 
-const N8N_NEARBY_URL = import.meta.env.VITE_N8N_NEARBY_WEBHOOK_URL
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL
 
 export const fetchStreetLocationsByPrefix = async (prefix) => {
   const { data } = await streetLocationsClient.post('', {
@@ -154,12 +154,12 @@ export const updateStreetLocationCustomAnchors = async (id, customAnchors) => {
   return data.data.updateStreetLocationCustomAnchors
 }
 
-export const generateNearby = async (ids) => {
-  const { data } = await axios.post(`${N8N_NEARBY_URL}/generate`, { ids })
+export const generatePhase = async (phase, ids) => {
+  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}/generate`, { ids })
   return data.data
 }
 
-export const fetchNearbyStatus = async (ids) => {
-  const { data } = await axios.post(`${N8N_NEARBY_URL}/status`, { ids })
+export const fetchPhaseStatus = async (phase, ids) => {
+  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}/status`, { ids })
   return data.data
 }

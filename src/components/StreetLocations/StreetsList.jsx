@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Play } from 'lucide-react'
+import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Table,
   TableHeader,
@@ -36,7 +37,9 @@ import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
 import { streetLocationsByPrefixQuery, streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
 import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
-import { useNearbyGeneration } from '@/hooks/use-NearbyGeneration'
+import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
+import ReactMarkdownPrimitive from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const PHASES = [
   { key: 'nearby_completed_at', label: 'Nearby' },
@@ -56,6 +59,55 @@ const REGIONS = {
   W: 'West London',
   EC: 'Central London (City of London)',
   WC: 'Central London (West End)',
+}
+
+const mdComponents = {
+  h1: ({ children }) => <h1 className="text-xl font-bold text-gray-900 mt-4 mb-2">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-lg font-semibold text-gray-900 mt-3 mb-1.5">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-base font-semibold text-gray-800 mt-2 mb-1">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-sm font-semibold text-gray-800 mt-2 mb-1">{children}</h4>,
+  p: ({ children }) => <p className="text-sm text-gray-700 mb-2 leading-relaxed">{children}</p>,
+  ul: ({ children }) => <ul className="list-disc pl-5 mb-2 space-y-0.5 text-sm text-gray-700">{children}</ul>,
+  ol: ({ children }) => <ol className="list-decimal pl-5 mb-2 space-y-0.5 text-sm text-gray-700">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+  a: ({ children, ...props }) => <a {...props} className="underline text-blue-600" target="_blank" rel="noreferrer">{children}</a>,
+  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-3 italic text-gray-600 my-2">{children}</blockquote>,
+  table: ({ children }) => <table className="text-sm border-collapse w-full my-2">{children}</table>,
+  th: ({ children }) => <th className="border border-gray-200 px-2 py-1 bg-gray-50 text-left font-medium text-gray-700">{children}</th>,
+  td: ({ children }) => <td className="border border-gray-200 px-2 py-1 text-gray-700">{children}</td>,
+}
+
+function MarkdownBox({ label, content }) {
+  const [expanded, setExpanded] = useState(false)
+
+  if (!content) {
+    return (
+      <div className="space-y-1">
+        <div className="text-sm text-gray-500">{label}</div>
+        <span className="text-sm text-gray-400">—</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="text-sm text-gray-500">{label}</div>
+      <div
+        className={`relative rounded-lg border border-gray-200 shadow-sm cursor-pointer transition-all duration-300 ${expanded ? '' : 'max-h-32 overflow-hidden'}`}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <div className="p-3 max-w-prose">
+          <ReactMarkdownPrimitive components={mdComponents} remarkPlugins={[remarkGfm]}>
+            {content}
+          </ReactMarkdownPrimitive>
+        </div>
+        {!expanded && (
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-white to-transparent rounded-b-lg pointer-events-none" />
+        )}
+      </div>
+    </div>
+  )
 }
 
 function parseDate(value) {
@@ -91,9 +143,9 @@ function PhaseStatus({ completedAt }) {
 
 function DetailRow({ label, value }) {
   return (
-    <div className="flex justify-between gap-4 text-sm border-b border-gray-100 pb-2">
-      <span className="text-gray-500 shrink-0">{label}</span>
-      <span className="font-medium text-gray-900 text-right break-all">{value ?? '—'}</span>
+    <div className="space-y-0.5 border-b border-gray-100 py-2">
+      <div className="text-sm text-gray-400">{label}</div>
+      <div className="text-base text-gray-900 max-w-prose">{value ?? '—'}</div>
     </div>
   )
 }
@@ -106,14 +158,14 @@ function JsonArrayDisplay({ value }) {
     return (
       <div className="space-y-1">
         {arr.map((item, i) => (
-          <div key={i} className="text-xs bg-gray-50 rounded px-2 py-1">
+          <div key={i} className="text-sm bg-gray-50 rounded px-2 py-1.5">
             {typeof item === 'object' ? JSON.stringify(item) : String(item)}
           </div>
         ))}
       </div>
     )
   } catch {
-    return <span className="text-xs text-gray-500 break-all">{String(value)}</span>
+    return <span className="text-sm text-gray-500 break-all">{String(value)}</span>
   }
 }
 
@@ -215,8 +267,8 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
   }
 }
 
-function NearbyGenerateSection({ streetLocationId, children }) {
-  const { generate, checkStatus, statusMap, isGenerating, isPolling } = useNearbyGeneration()
+function PhaseGenerateSection({ phase, label, streetLocationId, completedAt, disabledReason, children }) {
+  const { generate, checkStatus, statusMap, isGenerating } = usePhaseGeneration(phase)
 
   useEffect(() => {
     if (streetLocationId) {
@@ -224,19 +276,20 @@ function NearbyGenerateSection({ streetLocationId, children }) {
     }
   }, [streetLocationId, checkStatus])
 
-  const status = statusMap.get(streetLocationId)
-  const isPending = status === 'pending'
+  const isPending = statusMap.get(streetLocationId) === 'pending'
+  const blocked = !!disabledReason
+  const btnLabel = completedAt ? 'Regenerate' : 'Generate'
 
   return (
     <div className="space-y-2 mt-3 border-t pt-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500 font-medium">Blog Anchors</span>
+        <span className="text-sm text-gray-500 font-medium">{label}</span>
         <Button
           size="sm"
-          variant="outline"
-          disabled={isGenerating || isPending}
+          disabled={isGenerating || isPending || blocked}
           onClick={() => generate([streetLocationId])}
-          className="h-7 text-xs gap-1"
+          title={blocked ? disabledReason : undefined}
+          className="h-7 text-xs gap-1 shrink-0 border-0 cursor-pointer bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-lg hover:shadow-sky-500/25 transition-shadow"
         >
           {isGenerating || isPending ? (
             <>
@@ -245,8 +298,8 @@ function NearbyGenerateSection({ streetLocationId, children }) {
             </>
           ) : (
             <>
-              <Play className="h-3 w-3" />
-              Generate
+              <Sparkles className="h-3 w-3" />
+              {btnLabel}
             </>
           )}
         </Button>
@@ -257,7 +310,14 @@ function NearbyGenerateSection({ streetLocationId, children }) {
 }
 
 function PhaseSheetContent({ streetId, phaseKey }) {
+  const queryClient = useQueryClient()
   const { data: location, isLoading } = useQuery(streetLocationDetailQuery(streetId))
+  const customAnchorsMutation = useMutation({
+    mutationFn: ({ id, anchors }) => updateStreetLocationCustomAnchors(id, anchors),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
+    },
+  })
 
   if (isLoading) {
     return (
@@ -285,7 +345,7 @@ function PhaseSheetContent({ streetId, phaseKey }) {
             </AccordionItem>
           </Accordion>
 
-          <NearbyGenerateSection streetLocationId={location.id}>
+          <PhaseGenerateSection phase="nearby" label="Blog Anchors" streetLocationId={location.id} completedAt={location.nearby_completed_at}>
             <KeyAnchorsMap
               anchors={location.key_anchors}
               curatedNames={(() => {
@@ -317,101 +377,127 @@ function PhaseSheetContent({ streetId, phaseKey }) {
                 </AccordionItem>
               )}
             </Accordion>
-          </NearbyGenerateSection>
+          </PhaseGenerateSection>
         </>
       )}
 
       {phaseKey === 'seo_completed_at' && (
-        <div className="space-y-2">
-          <DetailRow label="Seed Tone Type" value={location.seed_tone_type} />
-          <DetailRow label="Seed Title" value={location.seed_title} />
-          <DetailRow label="Seed Keyword" value={location.seed_keyword} />
-          <DetailRow label="Search Intent" value={location.search_intent} />
-          <DetailRow label="Writing Style" value={location.writing_style} />
-          <DetailRow label="Writing Tone" value={location.writing_tone} />
-          <DetailRow label="Hidden Insight" value={location.hidden_insight} />
-          <DetailRow label="Target Audience" value={location.target_audience} />
-          <DetailRow label="Goal of Article" value={location.goal_of_article} />
-          <DetailRow label="Primary Keyword" value={location.keywords_primary_keyword} />
-          <div className="space-y-2">
-            <div className="text-sm text-gray-500">Secondary Keywords</div>
-            <JsonArrayDisplay value={location.keywords_secondary_keywords} />
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm text-gray-500">Semantic Keywords</div>
-            <JsonArrayDisplay value={location.keywords_semantic_keywords} />
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm text-gray-500">Long Tail Keywords</div>
-            <JsonArrayDisplay value={location.keywords_long_tail_keywords} />
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm text-gray-500">Common Subtopics</div>
-            <JsonArrayDisplay value={location.semantic_analysis_common_subtopics} />
-          </div>
-          <div className="space-y-2">
-            <div className="text-sm text-gray-500">Related Questions</div>
-            <JsonArrayDisplay value={location.semantic_analysis_related_questions} />
-          </div>
-        </div>
+        <>
+          <PhaseGenerateSection phase="seo" label="SEO Research" streetLocationId={location.id} completedAt={location.seo_completed_at}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+                <DetailRow label="Seed Tone Type" value={location.seed_tone_type} />
+                <DetailRow label="Search Intent" value={location.search_intent} />
+                <DetailRow label="Writing Style" value={location.writing_style} />
+                <DetailRow label="Writing Tone" value={location.writing_tone} />
+                <DetailRow label="Seed Keyword" value={location.seed_keyword} />
+                <DetailRow label="Primary Keyword" value={location.keywords_primary_keyword} />
+              </div>
+
+              <DetailRow label="Seed Title" value={location.seed_title} />
+              <Tabs defaultValue="target-audience">
+                <TabsList className="h-8 w-full justify-start">
+                  <TabsTrigger value="target-audience" className="text-xs px-2.5 py-1 h-6">Target Audience</TabsTrigger>
+                  <TabsTrigger value="goal" className="text-xs px-2.5 py-1 h-6">Goal of Article</TabsTrigger>
+                  <TabsTrigger value="insight" className="text-xs px-2.5 py-1 h-6">Hidden Insight</TabsTrigger>
+                </TabsList>
+                <TabsContent value="target-audience">
+                  <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                    {location.target_audience || '—'}
+                  </div>
+                </TabsContent>
+                <TabsContent value="goal">
+                  <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                    {location.goal_of_article || '—'}
+                  </div>
+                </TabsContent>
+                <TabsContent value="insight">
+                  <div className="text-base text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-w-prose">
+                    {location.hidden_insight || '—'}
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <Tabs defaultValue="secondary">
+                <TabsList className="h-8 w-full justify-start">
+                  <TabsTrigger value="secondary" className="text-xs px-2.5 py-1 h-6">Secondary</TabsTrigger>
+                  <TabsTrigger value="semantic" className="text-xs px-2.5 py-1 h-6">Semantic</TabsTrigger>
+                  <TabsTrigger value="longtail" className="text-xs px-2.5 py-1 h-6">Long Tail</TabsTrigger>
+                  <TabsTrigger value="subtopics" className="text-xs px-2.5 py-1 h-6">Subtopics</TabsTrigger>
+                  <TabsTrigger value="questions" className="text-xs px-2.5 py-1 h-6">Questions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="secondary">
+                  <JsonArrayDisplay value={location.keywords_secondary_keywords} />
+                </TabsContent>
+                <TabsContent value="semantic">
+                  <JsonArrayDisplay value={location.keywords_semantic_keywords} />
+                </TabsContent>
+                <TabsContent value="longtail">
+                  <JsonArrayDisplay value={location.keywords_long_tail_keywords} />
+                </TabsContent>
+                <TabsContent value="subtopics">
+                  <JsonArrayDisplay value={location.semantic_analysis_common_subtopics} />
+                </TabsContent>
+                <TabsContent value="questions">
+                  <JsonArrayDisplay value={location.semantic_analysis_related_questions} />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </PhaseGenerateSection>
+        </>
       )}
 
       {phaseKey === 'pre_blog_completed_at' && (
-        <div className="space-y-2">
-          <DetailRow label="New Title" value={location.new_title} />
-          <div className="space-y-1">
-            <div className="text-sm text-gray-500">Key Takeaways</div>
-            <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2">
-              {location.key_takeaways || '—'}
+        <>
+          <PhaseGenerateSection phase="pre-blog" label="Pre-Blog Research" streetLocationId={location.id} completedAt={location.pre_blog_completed_at} disabledReason={!location.seo_completed_at ? 'Requires SEO to be completed first' : undefined}>
+            <div className="space-y-2">
+              <DetailRow label="New Title" value={location.new_title} />
+              <MarkdownBox label="Key Takeaways" content={location.key_takeaways} />
+              <MarkdownBox label="Outline" content={location.outline} />
             </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-sm text-gray-500">Outline</div>
-            <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-60 overflow-auto">
-              {location.outline || '—'}
-            </div>
-          </div>
-        </div>
+          </PhaseGenerateSection>
+        </>
       )}
 
       {phaseKey === 'post_blog_completed_at' && (
-        <div className="space-y-2">
-          <DetailRow label="Google Doc ID" value={location.google_doc_article_id} />
-          <div className="space-y-1">
-            <div className="text-sm text-gray-500">Draft Markdown</div>
-            <div className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-60 overflow-auto">
-              {location.draft_markdown
-                ? location.draft_markdown.length > 500
-                  ? location.draft_markdown.slice(0, 500) + '...'
-                  : location.draft_markdown
-                : '—'}
+        <>
+          <PhaseGenerateSection phase="post-blog" label="Post-Blog Generation" streetLocationId={location.id} completedAt={location.post_blog_completed_at} disabledReason={(() => {
+            const missing = [
+              !location.nearby_completed_at && 'Nearby',
+              !location.seo_completed_at && 'SEO',
+              !location.pre_blog_completed_at && 'Pre-Blog',
+            ].filter(Boolean)
+            return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
+          })()}>
+            <div className="space-y-2">
+              <MarkdownBox label="Draft Markdown" content={location.draft_markdown} />
+              {location.nearest_stations_table_md && (
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-500">Stations Table (MD)</div>
+                  <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
+                    {location.nearest_stations_table_md}
+                  </div>
+                </div>
+              )}
+              {location.key_anchors_table_md && (
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-500">Key Anchors Table (MD)</div>
+                  <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
+                    {location.key_anchors_table_md}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          {location.nearest_stations_table_md && (
-            <div className="space-y-1">
-              <div className="text-sm text-gray-500">Stations Table (MD)</div>
-              <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                {location.nearest_stations_table_md}
-              </div>
-            </div>
-          )}
-          {location.key_anchors_table_md && (
-            <div className="space-y-1">
-              <div className="text-sm text-gray-500">Key Anchors Table (MD)</div>
-              <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                {location.key_anchors_table_md}
-              </div>
-            </div>
-          )}
-        </div>
+          </PhaseGenerateSection>
+        </>
       )}
 
       {phaseKey === 'image_completed_at' && (
         <div>
           {location.featured_image_url ? (
-            <a href={location.featured_image_url} target="_blank" rel="noopener noreferrer" className="block">
+            <a href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`} target="_blank" rel="noopener noreferrer" className="block">
               <img
-                src={location.featured_image_url}
+                src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
                 alt={`${location.street} featured`}
                 className="rounded border max-h-48 object-cover"
               />
@@ -448,7 +534,21 @@ export default function StreetsList({ prefix, filter = '' }) {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const cursorCard = useCursorInfoCard({ showDelay: 0 })
-  const { generate, statusMap, isGenerating, isPolling } = useNearbyGeneration()
+  const nearby = usePhaseGeneration('nearby')
+  const seo = usePhaseGeneration('seo')
+  const preBlog = usePhaseGeneration('pre-blog')
+  const postBlog = usePhaseGeneration('post-blog')
+
+  // On page load, check status for all visible street IDs
+  useEffect(() => {
+    if (streets?.length > 0) {
+      const ids = streets.map((s) => s.id)
+      nearby.checkStatus(ids)
+      seo.checkStatus(ids)
+      preBlog.checkStatus(ids)
+      postBlog.checkStatus(ids)
+    }
+  }, [streets, nearby.checkStatus, seo.checkStatus, preBlog.checkStatus, postBlog.checkStatus])
 
   const handleSort = useCallback((column) => {
     if (sortBy === column) {
@@ -617,18 +717,72 @@ export default function StreetsList({ prefix, filter = '' }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={isGenerating || isPolling}
-              onClick={() => generate([...selectedIds])}
+              disabled={nearby.isGenerating || nearby.isPolling}
+              onClick={() => nearby.generate([...selectedIds])}
             >
-              {isGenerating ? (
+              {nearby.isGenerating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   Generating...
                 </>
               ) : (
                 <>
-                  <Play className="h-4 w-4 mr-1" />
+                  <Sparkles className="h-4 w-4 mr-1" />
                   Generate Nearby
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={seo.isGenerating || seo.isPolling}
+              onClick={() => seo.generate([...selectedIds])}
+            >
+              {seo.isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Generate SEO
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={preBlog.isGenerating || preBlog.isPolling}
+              onClick={() => preBlog.generate([...selectedIds])}
+            >
+              {preBlog.isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Generate Pre-Blog
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={postBlog.isGenerating || postBlog.isPolling}
+              onClick={() => postBlog.generate([...selectedIds])}
+            >
+              {postBlog.isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Generate Post-Blog
                 </>
               )}
             </Button>
@@ -766,12 +920,32 @@ export default function StreetsList({ prefix, filter = '' }) {
                 )}
               </TableCell>
               <TableCell>
-                {statusMap.has(street.id) && statusMap.get(street.id) === 'pending' && (
-                  <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300 text-xs">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Generating
-                  </Badge>
-                )}
+                <div className="flex flex-col gap-1">
+                  {nearby.statusMap.has(street.id) && nearby.statusMap.get(street.id) === 'pending' && (
+                    <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300 text-xs">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Nearby
+                    </Badge>
+                  )}
+                  {seo.statusMap.has(street.id) && seo.statusMap.get(street.id) === 'pending' && (
+                    <Badge variant="outline" className="gap-1 text-blue-600 border-blue-300 text-xs">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      SEO
+                    </Badge>
+                  )}
+                  {preBlog.statusMap.has(street.id) && preBlog.statusMap.get(street.id) === 'pending' && (
+                    <Badge variant="outline" className="gap-1 text-purple-600 border-purple-300 text-xs">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Pre-Blog
+                    </Badge>
+                  )}
+                  {postBlog.statusMap.has(street.id) && postBlog.statusMap.get(street.id) === 'pending' && (
+                    <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-300 text-xs">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Post-Blog
+                    </Badge>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

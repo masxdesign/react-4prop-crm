@@ -1,12 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { generateNearby, fetchNearbyStatus } from '@/services/streetLocationService'
+import { generatePhase, fetchPhaseStatus } from '@/services/streetLocationService'
 
-const STORAGE_KEY = 'nearbyGeneration.trackedIds'
-
-function loadTrackedIds() {
+function loadTrackedIds(phase) {
   try {
-    const stored = sessionStorage.getItem(STORAGE_KEY)
+    const stored = sessionStorage.getItem(`${phase}Generation.trackedIds`)
     if (stored) {
       const parsed = JSON.parse(stored)
       if (Array.isArray(parsed) && parsed.length > 0) return parsed
@@ -15,27 +13,28 @@ function loadTrackedIds() {
   return []
 }
 
-function saveTrackedIds(ids) {
+function saveTrackedIds(phase, ids) {
+  const key = `${phase}Generation.trackedIds`
   if (ids.length > 0) {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(ids))
+    sessionStorage.setItem(key, JSON.stringify(ids))
   } else {
-    sessionStorage.removeItem(STORAGE_KEY)
+    sessionStorage.removeItem(key)
   }
 }
 
-export function useNearbyGeneration() {
+export function usePhaseGeneration(phase) {
   const queryClient = useQueryClient()
-  const [trackedIds, setTrackedIds] = useState(loadTrackedIds)
+  const [trackedIds, setTrackedIds] = useState(() => loadTrackedIds(phase))
   const trackedIdsRef = useRef(trackedIds)
 
   // Keep ref in sync
   useEffect(() => {
     trackedIdsRef.current = trackedIds
-    saveTrackedIds(trackedIds)
-  }, [trackedIds])
+    saveTrackedIds(phase, trackedIds)
+  }, [trackedIds, phase])
 
   const generateMutation = useMutation({
-    mutationFn: (ids) => generateNearby(ids),
+    mutationFn: (ids) => generatePhase(phase, ids),
     onSuccess: (_data, ids) => {
       // All sent IDs are pending (returned or not — missing means already running)
       setTrackedIds((prev) => [...new Set([...prev, ...ids])])
@@ -43,21 +42,21 @@ export function useNearbyGeneration() {
   })
 
   const statusQuery = useQuery({
-    queryKey: ['nearbyStatus', trackedIds],
-    queryFn: () => fetchNearbyStatus(trackedIds),
+    queryKey: [`${phase}Status`, trackedIds],
+    queryFn: () => fetchPhaseStatus(phase, trackedIds),
     enabled: trackedIds.length > 0,
     refetchInterval: (query) => {
       const items = query.state.data ?? []
-      const hasPending = items.length === 0 || items.some((s) => s.status === 'pending')
+      const hasPending = items.some((s) => s.status === 'pending')
       return hasPending ? 3000 : false
     },
   })
 
-  // When all tracked items are finished, clear tracking and refresh data
+  // When no more pending items, clear tracking and refresh data
   useEffect(() => {
     const items = statusQuery.data
-    if (!items || items.length === 0) return
-    const allFinished = items.every((s) => s.status === 'finished')
+    if (!items) return
+    const allFinished = !items.some((s) => s.status === 'pending')
     if (allFinished) {
       setTrackedIds([])
       queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
@@ -93,7 +92,7 @@ export function useNearbyGeneration() {
       if (untracked.length === 0) return
       untracked.forEach((id) => checkingRef.current.add(id))
       try {
-        const items = await fetchNearbyStatus(untracked)
+        const items = await fetchPhaseStatus(phase, untracked)
         const hasPending = items.some((s) => s.status === 'pending')
         if (hasPending) {
           setTrackedIds((prev) => [...new Set([...prev, ...untracked])])
@@ -102,7 +101,7 @@ export function useNearbyGeneration() {
         untracked.forEach((id) => checkingRef.current.delete(id))
       }
     },
-    []
+    [phase]
   )
 
   return {
