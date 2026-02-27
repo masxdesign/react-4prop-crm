@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils"
 import PropertyCompany from "./PropertyCompany"
 import { BadgePoundSterlingIcon, Loader2Icon, RulerIcon } from "lucide-react"
 import { RulerHorizontalIcon, RulerSquareIcon } from "@radix-ui/react-icons"
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet"
-import 'leaflet/dist/leaflet.css'
+import { Map, Marker } from '@vis.gl/react-maplibre'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import Grading from "./Grading"
 import Choices from "./Choices"
 import { Suspense, useState } from "react"
@@ -25,8 +25,6 @@ const Property = ({ row, isAgent, bz_hash, dteam, onGradeChange, onDealingAgentF
 
     const [active, setActive] = useState(0)
 
-    const position = [row.lat, row.lng]
-    
     return (
         <div className="pb-0 sm:pb-10">
             {row.enquired.isEnquiry && (
@@ -281,18 +279,20 @@ const Property = ({ row, isAgent, bz_hash, dteam, onGradeChange, onDealingAgentF
                         <Nl2br text={row.content.location} fallbackText={row.enquired.brand.name} />
                     </p>
                 </div>
-                <div className="sm:w-1/3 relative z-0">
-                    <MapContainer center={position} zoom={13} scrollWheelZoom={false} className="h-64 sm:h-96 w-full">
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <Marker position={position}>
-                            <Popup>
-                                A pretty CSS3 popup. <br /> Easily customizable.
-                            </Popup>
-                        </Marker>
-                    </MapContainer>
+                <div className="sm:w-1/3 relative z-0 h-64 sm:h-96">
+                    <Map
+                        initialViewState={{
+                            longitude: row.lng,
+                            latitude: row.lat,
+                            zoom: 13,
+                        }}
+                        scrollZoom={false}
+                        style={{ width: '100%', height: '100%' }}
+                        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+                        attributionControl={false}
+                    >
+                        <Marker longitude={row.lng} latitude={row.lat} />
+                    </Map>
                 </div>
             </section>
         </div>
