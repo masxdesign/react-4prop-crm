@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { Map, Marker, Popup } from '@vis.gl/react-maplibre'
-import { distance, point } from '@turf/turf'
 import { Maximize2, Trash2, Loader2, Check } from 'lucide-react'
 import {
   CATEGORY_CONFIG,
@@ -8,14 +7,9 @@ import {
   formatCategory,
   CategoryPin,
   StreetPin,
-} from './KeyAnchorsMap'
+} from './StreetMaps'
+import { calcDistance } from './streetDetailUtils'
 import 'maplibre-gl/dist/maplibre-gl.css'
-
-function calcDistance(centerLat, centerLon, lat, lon) {
-  return Math.round(
-    distance(point([centerLon, centerLat]), point([lon, lat]), { units: 'meters' })
-  )
-}
 
 const WHY_RELEVANT = {
   supermarket: 'Major supermarket',

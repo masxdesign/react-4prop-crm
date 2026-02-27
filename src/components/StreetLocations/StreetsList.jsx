@@ -1,7 +1,8 @@
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles } from 'lucide-react'
+import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles, RefreshCw } from 'lucide-react'
+import { parseDate } from './streetDetailUtils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -32,17 +33,19 @@ import {
   TableCell,
 } from '@/components/ui/table'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
-import KeyAnchorsMap from '@/components/StreetLocations/KeyAnchorsMap'
+import StreetMaps from '@/components/StreetLocations/StreetMaps'
 import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
 import { streetLocationsByPrefixQuery, streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
 import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
 import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
+import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 import ReactMarkdownPrimitive from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 const PHASES = [
-  { key: 'nearby_completed_at', label: 'Nearby' },
+  { key: 'key_anchors_completed_at', label: 'Key Anchors' },
+  { key: 'nearest_stations_completed_at', label: 'Nearest Stations' },
   { key: 'seo_completed_at', label: 'SEO' },
   { key: 'pre_blog_completed_at', label: 'Pre-Blog' },
   { key: 'post_blog_completed_at', label: 'Post-Blog' },
@@ -78,6 +81,25 @@ const mdComponents = {
   td: ({ children }) => <td className="border border-gray-200 px-2 py-1 text-gray-700">{children}</td>,
 }
 
+function needsNearbyRegen(street) {
+  if (!street.key_anchors_completed_at) return true
+  if (!street.curated_nearby) return false
+  try {
+    const d = typeof street.curated_nearby === 'string'
+      ? JSON.parse(street.curated_nearby)
+      : street.curated_nearby
+    if (!d || typeof d !== 'object') return false
+    // Old format has editorial_summary or removed fields
+    if (d.editorial_summary) return true
+    if (Array.isArray(d.removed) && d.removed.length > 0) return true
+    // Old format has object-type curated_anchors items
+    if (Array.isArray(d.curated_anchors) && d.curated_anchors.length > 0 && typeof d.curated_anchors[0] === 'object') return true
+    return false
+  } catch {
+    return false
+  }
+}
+
 function MarkdownBox({ label, content }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -110,18 +132,6 @@ function MarkdownBox({ label, content }) {
   )
 }
 
-function parseDate(value) {
-  if (!value) return null
-  const num = Number(value)
-  if (!isNaN(num) && num > 0) {
-    const ms = num < 1e12 ? num * 1000 : num
-    const d = new Date(ms)
-    if (!isNaN(d.getTime())) return d
-  }
-  const d = new Date(value)
-  if (!isNaN(d.getTime())) return d
-  return null
-}
 
 function PhaseStatus({ completedAt }) {
   if (completedAt) {
@@ -268,15 +278,7 @@ function CuratedNearbyDisplay({ value, showTitle = true }) {
 }
 
 function PhaseGenerateSection({ phase, label, streetLocationId, completedAt, disabledReason, children }) {
-  const { generate, checkStatus, statusMap, isGenerating } = usePhaseGeneration(phase)
-
-  useEffect(() => {
-    if (streetLocationId) {
-      checkStatus([streetLocationId])
-    }
-  }, [streetLocationId, checkStatus])
-
-  const isPending = statusMap.get(streetLocationId) === 'pending'
+  const { generate, isGenerating } = usePhaseGeneration(phase)
   const blocked = !!disabledReason
   const btnLabel = completedAt ? 'Regenerate' : 'Generate'
 
@@ -286,12 +288,12 @@ function PhaseGenerateSection({ phase, label, streetLocationId, completedAt, dis
         <span className="text-sm text-gray-500 font-medium">{label}</span>
         <Button
           size="sm"
-          disabled={isGenerating || isPending || blocked}
+          disabled={isGenerating || blocked}
           onClick={() => generate([streetLocationId])}
           title={blocked ? disabledReason : undefined}
           className="h-7 text-xs gap-1 shrink-0 border-0 cursor-pointer bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-lg hover:shadow-sky-500/25 transition-shadow"
         >
-          {isGenerating || isPending ? (
+          {isGenerating ? (
             <>
               <Loader2 className="h-3 w-3 animate-spin" />
               Generating...
@@ -334,51 +336,46 @@ function PhaseSheetContent({ streetId, phaseKey }) {
     <div className="space-y-4">
       <PhaseStatus completedAt={location[phaseKey]} />
 
-      {phaseKey === 'nearby_completed_at' && (
-        <>
+      {phaseKey === 'key_anchors_completed_at' && (
+        <PhaseGenerateSection phase="key-anchors" label="Key Anchors" streetLocationId={location.id} completedAt={location.key_anchors_completed_at}>
+          <StreetMaps
+            anchors={location.key_anchors}
+            curatedNames={(() => {
+              try {
+                const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
+                return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
+              } catch { return null }
+            })()}
+            centerLat={location.lat}
+            centerLon={location.lon}
+            height={360}
+            customAnchorsData={location.custom_anchors}
+            onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate({ id: location.id, anchors })}
+            savingCustomAnchors={customAnchorsMutation.isPending}
+          />
           <Accordion type="multiple" defaultValue={[]}>
-            <AccordionItem value="stations">
-              <AccordionTrigger className="py-2 text-sm text-gray-500">Nearest Stations</AccordionTrigger>
+            <AccordionItem value="anchors">
+              <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
               <AccordionContent>
-                <NearestStationsTable value={location.nearest_stations} />
+                <JsonArrayDisplay value={location.key_anchors} />
               </AccordionContent>
             </AccordionItem>
-          </Accordion>
-
-          <PhaseGenerateSection phase="nearby" label="Blog Anchors" streetLocationId={location.id} completedAt={location.nearby_completed_at}>
-            <KeyAnchorsMap
-              anchors={location.key_anchors}
-              curatedNames={(() => {
-                try {
-                  const d = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
-                  return Array.isArray(d?.curated_anchors) ? d.curated_anchors : null
-                } catch { return null }
-              })()}
-              centerLat={location.lat}
-              centerLon={location.lon}
-              height={360}
-              customAnchorsData={location.custom_anchors}
-              onSaveCustomAnchors={(anchors) => customAnchorsMutation.mutate({ id: location.id, anchors })}
-              savingCustomAnchors={customAnchorsMutation.isPending}
-            />
-            <Accordion type="multiple" defaultValue={[]}>
-              <AccordionItem value="anchors">
-                <AccordionTrigger className="py-2 text-sm text-gray-500">Raw Anchor Data</AccordionTrigger>
+            {location.curated_nearby && (
+              <AccordionItem value="curated">
+                <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
                 <AccordionContent>
-                  <JsonArrayDisplay value={location.key_anchors} />
+                  <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
                 </AccordionContent>
               </AccordionItem>
-              {location.curated_nearby && (
-                <AccordionItem value="curated">
-                  <AccordionTrigger className="py-2 text-sm text-gray-500">Featured Anchors</AccordionTrigger>
-                  <AccordionContent>
-                    <CuratedNearbyDisplay value={location.curated_nearby} showTitle={false} />
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-            </Accordion>
-          </PhaseGenerateSection>
-        </>
+            )}
+          </Accordion>
+        </PhaseGenerateSection>
+      )}
+
+      {phaseKey === 'nearest_stations_completed_at' && (
+        <PhaseGenerateSection phase="nearest-stations" label="Nearest Stations" streetLocationId={location.id} completedAt={location.nearest_stations_completed_at}>
+          <NearestStationsTable value={location.nearest_stations} />
+        </PhaseGenerateSection>
       )}
 
       {phaseKey === 'seo_completed_at' && (
@@ -463,7 +460,8 @@ function PhaseSheetContent({ streetId, phaseKey }) {
         <>
           <PhaseGenerateSection phase="post-blog" label="Post-Blog Generation" streetLocationId={location.id} completedAt={location.post_blog_completed_at} disabledReason={(() => {
             const missing = [
-              !location.nearby_completed_at && 'Nearby',
+              !location.key_anchors_completed_at && 'Key Anchors',
+              !location.nearest_stations_completed_at && 'Nearest Stations',
               !location.seo_completed_at && 'SEO',
               !location.pre_blog_completed_at && 'Pre-Blog',
             ].filter(Boolean)
@@ -471,22 +469,6 @@ function PhaseSheetContent({ streetId, phaseKey }) {
           })()}>
             <div className="space-y-2">
               <MarkdownBox label="Draft Markdown" content={location.draft_markdown} />
-              {location.nearest_stations_table_md && (
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-500">Stations Table (MD)</div>
-                  <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                    {location.nearest_stations_table_md}
-                  </div>
-                </div>
-              )}
-              {location.key_anchors_table_md && (
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-500">Key Anchors Table (MD)</div>
-                  <div className="text-xs text-gray-900 whitespace-pre-wrap bg-gray-50 rounded p-2 max-h-40 overflow-auto">
-                    {location.key_anchors_table_md}
-                  </div>
-                </div>
-              )}
             </div>
           </PhaseGenerateSection>
         </>
@@ -536,23 +518,18 @@ export default function StreetsList({ prefix, filter = '' }) {
   const [sortDir, setSortDir] = useState(() => localStorage.getItem('streetLocations.sortDir') || 'asc')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [nearbyFilter, setNearbyFilter] = useState(() => localStorage.getItem('streetLocations.nearbyFilter') === 'true')
   const cursorCard = useCursorInfoCard({ showDelay: 0 })
-  const nearby = usePhaseGeneration('nearby')
+
+  const allIds = useMemo(() => streets?.map(s => s.id) ?? [], [streets])
+  const { statusMap, markPending } = useStreetLocationStatus(allIds, undefined, 'list')
+
+  const keyAnchors = usePhaseGeneration('key-anchors')
+  const nearestStations = usePhaseGeneration('nearest-stations')
   const seo = usePhaseGeneration('seo')
   const preBlog = usePhaseGeneration('pre-blog')
   const postBlog = usePhaseGeneration('post-blog')
   const image = usePhaseGeneration('image')
-
-  // On page load, check status for all visible street IDs
-  useEffect(() => {
-    if (streets?.length > 0) {
-      const ids = streets.map((s) => s.id)
-      nearby.checkStatus(ids)
-      seo.checkStatus(ids)
-      preBlog.checkStatus(ids)
-      postBlog.checkStatus(ids)
-    }
-  }, [streets, nearby.checkStatus, seo.checkStatus, preBlog.checkStatus, postBlog.checkStatus])
 
   const handleSort = useCallback((column) => {
     if (sortBy === column) {
@@ -586,14 +563,21 @@ export default function StreetsList({ prefix, filter = '' }) {
   }, [])
 
   const filteredStreets = useMemo(() => {
-    if (!streets || !filter.trim()) return streets
-    const q = filter.toLowerCase()
-    return streets.filter(s =>
-      s.street?.toLowerCase().includes(q) ||
-      s.postcode?.toLowerCase().includes(q) ||
-      s.suburb?.toLowerCase().includes(q)
-    )
-  }, [streets, filter])
+    if (!streets) return streets
+    let result = streets
+    if (filter.trim()) {
+      const q = filter.toLowerCase()
+      result = result.filter(s =>
+        s.street?.toLowerCase().includes(q) ||
+        s.postcode?.toLowerCase().includes(q) ||
+        s.suburb?.toLowerCase().includes(q)
+      )
+    }
+    if (nearbyFilter) {
+      result = result.filter(needsNearbyRegen)
+    }
+    return result
+  }, [streets, filter, nearbyFilter])
 
   const sortedStreets = useMemo(() => {
     if (!filteredStreets || !sortBy) return filteredStreets
@@ -685,25 +669,24 @@ export default function StreetsList({ prefix, filter = '' }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate({ to: '/admin/street-locations' })}
-          className="text-gray-600 hover:text-gray-900 -ml-2 mb-2"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Back to Regions
-        </Button>
+    <div className="flex flex-col h-full">
+      <div className="shrink-0 px-3 md:px-6 pt-3 md:pt-4 pb-2 space-y-2 border-b bg-white">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate({ to: '/admin/street-locations' })}
+            className="text-gray-600 hover:text-gray-900 -ml-2 h-7"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back to Regions
+          </Button>
+          <span className="text-gray-300">|</span>
+          <h1 className="text-lg font-semibold text-gray-900">{regionName}</h1>
+          <span className="text-xs text-gray-500">({streets?.length ?? 0} streets)</span>
+        </div>
 
-        <h1 className="text-2xl font-bold text-gray-900">{regionName}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {streets?.length ?? 0} streets in {prefix}
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
@@ -713,6 +696,20 @@ export default function StreetsList({ prefix, filter = '' }) {
             className="pl-9"
           />
         </div>
+        <Button
+          variant={nearbyFilter ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setNearbyFilter(v => { const next = !v; localStorage.setItem('streetLocations.nearbyFilter', next); return next })}
+          className="gap-1 whitespace-nowrap"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Needs Nearby
+          {nearbyFilter && streets && (
+            <span className="ml-1 text-xs opacity-80">
+              ({streets.filter(needsNearbyRegen).length})
+            </span>
+          )}
+        </Button>
         {selectedIds.size > 0 && (
           <>
             <span className="text-sm text-gray-600 whitespace-nowrap">
@@ -721,10 +718,10 @@ export default function StreetsList({ prefix, filter = '' }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={nearby.isGenerating || nearby.isPolling}
-              onClick={() => nearby.generate([...selectedIds])}
+              disabled={keyAnchors.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; keyAnchors.generate(ids); markPending(ids, 'key-anchors') }}
             >
-              {nearby.isGenerating ? (
+              {keyAnchors.isGenerating ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                   Generating...
@@ -732,15 +729,33 @@ export default function StreetsList({ prefix, filter = '' }) {
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Nearby
+                  Generate Key Anchors
                 </>
               )}
             </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={seo.isGenerating || seo.isPolling}
-              onClick={() => seo.generate([...selectedIds])}
+              disabled={nearestStations.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; nearestStations.generate(ids); markPending(ids, 'nearest-stations') }}
+            >
+              {nearestStations.isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-1" />
+                  Generate Nearest Stations
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={seo.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; seo.generate(ids); markPending(ids, 'seo') }}
             >
               {seo.isGenerating ? (
                 <>
@@ -757,8 +772,8 @@ export default function StreetsList({ prefix, filter = '' }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={preBlog.isGenerating || preBlog.isPolling}
-              onClick={() => preBlog.generate([...selectedIds])}
+              disabled={preBlog.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; preBlog.generate(ids); markPending(ids, 'pre-blog') }}
             >
               {preBlog.isGenerating ? (
                 <>
@@ -775,8 +790,8 @@ export default function StreetsList({ prefix, filter = '' }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={postBlog.isGenerating || postBlog.isPolling}
-              onClick={() => postBlog.generate([...selectedIds])}
+              disabled={postBlog.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; postBlog.generate(ids); markPending(ids, 'post-blog') }}
             >
               {postBlog.isGenerating ? (
                 <>
@@ -793,8 +808,8 @@ export default function StreetsList({ prefix, filter = '' }) {
             <Button
               variant="outline"
               size="sm"
-              disabled={image.isGenerating || image.isPolling}
-              onClick={() => image.generate([...selectedIds])}
+              disabled={image.isGenerating}
+              onClick={() => { const ids = [...selectedIds]; image.generate(ids); markPending(ids, 'image') }}
             >
               {image.isGenerating ? (
                 <>
@@ -818,11 +833,12 @@ export default function StreetsList({ prefix, filter = '' }) {
             </Button>
           </>
         )}
+        </div>
       </div>
 
-      <div className="overflow-x-auto"><div className="min-w-[800px]">
-      <Table>
-        <TableHeader>
+      <div className="flex-1 min-h-0 overflow-auto px-3 md:px-6 pb-3 md:pb-6">
+      <Table containerClassName="overflow-visible" className="min-w-[800px]">
+        <TableHeader className="sticky top-0 z-5 [&_th]:bg-white">
           <TableRow>
             <TableHead className="w-10">
               <Checkbox
@@ -942,38 +958,40 @@ export default function StreetsList({ prefix, filter = '' }) {
                 )}
               </TableCell>
               <TableCell>
-                <div className="flex flex-col gap-1">
-                  {nearby.statusMap.has(street.id) && nearby.statusMap.get(street.id) === 'pending' && (
-                    <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-300 text-xs">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Nearby
-                    </Badge>
-                  )}
-                  {seo.statusMap.has(street.id) && seo.statusMap.get(street.id) === 'pending' && (
-                    <Badge variant="outline" className="gap-1 text-blue-600 border-blue-300 text-xs">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      SEO
-                    </Badge>
-                  )}
-                  {preBlog.statusMap.has(street.id) && preBlog.statusMap.get(street.id) === 'pending' && (
-                    <Badge variant="outline" className="gap-1 text-purple-600 border-purple-300 text-xs">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Pre-Blog
-                    </Badge>
-                  )}
-                  {postBlog.statusMap.has(street.id) && postBlog.statusMap.get(street.id) === 'pending' && (
-                    <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-300 text-xs">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Post-Blog
-                    </Badge>
-                  )}
-                </div>
+                {statusMap.has(street.id) && (
+                  <div className="flex flex-col gap-1">
+                    {[...statusMap.get(street.id).entries()].map(([phase]) => {
+                      const phaseColors = {
+                        'key-anchors': 'text-yellow-600 border-yellow-300',
+                        'nearest-stations': 'text-orange-600 border-orange-300',
+                        'seo': 'text-blue-600 border-blue-300',
+                        'pre-blog': 'text-purple-600 border-purple-300',
+                        'post-blog': 'text-emerald-600 border-emerald-300',
+                        'image': 'text-pink-600 border-pink-300',
+                      }
+                      const phaseLabels = {
+                        'key-anchors': 'Key Anchors',
+                        'nearest-stations': 'Nearest Stations',
+                        'seo': 'SEO',
+                        'pre-blog': 'Pre-Blog',
+                        'post-blog': 'Post-Blog',
+                        'image': 'Image',
+                      }
+                      return (
+                        <Badge key={phase} variant="outline" className={`gap-1 text-xs ${phaseColors[phase] ?? 'text-gray-600 border-gray-300'}`}>
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          {phaseLabels[phase] ?? phase}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                )}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      </div></div>
+      </div>
 
       <CursorInfoCard visible={cursorCard.state.visible} x={cursorCard.state.x} y={cursorCard.state.y}>
         {cursorCard.state.content}

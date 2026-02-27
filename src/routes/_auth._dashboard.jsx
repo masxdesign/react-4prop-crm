@@ -62,14 +62,16 @@ function dashboardComponent() {
       {/* Main layout */}
       <div className="grid grid-cols-1 md:grid-cols-[10rem_1fr] gap-0 md:gap-4 h-screen pt-12 md:pt-0">
         {/* Desktop sidebar */}
-        <div className="hidden md:block">
+        <div className="hidden md:block min-h-0">
           <DashboardSidebar
             negId={auth.user?.neg_id}
             onLogout={handleLogout}
             context={context}
           />
         </div>
-        <Outlet />
+        <div className="min-h-0 h-full">
+          <Outlet />
+        </div>
       </div>
       <Toaster />
     </>

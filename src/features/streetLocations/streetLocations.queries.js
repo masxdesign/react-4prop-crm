@@ -17,5 +17,5 @@ export const streetLocationDetailQuery = (id) =>
     queryKey: ['streetLocations', 'detail', id],
     queryFn: () => fetchStreetLocation(id),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 30,
   })

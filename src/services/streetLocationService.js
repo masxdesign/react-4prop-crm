@@ -15,13 +15,15 @@ export const fetchStreetLocationsByPrefix = async (prefix) => {
           suburb
           lat
           lon
-          nearby_completed_at
+          key_anchors_completed_at
+          nearest_stations_completed_at
           seo_completed_at
           pre_blog_completed_at
           post_blog_completed_at
           image_completed_at
           publish_completed_at
           last_error
+          curated_nearby
         }
       }
     `,
@@ -48,8 +50,10 @@ export const fetchStreetLocation = async (id) => {
           key_anchors
           curated_nearby
           custom_anchors
-          radius
-          nearby_completed_at
+          key_anchors_radius
+          nearest_stations_radius
+          key_anchors_completed_at
+          nearest_stations_completed_at
           seed_tone_type
           seed_title
           seed_keyword
@@ -70,9 +74,6 @@ export const fetchStreetLocation = async (id) => {
           key_takeaways
           outline
           pre_blog_completed_at
-          google_doc_article_id
-          nearest_stations_table_md
-          key_anchors_table_md
           draft_markdown
           post_blog_completed_at
           featured_image_url
@@ -161,5 +162,10 @@ export const generatePhase = async (phase, ids) => {
 
 export const fetchPhaseStatus = async (phase, ids) => {
   const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}/status`, { ids })
+  return data.data
+}
+
+export const fetchBulkStatus = async (ids) => {
+  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/bulk/status`, { ids })
   return data.data
 }
