@@ -40,7 +40,7 @@ export function useStreetLocationStatus(allIds, onComplete, queryKeySuffix) {
   useEffect(() => {
     if (!poll.data) return
     const stillPending = new Set(
-      poll.data.filter(item => item.status === 'pending').map(item => Number(item.streetLocationId))
+      poll.data.filter(item => item.status === 'pending').map(item => Number(item.street_location_id))
     )
     setOptimisticPhases(prev => {
       if (prev.size === 0) return prev
@@ -71,7 +71,7 @@ export function useStreetLocationStatus(allIds, onComplete, queryKeySuffix) {
   if (poll.data) {
     for (const item of poll.data) {
       if (item.status === 'pending') {
-        const id = Number(item.streetLocationId)
+        const id = Number(item.street_location_id)
         if (!statusMap.has(id)) statusMap.set(id, new Map())
         statusMap.get(id).set(item.phase, 'pending')
       }

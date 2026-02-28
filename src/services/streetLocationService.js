@@ -90,6 +90,31 @@ export const fetchStreetLocation = async (id) => {
   return data.data.streetLocation
 }
 
+export const addStreetLocation = async ({ postcode, street, suburb, neighbourhood, borough }) => {
+  const input = { postcode, street }
+  if (suburb) input.suburb = suburb
+  if (neighbourhood) input.neighbourhood = neighbourhood
+  if (borough) input.borough = borough
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      mutation Add($input: AddStreetLocationInput!) {
+        addStreetLocation(input: $input) {
+          id
+          prefix
+          postcode
+          street
+          suburb
+          neighbourhood
+          borough
+          created_at
+        }
+      }
+    `,
+    variables: { input },
+  })
+  return data.data.addStreetLocation
+}
+
 export const updateStreetLocationCoordinates = async (id, lat, lon) => {
   const { data } = await streetLocationsClient.post('', {
     query: `
@@ -156,16 +181,24 @@ export const updateStreetLocationCustomAnchors = async (id, customAnchors) => {
 }
 
 export const generatePhase = async (phase, ids) => {
-  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}/generate`, { ids })
-  return data.data
-}
-
-export const fetchPhaseStatus = async (phase, ids) => {
-  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}/status`, { ids })
-  return data.data
+  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/${phase}`, { ids })
+  return data
 }
 
 export const fetchBulkStatus = async (ids) => {
-  const { data } = await axios.post(`${N8N_WEBHOOK_URL}/bulk/status`, { ids })
-  return data.data
+  const { data } = await streetLocationsClient.post('', {
+    query: `
+      query PendingJobs($ids: [Int!]!) {
+        streetLocationJobsPendingByIds(ids: $ids) {
+          id
+          street_location_id
+          phase
+          status
+          created_at
+        }
+      }
+    `,
+    variables: { ids: ids.map(Number) },
+  })
+  return data.data.streetLocationJobsPendingByIds
 }
