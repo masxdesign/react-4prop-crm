@@ -403,11 +403,29 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
                 rel="noopener noreferrer"
                 className="block"
               >
-                <img
-                  src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
-                  alt={`${location.street} featured`}
-                  className="rounded border max-h-48 object-cover"
-                />
+                <div className="relative w-full aspect-video overflow-hidden rounded border">
+                  <img
+                    src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
+                    alt={`${location.street} featured`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-center px-8" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.55)' }}>
+                    <h1
+                      className="font-bold leading-tight"
+                      style={{ fontSize: 'clamp(1.5rem, 5vw, 3.5rem)' }}
+                    >
+                      {location.street}
+                    </h1>
+                    <p className="mt-2 text-2xl tracking-widest uppercase opacity-80">
+                      {location.suburb || location.neighbourhood || location.borough}
+                    </p>
+                    {location.postcode && (
+                      <span className="mt-5 px-4 py-1 rounded-full bg-orange-500 text-white text-xl font-semibold tracking-wider uppercase">
+                        {location.postcode}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </a>
             ) : (
               <span className="text-sm text-gray-400">No image</span>
