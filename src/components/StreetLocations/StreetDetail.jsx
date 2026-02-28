@@ -13,7 +13,7 @@ import { parseDate, recalcAnchorDistances } from './streetDetailUtils'
 import { DetailRow, EditableDetailRow } from './DetailComponents'
 import { JsonArrayDisplay, MarkdownPreviewBox, NearestStationsTable, CuratedNearbyDisplay } from './DataDisplay'
 import { PhaseGenerateButton, CollapsiblePhaseCard } from './PhaseComponents'
-import PipelineChecklist from './PipelineChecklist'
+import PipelineChecklist, { hasContent } from './PipelineChecklist'
 import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 
 export default function StreetDetail({ prefix, streetLocationId, filter }) {
@@ -227,7 +227,7 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Checklist + Location info (1/3) */}
         <div className="lg:col-span-1 space-y-4">
-          <PipelineChecklist location={location} missingFieldsReason={missingFieldsReason} />
+          <PipelineChecklist location={location} missingFieldsReason={missingFieldsReason} onGenerate={handleGenerate} isRunning={isPhaseRunning} />
           <Card>
             <CardHeader className="pb-1 pt-4 px-4">
               <CardTitle className="text-sm">Location</CardTitle>
@@ -387,28 +387,15 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
             </Tabs>
           </CollapsiblePhaseCard>
 
-          {/* Pre-Blog Phase */}
-          <CollapsiblePhaseCard title="Pre-Blog" phase="pre-blog" completedAt={location.pre_blog_completed_at} streetLocationId={location.id} defaultOpen={false} disabledReason={missingFieldsReason || (!location.seo_completed_at ? 'Requires SEO to be completed first' : undefined)} onGenerate={handleGenerate} isRunning={isPhaseRunning('pre-blog')}>
-            <DetailRow label="New Title" value={location.new_title} />
-            <MarkdownPreviewBox label="Key Takeaways" content={location.key_takeaways} />
-            <MarkdownPreviewBox label="Outline" content={location.outline} />
-          </CollapsiblePhaseCard>
-
-          {/* Post-Blog Phase */}
-          <CollapsiblePhaseCard title="Post-Blog" phase="post-blog" completedAt={location.post_blog_completed_at} streetLocationId={location.id} onGenerate={handleGenerate} isRunning={isPhaseRunning('post-blog')} disabledReason={missingFieldsReason || (() => {
+          {/* Image Phase */}
+          <CollapsiblePhaseCard title="Image" phase="image" completedAt={location.image_completed_at} streetLocationId={location.id} disabledReason={(() => {
             const missing = [
-              !location.key_anchors_completed_at && 'Key Anchors',
-              !location.nearest_stations_completed_at && 'Nearest Stations',
-              !location.seo_completed_at && 'SEO',
-              !location.pre_blog_completed_at && 'Pre-Blog',
+              !(location.lat != null && location.lon != null) && 'Coordinates',
+              !location.key_anchors && 'Key Anchors',
+              !location.curated_nearby && 'Featured Anchors',
             ].filter(Boolean)
             return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
-          })()}>
-            <MarkdownPreviewBox label="Draft Markdown" content={location.draft_markdown} />
-          </CollapsiblePhaseCard>
-
-          {/* Image Phase */}
-          <CollapsiblePhaseCard title="Image" phase="image" completedAt={location.image_completed_at} streetLocationId={location.id} disabledReason={missingFieldsReason || (!location.post_blog_completed_at ? 'Requires Post-Blog to be completed first' : undefined)} onGenerate={handleGenerate} isRunning={isPhaseRunning('image')}>
+          })()} onGenerate={handleGenerate} isRunning={isPhaseRunning('image')}>
             {location.featured_image_url ? (
               <a
                 href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
@@ -427,8 +414,34 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
             )}
           </CollapsiblePhaseCard>
 
+          {/* Pre-Blog Phase */}
+          <CollapsiblePhaseCard title="Pre-Blog" phase="pre-blog" completedAt={location.pre_blog_completed_at} streetLocationId={location.id} defaultOpen={false} disabledReason={missingFieldsReason || (!hasContent(location.keywords_primary_keyword) ? 'Requires SEO to be completed first' : undefined)} onGenerate={handleGenerate} isRunning={isPhaseRunning('pre-blog')}>
+            <DetailRow label="New Title" value={location.new_title} />
+            <MarkdownPreviewBox label="Key Takeaways" content={location.key_takeaways} />
+            <MarkdownPreviewBox label="Outline" content={location.outline} />
+          </CollapsiblePhaseCard>
+
+          {/* Post-Blog Phase */}
+          <CollapsiblePhaseCard title="Post-Blog" phase="post-blog" completedAt={location.post_blog_completed_at} streetLocationId={location.id} onGenerate={handleGenerate} isRunning={isPhaseRunning('post-blog')} disabledReason={missingFieldsReason || (() => {
+            const missing = [
+              !hasContent(location.key_anchors) && 'Key Anchors',
+              !hasContent(location.nearest_stations) && 'Nearest Stations',
+              !hasContent(location.keywords_primary_keyword) && 'SEO',
+              !hasContent(location.outline) && 'Pre-Blog',
+            ].filter(Boolean)
+            return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
+          })()}>
+            <MarkdownPreviewBox label="Draft Markdown" content={location.draft_markdown} />
+          </CollapsiblePhaseCard>
+
           {/* Publish Phase */}
-          <CollapsiblePhaseCard title="Publish" completedAt={location.publish_completed_at}>
+          <CollapsiblePhaseCard title="Publish" phase="publish" completedAt={location.publish_completed_at} streetLocationId={location.id} onGenerate={handleGenerate} isRunning={isPhaseRunning('publish')} disabledReason={(() => {
+            const missing = [
+              !location.draft_markdown && 'Post-Blog',
+              !location.featured_image_url && 'Image',
+            ].filter(Boolean)
+            return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
+          })()}>
             <DetailRow label="Blog Post ID" value={location.blog_post_id} />
             <DetailRow
               label="Last Updated"

@@ -25,12 +25,12 @@ export function PhaseGenerateButton({ phase, streetLocationId, disabledReason, c
 
   if (compact) {
     return (
-      <button
-        type="button"
+      <Button
+        size="sm"
         disabled={busy || blocked}
         onClick={handleClick}
         title={blocked ? disabledReason : undefined}
-        className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-blue-500 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        className="h-6 px-2 text-xs gap-1 shrink-0 border-0 cursor-pointer bg-linear-to-br from-blue-500 via-sky-500 to-teal-400 text-white hover:shadow-md hover:shadow-sky-500/25 transition-shadow"
       >
         {busy ? (
           <>
@@ -43,7 +43,7 @@ export function PhaseGenerateButton({ phase, streetLocationId, disabledReason, c
             <span>{completedAt ? 'redo' : 'run'}</span>
           </>
         )}
-      </button>
+      </Button>
     )
   }
 

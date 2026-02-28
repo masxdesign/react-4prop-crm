@@ -2,6 +2,22 @@ import { CheckCircle2, Circle } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { PhaseGenerateButton } from './PhaseComponents'
 
+export function hasContent(value) {
+  if (value == null) return false
+  if (typeof value === 'string') {
+    if (value.trim() === '' || value === '[]' || value === '{}') return false
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) return parsed.length > 0
+      if (typeof parsed === 'object') return Object.keys(parsed).length > 0
+    } catch { /* not JSON, treat as plain string */ }
+    return true
+  }
+  if (Array.isArray(value)) return value.length > 0
+  if (typeof value === 'object') return Object.keys(value).length > 0
+  return !!value
+}
+
 const PIPELINE_STEPS = [
   {
     label: 'Set Coordinates',
@@ -13,61 +29,54 @@ const PIPELINE_STEPS = [
     label: 'Key Anchors',
     description: 'Uses coordinates, postcode & street to find nearby landmarks',
     phase: 'key-anchors',
-    completedAtKey: 'key_anchors_completed_at',
-    check: (l) => !!l.key_anchors_completed_at,
-    blocked: (l, mfr) => !!mfr,
+    check: (l) => hasContent(l.key_anchors) && hasContent(l.curated_nearby),
+    blocked: (_l, mfr) => !!mfr,
   },
   {
     label: 'Nearest Stations',
     description: 'Uses coordinates, postcode & street to find transport links',
     phase: 'nearest-stations',
-    completedAtKey: 'nearest_stations_completed_at',
-    check: (l) => !!l.nearest_stations_completed_at,
-    blocked: (l, mfr) => !!mfr,
+    check: (l) => hasContent(l.nearest_stations),
+    blocked: (_l, mfr) => !!mfr,
   },
   {
     label: 'SEO',
     description: 'Uses location data to generate keywords, tone & writing brief',
     phase: 'seo',
-    completedAtKey: 'seo_completed_at',
-    check: (l) => !!l.seo_completed_at,
-    blocked: (l, mfr) => !!mfr,
+    check: (l) => hasContent(l.keywords_primary_keyword),
+    blocked: (_l, mfr) => !!mfr,
+  },
+  {
+    label: 'Image',
+    description: 'Uses coordinates, key anchors & featured anchors to generate a featured image',
+    phase: 'image',
+    check: (l) => hasContent(l.featured_image_url),
+    blocked: (l) => l.lat == null || l.lon == null || !hasContent(l.key_anchors) || !hasContent(l.curated_nearby),
   },
   {
     label: 'Pre-Blog',
     description: 'Uses SEO brief to produce title, takeaways & outline',
     phase: 'pre-blog',
-    completedAtKey: 'pre_blog_completed_at',
-    check: (l) => !!l.pre_blog_completed_at,
-    blocked: (l, mfr) => !!mfr || !l.seo_completed_at,
+    check: (l) => hasContent(l.outline),
+    blocked: (l, mfr) => !!mfr || !hasContent(l.keywords_primary_keyword),
   },
   {
     label: 'Post-Blog',
     description: 'Uses anchors, stations, SEO & outline to write the full article',
     phase: 'post-blog',
-    completedAtKey: 'post_blog_completed_at',
-    check: (l) => !!l.post_blog_completed_at,
-    blocked: (l, mfr) => !!mfr || !l.key_anchors_completed_at || !l.nearest_stations_completed_at || !l.seo_completed_at || !l.pre_blog_completed_at,
-  },
-  {
-    label: 'Image',
-    description: 'Uses the article to generate a featured image',
-    phase: 'image',
-    completedAtKey: 'image_completed_at',
-    check: (l) => !!l.image_completed_at,
-    blocked: (l) => !l.post_blog_completed_at,
+    check: (l) => hasContent(l.draft_markdown),
+    blocked: (l, mfr) => !!mfr || !hasContent(l.key_anchors) || !hasContent(l.nearest_stations) || !hasContent(l.keywords_primary_keyword) || !hasContent(l.outline),
   },
   {
     label: 'Publish',
-    description: 'Publishes the article and image to the blog',
+    description: 'Publishes the post-blog article and featured image to the blog',
     phase: 'publish',
-    completedAtKey: 'publish_completed_at',
-    check: (l) => !!l.publish_completed_at,
-    blocked: (l) => !l.image_completed_at,
+    check: (l) => hasContent(l.blog_post_id),
+    blocked: (l) => !hasContent(l.draft_markdown) || !hasContent(l.featured_image_url),
   },
 ]
 
-export default function PipelineChecklist({ location, missingFieldsReason }) {
+export default function PipelineChecklist({ location, missingFieldsReason, onGenerate, isRunning }) {
   const steps = PIPELINE_STEPS.map((step) => ({
     ...step,
     done: step.check(location),
@@ -118,8 +127,10 @@ export default function PipelineChecklist({ location, missingFieldsReason }) {
                         <PhaseGenerateButton
                           phase={step.phase}
                           streetLocationId={location.id}
-                          completedAt={location[step.completedAtKey]}
+                          completedAt={step.done ? true : null}
                           disabledReason={step.blocked ? 'Blocked by dependencies' : undefined}
+                          onGenerate={onGenerate}
+                          isRunning={isRunning?.(step.phase)}
                           compact
                         />
                       </div>
