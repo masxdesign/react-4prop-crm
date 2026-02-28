@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles, RefreshCw } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles, RefreshCw, PlusCircle } from 'lucide-react'
 import { parseDate } from './streetDetailUtils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,8 +37,9 @@ import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePicke
 import StreetMaps from '@/components/StreetLocations/StreetMaps'
 import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
+import { Label } from '@/components/ui/label'
 import { streetLocationsByPrefixQuery, streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
-import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
+import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors, addStreetLocation } from '@/services/streetLocationService'
 import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
 import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 import ReactMarkdownPrimitive from 'react-markdown'
@@ -518,7 +520,25 @@ export default function StreetsList({ prefix, filter = '' }) {
   const [sortDir, setSortDir] = useState(() => localStorage.getItem('streetLocations.sortDir') || 'asc')
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showAddStreet, setShowAddStreet] = useState(false)
   const [nearbyFilter, setNearbyFilter] = useState(() => localStorage.getItem('streetLocations.nearbyFilter') === 'true')
+
+  const addStreetForm = useForm({ defaultValues: { postcode: '', street: '', suburb: '', neighbourhood: '', borough: '' } })
+
+  const addStreetMutation = useMutation({
+    mutationFn: (input) => addStreetLocation(input),
+    onSuccess: (newStreet) => {
+      queryClient.invalidateQueries({ queryKey: ['streetLocations'] })
+      setShowAddStreet(false)
+      addStreetForm.reset()
+      if (newStreet?.prefix && newStreet.prefix !== prefix) {
+        navigate({
+          to: '/admin/street-locations/$prefix',
+          params: { prefix: newStreet.prefix },
+        })
+      }
+    },
+  })
   const cursorCard = useCursorInfoCard({ showDelay: 0 })
 
   const allIds = useMemo(() => streets?.map(s => s.id) ?? [], [streets])
@@ -684,6 +704,14 @@ export default function StreetsList({ prefix, filter = '' }) {
           <span className="text-gray-300">|</span>
           <h1 className="text-lg font-semibold text-gray-900">{regionName}</h1>
           <span className="text-xs text-gray-500">({streets?.length ?? 0} streets)</span>
+          <Button
+            size="sm"
+            onClick={() => setShowAddStreet(true)}
+            className="ml-auto h-7 text-xs gap-1"
+          >
+            <PlusCircle className="h-3.5 w-3.5" />
+            Add Street
+          </Button>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -1076,6 +1104,95 @@ export default function StreetsList({ prefix, filter = '' }) {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddStreet} onOpenChange={(open) => { setShowAddStreet(open); if (!open) addStreetForm.reset() }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Street</DialogTitle>
+            <DialogDescription>
+              Use the outward/district code for postcode (e.g. SE1, E1W). The prefix is derived automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={addStreetForm.handleSubmit((values) => addStreetMutation.mutate(values))}
+            className="space-y-4"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="add-postcode">Postcode <span className="text-red-500">*</span></Label>
+                <Input
+                  id="add-postcode"
+                  placeholder="e.g. SE1"
+                  {...addStreetForm.register('postcode', { required: true })}
+                />
+                {addStreetForm.formState.errors.postcode && (
+                  <p className="text-xs text-red-600">Postcode is required</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="add-suburb">Suburb</Label>
+                <Input
+                  id="add-suburb"
+                  placeholder="e.g. Borough"
+                  {...addStreetForm.register('suburb')}
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-street">Street <span className="text-red-500">*</span></Label>
+              <Input
+                id="add-street"
+                placeholder="e.g. Borough High Street"
+                {...addStreetForm.register('street', { required: true })}
+              />
+              {addStreetForm.formState.errors.street && (
+                <p className="text-xs text-red-600">Street name is required</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-neighbourhood">Neighbourhood</Label>
+              <Input
+                id="add-neighbourhood"
+                placeholder="e.g. Bermondsey"
+                {...addStreetForm.register('neighbourhood')}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="add-borough">Borough</Label>
+              <Input
+                id="add-borough"
+                placeholder="e.g. London Borough of Southwark"
+                {...addStreetForm.register('borough')}
+              />
+            </div>
+            {addStreetMutation.isError && (
+              <p className="text-sm text-red-600">
+                Failed to add street: {addStreetMutation.error?.message}
+              </p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => { setShowAddStreet(false); addStreetForm.reset() }}
+                disabled={addStreetMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={addStreetMutation.isPending}>
+                {addStreetMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Street'
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
