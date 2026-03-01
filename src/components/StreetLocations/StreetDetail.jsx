@@ -397,7 +397,20 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
             ].filter(Boolean)
             return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
           })()} onGenerate={handleGenerate} isRunning={isPhaseRunning('image')}>
-            {location.featured_image_url ? (
+            {location.featured_image_url ? (() => {
+              // Derive blog anchor categories from key_anchors filtered by curated_nearby names
+              const blogCategories = (() => {
+                try {
+                  const anchors = typeof location.key_anchors === 'string' ? JSON.parse(location.key_anchors) : location.key_anchors
+                  const curated = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
+                  if (!Array.isArray(anchors) || !curated?.curated_anchors) return []
+                  const curatedNames = new Set(
+                    curated.curated_anchors.map((a) => (typeof a === 'string' ? a : a?.name ?? '').toLowerCase())
+                  )
+                  return anchors.filter((a) => curatedNames.has(a.name?.toLowerCase())).map((a) => a.category).filter(Boolean)
+                } catch { return [] }
+              })()
+              return (
               <div className="flex flex-col gap-3">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Full</p>
@@ -412,6 +425,7 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
                       street={location.street}
                       city={location.suburb || location.neighbourhood || location.borough}
                       postcode={location.postcode}
+                      categories={blogCategories}
                       variant="full"
                     />
                   </a>
@@ -429,12 +443,14 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
                       street={location.street}
                       city={location.suburb || location.neighbourhood || location.borough}
                       postcode={location.postcode}
+                      categories={blogCategories}
                       variant="thumbnail"
                     />
                   </a>
                 </div>
               </div>
-            ) : (
+              )
+            })() : (
               <span className="text-sm text-gray-400">No image</span>
             )}
           </CollapsiblePhaseCard>
