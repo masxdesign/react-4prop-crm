@@ -44,6 +44,7 @@ import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
 import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 import ReactMarkdownPrimitive from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import FeaturedImageOverlay from './FeaturedImageOverlay'
 
 const PHASES = [
   { key: 'key_anchors_completed_at', label: 'Key Anchors' },
@@ -481,10 +482,12 @@ function PhaseSheetContent({ streetId, phaseKey }) {
           <div>
             {location.featured_image_url ? (
               <a href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`} target="_blank" rel="noopener noreferrer" className="block">
-                <img
-                  src={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
-                  alt={`${location.street} featured`}
-                  className="rounded border max-h-48 object-cover"
+                <FeaturedImageOverlay
+                  imageUrl={location.featured_image_url}
+                  street={location.street}
+                  city={location.suburb || location.neighbourhood || location.borough}
+                  postcode={location.postcode}
+                  variant="thumbnail"
                 />
               </a>
             ) : (
