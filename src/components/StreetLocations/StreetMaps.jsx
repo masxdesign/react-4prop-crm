@@ -163,7 +163,7 @@ function StationsMapView({ stations, centerLat, centerLon, hasCenter, height, de
             zoom: 14,
           }}
           style={{ width: '100%', height: '100%' }}
-          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          mapStyle="https://tiles.openfreemap.org/styles/liberty"
           attributionControl={false}
           onLoad={handleLoad}
         >
@@ -252,6 +252,17 @@ export default function StreetMaps({ anchors, curatedNames, centerLat, centerLon
   const [selected, setSelected] = useState(null)
   const [view, setView] = useState(hasCenter ? 'all' : 'editPin') // 'all' | 'blog' | 'custom' | 'stations' | 'editPin'
   const mapRef = useRef(null)
+
+  // When the location changes, pick the most appropriate default tab
+  useEffect(() => {
+    const center = centerLat != null && centerLon != null && !isNaN(centerLat) && !isNaN(centerLon)
+    if (!center) { setView('editPin'); return }
+    // Parse anchors to check if any exist
+    let parsed = anchors
+    if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed) } catch { parsed = [] } }
+    if (!Array.isArray(parsed) || parsed.length === 0) { setView('editPin'); return }
+    setView('all')
+  }, [centerLat, centerLon, anchors])
   const initialBoundsRef = useRef(null)
 
   // Parse stations if string
@@ -395,7 +406,7 @@ export default function StreetMaps({ anchors, curatedNames, centerLat, centerLon
                 zoom: 15,
               }}
               style={{ width: '100%', height: '100%' }}
-              mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+              mapStyle="https://tiles.openfreemap.org/styles/liberty"
               attributionControl={false}
             >
               <Marker
@@ -529,7 +540,7 @@ export default function StreetMaps({ anchors, curatedNames, centerLat, centerLon
                 zoom: 15,
               }}
               style={{ width: '100%', height: '100%' }}
-              mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+              mapStyle="https://tiles.openfreemap.org/styles/liberty"
               attributionControl={false}
               onLoad={handleLoad}
             >

@@ -56,7 +56,7 @@ export default function PreviewMap({ value, height = 180 }) {
           zoom
         }}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapStyle="https://tiles.openfreemap.org/styles/liberty"
         attributionControl={false}
       >
         <Marker

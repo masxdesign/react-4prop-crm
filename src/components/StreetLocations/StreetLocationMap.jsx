@@ -30,7 +30,7 @@ export default function StreetLocationMap({ lat, lon, height = 400 }) {
           zoom: DEFAULT_ZOOM,
         }}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapStyle="https://tiles.openfreemap.org/styles/liberty"
         attributionControl={false}
       >
         <Marker

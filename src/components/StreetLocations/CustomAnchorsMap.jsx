@@ -216,7 +216,7 @@ export default function CustomAnchorsMap({ centerLat, centerLon, height = 400, i
             zoom: 15,
           }}
           style={{ width: '100%', height: '100%' }}
-          mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+          mapStyle="https://tiles.openfreemap.org/styles/liberty"
           attributionControl={false}
           onLoad={handleLoad}
         >

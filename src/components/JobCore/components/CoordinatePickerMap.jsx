@@ -196,7 +196,7 @@ export default function CoordinatePickerMap({
           zoom: initialZoom
         }}
         style={{ width: '100%', height: '100%' }}
-        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        mapStyle="https://tiles.openfreemap.org/styles/liberty"
         dragPan={!disabled}
         scrollZoom={!disabled}
         doubleClickZoom={!disabled}
