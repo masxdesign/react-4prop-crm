@@ -14,22 +14,28 @@ import {
   MapPin,
   Maximize2,
   TrainFront,
+  Star,
+  Castle,
 } from 'lucide-react'
 import CustomAnchorsMap from './CustomAnchorsMap'
 import CoordinatePickerMap from '@/components/JobCore/components/CoordinatePickerMap'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export const CATEGORY_CONFIG = {
-  museum:          { color: '#8B5CF6', Icon: Building2 },
-  park:            { color: '#22C55E', Icon: TreePine },
-  landmark:        { color: '#F59E0B', Icon: Landmark },
-  flagship_retail: { color: '#3B82F6', Icon: Store },
-  supermarket:     { color: '#EF4444', Icon: ShoppingCart },
-  health_club:     { color: '#EC4899', Icon: Dumbbell },
-  theatre:         { color: '#F97316', Icon: Drama },
-  airport:         { color: '#0EA5E9', Icon: Plane },
-  shopping:        { color: '#A855F7', Icon: ShoppingBag },
-  poi:             { color: '#14B8A6', Icon: MapPinned },
+  museum:               { color: '#8B5CF6', Icon: Building2 },
+  park:                 { color: '#22C55E', Icon: TreePine },
+  landmark:             { color: '#F59E0B', Icon: Landmark },
+  flagship_retail:      { color: '#3B82F6', Icon: Store },
+  supermarket:          { color: '#EF4444', Icon: ShoppingCart },
+  health_club:          { color: '#EC4899', Icon: Dumbbell },
+  health_club_branded:  { color: '#EC4899', Icon: Dumbbell },
+  health_club_generic:  { color: '#EC4899', Icon: Dumbbell },
+  theatre:              { color: '#F97316', Icon: Drama },
+  airport:              { color: '#0EA5E9', Icon: Plane },
+  shopping:             { color: '#A855F7', Icon: ShoppingBag },
+  poi:                  { color: '#14B8A6', Icon: MapPinned },
+  attraction:           { color: '#F59E0B', Icon: Star },
+  historic:             { color: '#92400E', Icon: Castle },
 }
 export const DEFAULT_CONFIG = { color: '#6B7280', Icon: MapPin }
 

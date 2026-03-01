@@ -14,7 +14,8 @@ import { DetailRow, EditableDetailRow } from './DetailComponents'
 import { JsonArrayDisplay, MarkdownPreviewBox, NearestStationsTable, CuratedNearbyDisplay } from './DataDisplay'
 import { PhaseGenerateButton, CollapsiblePhaseCard } from './PhaseComponents'
 import PipelineChecklist, { hasContent } from './PipelineChecklist'
-import FeaturedImageOverlay from './FeaturedImageOverlay'
+import FeaturedImageOverlay, { FIO_CSS, buildOverlayHtml } from './FeaturedImageOverlay'
+import InlineCodeBlock from './InlineCodeBlock'
 import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 
 export default function StreetDetail({ prefix, streetLocationId, filter }) {
@@ -398,7 +399,6 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
             return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
           })()} onGenerate={handleGenerate} isRunning={isPhaseRunning('image')}>
             {location.featured_image_url ? (() => {
-              // Derive blog anchor categories from key_anchors filtered by curated_nearby names
               const blogCategories = (() => {
                 try {
                   const anchors = typeof location.key_anchors === 'string' ? JSON.parse(location.key_anchors) : location.key_anchors
@@ -410,45 +410,28 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
                   return anchors.filter((a) => curatedNames.has(a.name?.toLowerCase())).map((a) => a.category).filter(Boolean)
                 } catch { return [] }
               })()
+
+              const overlayProps = {
+                imageUrl: location.featured_image_url,
+                street: location.street,
+                city: location.suburb || location.neighbourhood || location.borough,
+                postcode: location.postcode,
+                categories: blogCategories,
+              }
+
               return (
-              <div className="flex flex-col gap-3">
-                <div>
-                  <p className="text-xs text-gray-400 mb-1">Full</p>
+                <div className="flex flex-col gap-4">
+                  <InlineCodeBlock label="Overlay CSS — copy once to your site" code={FIO_CSS} language="css" />
                   <a
                     href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block"
                   >
-                    <FeaturedImageOverlay
-                      imageUrl={location.featured_image_url}
-                      street={location.street}
-                      city={location.suburb || location.neighbourhood || location.borough}
-                      postcode={location.postcode}
-                      categories={blogCategories}
-                      variant="full"
-                    />
+                    <FeaturedImageOverlay {...overlayProps} />
                   </a>
+                  <InlineCodeBlock label="HTML" code={buildOverlayHtml(overlayProps)} language="html" />
                 </div>
-                <div style={{ width: 346 }}>
-                  <p className="text-xs text-gray-400 mb-1">Thumbnail</p>
-                  <a
-                    href={`https://api.4prop.com/uploads/blog-posts/${location.featured_image_url}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <FeaturedImageOverlay
-                      imageUrl={location.featured_image_url}
-                      street={location.street}
-                      city={location.suburb || location.neighbourhood || location.borough}
-                      postcode={location.postcode}
-                      categories={blogCategories}
-                      variant="thumbnail"
-                    />
-                  </a>
-                </div>
-              </div>
               )
             })() : (
               <span className="text-sm text-gray-400">No image</span>

@@ -487,7 +487,6 @@ function PhaseSheetContent({ streetId, phaseKey }) {
                   street={location.street}
                   city={location.suburb || location.neighbourhood || location.borough}
                   postcode={location.postcode}
-                  variant="thumbnail"
                 />
               </a>
             ) : (
