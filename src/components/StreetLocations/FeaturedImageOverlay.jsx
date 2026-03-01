@@ -6,7 +6,11 @@ const variants = {
   full: {
     streetStyle: { fontSize: 'clamp(1.5rem, 5vw, 3.5rem)' },
     cityClass: 'mt-2 text-2xl tracking-widest uppercase opacity-80',
-    pillClass: 'mt-5 px-4 py-1 rounded-full bg-orange-500 text-white text-xl font-semibold tracking-wider uppercase',
+    pillClass: 'px-4 py-1 rounded-full bg-orange-500 text-white text-xl font-semibold tracking-wider uppercase',
+    pillWrap: 'mt-5',
+    pillGap: 'gap-2',
+    lineClass: 'h-0.5 w-10 rounded-full bg-orange-500',
+    lineStyle: {},
     padClass: 'px-8',
     iconSize: 'h-11 w-11',
     iconWrap: 'mb-4 flex items-center gap-7 opacity-80',
@@ -14,7 +18,11 @@ const variants = {
   thumbnail: {
     streetStyle: { fontSize: 'clamp(1.1rem, 6cqw, 2rem)', whiteSpace: 'nowrap' },
     cityClass: 'mt-1 text-xs tracking-widest uppercase opacity-80',
-    pillClass: 'mt-2 px-3 py-0.5 rounded-full bg-orange-500 text-white text-sm font-semibold tracking-wider uppercase',
+    pillClass: 'px-3 py-0.5 rounded-full bg-orange-500 text-white text-sm font-semibold tracking-wider uppercase',
+    pillWrap: 'mt-2',
+    pillGap: 'gap-1.5',
+    lineClass: 'w-3 rounded-full bg-orange-500',
+    lineStyle: { height: '1px' },
     padClass: 'px-4',
     iconSize: 'h-5 w-5',
     iconWrap: 'mb-2 flex items-center gap-3 opacity-80',
@@ -25,7 +33,6 @@ export default function FeaturedImageOverlay({ imageUrl, street, city, postcode,
   const v = variants[variant]
   const src = imageUrl.startsWith('http') ? imageUrl : `${BASE_URL}/${imageUrl}`
 
-  // Deduplicate categories and resolve icons
   const uniqueCategories = categories ? [...new Set(categories)] : []
 
   return (
@@ -47,7 +54,13 @@ export default function FeaturedImageOverlay({ imageUrl, street, city, postcode,
           {street}
         </h1>
         {city && <p className={v.cityClass}>{city}</p>}
-        {postcode && <span className={v.pillClass}>{postcode}</span>}
+        {postcode && (
+          <div className={`${v.pillWrap} flex items-center ${v.pillGap}`}>
+            <div className={v.lineClass} style={v.lineStyle} />
+            <span className={v.pillClass}>{postcode}</span>
+            <div className={v.lineClass} style={v.lineStyle} />
+          </div>
+        )}
       </div>
     </div>
   )
