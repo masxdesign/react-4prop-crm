@@ -8,11 +8,12 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import StreetMaps from '@/components/StreetLocations/StreetMaps'
 import { streetLocationDetailQuery, streetLocationsByPrefixQuery } from '@/features/streetLocations/streetLocations.queries'
+import { categorySvgsQuery } from '@/store/listing.queries'
 import { updateStreetLocationCoordinates, updateStreetLocationFields, updateStreetLocationCustomAnchors } from '@/services/streetLocationService'
 import { parseDate, recalcAnchorDistances } from './streetDetailUtils'
 import { DetailRow, EditableDetailRow } from './DetailComponents'
 import { JsonArrayDisplay, MarkdownPreviewBox, NearestStationsTable, CuratedNearbyDisplay } from './DataDisplay'
-import { PhaseGenerateButton, CollapsiblePhaseCard } from './PhaseComponents'
+import { PhaseGenerateButton, CollapsiblePhaseCard, GenerateAllPhasesButton } from './PhaseComponents'
 import PipelineChecklist, { hasContent } from './PipelineChecklist'
 import FeaturedImageOverlay, { FIO_CSS, buildOverlayHtml } from './FeaturedImageOverlay'
 import InlineCodeBlock from './InlineCodeBlock'
@@ -25,6 +26,7 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
     streetLocationDetailQuery(streetLocationId)
   )
   const { data: allStreets } = useQuery(streetLocationsByPrefixQuery(prefix))
+  const { data: categorySvgs = {} } = useQuery(categorySvgsQuery)
 
   const detailIds = useMemo(() => [streetLocationId], [streetLocationId])
   const { statusMap, markPending } = useStreetLocationStatus(detailIds, useCallback(() => {
@@ -187,31 +189,38 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
           Back to {prefix} Streets
         </Button>
 
-        {totalCount > 0 && (
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!prevStreet}
-              onClick={() => goToStreet(prevStreet.id)}
-              className="h-7 px-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Prev
-            </Button>
-            <span className="text-xs text-gray-500 px-1">{currentIndex + 1} / {totalCount}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!nextStreet}
-              onClick={() => goToStreet(nextStreet.id)}
-              className="h-7 px-2"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <GenerateAllPhasesButton
+            streetLocationId={location.id}
+            disabledReason={missingFieldsReason}
+            onGenerate={(ids) => markPending(ids, 'all')}
+          />
+          {totalCount > 0 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!prevStreet}
+                onClick={() => goToStreet(prevStreet.id)}
+                className="h-7 px-2"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Prev
+              </Button>
+              <span className="text-xs text-gray-500 px-1">{currentIndex + 1} / {totalCount}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!nextStreet}
+                onClick={() => goToStreet(nextStreet.id)}
+                className="h-7 px-2"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div>
@@ -399,24 +408,13 @@ export default function StreetDetail({ prefix, streetLocationId, filter }) {
             return missing.length > 0 ? `Requires ${missing.join(', ')} to be completed first` : undefined
           })()} onGenerate={handleGenerate} isRunning={isPhaseRunning('image')}>
             {location.featured_image_url ? (() => {
-              const blogCategories = (() => {
-                try {
-                  const anchors = typeof location.key_anchors === 'string' ? JSON.parse(location.key_anchors) : location.key_anchors
-                  const curated = typeof location.curated_nearby === 'string' ? JSON.parse(location.curated_nearby) : location.curated_nearby
-                  if (!Array.isArray(anchors) || !curated?.curated_anchors) return []
-                  const curatedNames = new Set(
-                    curated.curated_anchors.map((a) => (typeof a === 'string' ? a : a?.name ?? '').toLowerCase())
-                  )
-                  return anchors.filter((a) => curatedNames.has(a.name?.toLowerCase())).map((a) => a.category).filter(Boolean)
-                } catch { return [] }
-              })()
-
               const overlayProps = {
                 imageUrl: location.featured_image_url,
                 street: location.street,
                 city: location.suburb || location.neighbourhood || location.borough,
                 postcode: location.postcode,
-                categories: blogCategories,
+                categories: location.blog_categories ?? [],
+                categorySvgs,
               }
 
               return (

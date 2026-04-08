@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactMarkdownPrimitive from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { MapPin, Clock } from 'lucide-react'
 
 export function JsonArrayDisplay({ value }) {
   if (!value) return <span className="text-gray-400">—</span>
@@ -90,19 +91,96 @@ export function MarkdownPreviewBox({ label, content }) {
   )
 }
 
+// TfL roundel: thick coloured ring, blue crossbar over the centre, white label on bar
+// Matches the real roundel: solid ring colour with white centre, bar overlaid
+function TflRoundel({ ring, bar = '#003580', label, size = 20 }) {
+  const id = `clip-${label.replace(/\s+/g, '-')}`
+  // viewBox is 44x36. Circle centre at 22,18. Bar extends to x=-2..46, poking 2px outside the r=17 circle on each side.
+  return (
+    <svg width={size} height={size * 36 / 44} viewBox="0 0 44 36" aria-label={label} className="shrink-0">
+      <defs>
+        <clipPath id={id}>
+          <circle cx="22" cy="18" r="17" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${id})`}>
+        <circle cx="22" cy="18" r="17" fill={ring} />
+        <circle cx="22" cy="18" r="10.5" fill="white" />
+      </g>
+      {/* bar sits over the ring, extends 3px beyond on each side — not clipped */}
+      <rect x="2" y="13.5" width="40" height="9" fill={bar} rx="1" />
+    </svg>
+  )
+}
+
+// National Rail logo: the NR "arrow" symbol approximated as an SVG
+function NationalRailIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 36 36" aria-label="National Rail" className="shrink-0">
+      <rect width="36" height="36" rx="4" fill="#1C3F6E" />
+      {/* Simplified NR double-arrow silhouette */}
+      <path
+        d="M10 22 L18 10 L26 22 M14 18 L22 18"
+        stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
+      />
+      <path
+        d="M10 14 L18 26 L26 14"
+        stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"
+      />
+    </svg>
+  )
+}
+
+const TRANSPORT_MODES = {
+  // ring = outer donut colour, bar = crossbar colour (defaults to TfL blue)
+  tube:             () => <TflRoundel ring="#E32017" label="Tube" />,
+  underground:      () => <TflRoundel ring="#E32017" label="Tube" />,
+  overground:       () => <TflRoundel ring="#EE7C0E" bar="#EE7C0E" label="Ovgrd" />,
+  'elizabeth-line': () => <TflRoundel ring="#6950A1" bar="#6950A1" label="Eliz" />,
+  'elizabeth line': () => <TflRoundel ring="#6950A1" bar="#6950A1" label="Eliz" />,
+  elizabeth:        () => <TflRoundel ring="#6950A1" bar="#6950A1" label="Eliz" />,
+  dlr:              () => <TflRoundel ring="#00AFAD" bar="#00AFAD" label="DLR" />,
+  'national-rail':  () => <NationalRailIcon />,
+  'national rail':  () => <NationalRailIcon />,
+  rail:             () => <NationalRailIcon />,
+  tram:             () => <TflRoundel ring="#66A226" bar="#66A226" label="Tram" />,
+  bus:              () => <TflRoundel ring="#E32017" label="Bus" />,
+  cable:            () => <TflRoundel ring="#E21836" bar="#E21836" label="Cable" />,
+}
+
+function TransportModeBadge({ mode }) {
+  const key = (mode || '').toLowerCase().trim()
+  const Render = TRANSPORT_MODES[key]
+  if (Render) return <Render />
+  // fallback: plain grey pill for unknown modes
+  return (
+    <span className="inline-flex items-center rounded bg-gray-400 px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-white shrink-0 min-w-[36px] justify-center">
+      {mode || '?'}
+    </span>
+  )
+}
+
 export function NearestStationsTable({ value }) {
   if (!value) return <span className="text-gray-400">—</span>
   try {
     const stations = typeof value === 'string' ? JSON.parse(value) : value
     if (!Array.isArray(stations) || stations.length === 0) return <span className="text-gray-400">—</span>
     return (
-      <div className="text-xs space-y-1">
+      <div className="space-y-1">
         {stations.map((s, i) => (
-          <div key={i} className="bg-gray-50 rounded px-2 py-1">
-            <span className="font-medium">{s.name}</span>
-            {s.mode && <span className="text-gray-500 ml-1">({s.mode})</span>}
-            {s.distance_m != null && <span className="text-gray-500 ml-1">— {s.distance_m}m</span>}
-            {s.walk_time_min != null && <span className="text-gray-500 ml-1">({s.walk_time_min} min walk)</span>}
+          <div key={i} className="flex items-center gap-3 py-1.5 border-b border-gray-100 last:border-0">
+            <TransportModeBadge mode={s.mode} />
+            <span className="text-sm text-gray-900 flex-1 min-w-0 truncate">{s.name}</span>
+            <div className="flex items-center gap-3 shrink-0 text-xs text-gray-500 tabular-nums">
+              <span className="flex items-center gap-0.5">
+                <MapPin className="h-3 w-3 text-gray-400" />
+                {s.distance_m != null ? `${s.distance_m}m` : '—'}
+              </span>
+              <span className="flex items-center gap-0.5">
+                <Clock className="h-3 w-3 text-gray-400" />
+                {s.walk_time_min != null ? `${s.walk_time_min} min` : '—'}
+              </span>
+            </div>
           </div>
         ))}
       </div>

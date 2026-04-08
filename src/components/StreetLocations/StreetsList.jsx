@@ -2,7 +2,7 @@ import { useMemo, useCallback, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
-import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles, RefreshCw, PlusCircle } from 'lucide-react'
+import { ChevronLeft, Loader2, Search, CheckCircle2, Circle, ArrowUpDown, ArrowUp, ArrowDown, AlertCircle, Trash2, Sparkles, ChevronDown, PlusCircle } from 'lucide-react'
 import { parseDate } from './streetDetailUtils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,8 +38,15 @@ import StreetMaps from '@/components/StreetLocations/StreetMaps'
 import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard'
 import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard'
 import { Label } from '@/components/ui/label'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { streetLocationsByPrefixQuery, streetLocationDetailQuery } from '@/features/streetLocations/streetLocations.queries'
-import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors, addStreetLocation } from '@/services/streetLocationService'
+import { updateStreetLocationCoordinates, deleteStreetLocation, updateStreetLocationCustomAnchors, addStreetLocation, generateAllPhases } from '@/services/streetLocationService'
 import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
 import { useStreetLocationStatus } from '@/hooks/use-BulkPhaseStatus'
 import ReactMarkdownPrimitive from 'react-markdown'
@@ -84,24 +91,6 @@ const mdComponents = {
   td: ({ children }) => <td className="border border-gray-200 px-2 py-1 text-gray-700">{children}</td>,
 }
 
-function needsNearbyRegen(street) {
-  if (!street.key_anchors_completed_at) return true
-  if (!street.curated_nearby) return false
-  try {
-    const d = typeof street.curated_nearby === 'string'
-      ? JSON.parse(street.curated_nearby)
-      : street.curated_nearby
-    if (!d || typeof d !== 'object') return false
-    // Old format has editorial_summary or removed fields
-    if (d.editorial_summary) return true
-    if (Array.isArray(d.removed) && d.removed.length > 0) return true
-    // Old format has object-type curated_anchors items
-    if (Array.isArray(d.curated_anchors) && d.curated_anchors.length > 0 && typeof d.curated_anchors[0] === 'object') return true
-    return false
-  } catch {
-    return false
-  }
-}
 
 function MarkdownBox({ label, content }) {
   const [expanded, setExpanded] = useState(false)
@@ -523,7 +512,6 @@ export default function StreetsList({ prefix, filter = '' }) {
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showAddStreet, setShowAddStreet] = useState(false)
-  const [nearbyFilter, setNearbyFilter] = useState(() => localStorage.getItem('streetLocations.nearbyFilter') === 'true')
 
   const addStreetForm = useForm({ defaultValues: { postcode: '', street: '', suburb: '', neighbourhood: '', borough: '' } })
 
@@ -552,6 +540,7 @@ export default function StreetsList({ prefix, filter = '' }) {
   const preBlog = usePhaseGeneration('pre-blog')
   const postBlog = usePhaseGeneration('post-blog')
   const image = usePhaseGeneration('image')
+  const allPhasesMutation = useMutation({ mutationFn: generateAllPhases })
 
   const handleSort = useCallback((column) => {
     if (sortBy === column) {
@@ -595,11 +584,8 @@ export default function StreetsList({ prefix, filter = '' }) {
         s.suburb?.toLowerCase().includes(q)
       )
     }
-    if (nearbyFilter) {
-      result = result.filter(needsNearbyRegen)
-    }
     return result
-  }, [streets, filter, nearbyFilter])
+  }, [streets, filter])
 
   const sortedStreets = useMemo(() => {
     if (!filteredStreets || !sortBy) return filteredStreets
@@ -726,141 +712,71 @@ export default function StreetsList({ prefix, filter = '' }) {
             className="pl-9"
           />
         </div>
-        <Button
-          variant={nearbyFilter ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setNearbyFilter(v => { const next = !v; localStorage.setItem('streetLocations.nearbyFilter', next); return next })}
-          className="gap-1 whitespace-nowrap"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Needs Nearby
-          {nearbyFilter && streets && (
-            <span className="ml-1 text-xs opacity-80">
-              ({streets.filter(needsNearbyRegen).length})
-            </span>
-          )}
-        </Button>
         {selectedIds.size > 0 && (
           <>
             <span className="text-sm text-gray-600 whitespace-nowrap">
               {selectedIds.size} selected
             </span>
             <Button
-              variant="outline"
               size="sm"
-              disabled={keyAnchors.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; keyAnchors.generate(ids); markPending(ids, 'key-anchors') }}
+              disabled={allPhasesMutation.isPending}
+              onClick={() => { const ids = [...selectedIds]; allPhasesMutation.mutate(ids); markPending(ids, 'all') }}
+              className="gap-1 border-0 cursor-pointer bg-linear-to-br from-violet-500 via-purple-500 to-fuchsia-500 text-white hover:shadow-lg hover:shadow-purple-500/25 transition-shadow"
             >
-              {keyAnchors.isGenerating ? (
+              {allPhasesMutation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Running…
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Key Anchors
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Run All Phases
                 </>
               )}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={nearestStations.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; nearestStations.generate(ids); markPending(ids, 'nearest-stations') }}
-            >
-              {nearestStations.isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Nearest Stations
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={seo.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; seo.generate(ids); markPending(ids, 'seo') }}
-            >
-              {seo.isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate SEO
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={preBlog.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; preBlog.generate(ids); markPending(ids, 'pre-blog') }}
-            >
-              {preBlog.isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Pre-Blog
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={postBlog.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; postBlog.generate(ids); markPending(ids, 'post-blog') }}
-            >
-              {postBlog.isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Post-Blog
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={image.isGenerating}
-              onClick={() => { const ids = [...selectedIds]; image.generate(ids); markPending(ids, 'image') }}
-            >
-              {image.isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-1" />
-                  Generate Image
-                </>
-              )}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1">
+                  Generate phase
+                  <ChevronDown className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; keyAnchors.generate(ids); markPending(ids, 'key-anchors') }}>
+                  {keyAnchors.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  Key Anchors
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; nearestStations.generate(ids); markPending(ids, 'nearest-stations') }}>
+                  {nearestStations.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  Nearest Stations
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; seo.generate(ids); markPending(ids, 'seo') }}>
+                  {seo.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  SEO
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; preBlog.generate(ids); markPending(ids, 'pre-blog') }}>
+                  {preBlog.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  Pre-Blog
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; postBlog.generate(ids); markPending(ids, 'post-blog') }}>
+                  {postBlog.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  Post-Blog
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => { const ids = [...selectedIds]; image.generate(ids); markPending(ids, 'image') }}>
+                  {image.isGenerating ? <Loader2 className="h-3.5 w-3.5 mr-2 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-2" />}
+                  Image
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         )}
         </div>

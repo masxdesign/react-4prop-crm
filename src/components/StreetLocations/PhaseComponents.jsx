@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronDown, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible'
 import { usePhaseGeneration } from '@/hooks/use-PhaseGeneration'
+import { useMutation } from '@tanstack/react-query'
+import { generateAllPhases } from '@/services/streetLocationService'
 import { PhaseStatus } from './DetailComponents'
 
 export function PhaseGenerateButton({ phase, streetLocationId, disabledReason, completedAt, onGeneratingChange, onGenerate, isRunning, suffix, compact }) {
@@ -64,6 +66,40 @@ export function PhaseGenerateButton({ phase, streetLocationId, disabledReason, c
         <>
           <Sparkles className="h-3 w-3" />
           {label}
+        </>
+      )}
+    </Button>
+  )
+}
+
+export function GenerateAllPhasesButton({ streetLocationId, disabledReason, onGenerate }) {
+  const mutation = useMutation({ mutationFn: generateAllPhases })
+
+  const handleClick = useCallback(() => {
+    mutation.mutate([streetLocationId])
+    onGenerate?.([streetLocationId])
+  }, [mutation, streetLocationId, onGenerate])
+
+  const blocked = !!disabledReason
+  const busy = mutation.isPending
+
+  return (
+    <Button
+      size="sm"
+      disabled={busy || blocked}
+      onClick={handleClick}
+      title={blocked ? disabledReason : undefined}
+      className="h-7 text-xs gap-1 shrink-0 border-0 cursor-pointer bg-linear-to-br from-violet-500 via-purple-500 to-fuchsia-500 text-white hover:shadow-lg hover:shadow-purple-500/25 transition-shadow"
+    >
+      {busy ? (
+        <>
+          <Loader2 className="h-3 w-3 animate-spin" />
+          Running all phases…
+        </>
+      ) : (
+        <>
+          <Sparkles className="h-3 w-3" />
+          Run All Phases
         </>
       )}
     </Button>
