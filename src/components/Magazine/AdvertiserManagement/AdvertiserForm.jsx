@@ -49,10 +49,11 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       .map(id => id.trim());
   }, [advertiser?.pstids]);
 
-  const { register, handleSubmit, formState: { errors }, watch, reset, control } = useForm({
+  const { register, handleSubmit, formState: { errors }, watch, control } = useForm({
     values: advertiser ? {
       ...advertiser,
       pstids: initialPstids,
+      site_mode: advertiser.site_mode || 'advertiser_site',
       email: advertiser.email || '',
       password: '',
       confirmPassword: ''
@@ -62,6 +63,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       password: '',
       confirmPassword: '',
       pstids: [],
+      site_mode: 'advertiser_site',
       week_rate: '',
       vat_registered: false,
       vat_number: '',
@@ -156,6 +158,10 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       vat_registered: Boolean(data.vat_registered),
       vat_number: data.vat_registered ? data.vat_number : ''
     };
+
+    if (isSelfService) {
+      delete formattedData.site_mode;
+    }
 
     // Only include email and password if they have values
     if (data.email && data.email.trim()) {
@@ -381,6 +387,42 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                     Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
                   </p>
                 </div>
+
+                {!isSelfService && (
+                  <div>
+                    <fieldset>
+                      <legend className="block text-sm font-medium mb-2">Mode</legend>
+                      <Controller
+                        name="site_mode"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-2" role="radiogroup" aria-label="Advertiser mode">
+                            {[
+                              { value: 'advertiser_site', label: 'Advertiser site' },
+                              { value: '4prop_site', label: '4prop site' },
+                              { value: 'agentab', label: 'AgentAB' },
+                            ].map((opt) => (
+                              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={field.name}
+                                  value={opt.value}
+                                  checked={field.value === opt.value}
+                                  onChange={() => field.onChange(opt.value)}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="text-sm">{opt.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      />
+                    </fieldset>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Default: listings use the advertiser&apos;s site; other modes use 4prop or AgentAB.
+                    </p>
+                  </div>
+                )}
 
                 {/* Week Rate - Hidden for self-service (advertiser-only) */}
                 {!isSelfService && (

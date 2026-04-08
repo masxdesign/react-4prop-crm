@@ -53,6 +53,13 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
   const stripeStatus = stripeStatusData?.data;
   const isOnboarded = stripeStatus?.onboarding_completed;
 
+  const siteModeLabels = {
+    advertiser_site: 'Advertiser site',
+    '4prop_site': '4prop site',
+    agentab: 'AgentAB',
+  };
+  const siteModeLabel = siteModeLabels[advertiser.site_mode] || 'Advertiser site';
+
   return (
     <>
       <div className="flex flex-col bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
@@ -111,6 +118,10 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
         </div>
 
         <div className="shrink-0 space-y-2 mb-auto">
+          <div>
+            <span className="text-xs font-medium text-gray-500">Mode</span>
+            <div className="text-xs text-gray-800">{siteModeLabel}</div>
+          </div>
           <div>
             <span className="text-xs font-medium text-gray-500">Property Subtypes</span>
             <div className="text-xs">

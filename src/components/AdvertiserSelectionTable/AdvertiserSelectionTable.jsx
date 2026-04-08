@@ -362,6 +362,18 @@ const AdvertiserSelectionTable = ({
             return value != null ? `${value}%` : '-';
           },
         }),
+        columnHelper.accessor('site_mode', {
+          header: 'Mode',
+          cell: (info) => {
+            const value = info.getValue();
+            const labels = {
+              advertiser_site: 'Advertiser site',
+              '4prop_site': '4prop site',
+              agentab: 'AgentAB',
+            };
+            return labels[value] || 'Advertiser site';
+          },
+        }),
         columnHelper.accessor('pstids', {
           header: 'Subtypes',
           cell: (info) => {
