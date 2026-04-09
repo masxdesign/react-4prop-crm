@@ -23,6 +23,29 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripeStatus } from '../api';
 import AdvertiserOnboarding from '../stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
+import { cn } from '@/lib/utils';
+
+/** Labels + short descriptions for site mode cards (radiogroup). */
+const SITE_MODE_CARD_OPTIONS = [
+  {
+    value: 'advertiser_site',
+    label: 'Advertiser site',
+    description:
+      'Agents advertise on your platform; you earn commission on qualifying activity under your agreement.',
+  },
+  {
+    value: '4prop_site',
+    label: '4prop site',
+    description:
+      'All agent properties are listed together in the shared 4prop catalogue.',
+  },
+  {
+    value: 'agentab',
+    label: 'AgentAB',
+    description:
+      'An embed on an agent’s website can show their listings, other agents’ listings, or both—with commission where applicable.',
+  },
+];
 
 function pstidsStringToArray(pstids) {
   if (!pstids) return [];
@@ -527,39 +550,51 @@ const AdvertiserForm = ({
                       control={control}
                       render={({ field }) => (
                         <div
-                          className="flex flex-wrap items-center gap-x-5 gap-y-2"
+                          className="flex flex-col gap-2.5"
                           role="radiogroup"
                           aria-label="Advertiser mode"
                           aria-readonly={isSelfService || undefined}
                         >
-                          {[
-                            { value: 'advertiser_site', label: 'Advertiser site' },
-                            { value: '4prop_site', label: '4prop site' },
-                            { value: 'agentab', label: 'AgentAB' },
-                          ].map((opt) => (
-                            <label
-                              key={opt.value}
-                              className={`flex items-center gap-2 ${isSelfService ? 'cursor-default' : 'cursor-pointer'}`}
-                            >
-                              <input
-                                type="radio"
-                                name={field.name}
-                                value={opt.value}
-                                checked={field.value === opt.value}
-                                onChange={() => field.onChange(opt.value)}
-                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-60"
-                              />
-                              <span className="text-sm">{opt.label}</span>
-                            </label>
-                          ))}
+                          {SITE_MODE_CARD_OPTIONS.map((opt) => {
+                            const selected = field.value === opt.value;
+                            return (
+                              <label
+                                key={opt.value}
+                                className={cn(
+                                  'flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors',
+                                  selected
+                                    ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500/25'
+                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80',
+                                  isSelfService && 'cursor-default opacity-95'
+                                )}
+                              >
+                                <input
+                                  type="radio"
+                                  name={field.name}
+                                  value={opt.value}
+                                  checked={selected}
+                                  onChange={() => field.onChange(opt.value)}
+                                  className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60"
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-sm font-medium text-gray-900">
+                                    {opt.label}
+                                  </span>
+                                  <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
+                                    {opt.description}
+                                  </span>
+                                </span>
+                              </label>
+                            );
+                          })}
                         </div>
                       )}
                     />
                   </fieldset>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-3">
                     {isSelfService
                       ? 'Mode is set by your administrator.'
-                      : "Default: listings use the advertiser's site; other modes use 4prop or AgentAB."}
+                      : 'Choose where this advertiser’s listings appear and how commission applies.'}
                   </p>
                 </Card>
 
