@@ -1,9 +1,16 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -46,7 +53,20 @@ function getDirtyValues(dirtyFields, allValues) {
 // Advertiser Form Component - Updated for week-based system
 // isSelfService: true = advertiser signed in, completing their own profile / onboarding
 // isSelfService: false = super admin viewing advertiser record and onboarding progress
-const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error, isSelfService = false }) => {
+// isUpdate: true = edit existing advertiser; false = add new. Defaults to !!advertiser (same shell, one form).
+const AdvertiserForm = ({
+  open,
+  onOpenChange,
+  advertiser,
+  onClose,
+  onSubmit,
+  isLoading,
+  error,
+  isSelfService = false,
+  isUpdate: isUpdateProp,
+}) => {
+  const isUpdate = typeof isUpdateProp === 'boolean' ? isUpdateProp : !!advertiser;
+  const isCreate = !isUpdate;
   const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
@@ -101,7 +121,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   }, [advertiserSnapshot]);
 
   const { register, handleSubmit, formState: { errors, dirtyFields, isDirty }, watch, control, unregister } = useForm({
-    values: advertiser ? editFormValues : {
+    values: isUpdate ? editFormValues : {
       company: '',
       email: '',
       password: '',
@@ -115,13 +135,12 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     }
   });
 
-  // Edit dialog reuses the same component instance as create; closing edit sets advertiser=null
-  // and confirmPassword registers. Re-register can linger — unregister confirmPassword in edit mode.
+  // Create flow registers confirmPassword; update flow does not — unregister so it does not linger after switching modes.
   useEffect(() => {
-    if (advertiser) {
+    if (isUpdate) {
       unregister('confirmPassword');
     }
-  }, [advertiser, unregister]);
+  }, [isUpdate, unregister]);
 
   const advertiserOnboarded = true
 
@@ -129,8 +148,78 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
   const password = watch('password');
   const siteMode = watch('site_mode');
   const isAdvertiserSiteMode = siteMode === 'advertiser_site';
-  /** Edit + admin: 4prop site advertisers only need credential fields in the UI. */
-  const is4propSiteEdit = Boolean(advertiser && !isSelfService && siteMode === '4prop_site');
+  /** Admin + 4prop site: minimal fields — same for add new and edit (credentials only; no company, subtypes, MoR). */
+  const is4propAdminMinimal = Boolean(!isSelfService && siteMode === '4prop_site');
+
+  /** Mode is not in the accordion. Update: other sections collapsed. New: account / website / mor open as applicable. */
+  const defaultAccordionOpen = useMemo(() => {
+    if (isUpdate) return [];
+    const open = ['account'];
+    if (!is4propAdminMinimal) open.push('website');
+    if (isAdvertiserSiteMode) open.push('mor');
+    return open;
+  }, [isUpdate, is4propAdminMinimal, isAdvertiserSiteMode]);
+
+  /** One-line preview of fields inside each accordion (shown when section is collapsed). */
+  const accountSectionSummary = useMemo(() => {
+    const parts = [];
+    if (!is4propAdminMinimal) parts.push('Company name');
+    parts.push('Email');
+    if (isCreate) {
+      parts.push('Password', 'Confirm password');
+    } else {
+      parts.push('Password (optional change)');
+    }
+    return parts.join(' · ');
+  }, [is4propAdminMinimal, isCreate]);
+
+  const morSectionSummary = useMemo(() => {
+    const parts = [];
+    if (advertiser) {
+      parts.push('Self-billing onboarding', 'Self-billing agreement');
+    }
+    if (!isSelfService) {
+      parts.push('Week rate', 'Commission %');
+    }
+    parts.push('VAT registration', 'VAT number');
+    return parts.join(' · ');
+  }, [advertiser, isSelfService]);
+
+  const accountSectionRef = useRef(null);
+  const websiteSectionRef = useRef(null);
+  const morSectionRef = useRef(null);
+  const accordionOpenPrevRef = useRef(defaultAccordionOpen);
+  const defaultAccordionOpenRef = useRef(defaultAccordionOpen);
+  defaultAccordionOpenRef.current = defaultAccordionOpen;
+
+  /** Keep in sync with Radix default when dialog opens, record changes, or add/edit mode switches (esp. update: all start closed). */
+  useEffect(() => {
+    if (!open) return;
+    accordionOpenPrevRef.current = defaultAccordionOpenRef.current;
+  }, [open, advertiser?.id, isUpdate]);
+
+  const handleAccordionValueChange = useCallback((next) => {
+    const prev = accordionOpenPrevRef.current;
+    const newlyOpened = next.filter((v) => !prev.includes(v));
+    accordionOpenPrevRef.current = next;
+    if (newlyOpened.length === 0) return;
+
+    const value = newlyOpened[0];
+    const refMap = {
+      account: accountSectionRef,
+      website: websiteSectionRef,
+      mor: morSectionRef,
+    };
+    const el = refMap[value]?.current;
+    if (!el) return;
+
+    // Let Radix/CSS finish accordion-down (0.2s in index.css / tailwind) before scrolling — same for add + update.
+    requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      }, 230);
+    });
+  }, []);
 
   // Fetch advertiser Stripe status
   const {
@@ -199,7 +288,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
 
   const onSubmitInvalid = useCallback((formErrors) => {
     const entries = Object.entries(formErrors).filter(
-      ([key]) => !(advertiser && key === 'confirmPassword')
+      ([key]) => !(isUpdate && key === 'confirmPassword')
     );
     if (entries.length === 0) {
       return;
@@ -216,11 +305,11 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       title: 'Form incomplete',
       description: msg,
     });
-  }, [advertiser]);
+  }, [isUpdate]);
 
   const handleFormSubmit = (data) => {
-    // Validate password match on create
-    if (!advertiser && data.password !== data.confirmPassword) {
+    // Validate password match on create only (password fields not shown on update)
+    if (isCreate && data.password !== data.confirmPassword) {
       toast({
         variant: 'destructive',
         title: 'Passwords do not match',
@@ -273,12 +362,12 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     // Remove confirmPassword from the submitted data
     delete formattedData.confirmPassword;
 
-    if (!advertiser) {
+    if (isCreate) {
       onSubmit(formattedData);
       return;
     }
 
-    // Edit: only send fields the user changed (backend must merge partial PUT body).
+    // Update: only send fields the user changed (backend must merge partial PUT body).
     const dirtyPayload = getDirtyValues(dirtyFields, data);
     if (Object.keys(dirtyPayload).length === 0) {
       return;
@@ -327,17 +416,17 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] sm:max-w-2xl flex flex-col">
+      <DialogContent className="flex flex-col sm:max-w-2xl min-h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]">
         {!showSelfBillingContent ? (
           <>
             <DialogHeader className="shrink-0">
               <DialogTitle className="flex items-center gap-2">
-                {advertiser ? 'Edit Advertiser' : 'Add New Advertiser'}
+                {isUpdate ? 'Edit Advertiser' : 'Add New Advertiser'}
               </DialogTitle>
               <DialogDescription>
                 {isSelfService
                   ? 'Complete your profile and self-billing onboarding in your account. Required for Platform Merchant of Record (MoR).'
-                  : advertiser
+                  : isUpdate
                     ? 'Advertiser details and onboarding progress. Advertisers complete self-billing onboarding when signed in to their own account.'
                     : 'Add an advertiser record. MoR settings apply when mode is Advertiser site.'}
               </DialogDescription>
@@ -348,169 +437,231 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
               noValidate
               className="flex-1 flex flex-col min-h-0"
             >
-              <div className="shrink-0 -mx-6 px-6 pb-4 border-b border-gray-100">
-                <fieldset disabled={isSelfService}>
-                  <legend className="block text-sm font-medium mb-2">Mode</legend>
-                  <Controller
-                    name="site_mode"
-                    control={control}
-                    render={({ field }) => (
-                      <div
-                        className="flex flex-wrap items-center gap-x-5 gap-y-2"
-                        role="radiogroup"
-                        aria-label="Advertiser mode"
-                        aria-readonly={isSelfService || undefined}
-                      >
-                        {[
-                          { value: 'advertiser_site', label: 'Advertiser site' },
-                          { value: '4prop_site', label: '4prop site' },
-                          { value: 'agentab', label: 'AgentAB' },
-                        ].map((opt) => (
-                          <label
-                            key={opt.value}
-                            className={`flex items-center gap-2 ${isSelfService ? 'cursor-default' : 'cursor-pointer'}`}
-                          >
-                            <input
-                              type="radio"
-                              name={field.name}
-                              value={opt.value}
-                              checked={field.value === opt.value}
-                              onChange={() => field.onChange(opt.value)}
-                              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-60"
-                            />
-                            <span className="text-sm">{opt.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  />
-                </fieldset>
-                <p className="text-xs text-gray-500 mt-1">
-                  {isSelfService
-                    ? 'Mode is set by your administrator.'
-                    : "Default: listings use the advertiser's site; other modes use 4prop or AgentAB."}
-                </p>
-              </div>
-
               <div className="flex-1 space-y-4 overflow-y-auto -mx-6 px-6 min-h-0 pt-4 pb-8">
-                {!is4propSiteEdit && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Company Name *</label>
-                  <input
-                    type="text"
-                    {...register('company', { required: 'Company name is required' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter company name"
-                  />
-                  {errors.company && (
-                    <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
-                  )}
-                </div>
-                )}
+                <Card className="p-4">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">Mode</h3>
+                  <fieldset disabled={isSelfService} className="min-w-0">
+                    <Controller
+                      name="site_mode"
+                      control={control}
+                      render={({ field }) => (
+                        <div
+                          className="flex flex-wrap items-center gap-x-5 gap-y-2"
+                          role="radiogroup"
+                          aria-label="Advertiser mode"
+                          aria-readonly={isSelfService || undefined}
+                        >
+                          {[
+                            { value: 'advertiser_site', label: 'Advertiser site' },
+                            { value: '4prop_site', label: '4prop site' },
+                            { value: 'agentab', label: 'AgentAB' },
+                          ].map((opt) => (
+                            <label
+                              key={opt.value}
+                              className={`flex items-center gap-2 ${isSelfService ? 'cursor-default' : 'cursor-pointer'}`}
+                            >
+                              <input
+                                type="radio"
+                                name={field.name}
+                                value={opt.value}
+                                checked={field.value === opt.value}
+                                onChange={() => field.onChange(opt.value)}
+                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-60"
+                              />
+                              <span className="text-sm">{opt.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    />
+                  </fieldset>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {isSelfService
+                      ? 'Mode is set by your administrator.'
+                      : "Default: listings use the advertiser's site; other modes use 4prop or AgentAB."}
+                  </p>
+                </Card>
 
-                {/* Account Credentials Section */}
-                <div className={is4propSiteEdit ? 'pt-0' : 'border-t pt-4 mt-4'}>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Account Credentials</h4>
+                <Accordion
+                  key={`${isUpdate ? 'accordion-update' : 'accordion-new'}-${isUpdate ? String(advertiser?.id ?? '') : 'new'}`}
+                  type="multiple"
+                  defaultValue={defaultAccordionOpen}
+                  onValueChange={handleAccordionValueChange}
+                  className="w-full space-y-3"
+                >
+                  <AccordionItem
+                    ref={accountSectionRef}
+                    value="account"
+                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                  >
+                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                        <span className="text-sm font-semibold">Account details</span>
+                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                          {accountSectionSummary}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
+                <div>
+
+                  {!is4propAdminMinimal && (
+                    <div className="mb-3">
+                      <label className="block text-sm font-medium mb-1">Company Name *</label>
+                      <input
+                        type="text"
+                        {...register('company', { required: 'Company name is required' })}
+                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter company name"
+                      />
+                      {errors.company && (
+                        <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Email Address {!advertiser && '*'}
+                      Email Address {isCreate && '*'}
                     </label>
                     <input
                       type="email"
                       {...register('email', {
-                        required: !advertiser ? 'Email is required' : false,
+                        required: isCreate ? 'Email is required' : false,
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                           message: 'Please enter a valid email address'
                         }
                       })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="advertiser@example.com"
                     />
                     {errors.email && (
                       <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
                     )}
                     <p className="text-xs text-gray-500 mt-1">
-                      {advertiser ? 'Update email address (leave as is to keep current)' : 'Used for advertiser login'}
+                      {isUpdate ? 'Update email address (leave as is to keep current)' : 'Used for advertiser login'}
                     </p>
                   </div>
 
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium mb-1">
-                      Password {!advertiser && '*'}
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        {...register('password', {
-                          required: !advertiser ? 'Password is required' : false,
-                          validate: (val) => {
-                            const v = val != null ? String(val).trim() : '';
-                            if (!advertiser) {
-                              if (v.length < 8) {
+                  {isCreate && (
+                    <>
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium mb-1">Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            {...register('password', {
+                              required: 'Password is required',
+                              validate: (val) => {
+                                const v = val != null ? String(val).trim() : '';
+                                if (v.length < 8) {
+                                  return 'Password must be at least 8 characters';
+                                }
+                                return true;
+                              },
+                            })}
+                            className="w-full h-9 px-3 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Enter password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        {errors.password && (
+                          <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
+                      </div>
+
+                      <div className="mt-3">
+                        <label className="block text-sm font-medium mb-1">Confirm Password *</label>
+                        <div className="relative">
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            {...register('confirmPassword', {
+                              required: 'Please confirm your password',
+                              validate: (value) => value === password || 'Passwords do not match',
+                            })}
+                            className="w-full h-9 px-3 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Re-enter password"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          >
+                            {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                        {errors.confirmPassword && (
+                          <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {isUpdate && (
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium mb-1">Password</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          {...register('password', {
+                            validate: (val) => {
+                              const v = val != null ? String(val).trim() : '';
+                              if (v.length > 0 && v.length < 8) {
                                 return 'Password must be at least 8 characters';
                               }
                               return true;
-                            }
-                            if (v.length > 0 && v.length < 8) {
-                              return 'Password must be at least 8 characters';
-                            }
-                            return true;
-                          },
-                        })}
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder={advertiser ? '••••••••' : 'Enter password'}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
-                    )}
-                    <p className="text-xs text-gray-500 mt-1">
-                      {advertiser ? 'Leave blank to keep current password' : 'Minimum 8 characters'}
-                    </p>
-                  </div>
-
-                  {!advertiser && (
-                    <div className="mt-3">
-                      <label className="block text-sm font-medium mb-1">Confirm Password *</label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          {...register('confirmPassword', {
-                            required: !advertiser ? 'Please confirm your password' : false,
-                            validate: (value) => !advertiser ? (value === password || 'Passwords do not match') : true
+                            },
                           })}
-                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Re-enter password"
+                          className="w-full h-9 px-3 pr-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="••••••••"
+                          autoComplete="new-password"
                         />
                         <button
                           type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
-                      {errors.confirmPassword && (
-                        <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
+                      {errors.password && (
+                        <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
                       )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave blank to keep current password
+                      </p>
                     </div>
                   )}
                 </div>
+                    </AccordionContent>
+                  </AccordionItem>
 
-                {!is4propSiteEdit && (
-                <>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Property Subtypes</label>
-                  <Controller
+                {!is4propAdminMinimal && (
+                  <AccordionItem
+                    ref={websiteSectionRef}
+                    value="website"
+                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                  >
+                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                        <span className="text-sm font-semibold">Website settings</span>
+                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                          Property subtypes (search & multi-select)
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-gray-800 mb-2">Property Subtypes</p>
+                    <Controller
                     name="pstids"
                     control={control}
                     render={({ field }) => (
@@ -521,7 +672,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                           placeholder="Search subtypes..."
                           value={subtypeSearchTerm}
                           onChange={(e) => setSubtypeSearchTerm(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
 
                         {/* Multi-select dropdown with grouped options */}
@@ -533,7 +684,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                               const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
                               field.onChange(selectedOptions);
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px]"
+                            className="w-full min-h-[140px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                           >
                             {filteredGroupedPropertyTypes.length > 0 ? (
                               filteredGroupedPropertyTypes.map(type => (
@@ -580,15 +731,30 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                       </div>
                     )}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
-                  </p>
-                </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
+                    </p>
+                  </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
 
                 {/* Platform MoR Fields — advertiser_site only */}
                 {isAdvertiserSiteMode && (
-                <div className="border-t pt-4 mt-4">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Platform MoR Settings</h4>
+                  <AccordionItem
+                    ref={morSectionRef}
+                    value="mor"
+                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                  >
+                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                        <span className="text-sm font-semibold">Platform MoR Settings</span>
+                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                          {morSectionSummary}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
 
                   {/* Self-billing onboarding (Stripe platform customer) — first subsection under MoR heading */}
                   {advertiser && (
@@ -714,7 +880,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                           required: !isSelfService ? 'Week rate is required' : false,
                           min: { value: 0, message: 'Week rate must be positive' }
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="0.00"
                       />
                       {errors.week_rate && (
@@ -737,7 +903,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                           min: { value: 0, message: 'Commission must be 0 or greater' },
                           max: { value: 100, message: 'Commission cannot exceed 100%' }
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="50"
                       />
                       {errors.commission_percent && (
@@ -772,7 +938,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                             message: 'VAT number must be in format: GB123456789'
                           }
                         })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="GB123456789"
                       />
                       {errors.vat_number && (
@@ -783,10 +949,11 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                       </p>
                     </div>
                   )}
-                </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 )}
-                </>
-                )}
+
+                </Accordion>
 
                 {error && (
                   <div className="text-red-500 text-sm p-2 bg-red-50 rounded">
@@ -799,16 +966,16 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="flex-1 h-9 px-4 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || (!!advertiser && !isDirty)}
-                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  disabled={isLoading || (isUpdate && !isDirty)}
+                  className="flex-1 h-9 px-4 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
                 >
-                  {isLoading ? 'Saving...' : (advertiser ? 'Update' : 'Create')}
+                  {isLoading ? 'Saving...' : (isUpdate ? 'Update' : 'Create')}
                 </button>
               </div>
             </form>

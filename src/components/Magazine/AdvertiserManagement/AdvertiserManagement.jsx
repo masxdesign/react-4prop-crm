@@ -177,6 +177,7 @@ const AdvertiserManagement = () => {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         advertiser={editingAdvertiser}
+        isUpdate={!!editingAdvertiser}
         onClose={closeForm}
         onSubmit={handleFormSubmit}
         isLoading={editingAdvertiser ? updateMutation.isPending : createMutation.isPending}

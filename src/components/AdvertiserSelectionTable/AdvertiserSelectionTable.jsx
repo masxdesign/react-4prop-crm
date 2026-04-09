@@ -727,6 +727,7 @@ const AdvertiserSelectionTable = ({
             }
           }}
           advertiser={editingAdvertiser}
+          isUpdate={!!editingAdvertiser}
           onClose={closeForm}
           onSubmit={handleFormSubmit}
           isLoading={updateMutation.isPending}
