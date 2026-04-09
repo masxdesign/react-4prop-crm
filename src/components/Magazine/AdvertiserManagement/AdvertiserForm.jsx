@@ -7,7 +7,13 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -423,29 +429,32 @@ const AdvertiserForm = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex flex-col sm:max-w-2xl min-h-[calc(100vh-100px)] max-h-[calc(100vh-100px)]">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        className="flex h-full w-full flex-col gap-0 overflow-hidden border-l p-0 sm:max-w-2xl"
+      >
         {!showSelfBillingContent ? (
           <>
-            <DialogHeader className="shrink-0">
-              <DialogTitle className="flex items-center gap-2">
+            <SheetHeader className="shrink-0 space-y-2 border-b border-border px-6 py-5 text-left">
+              <SheetTitle className="flex items-center gap-2 text-lg">
                 {isUpdate ? 'Edit Advertiser' : 'Add New Advertiser'}
-              </DialogTitle>
-              <DialogDescription>
+              </SheetTitle>
+              <SheetDescription>
                 {isSelfService
                   ? 'Complete your profile and self-billing onboarding in your account. Required for Platform Merchant of Record (MoR).'
                   : isUpdate
                     ? 'Advertiser details and onboarding progress. Advertisers complete self-billing onboarding when signed in to their own account.'
                     : 'Add an advertiser record. MoR settings apply when mode is Advertiser site.'}
-              </DialogDescription>
-            </DialogHeader>
+              </SheetDescription>
+            </SheetHeader>
 
             <form
               onSubmit={handleSubmit(handleFormSubmit, onSubmitInvalid)}
               noValidate
-              className="flex-1 flex flex-col min-h-0"
+              className="flex min-h-0 flex-1 flex-col"
             >
-              <div className="flex-1 space-y-4 overflow-y-auto -mx-6 px-6 min-h-0 pt-4 pb-8">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
                 <Card className="p-4">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Mode</h3>
                   <fieldset disabled={isSelfService} className="min-w-0">
@@ -1046,7 +1055,7 @@ const AdvertiserForm = ({
                 )}
               </div>
 
-              <div className="shrink-0 flex gap-2 pt-4 border-t -mx-6 px-5">
+              <div className="flex shrink-0 gap-2 border-t border-border bg-background px-6 py-4">
                 <button
                   type="button"
                   onClick={onClose}
@@ -1067,17 +1076,17 @@ const AdvertiserForm = ({
         ) : (
           <>
             {/* Self-Billing Agreement Content */}
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+            <SheetHeader className="shrink-0 space-y-2 border-b border-border px-6 py-5 text-left">
+              <SheetTitle className="flex items-center gap-2 text-lg">
                 <FileText className="h-5 w-5" />
                 Self-Billing Agreement
-              </DialogTitle>
-              <DialogDescription>
+              </SheetTitle>
+              <SheetDescription>
                 Required for Platform Merchant of Record (MoR) model
-              </DialogDescription>
-            </DialogHeader>
+              </SheetDescription>
+            </SheetHeader>
 
-            <div className="space-y-4 py-4">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
               {/* Back Button */}
               <Button
                 type="button"
@@ -1202,8 +1211,8 @@ const AdvertiserForm = ({
             </div>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 };
 
