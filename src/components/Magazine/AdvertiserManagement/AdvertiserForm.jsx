@@ -93,6 +93,14 @@ const AdvertiserForm = ({
       .filter(type => type.subtypes.length > 0);
   }, [groupedPropertyTypes, subtypeSearchTerm]);
 
+  const allCatalogSubtypeIds = useMemo(() => {
+    const ids = [];
+    groupedPropertyTypes.forEach((type) => {
+      type.subtypes.forEach((s) => ids.push(String(s.id)));
+    });
+    return ids;
+  }, [groupedPropertyTypes]);
+
   // Content-addressed snapshot so useForm `values` does not reset every parent render (new advertiser
   // object ref from React Query). Otherwise site_mode and other fields snap back to server defaults on submit.
   const advertiserSnapshot = useMemo(
@@ -654,7 +662,7 @@ const AdvertiserForm = ({
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
                         <span className="text-sm font-semibold">Website settings</span>
                         <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
-                          Property subtypes (search & multi-select)
+                          Property subtypes (checkboxes & bulk select)
                         </span>
                       </div>
                     </AccordionTrigger>
@@ -664,42 +672,115 @@ const AdvertiserForm = ({
                     <Controller
                     name="pstids"
                     control={control}
-                    render={({ field }) => (
+                    render={({ field }) => {
+                      const selected = field.value || [];
+                      const selectedSet = new Set(selected.map((id) => String(id)));
+
+                      const toggleId = (id) => {
+                        const sid = String(id);
+                        if (selectedSet.has(sid)) {
+                          field.onChange(selected.filter((x) => String(x) !== sid));
+                        } else {
+                          field.onChange([...selected, sid]);
+                        }
+                      };
+
+                      const selectAllCatalog = () => {
+                        field.onChange([...allCatalogSubtypeIds]);
+                      };
+
+                      const deselectAll = () => {
+                        field.onChange([]);
+                      };
+
+                      const selectAllInType = (type) => {
+                        const add = type.subtypes.map((s) => String(s.id));
+                        field.onChange([...new Set([...selected.map(String), ...add])]);
+                      };
+
+                      const clearType = (type) => {
+                        const remove = new Set(type.subtypes.map((s) => String(s.id)));
+                        field.onChange(selected.filter((x) => !remove.has(String(x))));
+                      };
+
+                      return (
                       <div className="space-y-2">
-                        {/* Search box */}
                         <input
                           type="text"
-                          placeholder="Search subtypes..."
+                          placeholder="Search subtypes or main types..."
                           value={subtypeSearchTerm}
                           onChange={(e) => setSubtypeSearchTerm(e.target.value)}
                           className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
 
-                        {/* Multi-select dropdown with grouped options */}
-                        <div className="relative">
-                          <select
-                            multiple
-                            value={field.value || []}
-                            onChange={(e) => {
-                              const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                              field.onChange(selectedOptions);
-                            }}
-                            className="w-full min-h-[140px] px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={selectAllCatalog}
+                            className="h-8 px-2.5 text-xs font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50"
                           >
-                            {filteredGroupedPropertyTypes.length > 0 ? (
-                              filteredGroupedPropertyTypes.map(type => (
-                                <optgroup key={type.id} label={type.label}>
-                                  {type.subtypes.map(subtype => (
-                                    <option key={subtype.id} value={subtype.id}>
-                                      {subtype.label}
-                                    </option>
-                                  ))}
-                                </optgroup>
-                              ))
-                            ) : (
-                              <option disabled>No subtypes found</option>
-                            )}
-                          </select>
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            onClick={deselectAll}
+                            className="h-8 px-2.5 text-xs font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50"
+                          >
+                            Deselect all
+                          </button>
+                        </div>
+
+                        <div className="max-h-[min(320px,45vh)] overflow-y-auto rounded-md border border-gray-200 bg-white p-2 space-y-3">
+                          {filteredGroupedPropertyTypes.length > 0 ? (
+                            filteredGroupedPropertyTypes.map((type) => (
+                              <div
+                                key={type.id}
+                                className="rounded-md border border-gray-100 bg-muted/15 p-2.5 space-y-2"
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="text-sm font-medium text-gray-800">{type.label}</span>
+                                  <div className="flex flex-wrap gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => selectAllInType(type)}
+                                      className="h-7 px-2 text-xs font-medium rounded border border-gray-200 bg-white hover:bg-gray-50"
+                                    >
+                                      All in type
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => clearType(type)}
+                                      className="h-7 px-2 text-xs font-medium rounded border border-gray-200 bg-white hover:bg-gray-50"
+                                    >
+                                      Clear type
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="space-y-1.5 pl-0.5">
+                                  {type.subtypes.map((subtype) => {
+                                    const sid = String(subtype.id);
+                                    const checked = selectedSet.has(sid);
+                                    return (
+                                      <label
+                                        key={sid}
+                                        className="flex cursor-pointer items-start gap-2.5 text-sm text-gray-800 leading-snug"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={checked}
+                                          onChange={() => toggleId(subtype.id)}
+                                          className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span>{subtype.label}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-gray-500 py-4 text-center">No subtypes found</p>
+                          )}
                         </div>
 
                         {/* Selected subtypes display */}
@@ -716,7 +797,9 @@ const AdvertiserForm = ({
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      const newValue = field.value.filter(id => id !== pstid);
+                                      const newValue = field.value.filter(
+                                        (id) => String(id) !== String(pstid)
+                                      );
                                       field.onChange(newValue);
                                     }}
                                     className="hover:bg-blue-200 rounded-full p-0.5"
@@ -729,10 +812,11 @@ const AdvertiserForm = ({
                           </div>
                         )}
                       </div>
-                    )}
+                      );
+                    }}
                   />
                     <p className="text-xs text-gray-500 mt-1">
-                      Hold Ctrl/Cmd to select multiple subtypes. Leave empty for all types.
+                      Use checkboxes or bulk actions. Leave none selected for all types.
                     </p>
                   </div>
                     </AccordionContent>
