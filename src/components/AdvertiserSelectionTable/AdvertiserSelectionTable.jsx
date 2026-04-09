@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, CheckCircle, AlertCircle, Copy, UserCog } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, Copy, UserCog } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -41,57 +41,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { fetchAdvertisers } from '@/components/Stats/api';
-import { updateAdvertiser, deleteAdvertiser, getAdvertiserStripeStatus } from '@/components/Magazine/api';
+import { updateAdvertiser, deleteAdvertiser } from '@/components/Magazine/api';
 import AdvertiserForm from '@/components/Magazine/AdvertiserManagement/AdvertiserForm';
-import AdvertiserOnboarding from '@/components/Magazine/stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 import { useImpersonation } from '@/hooks/useImpersonation';
 import { toast } from '@/components/ui/use-toast';
 
 const columnHelper = createColumnHelper();
-
-// Stripe Status Cell Component - fetches status per advertiser
-const StripeStatusCell = ({ advertiserId, advertiserName, onSetupClick }) => {
-  const { data: stripeStatusData, isLoading } = useQuery({
-    queryKey: ['advertiser-stripe-status', advertiserId],
-    queryFn: () => getAdvertiserStripeStatus(advertiserId),
-    refetchInterval: false,
-  });
-
-  const stripeStatus = stripeStatusData?.data;
-  const isOnboarded = stripeStatus?.onboarding_completed;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-1 text-xs text-gray-500">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Checking...</span>
-      </div>
-    );
-  }
-
-  if (isOnboarded) {
-    return (
-      <div className="flex items-center gap-1 text-xs text-green-600">
-        <CheckCircle className="h-3 w-3" />
-        <span>Connected</span>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onSetupClick(advertiserId, advertiserName);
-      }}
-      className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 underline"
-    >
-      <AlertCircle className="h-3 w-3" />
-      <span>Setup Stripe</span>
-    </button>
-  );
-};
 
 /**
  * Searchable, paginated advertiser selection table
@@ -119,10 +75,6 @@ const AdvertiserSelectionTable = ({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [advertiserToDelete, setAdvertiserToDelete] = useState(null);
 
-  // Stripe onboarding state
-  const [stripeOnboardingOpen, setStripeOnboardingOpen] = useState(false);
-  const [stripeOnboardingAdvertiser, setStripeOnboardingAdvertiser] = useState(null);
-
   // Handle copy email
   const handleCopyEmail = (email, e) => {
     e.stopPropagation();
@@ -134,12 +86,6 @@ const AdvertiserSelectionTable = ({
         duration: 2000,
       });
     }
-  };
-
-  // Handle Stripe setup click
-  const handleStripeSetup = (advertiserId, advertiserName) => {
-    setStripeOnboardingAdvertiser({ id: advertiserId, name: advertiserName });
-    setStripeOnboardingOpen(true);
   };
 
   // Update advertiser mutation
@@ -351,17 +297,6 @@ const AdvertiserSelectionTable = ({
             </div>
           ),
         }),
-        columnHelper.display({
-          id: 'stripe_status',
-          header: 'Stripe Status',
-          cell: ({ row }) => (
-            <StripeStatusCell
-              advertiserId={row.original.id}
-              advertiserName={row.original.company}
-              onSetupClick={handleStripeSetup}
-            />
-          ),
-        }),
         columnHelper.accessor('week_rate', {
           header: 'Week Rate',
           cell: (info) => {
@@ -523,7 +458,7 @@ const AdvertiserSelectionTable = ({
 
       return baseColumns;
     },
-    [showActionButtons, showManageButtons, getSubtypeLabels, handleCopyEmail, handleStripeSetup]
+    [showActionButtons, showManageButtons, getSubtypeLabels, handleCopyEmail]
   );
 
   const table = useReactTable({
@@ -764,24 +699,6 @@ const AdvertiserSelectionTable = ({
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Stripe Onboarding Dialog */}
-      <Dialog open={stripeOnboardingOpen} onOpenChange={setStripeOnboardingOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Stripe Onboarding</DialogTitle>
-            <DialogDescription>
-              Connect {stripeOnboardingAdvertiser?.name} to Stripe to receive payments.
-            </DialogDescription>
-          </DialogHeader>
-          {stripeOnboardingAdvertiser && (
-            <AdvertiserOnboarding
-              advertiserId={stripeOnboardingAdvertiser.id}
-              advertiserName={stripeOnboardingAdvertiser.name}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

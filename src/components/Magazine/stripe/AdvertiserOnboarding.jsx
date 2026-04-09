@@ -5,7 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { onboardAdvertiser, getAdvertiserStripeStatus } from '../api';
 
-const AdvertiserOnboarding = ({ advertiserId, advertiserName }) => {
+const AdvertiserOnboarding = ({
+  advertiserId,
+  advertiserName,
+  /** When false, skips status fetch (e.g. until Stripe settings accordion is expanded in edit form). */
+  statusQueryEnabled = true,
+}) => {
   const queryClient = useQueryClient();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -18,7 +23,8 @@ const AdvertiserOnboarding = ({ advertiserId, advertiserName }) => {
   } = useQuery({
     queryKey: ['advertiser-stripe-status', advertiserId],
     queryFn: () => getAdvertiserStripeStatus(advertiserId),
-    refetchInterval: false
+    refetchInterval: false,
+    enabled: !!advertiserId && statusQueryEnabled,
   });
 
   // Mutation for creating onboarding link
@@ -46,6 +52,10 @@ const AdvertiserOnboarding = ({ advertiserId, advertiserName }) => {
   const handleRefreshStatus = () => {
     refetchStatus();
   };
+
+  if (!statusQueryEnabled) {
+    return null;
+  }
 
   if (statusLoading) {
     return (

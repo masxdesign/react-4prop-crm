@@ -21,6 +21,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripeStatus } from '../api';
+import AdvertiserOnboarding from '../stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
 function pstidsStringToArray(pstids) {
@@ -78,6 +79,8 @@ const AdvertiserForm = ({
   const [subtypeSearchTerm, setSubtypeSearchTerm] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  /** Edit form: fetch Stripe status only after Stripe settings accordion is expanded. */
+  const [morAccordionExpanded, setMorAccordionExpanded] = useState(false);
   const queryClient = useQueryClient();
 
   // Get property subtypes using the custom hook
@@ -162,8 +165,36 @@ const AdvertiserForm = ({
   const password = watch('password');
   const siteMode = watch('site_mode');
   const isAdvertiserSiteMode = siteMode === 'advertiser_site';
+  const companyWatch = watch('company');
+  const emailWatch = watch('email');
   /** Admin + 4prop site: minimal fields — same for add new and edit (credentials only; no company, subtypes, MoR). */
   const is4propAdminMinimal = Boolean(!isSelfService && siteMode === '4prop_site');
+
+  /** Edit drawer title: show who is being edited when Account details is collapsed. */
+  const editDrawerTitlePrimary = useMemo(() => {
+    if (!isUpdate) return '';
+    const co = String(companyWatch ?? advertiser?.company ?? '').trim();
+    const em = String(emailWatch ?? advertiser?.email ?? '').trim();
+    if (co) return co;
+    if (em) return em;
+    return 'Advertiser';
+  }, [isUpdate, companyWatch, emailWatch, advertiser?.company, advertiser?.email]);
+
+  const editDrawerTitleSecondary = useMemo(() => {
+    if (!isUpdate) return '';
+    const co = String(companyWatch ?? advertiser?.company ?? '').trim();
+    const em = String(emailWatch ?? advertiser?.email ?? '').trim();
+    if (co && em) return em;
+    return '';
+  }, [isUpdate, companyWatch, emailWatch, advertiser?.company, advertiser?.email]);
+
+  /** Prefer API `advertiser_id`; fall back to `id`. */
+  const editDrawerAdvertiserIdLabel = useMemo(() => {
+    if (!isUpdate || !advertiser) return null;
+    const raw = advertiser.advertiser_id ?? advertiser.id;
+    if (raw == null || raw === '') return null;
+    return String(raw);
+  }, [isUpdate, advertiser?.advertiser_id, advertiser?.id]);
 
   /** Mode is not in the accordion. Update: other sections collapsed. New: account / website / mor open as applicable. */
   const defaultAccordionOpen = useMemo(() => {
@@ -212,7 +243,16 @@ const AdvertiserForm = ({
     accordionOpenPrevRef.current = defaultAccordionOpenRef.current;
   }, [open, advertiser?.id, isUpdate]);
 
+  useEffect(() => {
+    if (!open) return;
+    setMorAccordionExpanded(false);
+  }, [open, advertiser?.id, isUpdate]);
+
+  const stripeStatusQueryEnabled =
+    !!advertiser?.id && (!isUpdate || morAccordionExpanded);
+
   const handleAccordionValueChange = useCallback((next) => {
+    setMorAccordionExpanded(next.includes('mor'));
     const prev = accordionOpenPrevRef.current;
     const newlyOpened = next.filter((v) => !prev.includes(v));
     accordionOpenPrevRef.current = next;
@@ -242,7 +282,7 @@ const AdvertiserForm = ({
   } = useQuery({
     queryKey: ['advertiser-stripe-status', advertiser?.id],
     queryFn: () => getAdvertiserStripeStatus(advertiser?.id),
-    enabled: !!advertiser?.id
+    enabled: stripeStatusQueryEnabled,
   });
 
   const stripeStatus = stripeStatusData?.data;
@@ -437,8 +477,32 @@ const AdvertiserForm = ({
         {!showSelfBillingContent ? (
           <>
             <SheetHeader className="shrink-0 space-y-2 border-b border-border px-6 py-5 text-left">
-              <SheetTitle className="flex items-center gap-2 text-lg">
-                {isUpdate ? 'Edit Advertiser' : 'Add New Advertiser'}
+              <SheetTitle className="text-left font-normal leading-snug text-foreground">
+                {isUpdate ? (
+                  <span className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-normal leading-none text-muted-foreground/75">
+                      {editDrawerAdvertiserIdLabel ? (
+                        <>
+                          Edit
+                          <span className="text-muted-foreground/50"> · </span>
+                          <span className="tabular-nums">ID {editDrawerAdvertiserIdLabel}</span>
+                        </>
+                      ) : (
+                        'Edit advertiser'
+                      )}
+                    </span>
+                    <span className="line-clamp-2 break-words pr-8 text-base font-medium">
+                      {editDrawerTitlePrimary}
+                    </span>
+                    {editDrawerTitleSecondary ? (
+                      <span className="text-xs font-normal text-muted-foreground/90 line-clamp-1">
+                        {editDrawerTitleSecondary}
+                      </span>
+                    ) : null}
+                  </span>
+                ) : (
+                  <span className="text-lg font-semibold">Add New Advertiser</span>
+                )}
               </SheetTitle>
               <SheetDescription>
                 {isSelfService
@@ -832,7 +896,7 @@ const AdvertiserForm = ({
                   </AccordionItem>
                 )}
 
-                {/* Platform MoR Fields — advertiser_site only */}
+                {/* Stripe settings (MoR / self-billing) — advertiser_site only */}
                 {isAdvertiserSiteMode && (
                   <AccordionItem
                     ref={morSectionRef}
@@ -841,7 +905,7 @@ const AdvertiserForm = ({
                   >
                     <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
-                        <span className="text-sm font-semibold">Platform MoR Settings</span>
+                        <span className="text-sm font-semibold">Stripe settings</span>
                         <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
                           {morSectionSummary}
                         </span>
@@ -849,22 +913,22 @@ const AdvertiserForm = ({
                     </AccordionTrigger>
                     <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
 
-                  {/* Self-billing onboarding (Stripe platform customer) — first subsection under MoR heading */}
+                  {/* Self-billing onboarding: platform customer + Stripe Connect (same flow; superadmin can run Connect here) */}
                   {advertiser && (
                     <div className="mb-4 pb-4 border-b border-gray-100">
                       <label className="block text-sm font-medium mb-1">Self-billing onboarding</label>
                       <p className="text-xs text-gray-500 mb-3">
                         {isSelfService
-                          ? 'Sign in to your account and complete this step so self-billing invoices can be issued under MoR.'
-                          : 'Advertisers complete this when signed in to their account. You are viewing their progress here.'}
+                          ? 'Sign in to your account and complete this step so self-billing invoices can be issued under MoR. Stripe Connect onboarding is part of this same flow.'
+                          : 'This is the same self-billing onboarding step advertisers complete in their account; as superadmin you can run Stripe Connect onboarding for them here.'}
                       </p>
 
-                      {stripeStatusLoading ? (
+                      {morAccordionExpanded && stripeStatusLoading ? (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Loader2 className="h-4 w-4 animate-spin" />
                           <span>Checking status...</span>
                         </div>
-                      ) : hasPlatformCustomer ? (
+                      ) : morAccordionExpanded && hasPlatformCustomer ? (
                         <div className="space-y-2">
                           <Alert className="border-green-200 bg-green-50">
                             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -878,7 +942,7 @@ const AdvertiserForm = ({
                             </AlertDescription>
                           </Alert>
                         </div>
-                      ) : hasStripeAccount ? (
+                      ) : morAccordionExpanded && hasStripeAccount ? (
                         <div className="space-y-2">
                           {!isSelfService && (
                             <p className="text-xs text-gray-500">
@@ -906,15 +970,29 @@ const AdvertiserForm = ({
                             )}
                           </Button>
                         </div>
-                      ) : (
+                      ) : morAccordionExpanded ? (
                         <Alert>
                           <AlertCircle className="h-4 w-4" />
                           <AlertDescription className="text-sm">
                             {isSelfService
                               ? 'Complete Stripe Connect onboarding first, then create your self-billing Stripe customer here.'
-                              : 'The advertiser must complete Stripe Connect in their account before they can create a self-billing Stripe customer.'}
+                              : 'Complete Stripe Connect for this advertiser in the section below (same self-billing onboarding step), then create the self-billing Stripe customer.'}
                           </AlertDescription>
                         </Alert>
+                      ) : null}
+
+                      {isUpdate && advertiser?.id && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <AdvertiserOnboarding
+                            advertiserId={advertiser.id}
+                            advertiserName={
+                              String(companyWatch ?? advertiser?.company ?? '').trim() ||
+                              String(emailWatch ?? advertiser?.email ?? '').trim() ||
+                              'Advertiser'
+                            }
+                            statusQueryEnabled={morAccordionExpanded}
+                          />
+                        </div>
                       )}
                     </div>
                   )}
