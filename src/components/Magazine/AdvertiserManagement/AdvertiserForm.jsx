@@ -15,6 +15,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -54,6 +56,24 @@ function pstidsStringToArray(pstids) {
     .split(',')
     .filter((id) => id.trim())
     .map((id) => id.trim());
+}
+
+/**
+ * Advertiser booleans for property-pub grade workflow kinds `mass_enquiry` and `client_share`.
+ * Align bizchat GET/POST/PUT + DB columns with these JSON keys (or map server-side).
+ */
+const GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED = 'grade_workflow_mass_enquiry_enabled';
+const GRADE_WORKFLOW_CLIENT_SHARE_ENABLED = 'grade_workflow_client_share_enabled';
+
+/** New advertiser (create): default mode 4prop → both grade workflows on; other modes → mass on, client shortlist off. */
+const CREATE_DEFAULT_SITE_MODE = '4prop_site';
+
+/** MSSQL bit / JSON boolean; default when column omitted (before migration). */
+function coerceWorkflowFlag(raw, defaultWhenMissing) {
+  if (raw == null) return defaultWhenMissing;
+  if (raw === false || raw === 0) return false;
+  if (typeof raw === 'string' && raw.trim() === '0') return false;
+  return Boolean(raw);
 }
 
 /** Shapes from react-hook-form `dirtyFields` → subset of `allValues` (only changed fields). */
@@ -157,22 +177,37 @@ const AdvertiserForm = ({
       password: '',
       week_rate: weekRateVal,
       commission_percent: commissionVal,
+      [GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED]: coerceWorkflowFlag(
+        adv[GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED],
+        true
+      ),
+      [GRADE_WORKFLOW_CLIENT_SHARE_ENABLED]:
+        (adv.site_mode || 'advertiser_site') === '4prop_site'
+          ? coerceWorkflowFlag(adv[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED], true)
+          : false,
     };
   }, [advertiserSnapshot]);
 
-  const { register, handleSubmit, formState: { errors, dirtyFields, isDirty }, watch, control, unregister } = useForm({
-    values: isUpdate ? editFormValues : {
+  const createFormValues = useMemo(
+    () => ({
       company: '',
       email: '',
       password: '',
       confirmPassword: '',
       pstids: [],
-      site_mode: 'advertiser_site',
+      site_mode: CREATE_DEFAULT_SITE_MODE,
       week_rate: '',
       vat_registered: false,
       vat_number: '',
-      commission_percent: 50
-    }
+      commission_percent: 50,
+      [GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED]: true,
+      [GRADE_WORKFLOW_CLIENT_SHARE_ENABLED]: CREATE_DEFAULT_SITE_MODE === '4prop_site',
+    }),
+    []
+  );
+
+  const { register, handleSubmit, formState: { errors, dirtyFields, isDirty }, watch, control, unregister, setValue } = useForm({
+    values: isUpdate ? editFormValues : createFormValues,
   });
 
   // Create flow registers confirmPassword; update flow does not — unregister so it does not linger after switching modes.
@@ -188,10 +223,65 @@ const AdvertiserForm = ({
   const password = watch('password');
   const siteMode = watch('site_mode');
   const isAdvertiserSiteMode = siteMode === 'advertiser_site';
+
+  const propertySubtypesHelp = useMemo(() => {
+    switch (siteMode) {
+      case 'advertiser_site':
+        return {
+          collapsed:
+            'Advertiser catalogue and agents listing on this platform (site and magazine)',
+          expanded:
+            'These subtypes scope which property kinds apply to this advertiser’s catalogue and to agents who list with them—what can appear on the site and how listings feed magazine scheduling.',
+        };
+      case '4prop_site':
+        return {
+          collapsed: 'Agents’ listings in the shared 4prop catalogue (and magazine)',
+          expanded:
+            'In 4prop site mode, subtypes apply to agents’ listings in the shared catalogue and related magazine flows. They are not limited to this advertiser row alone.',
+        };
+      case 'agentab':
+        return {
+          collapsed: 'Property kinds agents may show via AgentAB website embeds',
+          expanded:
+            'In AgentAB mode, subtypes scope which property kinds agents can surface through embeds on their sites (their listings, other agents’, or both), depending on your configuration.',
+        };
+      default:
+        return {
+          collapsed: 'Listing categories—scope depends on mode above',
+          expanded:
+            'Property subtypes apply to this record in different ways depending on mode: the advertiser’s own catalogue and their agents, the shared 4prop catalogue, or AgentAB embeds.',
+        };
+    }
+  }, [siteMode]);
   const companyWatch = watch('company');
   const emailWatch = watch('email');
   /** Admin + 4prop site: minimal fields — same for add new and edit (credentials only; no company, subtypes, MoR). */
   const is4propAdminMinimal = Boolean(!isSelfService && siteMode === '4prop_site');
+  /** Grade workflow: CRM admin only; shown for every mode including 4prop minimal. */
+  const showGradeWorkflowSection = !isSelfService;
+  /** Client shortlist (`client_share`) is configurable only in 4prop site mode; otherwise off and read-only. */
+  const is4propSiteMode = siteMode === '4prop_site';
+  const clientShortlistEditable = is4propSiteMode;
+  const gradeMassEnquiryEnabled = watch(GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED);
+  const gradeClientShareEnabled = watch(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED);
+
+  const siteModePrevForGradeRef = useRef(null);
+  useEffect(() => {
+    siteModePrevForGradeRef.current = null;
+  }, [open, advertiser?.id, isUpdate]);
+
+  useEffect(() => {
+    if (!showGradeWorkflowSection) return;
+    const prev = siteModePrevForGradeRef.current;
+    siteModePrevForGradeRef.current = siteMode;
+    if (prev === null) return;
+    if (prev === siteMode) return;
+    if (siteMode === '4prop_site') {
+      setValue(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED, true, { shouldDirty: true });
+    } else {
+      setValue(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED, false, { shouldDirty: true });
+    }
+  }, [siteMode, showGradeWorkflowSection, setValue]);
 
   /** Edit drawer title: show who is being edited when Account details is collapsed. */
   const editDrawerTitlePrimary = useMemo(() => {
@@ -223,10 +313,11 @@ const AdvertiserForm = ({
   const defaultAccordionOpen = useMemo(() => {
     if (isUpdate) return [];
     const open = ['account'];
+    if (showGradeWorkflowSection) open.push('grade_workflow');
     if (!is4propAdminMinimal) open.push('website');
     if (isAdvertiserSiteMode) open.push('mor');
     return open;
-  }, [isUpdate, is4propAdminMinimal, isAdvertiserSiteMode]);
+  }, [isUpdate, is4propAdminMinimal, isAdvertiserSiteMode, showGradeWorkflowSection]);
 
   /** One-line preview of fields inside each accordion (shown when section is collapsed). */
   const accountSectionSummary = useMemo(() => {
@@ -254,6 +345,7 @@ const AdvertiserForm = ({
   }, [advertiser, isSelfService]);
 
   const accountSectionRef = useRef(null);
+  const gradeWorkflowSectionRef = useRef(null);
   const websiteSectionRef = useRef(null);
   const morSectionRef = useRef(null);
   const accordionOpenPrevRef = useRef(defaultAccordionOpen);
@@ -284,6 +376,7 @@ const AdvertiserForm = ({
     const value = newlyOpened[0];
     const refMap = {
       account: accountSectionRef,
+      grade_workflow: gradeWorkflowSectionRef,
       website: websiteSectionRef,
       mor: morSectionRef,
     };
@@ -404,6 +497,20 @@ const AdvertiserForm = ({
         ? `,${data.pstids.join(',')},`
         : '',
     };
+
+    if (showGradeWorkflowSection) {
+      formattedData[GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED] = Boolean(
+        data[GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED]
+      );
+      const dataSiteMode = data.site_mode || 'advertiser_site';
+      formattedData[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED] =
+        dataSiteMode === '4prop_site'
+          ? Boolean(data[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED])
+          : false;
+    } else {
+      delete formattedData[GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED];
+      delete formattedData[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED];
+    }
 
     if (advSite) {
       formattedData.week_rate = parseFloat(data.week_rate);
@@ -760,6 +867,101 @@ const AdvertiserForm = ({
                     </AccordionContent>
                   </AccordionItem>
 
+                {showGradeWorkflowSection && (
+                  <AccordionItem
+                    ref={gradeWorkflowSectionRef}
+                    value="grade_workflow"
+                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                  >
+                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                        <span className="text-sm font-semibold">Grade workflow</span>
+                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                          Mass {gradeMassEnquiryEnabled ? 'on' : 'off'}
+                          <span className="text-gray-400"> · </span>
+                          Shortlist{' '}
+                          {is4propSiteMode
+                            ? gradeClientShareEnabled
+                              ? 'on'
+                              : 'off'
+                            : 'off (4prop only)'}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
+                      <p className="text-xs text-gray-500 mb-3 leading-snug">
+                        Property pub uses workflow kinds{' '}
+                        <span className="font-mono text-[11px]">mass_enquiry</span> and{' '}
+                        <span className="font-mono text-[11px]">client_share</span>. Mass enquiry applies in every
+                        mode. Client shortlist is only configurable in{' '}
+                        <span className="font-medium text-foreground/90">4prop site</span> mode (defaults on
+                        there); in other modes it stays off.
+                      </p>
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between gap-4 rounded-lg border border-border/80 bg-background/80 px-3 py-3">
+                          <div className="min-w-0 space-y-1">
+                            <Label
+                              htmlFor={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                              className="text-sm font-medium text-gray-800"
+                            >
+                              Mass enquiry
+                            </Label>
+                            <p className="text-xs text-gray-500 leading-snug">
+                              Bulk / open enquiry flow (default mode on the pub site when enabled).
+                            </p>
+                          </div>
+                          <Controller
+                            name={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                            control={control}
+                            render={({ field }) => (
+                              <Switch
+                                id={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={isLoading}
+                                className="shrink-0"
+                              />
+                            )}
+                          />
+                        </div>
+                        <div
+                          className={cn(
+                            'flex items-start justify-between gap-4 rounded-lg border border-border/80 bg-background/80 px-3 py-3',
+                            !clientShortlistEditable && 'opacity-80'
+                          )}
+                        >
+                          <div className="min-w-0 space-y-1">
+                            <Label
+                              htmlFor={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                              className="text-sm font-medium text-gray-800"
+                            >
+                              Client shortlist
+                            </Label>
+                            <p className="text-xs text-gray-500 leading-snug">
+                              {clientShortlistEditable
+                                ? 'Client share / shortlist workflow for 4prop site mode.'
+                                : 'Only used in 4prop site mode; switch is off and locked for advertiser site and AgentAB.'}
+                            </p>
+                          </div>
+                          <Controller
+                            name={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                            control={control}
+                            render={({ field }) => (
+                              <Switch
+                                id={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                                checked={clientShortlistEditable ? field.value : false}
+                                onCheckedChange={field.onChange}
+                                disabled={isLoading || !clientShortlistEditable}
+                                className="shrink-0"
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
                 {!is4propAdminMinimal && (
                   <AccordionItem
                     ref={websiteSectionRef}
@@ -768,15 +970,17 @@ const AdvertiserForm = ({
                   >
                     <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
-                        <span className="text-sm font-semibold">Website settings</span>
+                        <span className="text-sm font-semibold text-gray-900">Property subtypes</span>
                         <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
-                          Property subtypes (checkboxes & bulk select)
+                          {propertySubtypesHelp.collapsed}
                         </span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-800 mb-2">Property Subtypes</p>
+                    <p className="text-xs text-gray-500 leading-snug mb-1">
+                      {propertySubtypesHelp.expanded}
+                    </p>
                     <Controller
                     name="pstids"
                     control={control}
@@ -924,7 +1128,8 @@ const AdvertiserForm = ({
                     }}
                   />
                     <p className="text-xs text-gray-500 mt-1">
-                      Use checkboxes or bulk actions. Leave none selected for all types.
+                      Use checkboxes or bulk actions. Leave none selected to include all subtypes. Scope follows
+                      the mode selected at the top of this form.
                     </p>
                   </div>
                     </AccordionContent>
