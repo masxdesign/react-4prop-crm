@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAllAdvertisers, createAdvertiser, updateAdvertiser, deleteAdvertiser } from '../api';
 import AdvertiserForm from './AdvertiserForm';
@@ -54,12 +54,6 @@ const AdvertiserManagement = () => {
 
   const advertisers = data?.data || defaultAdvertisers;
 
-  useEffect(() => {
-    if (editingAdvertiser) {
-      setEditingAdvertiser(advertisers.find((adv) => editingAdvertiser.id === adv.id))
-    }
-  }, [advertisers])
-  
   // Filter advertisers based on search term
   const filteredAdvertisers = advertisers.filter(advertiser =>
     advertiser.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -77,29 +71,7 @@ const AdvertiserManagement = () => {
 
   const handleFormSubmit = (data) => {
     if (editingAdvertiser) {
-      // For editing mode: only send changed fields
-      const changedData = {};
-
-      // Check each field for changes
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== editingAdvertiser[key]) {
-          changedData[key] = data[key];
-        }
-      });
-
-      // Always include password if provided (it won't be in editingAdvertiser)
-      if (data.password) {
-        changedData.password = data.password;
-      }
-
-      // Only send update if there are changes
-      if (Object.keys(changedData).length > 0) {
-        updateMutation.mutate({ id: editingAdvertiser.id, ...changedData });
-      } else {
-        // No changes, just close the form
-        setEditingAdvertiser(null);
-        setIsFormOpen(false);
-      }
+      updateMutation.mutate({ id: editingAdvertiser.id, ...data });
     } else {
       createMutation.mutate(data);
     }
@@ -201,6 +173,7 @@ const AdvertiserManagement = () => {
 
       {/* Form Modal */}
       <AdvertiserForm
+        key={editingAdvertiser ? `edit-${editingAdvertiser.id}` : 'mag-advertiser-form'}
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         advertiser={editingAdvertiser}

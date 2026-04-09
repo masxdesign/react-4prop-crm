@@ -3,15 +3,49 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, CheckCircle, FileText, ArrowLeft, X, UserPlus, Loader2, Eye, EyeOff } from 'lucide-react';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from '@/components/ui/use-toast';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripeStatus } from '../api';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 
+function pstidsStringToArray(pstids) {
+  if (!pstids) return [];
+  return String(pstids)
+    .replace(/^,|,$/g, '')
+    .split(',')
+    .filter((id) => id.trim())
+    .map((id) => id.trim());
+}
+
+/** Shapes from react-hook-form `dirtyFields` → subset of `allValues` (only changed fields). */
+function getDirtyValues(dirtyFields, allValues) {
+  if (!dirtyFields || typeof dirtyFields !== 'object') {
+    return {};
+  }
+  return Object.keys(dirtyFields).reduce((acc, key) => {
+    const d = dirtyFields[key];
+    const val = allValues[key];
+    if (d === true) {
+      acc[key] = val;
+    } else if (Array.isArray(d)) {
+      if (d.some(Boolean)) {
+        acc[key] = val;
+      }
+    } else if (d && typeof d === 'object') {
+      const nested = getDirtyValues(d, val);
+      if (Object.keys(nested).length > 0) {
+        acc[key] = nested;
+      }
+    }
+    return acc;
+  }, {});
+}
+
 // Advertiser Form Component - Updated for week-based system
-// isSelfService: When true, hides admin-only fields (commission, week_rate) - used when advertiser edits their own profile
+// isSelfService: true = advertiser signed in, completing their own profile / onboarding
+// isSelfService: false = super admin viewing advertiser record and onboarding progress
 const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isLoading, error, isSelfService = false }) => {
   const [showSelfBillingContent, setShowSelfBillingContent] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -39,25 +73,35 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       .filter(type => type.subtypes.length > 0);
   }, [groupedPropertyTypes, subtypeSearchTerm]);
 
-  // Parse initial pstids into array for Controller
-  const initialPstids = useMemo(() => {
-    if (!advertiser?.pstids) return [];
-    return advertiser.pstids
-      .replace(/^,|,$/g, '')
-      .split(',')
-      .filter(id => id.trim())
-      .map(id => id.trim());
-  }, [advertiser?.pstids]);
+  // Content-addressed snapshot so useForm `values` does not reset every parent render (new advertiser
+  // object ref from React Query). Otherwise site_mode and other fields snap back to server defaults on submit.
+  const advertiserSnapshot = useMemo(
+    () => (advertiser ? JSON.stringify(advertiser) : null),
+    [advertiser]
+  );
 
-  const { register, handleSubmit, formState: { errors }, watch, control } = useForm({
-    values: advertiser ? {
-      ...advertiser,
-      pstids: initialPstids,
-      site_mode: advertiser.site_mode || 'advertiser_site',
-      email: advertiser.email || '',
+  const editFormValues = useMemo(() => {
+    if (!advertiserSnapshot) return null;
+    const adv = JSON.parse(advertiserSnapshot);
+    const wr = adv.week_rate;
+    const weekRateVal =
+      wr != null && wr !== '' ? wr : '';
+    const cp = adv.commission_percent;
+    const commissionVal =
+      cp != null && cp !== '' ? cp : 50;
+    return {
+      ...adv,
+      pstids: pstidsStringToArray(adv.pstids),
+      site_mode: adv.site_mode || 'advertiser_site',
+      email: adv.email || '',
       password: '',
-      confirmPassword: ''
-    } : {
+      week_rate: weekRateVal,
+      commission_percent: commissionVal,
+    };
+  }, [advertiserSnapshot]);
+
+  const { register, handleSubmit, formState: { errors, dirtyFields, isDirty }, watch, control, unregister } = useForm({
+    values: advertiser ? editFormValues : {
       company: '',
       email: '',
       password: '',
@@ -71,10 +115,22 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     }
   });
 
+  // Edit dialog reuses the same component instance as create; closing edit sets advertiser=null
+  // and confirmPassword registers. Re-register can linger — unregister confirmPassword in edit mode.
+  useEffect(() => {
+    if (advertiser) {
+      unregister('confirmPassword');
+    }
+  }, [advertiser, unregister]);
+
   const advertiserOnboarded = true
 
   const isVatRegistered = watch('vat_registered');
   const password = watch('password');
+  const siteMode = watch('site_mode');
+  const isAdvertiserSiteMode = siteMode === 'advertiser_site';
+  /** Edit + admin: 4prop site advertisers only need credential fields in the UI. */
+  const is4propSiteEdit = Boolean(advertiser && !isSelfService && siteMode === '4prop_site');
 
   // Fetch advertiser Stripe status
   const {
@@ -122,12 +178,12 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       if (data?.data?.already_exists) {
         toast({
           title: 'Already Exists',
-          description: 'Platform customer already exists for this advertiser',
+          description: 'Self-billing Stripe customer already exists for this advertiser',
         });
       } else {
         toast({
           title: 'Success',
-          description: 'Platform customer created successfully',
+          description: 'Self-billing Stripe customer created successfully',
         });
       }
     },
@@ -136,16 +192,44 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       toast({
         variant: 'destructive',
         title: 'Creation Failed',
-        description: error?.response?.data?.error || 'Failed to create platform customer. Please try again.',
+        description: error?.response?.data?.error || 'Failed to create self-billing Stripe customer. Please try again.',
       });
     }
   });
 
+  const onSubmitInvalid = useCallback((formErrors) => {
+    const entries = Object.entries(formErrors).filter(
+      ([key]) => !(advertiser && key === 'confirmPassword')
+    );
+    if (entries.length === 0) {
+      return;
+    }
+    const first = entries[0]?.[1];
+    const msg =
+      typeof first?.message === 'string'
+        ? first.message
+        : entries[0]
+          ? `Check ${String(entries[0][0]).replace(/_/g, ' ')}`
+          : 'Please fix the highlighted fields';
+    toast({
+      variant: 'destructive',
+      title: 'Form incomplete',
+      description: msg,
+    });
+  }, [advertiser]);
+
   const handleFormSubmit = (data) => {
     // Validate password match on create
     if (!advertiser && data.password !== data.confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+        description: 'Confirm your password matches.',
+      });
       return;
     }
+
+    const advSite = (data.site_mode || 'advertiser_site') === 'advertiser_site';
 
     // Format pstids to ensure proper comma-delimited format with leading and trailing commas
     const formattedData = {
@@ -153,13 +237,23 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
       pstids: Array.isArray(data.pstids) && data.pstids.length > 0
         ? `,${data.pstids.join(',')},`
         : '',
-      week_rate: parseFloat(data.week_rate),
-      commission_percent: parseFloat(data.commission_percent),
-      vat_registered: Boolean(data.vat_registered),
-      vat_number: data.vat_registered ? data.vat_number : ''
     };
 
-    if (isSelfService) {
+    if (advSite) {
+      formattedData.week_rate = parseFloat(data.week_rate);
+      formattedData.commission_percent = parseFloat(data.commission_percent);
+      formattedData.vat_registered = Boolean(data.vat_registered);
+      formattedData.vat_number = data.vat_registered ? data.vat_number : '';
+    } else {
+      delete formattedData.week_rate;
+      delete formattedData.commission_percent;
+      delete formattedData.vat_registered;
+      delete formattedData.vat_number;
+    }
+
+    if (!isSelfService) {
+      formattedData.site_mode = data.site_mode || 'advertiser_site';
+    } else {
       delete formattedData.site_mode;
     }
 
@@ -179,7 +273,45 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
     // Remove confirmPassword from the submitted data
     delete formattedData.confirmPassword;
 
-    onSubmit(formattedData);
+    if (!advertiser) {
+      onSubmit(formattedData);
+      return;
+    }
+
+    // Edit: only send fields the user changed (backend must merge partial PUT body).
+    const dirtyPayload = getDirtyValues(dirtyFields, data);
+    if (Object.keys(dirtyPayload).length === 0) {
+      return;
+    }
+
+    const dirtyKeys = Object.keys(dirtyPayload);
+    const partial = {};
+    for (const key of dirtyKeys) {
+      if (key === 'confirmPassword') continue;
+      if (key === 'password') {
+        if (formattedData.password) partial.password = formattedData.password;
+        continue;
+      }
+      if (key === 'email') {
+        if (formattedData.email) partial.email = formattedData.email;
+        continue;
+      }
+      if (key === 'site_mode' && isSelfService) continue;
+      if (Object.prototype.hasOwnProperty.call(formattedData, key)) {
+        partial[key] = formattedData[key];
+      }
+    }
+
+    if (dirtyPayload.vat_registered === false) {
+      partial.vat_registered = false;
+      partial.vat_number = '';
+    }
+
+    if (Object.keys(partial).length === 0) {
+      return;
+    }
+
+    onSubmit(partial);
   };
 
   const handleAcceptAgreement = () => {
@@ -203,12 +335,65 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                 {advertiser ? 'Edit Advertiser' : 'Add New Advertiser'}
               </DialogTitle>
               <DialogDescription>
-                Required for Platform Merchant of Record (MoR) model
+                {isSelfService
+                  ? 'Complete your profile and self-billing onboarding in your account. Required for Platform Merchant of Record (MoR).'
+                  : advertiser
+                    ? 'Advertiser details and onboarding progress. Advertisers complete self-billing onboarding when signed in to their own account.'
+                    : 'Add an advertiser record. MoR settings apply when mode is Advertiser site.'}
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit(handleFormSubmit)} className="flex-1 flex flex-col min-h-0">
-              <div className='flex-1 space-y-4 overflow-y-auto -mx-6 px-6'>
+            <form
+              onSubmit={handleSubmit(handleFormSubmit, onSubmitInvalid)}
+              noValidate
+              className="flex-1 flex flex-col min-h-0"
+            >
+              <div className="shrink-0 -mx-6 px-6 pb-4 border-b border-gray-100">
+                <fieldset disabled={isSelfService}>
+                  <legend className="block text-sm font-medium mb-2">Mode</legend>
+                  <Controller
+                    name="site_mode"
+                    control={control}
+                    render={({ field }) => (
+                      <div
+                        className="flex flex-wrap items-center gap-x-5 gap-y-2"
+                        role="radiogroup"
+                        aria-label="Advertiser mode"
+                        aria-readonly={isSelfService || undefined}
+                      >
+                        {[
+                          { value: 'advertiser_site', label: 'Advertiser site' },
+                          { value: '4prop_site', label: '4prop site' },
+                          { value: 'agentab', label: 'AgentAB' },
+                        ].map((opt) => (
+                          <label
+                            key={opt.value}
+                            className={`flex items-center gap-2 ${isSelfService ? 'cursor-default' : 'cursor-pointer'}`}
+                          >
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={opt.value}
+                              checked={field.value === opt.value}
+                              onChange={() => field.onChange(opt.value)}
+                              className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:opacity-60"
+                            />
+                            <span className="text-sm">{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  />
+                </fieldset>
+                <p className="text-xs text-gray-500 mt-1">
+                  {isSelfService
+                    ? 'Mode is set by your administrator.'
+                    : "Default: listings use the advertiser's site; other modes use 4prop or AgentAB."}
+                </p>
+              </div>
+
+              <div className="flex-1 space-y-4 overflow-y-auto -mx-6 px-6 min-h-0 pt-4 pb-8">
+                {!is4propSiteEdit && (
                 <div>
                   <label className="block text-sm font-medium mb-1">Company Name *</label>
                   <input
@@ -221,9 +406,10 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                     <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
                   )}
                 </div>
+                )}
 
                 {/* Account Credentials Section */}
-                <div className="border-t pt-4 mt-4">
+                <div className={is4propSiteEdit ? 'pt-0' : 'border-t pt-4 mt-4'}>
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Account Credentials</h4>
 
                   <div>
@@ -259,10 +445,19 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                         type={showPassword ? 'text' : 'password'}
                         {...register('password', {
                           required: !advertiser ? 'Password is required' : false,
-                          minLength: {
-                            value: 8,
-                            message: 'Password must be at least 8 characters'
-                          }
+                          validate: (val) => {
+                            const v = val != null ? String(val).trim() : '';
+                            if (!advertiser) {
+                              if (v.length < 8) {
+                                return 'Password must be at least 8 characters';
+                              }
+                              return true;
+                            }
+                            if (v.length > 0 && v.length < 8) {
+                              return 'Password must be at least 8 characters';
+                            }
+                            return true;
+                          },
                         })}
                         className="w-full px-3 py-2 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder={advertiser ? '••••••••' : 'Enter password'}
@@ -311,6 +506,8 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   )}
                 </div>
 
+                {!is4propSiteEdit && (
+                <>
                 <div>
                   <label className="block text-sm font-medium mb-1">Property Subtypes</label>
                   <Controller
@@ -388,70 +585,147 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                   </p>
                 </div>
 
-                {!isSelfService && (
-                  <div>
-                    <fieldset>
-                      <legend className="block text-sm font-medium mb-2">Mode</legend>
-                      <Controller
-                        name="site_mode"
-                        control={control}
-                        render={({ field }) => (
-                          <div className="space-y-2" role="radiogroup" aria-label="Advertiser mode">
-                            {[
-                              { value: 'advertiser_site', label: 'Advertiser site' },
-                              { value: '4prop_site', label: '4prop site' },
-                              { value: 'agentab', label: 'AgentAB' },
-                            ].map((opt) => (
-                              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="radio"
-                                  name={field.name}
-                                  value={opt.value}
-                                  checked={field.value === opt.value}
-                                  onChange={() => field.onChange(opt.value)}
-                                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                />
-                                <span className="text-sm">{opt.label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      />
-                    </fieldset>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Default: listings use the advertiser&apos;s site; other modes use 4prop or AgentAB.
-                    </p>
-                  </div>
-                )}
-
-                {/* Week Rate - Hidden for self-service (advertiser-only) */}
-                {!isSelfService && (
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...register('week_rate', {
-                        required: !isSelfService ? 'Week rate is required' : false,
-                        min: { value: 0, message: 'Week rate must be positive' }
-                      })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                    {errors.week_rate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Platform MoR Fields */}
+                {/* Platform MoR Fields — advertiser_site only */}
+                {isAdvertiserSiteMode && (
                 <div className="border-t pt-4 mt-4">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3">Platform MoR Settings</h4>
 
-                  {/* Commission Percentage - Hidden for self-service (advertiser-only) */}
+                  {/* Self-billing onboarding (Stripe platform customer) — first subsection under MoR heading */}
+                  {advertiser && (
+                    <div className="mb-4 pb-4 border-b border-gray-100">
+                      <label className="block text-sm font-medium mb-1">Self-billing onboarding</label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        {isSelfService
+                          ? 'Sign in to your account and complete this step so self-billing invoices can be issued under MoR.'
+                          : 'Advertisers complete this when signed in to their account. You are viewing their progress here.'}
+                      </p>
+
+                      {stripeStatusLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Checking status...</span>
+                        </div>
+                      ) : hasPlatformCustomer ? (
+                        <div className="space-y-2">
+                          <Alert className="border-green-200 bg-green-50">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <AlertDescription className="text-green-800 text-sm">
+                              Self-billing Stripe customer created
+                              {stripeStatus?.platform_customer_id && (
+                                <span className="block text-xs text-green-700 mt-1 font-mono">
+                                  {stripeStatus.platform_customer_id}
+                                </span>
+                              )}
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      ) : hasStripeAccount ? (
+                        <div className="space-y-2">
+                          {!isSelfService && (
+                            <p className="text-xs text-gray-500">
+                              Optional: create on their behalf for support. Advertisers normally complete this themselves after signing in.
+                            </p>
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => createPlatformCustomerMutation.mutate()}
+                            disabled={createPlatformCustomerMutation.isPending}
+                            className="w-full sm:w-auto"
+                          >
+                            {createPlatformCustomerMutation.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Creating...
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="h-4 w-4 mr-2" />
+                                Create Stripe customer
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            {isSelfService
+                              ? 'Complete Stripe Connect onboarding first, then create your self-billing Stripe customer here.'
+                              : 'The advertiser must complete Stripe Connect in their account before they can create a self-billing Stripe customer.'}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Self-billing agreement — status (same MoR area as onboarding) */}
+                  {advertiser && (
+                    <div className="mb-4 pb-4 border-b border-gray-100">
+                      <label className="block text-sm font-medium mb-1">Self-billing agreement</label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        {isSelfService
+                          ? 'Accept the agreement to activate Platform MoR.'
+                          : 'Shows whether the advertiser has accepted. They accept when signed in to their account.'}
+                      </p>
+                      {!advertiser?.self_billing_agreement && advertiserOnboarded && (
+                        <Alert variant="destructive">
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription>
+                            {isSelfService ? (
+                              <>
+                                Accept the self-billing agreement before Platform MoR activation.
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setShowSelfBillingContent(true)}
+                                  className="ml-2 mt-2"
+                                >
+                                  Accept Agreement
+                                </Button>
+                              </>
+                            ) : (
+                              'The advertiser must accept the self-billing agreement before Platform MoR activation. They can accept when signed in to their account.'
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                      {advertiser?.self_billing_agreement && (
+                        <Alert className="border-green-200 bg-green-50">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <AlertDescription className="text-green-800">
+                            Self-billing agreement accepted
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Week Rate - Hidden for self-service (advertiser-only) */}
                   {!isSelfService && (
                     <div>
+                      <label className="block text-sm font-medium mb-1">Week Rate (£) *</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...register('week_rate', {
+                          required: !isSelfService ? 'Week rate is required' : false,
+                          min: { value: 0, message: 'Week rate must be positive' }
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="0.00"
+                      />
+                      {errors.week_rate && (
+                        <p className="text-red-500 text-sm mt-1">{errors.week_rate.message}</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Commission Percentage - Hidden for self-service (advertiser-only) */}
+                  {!isSelfService && (
+                    <div className="mt-3">
                       <label className="block text-sm font-medium mb-1">Commission Percentage *</label>
                       <input
                         type="number"
@@ -509,94 +783,9 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                       </p>
                     </div>
                   )}
-
-                  {/* Platform Customer Section */}
-                  {advertiser && (
-                    <div className="mt-4 pt-3 border-t border-gray-200">
-                      <label className="block text-sm font-medium mb-2">Platform Customer</label>
-
-                      {stripeStatusLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Checking status...</span>
-                        </div>
-                      ) : hasPlatformCustomer ? (
-                        <div className="space-y-2">
-                          <Alert className="border-green-200 bg-green-50">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <AlertDescription className="text-green-800 text-sm">
-                              Platform customer created
-                              {stripeStatus?.platform_customer_id && (
-                                <span className="block text-xs text-green-700 mt-1 font-mono">
-                                  {stripeStatus.platform_customer_id}
-                                </span>
-                              )}
-                            </AlertDescription>
-                          </Alert>
-                        </div>
-                      ) : hasStripeAccount ? (
-                        <div className="space-y-2">
-                          <p className="text-xs text-gray-600 mb-2">
-                            Create a platform customer for self-billing invoices
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => createPlatformCustomerMutation.mutate()}
-                            disabled={createPlatformCustomerMutation.isPending}
-                            className="w-full sm:w-auto"
-                          >
-                            {createPlatformCustomerMutation.isPending ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Creating...
-                              </>
-                            ) : (
-                              <>
-                                <UserPlus className="h-4 w-4 mr-2" />
-                                Create Platform Customer
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      ) : (
-                        <Alert>
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription className="text-sm">
-                            Complete Stripe onboarding first to create platform customer
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  )}
                 </div>
-
-                {/* Self-Billing Agreement Status */}
-                {advertiser && !advertiser?.self_billing_agreement && advertiserOnboarded && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                      Advertiser must accept self-billing agreement before Platform MoR activation.
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowSelfBillingContent(true)}
-                        className="ml-2 mt-2"
-                      >
-                        Accept Agreement
-                      </Button>
-                    </AlertDescription>
-                  </Alert>
                 )}
-
-                {advertiser?.self_billing_agreement && (
-                  <Alert className="border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      Self-billing agreement accepted
-                    </AlertDescription>
-                  </Alert>
+                </>
                 )}
 
                 {error && (
@@ -616,7 +805,7 @@ const AdvertiserForm = ({ open, onOpenChange, advertiser, onClose, onSubmit, isL
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={isLoading || (!!advertiser && !isDirty)}
                   className="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
                 >
                   {isLoading ? 'Saving...' : (advertiser ? 'Update' : 'Create')}

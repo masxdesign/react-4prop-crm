@@ -150,6 +150,20 @@ const AdvertiserSelectionTable = ({
       queryClient.invalidateQueries({ queryKey: ['advertisers'] });
       setEditingAdvertiser(null);
       setIsFormOpen(false);
+      toast({
+        title: 'Advertiser updated',
+        description: 'Your changes were saved.',
+      });
+    },
+    onError: (err) => {
+      toast({
+        variant: 'destructive',
+        title: 'Update failed',
+        description:
+          err?.response?.data?.error ||
+          err?.message ||
+          'Could not save changes. Try again.',
+      });
     },
   });
 
@@ -529,31 +543,15 @@ const AdvertiserSelectionTable = ({
 
   // Handle form submission for edit
   const handleFormSubmit = (data) => {
-    if (editingAdvertiser) {
-      // For editing mode: only send changed fields
-      const changedData = {};
-
-      // Check each field for changes
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== editingAdvertiser[key]) {
-          changedData[key] = data[key];
-        }
+    if (!editingAdvertiser) {
+      toast({
+        variant: 'destructive',
+        title: 'Nothing to update',
+        description: 'Close the dialog and open Edit again.',
       });
-
-      // Always include password if provided (it won't be in editingAdvertiser)
-      if (data.password) {
-        changedData.password = data.password;
-      }
-
-      // Only send update if there are changes
-      if (Object.keys(changedData).length > 0) {
-        updateMutation.mutate({ id: editingAdvertiser.id, ...changedData });
-      } else {
-        // No changes, just close the form
-        setEditingAdvertiser(null);
-        setIsFormOpen(false);
-      }
+      return;
     }
+    updateMutation.mutate({ id: editingAdvertiser.id, ...data });
   };
 
   // Handle delete confirmation
@@ -720,8 +718,14 @@ const AdvertiserSelectionTable = ({
       {/* Edit Advertiser Form Dialog */}
       {showManageButtons && (
         <AdvertiserForm
+          key={editingAdvertiser ? `edit-${editingAdvertiser.id}` : 'advertiser-edit-closed'}
           open={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          onOpenChange={(open) => {
+            setIsFormOpen(open);
+            if (!open) {
+              setEditingAdvertiser(null);
+            }
+          }}
           advertiser={editingAdvertiser}
           onClose={closeForm}
           onSubmit={handleFormSubmit}

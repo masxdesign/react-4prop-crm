@@ -50,6 +50,7 @@ export const createAdvertiser = async (advertiserData) => {
   return response.data;
 };
 
+/** PUT body may be a partial object (only changed fields). Server must merge into the row, not replace missing keys with null/empty. */
 export const updateAdvertiser = async ({ id, ...advertiserData }) => {
   const response = await bizchatClient.put(`/api/crm/mag/advertisers/${id}`, advertiserData);
   return response.data;
