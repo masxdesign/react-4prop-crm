@@ -272,6 +272,17 @@ const AdvertiserSelectionTable = ({
   const columns = useMemo(
     () => {
       const baseColumns = [
+        columnHelper.accessor('id', {
+          header: 'ID',
+          cell: (info) => {
+            const v = info.getValue();
+            return (
+              <span className="tabular-nums text-sm text-muted-foreground">
+                {v != null && v !== '' ? String(v) : '—'}
+              </span>
+            );
+          },
+        }),
         columnHelper.accessor('company', {
           header: 'Advertiser',
           cell: ({ getValue, row, table }) => (
