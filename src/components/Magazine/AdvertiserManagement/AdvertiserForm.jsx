@@ -6,7 +6,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import {
   Sheet,
   SheetContent,
@@ -32,20 +31,17 @@ const SITE_MODE_CARD_OPTIONS = [
   {
     value: 'advertiser_site',
     label: 'Advertiser site',
-    description:
-      'Agents advertise on your platform; you earn commission on qualifying activity under your agreement.',
+    description: 'Agents list on your platform; you earn commission on qualifying deals.',
   },
   {
     value: '4prop_site',
     label: '4prop site',
-    description:
-      'All agent properties are listed together in the shared 4prop catalogue.',
+    description: 'One shared catalogue for every agent’s listings.',
   },
   {
     value: 'agentab',
     label: 'AgentAB',
-    description:
-      'An embed on an agent’s website can show their listings, other agents’ listings, or both—with commission where applicable.',
+    description: 'Embeds on agent sites—own listings, others’, or both.',
   },
 ];
 
@@ -649,7 +645,7 @@ const AdvertiserForm = ({
               className="flex min-h-0 flex-1 flex-col"
             >
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
-                <Card className="p-4">
+                <div className="min-w-0 w-full">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Mode</h3>
                   <fieldset disabled={isSelfService} className="min-w-0">
                     <Controller
@@ -657,7 +653,7 @@ const AdvertiserForm = ({
                       control={control}
                       render={({ field }) => (
                         <div
-                          className="flex flex-col gap-2.5"
+                          className="flex w-full flex-row items-stretch gap-2.5 overflow-x-auto pb-0.5 sm:overflow-visible sm:pb-0"
                           role="radiogroup"
                           aria-label="Advertiser mode"
                           aria-readonly={isSelfService || undefined}
@@ -668,29 +664,29 @@ const AdvertiserForm = ({
                               <label
                                 key={opt.value}
                                 className={cn(
-                                  'flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors',
+                                  'flex min-w-[9.25rem] flex-1 cursor-pointer flex-col gap-2 rounded-lg border p-2.5 transition-colors sm:min-w-0 sm:p-3',
                                   selected
                                     ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500/25'
                                     : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80',
                                   isSelfService && 'cursor-default opacity-95'
                                 )}
                               >
-                                <input
-                                  type="radio"
-                                  name={field.name}
-                                  value={opt.value}
-                                  checked={selected}
-                                  onChange={() => field.onChange(opt.value)}
-                                  className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60"
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block text-sm font-medium text-gray-900">
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="radio"
+                                    name={field.name}
+                                    value={opt.value}
+                                    checked={selected}
+                                    onChange={() => field.onChange(opt.value)}
+                                    className="h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-60"
+                                  />
+                                  <span className="min-w-0 text-sm font-medium leading-tight text-gray-900">
                                     {opt.label}
                                   </span>
-                                  <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">
-                                    {opt.description}
-                                  </span>
-                                </span>
+                                </div>
+                                <p className="text-[11px] leading-snug text-gray-500 sm:text-xs sm:leading-relaxed pl-6 sm:pl-7">
+                                  {opt.description}
+                                </p>
                               </label>
                             );
                           })}
@@ -703,7 +699,7 @@ const AdvertiserForm = ({
                       ? 'Mode is set by your administrator.'
                       : 'Choose where this advertiser’s listings appear and how commission applies.'}
                   </p>
-                </Card>
+                </div>
 
                 <Accordion
                   key={`${isUpdate ? 'accordion-update' : 'accordion-new'}-${isUpdate ? String(advertiser?.id ?? '') : 'new'}`}
@@ -877,37 +873,39 @@ const AdvertiserForm = ({
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
                         <span className="text-sm font-semibold">Grade workflow</span>
                         <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
-                          Mass {gradeMassEnquiryEnabled ? 'on' : 'off'}
+                          Mass enquiry {gradeMassEnquiryEnabled ? 'on' : 'off'}
                           <span className="text-gray-400"> · </span>
-                          Shortlist{' '}
+                          Client shortlist{' '}
                           {is4propSiteMode
                             ? gradeClientShareEnabled
                               ? 'on'
                               : 'off'
-                            : 'off (4prop only)'}
+                            : 'off (shared catalogue only)'}
                         </span>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
-                      <p className="text-xs text-gray-500 mb-3 leading-snug">
-                        Property pub uses workflow kinds{' '}
-                        <span className="font-mono text-[11px]">mass_enquiry</span> and{' '}
-                        <span className="font-mono text-[11px]">client_share</span>. Mass enquiry applies in every
-                        mode. Client shortlist is only configurable in{' '}
-                        <span className="font-medium text-foreground/90">4prop site</span> mode (defaults on
-                        there); in other modes it stays off.
+                      <p className="text-xs text-muted-foreground mb-2.5 leading-snug">
+                        Same flows agents see on the listings site. Client shortlist can only be on when{' '}
+                        <span className="font-medium text-foreground/85">Mode</span> is{' '}
+                        <span className="font-medium text-foreground/85">4prop site</span>.
                       </p>
-                      <div className="space-y-3">
-                        <div className="flex items-start justify-between gap-4 rounded-lg border border-border/80 bg-background/80 px-3 py-3">
-                          <div className="min-w-0 space-y-1">
+                      <div
+                        className={cn(
+                          'divide-y divide-border/70 rounded-lg border border-border/80 bg-background/80',
+                          !clientShortlistEditable && '[&>div:last-child]:opacity-75'
+                        )}
+                      >
+                        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                          <div className="min-w-0 flex-1 pr-2">
                             <Label
                               htmlFor={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
-                              className="text-sm font-medium text-gray-800"
+                              className="cursor-pointer text-sm font-medium text-gray-800"
                             >
                               Mass enquiry
                             </Label>
-                            <p className="text-xs text-gray-500 leading-snug">
-                              Bulk / open enquiry flow (default mode on the pub site when enabled).
+                            <p className="text-[11px] leading-snug text-muted-foreground">
+                              Batch grading, one combined enquiry.
                             </p>
                           </div>
                           <Controller
@@ -924,23 +922,21 @@ const AdvertiserForm = ({
                             )}
                           />
                         </div>
-                        <div
-                          className={cn(
-                            'flex items-start justify-between gap-4 rounded-lg border border-border/80 bg-background/80 px-3 py-3',
-                            !clientShortlistEditable && 'opacity-80'
-                          )}
-                        >
-                          <div className="min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                          <div className="min-w-0 flex-1 pr-2">
                             <Label
                               htmlFor={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
-                              className="text-sm font-medium text-gray-800"
+                              className={cn(
+                                'text-sm font-medium text-gray-800',
+                                clientShortlistEditable && 'cursor-pointer'
+                              )}
                             >
                               Client shortlist
                             </Label>
-                            <p className="text-xs text-gray-500 leading-snug">
+                            <p className="text-[11px] leading-snug text-muted-foreground">
                               {clientShortlistEditable
-                                ? 'Client share / shortlist workflow for 4prop site mode.'
-                                : 'Only used in 4prop site mode; switch is off and locked for advertiser site and AgentAB.'}
+                                ? 'Matches “Share with client” on the listings site.'
+                                : '4prop site only; locked off for other modes.'}
                             </p>
                           </div>
                           <Controller
