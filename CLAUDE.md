@@ -16,6 +16,17 @@ When the user says **“advertiser frontend”**, they mean the sibling project:
 
 Use it **only for read-only reference** (routes, components, behaviour, copy patterns). **Do not edit files there** unless the user explicitly asks to change that codebase. Implementation work in this repo stays in **4prop-crm-react** unless stated otherwise.
 
+## Bizchat backend
+
+**Bizchat** is the primary Node/Express API this CRM talks to for magazine and related CRM routes (axios `bizchatClient`, paths under `/api/crm/...`).
+
+- **Monorepo path:** `apps/backend/bizchat` (full path: `…/each-monorepo/apps/backend/bizchat`).
+- **Magazine advertisers API** (list/create/update/delete and related handlers) lives in:  
+  `apps/backend/bizchat/code/src/routes/api-mag-advertisers.js`
+- **Magazine advertisers table (SQL Server):** `a_magAdvertisers` — persisted advertiser rows for magazine/CRM advertiser flows.
+
+When implementing or debugging CRM ↔ API behaviour (e.g. advertiser fields, `PUT /api/crm/mag/advertisers/:id`), work in that **bizchat** project—not only in this frontend repo.
+
 ## Use React Hook Form for All Forms
 
 All forms in the frontend must use React Hook Form — no useState or custom input handlers for managing form data.
@@ -89,7 +100,7 @@ When implementing data preloading at the route level with loading overlays:
 
 - API calls primarily through axios
 - Custom utilities for data transformation (propertyTypesCombiner, lowerKeyObject, etc.)
-- Backend integration with bizchat and db-sync services
+- Backend integration with **bizchat** (see **Bizchat backend** above) and db-sync services
 
 ### Magazine Module
 
