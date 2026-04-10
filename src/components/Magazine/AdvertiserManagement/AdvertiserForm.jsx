@@ -25,6 +25,10 @@ import { acceptSelfBillingAgreement, createPlatformCustomer, getAdvertiserStripe
 import AdvertiserOnboarding from '../stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
 import { cn } from '@/lib/utils';
+import {
+  normalizeAdvertiserHostname,
+  validateAdvertiserHostnameField,
+} from '@/utils/normalizeAdvertiserHostname';
 
 /** Labels + short descriptions for site mode cards (radiogroup). */
 const SITE_MODE_CARD_OPTIONS = [
@@ -169,6 +173,7 @@ const AdvertiserForm = ({
       ...adv,
       pstids: pstidsStringToArray(adv.pstids),
       site_mode: adv.site_mode || 'advertiser_site',
+      hostname: normalizeAdvertiserHostname(adv.hostname || ''),
       email: adv.email || '',
       password: '',
       week_rate: weekRateVal,
@@ -192,6 +197,7 @@ const AdvertiserForm = ({
       confirmPassword: '',
       pstids: [],
       site_mode: CREATE_DEFAULT_SITE_MODE,
+      hostname: '',
       week_rate: '',
       vat_registered: false,
       vat_number: '',
@@ -206,6 +212,8 @@ const AdvertiserForm = ({
     values: isUpdate ? editFormValues : createFormValues,
   });
 
+  const hostnameField = register('hostname', { validate: validateAdvertiserHostnameField });
+
   // Create flow registers confirmPassword; update flow does not — unregister so it does not linger after switching modes.
   useEffect(() => {
     if (isUpdate) {
@@ -218,6 +226,8 @@ const AdvertiserForm = ({
   const isVatRegistered = watch('vat_registered');
   const password = watch('password');
   const siteMode = watch('site_mode');
+  const hostnameWatch = watch('hostname');
+  const pstidsWatch = watch('pstids');
   const isAdvertiserSiteMode = siteMode === 'advertiser_site';
 
   const propertySubtypesHelp = useMemo(() => {
@@ -305,15 +315,14 @@ const AdvertiserForm = ({
     return String(raw);
   }, [isUpdate, advertiser?.advertiser_id, advertiser?.id]);
 
-  /** Mode is not in the accordion. Update: other sections collapsed. New: account / website / mor open as applicable. */
+  /** Mode is not in the accordion. Update: other sections collapsed. New: account / website_settings / property subtypes / mor open as applicable. */
   const defaultAccordionOpen = useMemo(() => {
     if (isUpdate) return [];
-    const open = ['account'];
-    if (showGradeWorkflowSection) open.push('grade_workflow');
+    const open = ['account', 'website_settings'];
     if (!is4propAdminMinimal) open.push('website');
     if (isAdvertiserSiteMode) open.push('mor');
     return open;
-  }, [isUpdate, is4propAdminMinimal, isAdvertiserSiteMode, showGradeWorkflowSection]);
+  }, [isUpdate, is4propAdminMinimal, isAdvertiserSiteMode]);
 
   /** One-line preview of fields inside each accordion (shown when section is collapsed). */
   const accountSectionSummary = useMemo(() => {
@@ -341,7 +350,7 @@ const AdvertiserForm = ({
   }, [advertiser, isSelfService]);
 
   const accountSectionRef = useRef(null);
-  const gradeWorkflowSectionRef = useRef(null);
+  const websiteSettingsSectionRef = useRef(null);
   const websiteSectionRef = useRef(null);
   const morSectionRef = useRef(null);
   const accordionOpenPrevRef = useRef(defaultAccordionOpen);
@@ -372,7 +381,7 @@ const AdvertiserForm = ({
     const value = newlyOpened[0];
     const refMap = {
       account: accountSectionRef,
-      grade_workflow: gradeWorkflowSectionRef,
+      website_settings: websiteSettingsSectionRef,
       website: websiteSectionRef,
       mor: morSectionRef,
     };
@@ -492,6 +501,7 @@ const AdvertiserForm = ({
       pstids: Array.isArray(data.pstids) && data.pstids.length > 0
         ? `,${data.pstids.join(',')},`
         : '',
+      hostname: normalizeAdvertiserHostname(data.hostname || ''),
     };
 
     if (showGradeWorkflowSection) {
@@ -863,100 +873,141 @@ const AdvertiserForm = ({
                     </AccordionContent>
                   </AccordionItem>
 
-                {showGradeWorkflowSection && (
-                  <AccordionItem
-                    ref={gradeWorkflowSectionRef}
-                    value="grade_workflow"
-                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
-                  >
-                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
-                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
-                        <span className="text-sm font-semibold">Grade workflow</span>
-                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
-                          Mass enquiry {gradeMassEnquiryEnabled ? 'on' : 'off'}
-                          <span className="text-gray-400"> · </span>
-                          Client shortlist{' '}
-                          {is4propSiteMode
-                            ? gradeClientShareEnabled
-                              ? 'on'
-                              : 'off'
-                            : 'off (shared catalogue only)'}
-                        </span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
-                      <p className="text-xs text-muted-foreground mb-2.5 leading-snug">
-                        Same flows agents see on the listings site. Client shortlist can only be on when{' '}
-                        <span className="font-medium text-foreground/85">Mode</span> is{' '}
-                        <span className="font-medium text-foreground/85">4prop site</span>.
-                      </p>
-                      <div
-                        className={cn(
-                          'divide-y divide-border/70 rounded-lg border border-border/80 bg-background/80',
-                          !clientShortlistEditable && '[&>div:last-child]:opacity-75'
+                <AccordionItem
+                  ref={websiteSettingsSectionRef}
+                  value="website_settings"
+                  className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                >
+                  <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                      <span className="text-sm font-semibold">Website settings</span>
+                      <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                        {hostnameWatch ? hostnameWatch : 'No hostname set'}
+                        {showGradeWorkflowSection && (
+                          <>
+                            <span className="text-gray-400"> · </span>
+                            Mass enquiry {gradeMassEnquiryEnabled ? 'on' : 'off'}
+                            <span className="text-gray-400"> · </span>
+                            Client shortlist{' '}
+                            {is4propSiteMode
+                              ? gradeClientShareEnabled ? 'on' : 'off'
+                              : 'off (shared catalogue only)'}
+                          </>
                         )}
-                      >
-                        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                          <div className="min-w-0 flex-1 pr-2">
-                            <Label
-                              htmlFor={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
-                              className="cursor-pointer text-sm font-medium text-gray-800"
-                            >
-                              Mass enquiry
-                            </Label>
-                            <p className="text-[11px] leading-snug text-muted-foreground">
-                              Batch grading, one combined enquiry.
-                            </p>
-                          </div>
-                          <Controller
-                            name={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
-                            control={control}
-                            render={({ field }) => (
-                              <Switch
-                                id={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                                disabled={isLoading}
-                                className="shrink-0"
-                              />
-                            )}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-                          <div className="min-w-0 flex-1 pr-2">
-                            <Label
-                              htmlFor={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
-                              className={cn(
-                                'text-sm font-medium text-gray-800',
-                                clientShortlistEditable && 'cursor-pointer'
+                      </span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
+                    <div className="pb-3">
+                      <label className="block text-sm font-medium mb-1">Website hostname</label>
+                      <input
+                        type="text"
+                        {...hostnameField}
+                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="example.com"
+                        autoComplete="url"
+                        inputMode="url"
+                        onBlur={(e) => {
+                          const n = normalizeAdvertiserHostname(e.target.value);
+                          setValue('hostname', n, { shouldValidate: true, shouldDirty: true });
+                          hostnameField.onBlur(e);
+                        }}
+                        onPaste={(e) => {
+                          hostnameField.onPaste?.(e);
+                          setTimeout(() => {
+                            const el = e.target;
+                            const n = normalizeAdvertiserHostname(el.value);
+                            if (n !== el.value) {
+                              setValue('hostname', n, { shouldValidate: true, shouldDirty: true });
+                            }
+                          }, 0);
+                        }}
+                      />
+                      {errors.hostname && (
+                        <p className="text-red-500 text-sm mt-1">{errors.hostname.message}</p>
+                      )}
+                      <p className="text-xs text-gray-500 mt-1">
+                        Apex domain only (e.g. <span className="font-medium text-foreground/80">example.com</span>) — not{' '}
+                        <code className="rounded bg-muted px-0.5 text-[11px]">www.</code> or other subdomains (we strip{' '}
+                        <code className="rounded bg-muted px-0.5 text-[11px]">www.</code> when pasted). HTTPS assumed; full URLs trim to the host.
+                      </p>
+                    </div>
+
+                    {showGradeWorkflowSection && (
+                      <div className="border-t border-border/60 pt-3">
+                        <p className="text-xs text-muted-foreground mb-2.5 leading-snug">
+                          Grade workflow — same flows agents see on the listings site. Client shortlist can only be on when{' '}
+                          <span className="font-medium text-foreground/85">Mode</span> is{' '}
+                          <span className="font-medium text-foreground/85">4prop site</span>.
+                        </p>
+                        <div
+                          className={cn(
+                            'divide-y divide-border/70 rounded-lg border border-border/80 bg-background/80',
+                            !clientShortlistEditable && '[&>div:last-child]:opacity-75'
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                            <div className="min-w-0 flex-1 pr-2">
+                              <Label
+                                htmlFor={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                                className="cursor-pointer text-sm font-medium text-gray-800"
+                              >
+                                Mass enquiry
+                              </Label>
+                              <p className="text-[11px] leading-snug text-muted-foreground">
+                                Batch grading, one combined enquiry.
+                              </p>
+                            </div>
+                            <Controller
+                              name={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                              control={control}
+                              render={({ field }) => (
+                                <Switch
+                                  id={GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED}
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={isLoading}
+                                  className="shrink-0"
+                                />
                               )}
-                            >
-                              Client shortlist
-                            </Label>
-                            <p className="text-[11px] leading-snug text-muted-foreground">
-                              {clientShortlistEditable
-                                ? 'Matches “Share with client” on the listings site.'
-                                : '4prop site only; locked off for other modes.'}
-                            </p>
+                            />
                           </div>
-                          <Controller
-                            name={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
-                            control={control}
-                            render={({ field }) => (
-                              <Switch
-                                id={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
-                                checked={clientShortlistEditable ? field.value : false}
-                                onCheckedChange={field.onChange}
-                                disabled={isLoading || !clientShortlistEditable}
-                                className="shrink-0"
-                              />
-                            )}
-                          />
+                          <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+                            <div className="min-w-0 flex-1 pr-2">
+                              <Label
+                                htmlFor={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                                className={cn(
+                                  'text-sm font-medium text-gray-800',
+                                  clientShortlistEditable && 'cursor-pointer'
+                                )}
+                              >
+                                Client shortlist
+                              </Label>
+                              <p className="text-[11px] leading-snug text-muted-foreground">
+                                {clientShortlistEditable
+                                  ? 'Matches "Share with client" on the listings site.'
+                                  : '4prop site only; locked off for other modes.'}
+                              </p>
+                            </div>
+                            <Controller
+                              name={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                              control={control}
+                              render={({ field }) => (
+                                <Switch
+                                  id={GRADE_WORKFLOW_CLIENT_SHARE_ENABLED}
+                                  checked={clientShortlistEditable ? field.value : false}
+                                  onCheckedChange={field.onChange}
+                                  disabled={isLoading || !clientShortlistEditable}
+                                  className="shrink-0"
+                                />
+                              )}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                )}
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
 
                 {!is4propAdminMinimal && (
                   <AccordionItem
@@ -968,7 +1019,14 @@ const AdvertiserForm = ({
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
                         <span className="text-sm font-semibold text-gray-900">Property subtypes</span>
                         <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
-                          {propertySubtypesHelp.collapsed}
+                          {pstidsWatch?.length > 0
+                            ? (() => {
+                                const first = subtypeOptions.find(o => String(o.id) === String(pstidsWatch[0]))?.label;
+                                return first
+                                  ? `${first}${pstidsWatch.length > 1 ? ` +${pstidsWatch.length - 1}` : ''}`
+                                  : propertySubtypesHelp.collapsed;
+                              })()
+                            : propertySubtypesHelp.collapsed}
                         </span>
                       </div>
                     </AccordionTrigger>
