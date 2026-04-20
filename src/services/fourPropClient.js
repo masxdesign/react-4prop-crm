@@ -10,6 +10,14 @@ export const FOURPROP_BASEURL = isNumericLocalhost
     ? fourProp_baseurl.replace(/localhost:/, '127.0.0.1:')
     : fourProp_baseurl
 
+export const isSameOriginAsFourProp = () => {
+    try {
+        return new URL(FOURPROP_BASEURL).hostname === window.location.hostname
+    } catch {
+        return false
+    }
+}
+
 export const fourPropClient = axios.create({
     baseURL: FOURPROP_BASEURL,
     withCredentials: true

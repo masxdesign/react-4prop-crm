@@ -4,7 +4,8 @@ import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/services/f
 import { AuthContext, AuthDispatchContext, useAuthContext, useAuthDispatch } from "./Auth-context"
 import { flushSync } from "react-dom"
 import { RESTRICTED_NEG_IDS } from "../DashboardSidebar/permissions"
-import { clearToken } from "@/services/createAuthClient"
+import { clearToken, setImpersonating } from "@/services/createAuthClient"
+import useSessionSync from "@/hooks/useSessionSync"
 
 export const initialAuthState = {
     isAuthenticated: false,
@@ -80,10 +81,13 @@ const AuthProvider = ({ children }) => {
     }))
     // const [state, dispatch] = useReducer(authReducer, data, initializer)
 
+    useSessionSync()
+
     // Listen for session expired events from JWT auth interceptor
     useEffect(() => {
         const handleSessionExpired = () => {
             clearToken()
+            setImpersonating(false)
             flushSync(() => {
                 setState({ logout: true, sessionExpired: true })
             })
