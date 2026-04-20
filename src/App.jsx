@@ -37,6 +37,14 @@ const InnerAuth = () => {
       console.log('auth:', auth);
     }
 
+    // Handle session expiration - redirect to login with return URL
+    // Only redirect if not already on login page to prevent infinite loop
+    if (auth.sessionExpired && !window.location.pathname.includes('/login')) {
+      const currentPath = window.location.pathname + window.location.search
+      const loginUrl = `${BASEPATH}/login?redirect=${encodeURIComponent(currentPath)}&expired=1`
+      window.location.href = loginUrl
+    }
+
   }, [auth])
 
   return (

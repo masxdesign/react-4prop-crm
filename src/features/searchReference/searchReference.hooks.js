@@ -1,10 +1,9 @@
-import { useAuth } from "@/components/Auth/Auth"
 import { searchReferenceListingEnquiredQuery } from "./searchReference.queries"
 import { useSuspenseQuery } from "@tanstack/react-query"
 
+// NEW: JWT-authenticated - no need for auth.authUserId
 const useSearchReferenceListingEnquired = () => {
-    const auth = useAuth()
-    return useSuspenseQuery(searchReferenceListingEnquiredQuery(auth.authUserId))
+    return useSuspenseQuery(searchReferenceListingEnquiredQuery())
 }
 
 export default useSearchReferenceListingEnquired

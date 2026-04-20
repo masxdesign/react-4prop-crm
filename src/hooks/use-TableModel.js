@@ -88,11 +88,11 @@ const useMakeTableReducer = ({ defaultState, search }) => {
     const fun = useMemo(() => {
         const tableStateSlice = (state, action) => {
             const defaultTableState = defaultState.tableState
-        
+
             switch (action.type) {
                 case "UPDATE_STATE_SEARCH":
                     const search = action.payload
-        
+
                     return {
                         ...defaultTableState,
                         pagination: {
@@ -127,7 +127,7 @@ const useMakeTableReducer = ({ defaultState, search }) => {
                 case "CHANGE_PAGE":
                     const pageSize = action.meta.pageSize ?? state.pagination.pageSize
                     const pageSizeChanged = state.pagination.pageSize !== pageSize
-        
+
                     return {
                         ...state,
                         pagination: {
@@ -173,7 +173,7 @@ const useMakeTableReducer = ({ defaultState, search }) => {
                     }
             }
         }
-        
+
         const reducer = (state, action) => {
             switch (action.type) {
                 case "TABLE_STATE_RECEIVED":
@@ -234,7 +234,7 @@ const useMakeTableReducer = ({ defaultState, search }) => {
         const initializer = (search) => {
 
             const initialStateFromSearch = reducer(
-                defaultState, 
+                defaultState,
                 routeSearchUpdateStateAction(search)
             )
 
@@ -242,13 +242,13 @@ const useMakeTableReducer = ({ defaultState, search }) => {
         }
 
         const persist = {
-            hydrate (search) {
+            hydrate(search) {
                 return {
                     ...initializer(search),
                     selected: JSON.parse(localStorage.getItem(LOCALSTOR_TABLEMODAL_SELECTED)) || defaultSelected
                 }
             },
-            saveSelected (selected) {
+            saveSelected(selected) {
                 localStorage.setItem(LOCALSTOR_TABLEMODAL_SELECTED, JSON.stringify(selected))
             }
         }
@@ -303,11 +303,11 @@ const useTableReducer = ({ defaultState }) => {
     const onSortingChange = useCallback((newSorting) => {
         dispatch(changeSortingAction(newSorting))
     }, [])
-    
+
     const select = useCallback((item) => {
         dispatch(selectAction(item))
     }, [])
-   
+
     const deselect = useCallback((item) => {
         dispatch(deselectAction(item))
     }, [])
@@ -341,7 +341,7 @@ const useTableReducer = ({ defaultState }) => {
 }
 
 const useTableModel = ({ defaultState }) => {
-    const { 
+    const {
         onPaginationChange,
         onGlobalFilterChange,
         onColumnFiltersChange,
@@ -360,14 +360,14 @@ const useTableModel = ({ defaultState }) => {
         const newValue = functionalUpdate(newRowSelectionUpdater, table.getState().rowSelection)
         makeStateUpdater('rowSelection', table)(newRowSelectionUpdater)
 
-        for(const row of table.getRowModel().rows) {
+        for (const row of table.getRowModel().rows) {
             const isSelected = state.selected.includes(row.original.id)
             const isSelectedRowSelection = newValue[row.index]
 
-            if(isSelected && isSelectedRowSelection) continue
-            if(!isSelected && !isSelectedRowSelection) continue
+            if (isSelected && isSelectedRowSelection) continue
+            if (!isSelected && !isSelectedRowSelection) continue
 
-            if(isSelectedRowSelection) {
+            if (isSelectedRowSelection) {
                 select(row.original.id)
             } else {
                 deselect(row.original.id)
@@ -377,10 +377,10 @@ const useTableModel = ({ defaultState }) => {
 
     const isDirtyFilters = useMemo(() => (
         state.tableState.columnFilters !== defaultState.tableState.columnFilters
-            || state.tableState.globalFilter !== defaultState.tableState.globalFilter
+        || state.tableState.globalFilter !== defaultState.tableState.globalFilter
     ), [state.tableState.columnFilters, state.tableState.globalFilter])
 
-    const model = { 
+    const model = {
         dispatch,
         state,
         tableState: state.tableState,
@@ -403,29 +403,29 @@ const useTableModel = ({ defaultState }) => {
 // dont lead upon your own misunderstanding
 
 useTableModel.use = {
-    tableQueryOptions ({ tableName, tableVersion = '1', services, staleTime = 60_000, tableModel}) {
+    tableQueryOptions({ tableName, tableVersion = '1', services, staleTime = 60_000, tableModel }) {
         const { tableState } = tableModel
-    
-        const queryOptions_ = useMemo(() => queryOptions({ 
-            queryKey: [tableName, 'table', tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination], 
-            queryFn: () => services.tableSSList(tableState), 
+
+        const queryOptions_ = useMemo(() => queryOptions({
+            queryKey: [tableName, 'table', tableVersion, tableState.globalFilter, tableState.columnFilters, tableState.sorting, tableState.pagination],
+            queryFn: () => services.tableSSList(tableState),
             staleTime
         }), [tableName, tableState, staleTime])
-    
+
         return queryOptions_
     },
-    tableSS (options) {
+    tableSS(options) {
         const { tableName, tableVersion, dialogModel, components, columns, meta, tableModel, dataPool, authUserId, tableQueryOptions } = options
 
         const selected = tableModel.state.selected
 
         const { data, pageCount, count } = useLoadData(tableQueryOptions, tableModel.tableState)
 
-        const table = useTableSS({ 
+        const table = useTableSS({
             enableRowSelection: row => !isEqual(row.original.id, authUserId),
             tableName,
             tableVersion,
-            queryOptions: tableQueryOptions, 
+            queryOptions: tableQueryOptions,
             columns,
             data,
             pageCount,
@@ -455,7 +455,7 @@ useTableModel.use = {
                 Object.fromEntries(
                     table.getRowModel().rows
                         .map((row) => ([
-                            row.index, 
+                            row.index,
                             selected.includes(row.original.id)
                         ]))
                 )
@@ -466,14 +466,14 @@ useTableModel.use = {
 
         const deselectMany = deselectIds => {
             tableModel.deselectMany(deselectIds)
-        
+
             table.getRowModel().rows
                 .filter(({ original }) => deselectIds.includes(original.id))
                 .forEach((row) => {
                     row.toggleSelected()
                 })
         }
-        
+
         const selectMany = selectIds => {
             tableModel.selectMany(selectIds)
             updateRowSelectionWithSelectedState(selectIds)
@@ -484,30 +484,30 @@ useTableModel.use = {
             table.options.data?.forEach(row => {
 
                 if (dataPool.has(row.id)) return
-                
+
                 dataPool.set(row.id, row)
 
             })
-        
-        }, [table.options.data])
-        
-        useLayoutEffect(() => {
-    
-            updateRowSelectionWithSelectedState(tableModel.state.selected)
-    
+
         }, [table.options.data])
 
-        return { 
-            table, 
-            selected, 
-            count, 
-            countFormatted, 
-            deselectMany, 
-            selectMany 
+        useLayoutEffect(() => {
+
+            updateRowSelectionWithSelectedState(tableModel.state.selected)
+
+        }, [table.options.data])
+
+        return {
+            table,
+            selected,
+            count,
+            countFormatted,
+            deselectMany,
+            selectMany
         }
 
     },
-    facets ({ tableName, tableSSModal, services, facets }) {
+    facets({ tableName, tableSSModal, services, facets }) {
         return {
             filters: facets.map(({ title, columnId, disableFacets, names = null }) => {
                 return {
@@ -520,47 +520,47 @@ useTableModel.use = {
                         queryKey: [tableName, 'facet', columnId],
                         queryFn: () => services.facetList(columnId),
                         select: data => {
-                    
+
                             let data_ = data.split('`').map((item) => item.split('^'))
-                        
+
                             let options = []
                             let facets = new Map
-                        
-                            for(const [label, count] of data_) {
+
+                            for (const [label, count] of data_) {
                                 const label_ = names?.[label] ?? label
                                 options.push({ label: label_, value: label })
-                                facets.set(label, count > 999 ? numberWithCommas(count): count)
+                                facets.set(label, count > 999 ? numberWithCommas(count) : count)
                             }
-                        
+
                             return { options, facets }
-                    
+
                         }
                     }
                 }
             })
         }
     },
-    getResultFromTable ({ getResultFromTable, id }) {
+    getResultFromTable({ getResultFromTable, id }) {
         return useMemo(() => getResultFromTable(id), [getResultFromTable, id])
     },
-    tableDialog ({ 
+    tableDialog({
         tableSSModal,
-        facetsModal, 
+        facetsModal,
         renderMessages,
         metricsComponent,
         tableQueryOptions,
         dialogTabs,
         defaultDialogActiveTab,
-        services: {  
-            tableDialog: { 
+        services: {
+            tableDialog: {
                 getInfoById,
-                getBzId, 
+                getBzId,
                 // getEnquiries,
-                noteList, 
-                addNote, 
+                noteList,
+                addNote,
                 deleteNote,
-                listUpdateDetails
-            } 
+                listUpdateDetails: crmListUpdateDetails
+            }
         }
     }) {
         const queryClient = useQueryClient()
@@ -576,9 +576,9 @@ useTableModel.use = {
             if (!id) return null
 
             const row = table.getRowModel().rows.find(({ original }) => `${id}` === `${original.id}`)
-        
+
             if (!row) return null
-        
+
             const visibleCells = row.getVisibleCells()
             const info = visibleCells?.[0]?.getContext()
 
@@ -588,9 +588,9 @@ useTableModel.use = {
 
         const import_id = dialogModel?.state.info
 
-        const enquiriesQueryOptions = (ownerUid, filterBy) => queryOptions({
-            queryKey: ['getEnquiries', authUserId, import_id, ownerUid, filterBy],
-            queryFn: () => getCrmEnquiries(import_id, ownerUid, filterBy)
+        const enquiriesQueryOptions = (filterBy) => queryOptions({
+            queryKey: ['getEnquiries', import_id, filterBy],
+            queryFn: () => getCrmEnquiries(import_id, filterBy)
         })
 
         const infoQueryOptions = queryOptions({
@@ -614,7 +614,7 @@ useTableModel.use = {
             }
         })
 
-        const addMutationOptions =  {
+        const addMutationOptions = {
             mutationFn: addNote,
             onError: (err) => {
                 switch (err.name) {
@@ -622,23 +622,23 @@ useTableModel.use = {
                         console.log(err.response.data)
                         break
                     default:
-                        console.log(err.message)                        
+                        console.log(err.message)
                 }
             },
             onSuccess: (_, variables) => {
                 const { _button } = variables
-                
-                if(_button === 'bizchat') {
+
+                if (_button === 'bizchat') {
                     queryClient.invalidateQueries({ queryKey: ['bizchatMessagesLast5', authUserId] })
                 }
-                
+
                 queryClient.invalidateQueries({ queryKey: chatboxQueryOptions.queryKey })
             }
         }
 
         const updateMutationOptions = {
-            mutationFn: (variables) => listUpdateDetails(authUserId, import_id, variables.name, variables.newValue),
-            onSuccess (_, variables) {
+            mutationFn: (variables) => crmListUpdateDetails(import_id, variables.name, variables.newValue),
+            onSuccess(_, variables) {
                 try {
 
                     if (variables.name) {
@@ -652,16 +652,16 @@ useTableModel.use = {
                     }
 
                     queryClient.setQueryData(
-                        tableQueryOptions.queryKey, 
+                        tableQueryOptions.queryKey,
                         util_pagin_update(
-                            { id: import_id }, 
+                            { id: import_id },
                             { [variables.name]: variables.newValue }
                         )
                     )
 
                 } catch (e) {
                     console.log(e);
-                    
+
                 }
             }
         }
@@ -691,7 +691,7 @@ useTableModel.use = {
             dialogModel: tableSSModal.table.options.meta.dialogModel,
             tableSSModal,
             dialogTabs,
-            tabValue, 
+            tabValue,
             onTabValueChange: setTabValue,
             openEnquiry,
             onOpenEnquiry

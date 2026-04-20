@@ -104,6 +104,7 @@ export const Route = createFileRoute('/_auth/_dashboard/advertiser/')({
           open={isCreateFormOpen}
           onOpenChange={setIsCreateFormOpen}
           advertiser={null}
+          isUpdate={false}
           onClose={() => setIsCreateFormOpen(false)}
           onSubmit={handleCreateSubmit}
           isLoading={createMutation.isPending}

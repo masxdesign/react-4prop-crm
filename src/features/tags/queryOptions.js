@@ -1,13 +1,15 @@
 import { crmSharedTagPids, crmTagList } from "@/services/bizchat";
 
-export const tagListQueryOptions = authUserId => ({
-    queryKey: ['tagList', authUserId],
-    queryFn: () => crmTagList(authUserId)
+// NEW: JWT-authenticated - user ID from token, not params
+export const tagListQueryOptions = () => ({
+    queryKey: ['tagList'],
+    queryFn: () => crmTagList()
 })
 
-export function sharedTagListQueryOptions (from_uid, import_id) {
+// NEW: JWT-authenticated - user ID from token, not params
+export function sharedTagListQueryOptions () {
     return {
-        queryKey: ['sharedTagList', from_uid, import_id],
-        queryFn: () => crmSharedTagPids(from_uid, import_id)
+        queryKey: ['sharedTagList'],
+        queryFn: () => crmSharedTagPids()
     }
 }

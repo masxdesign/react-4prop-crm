@@ -21,6 +21,7 @@ const buttonVariants = cva(
         gradient: "bg-linear-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-sm",
         "gradient-green": "bg-linear-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-sm",
         "gradient-silver": "bg-linear-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 shadow-sm border border-gray-200",
+        "gradient-amber": "bg-linear-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 shadow-sm",
       },
       size: {
         default: "h-10 px-4 py-2",

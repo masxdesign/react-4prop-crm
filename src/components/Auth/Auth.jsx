@@ -1,19 +1,22 @@
-import { useReducer, useState } from "react"
+import { useEffect, useReducer, useState } from "react"
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query"
 import { authLogin, authLogout, authWhoisonlineQueryOptions } from "@/services/fourProp"
 import { AuthContext, AuthDispatchContext, useAuthContext, useAuthDispatch } from "./Auth-context"
 import { flushSync } from "react-dom"
 import { RESTRICTED_NEG_IDS } from "../DashboardSidebar/permissions"
+import { clearToken } from "@/services/createAuthClient"
 
 export const initialAuthState = {
     isAuthenticated: false,
     authUserId: null,
     displayName: null,
     user: null,
-    allowFutureFeatured: false
+    allowFutureFeatured: false,
+    isImpersonating: false,
+    originalUser: null
 }
 
-export const authCombiner = (user) => {
+export const authCombiner = (user, impersonationContext = {}) => {
     if (!user) return initialAuthState
 
     const isAgent = user.neg_id ? true : false
@@ -34,6 +37,8 @@ export const authCombiner = (user) => {
             is_admin: RESTRICTED_NEG_IDS.includes(user.neg_id)
         },
         allowFutureFeatured: ['2', '161', '207', '60726'].includes(`${user.id}`),
+        isImpersonating: impersonationContext.isImpersonating || false,
+        originalUser: impersonationContext.originalUser || null
     }
 }
 
@@ -69,8 +74,26 @@ const AuthProvider = ({ children }) => {
         return authWhoisonlineQueryOptions(search.get('i'))
     })
     const { data } = useSuspenseQuery(_authWhoisonlineQueryOptions)
-    const [state, setState] = useState(() => authCombiner(data))
+    const [state, setState] = useState(() => authCombiner(data, {
+        isImpersonating: data?.impersonating,
+        originalUser: data?.originalUser
+    }))
     // const [state, dispatch] = useReducer(authReducer, data, initializer)
+
+    // Listen for session expired events from JWT auth interceptor
+    useEffect(() => {
+        const handleSessionExpired = () => {
+            clearToken()
+            flushSync(() => {
+                setState({ logout: true, sessionExpired: true })
+            })
+        }
+
+        window.addEventListener('auth:session-expired', handleSessionExpired)
+        return () => {
+            window.removeEventListener('auth:session-expired', handleSessionExpired)
+        }
+    }, [])
 
     return (
         <AuthContext.Provider value={state}>
@@ -91,10 +114,13 @@ export const useAuth = () => {
     const handleLoginSubmit = async (variables) => {
         const data = await login.mutateAsync(variables)
 
-        if(data.error) throw new Error(data.error)
+        if (data.error) throw new Error(data.error)
 
         flushSync(() => {
-            setState(authCombiner(data))
+            setState(authCombiner(data, {
+                isImpersonating: data.impersonating,
+                originalUser: data.originalUser
+            }))
         })
     }
 

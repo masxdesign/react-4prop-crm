@@ -573,12 +573,13 @@ export const useListing = createImmer((set, get) => ({
 
         })
     },
-    resolveSharedPropDetailsQueryOptions: (from, import_id, tag_id = null) => {
+    // NEW: JWT-authenticated - crmSharedPids no longer needs 'from' param
+    resolveSharedPropDetailsQueryOptions: (import_id, tag_id = null) => {
         return queryOptions({
-            queryKey: ['resolveProperty', from, import_id, tag_id],
+            queryKey: ['resolveProperty', import_id, tag_id],
             queryFn: async () => {
 
-                const shared = await crmSharedPids(from, import_id, tag_id)
+                const shared = await crmSharedPids(import_id, tag_id)
 
                 if (shared.length < 1) return []
 

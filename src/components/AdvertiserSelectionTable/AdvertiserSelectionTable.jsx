@@ -8,7 +8,7 @@ import {
   flexRender,
   createColumnHelper,
 } from '@tanstack/react-table';
-import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, CheckCircle, AlertCircle, Copy } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, Calendar, BarChart3, Pencil, Trash2, MoreHorizontal, FileText, Copy, UserCog } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -41,56 +41,13 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { fetchAdvertisers } from '@/components/Stats/api';
-import { updateAdvertiser, deleteAdvertiser, getAdvertiserStripeStatus } from '@/components/Magazine/api';
+import { updateAdvertiser, deleteAdvertiser } from '@/components/Magazine/api';
 import AdvertiserForm from '@/components/Magazine/AdvertiserManagement/AdvertiserForm';
-import AdvertiserOnboarding from '@/components/Magazine/stripe/AdvertiserOnboarding';
 import usePropertySubtypes from '@/hooks/usePropertySubtypes';
+import { useImpersonation } from '@/hooks/useImpersonation';
 import { toast } from '@/components/ui/use-toast';
 
 const columnHelper = createColumnHelper();
-
-// Stripe Status Cell Component - fetches status per advertiser
-const StripeStatusCell = ({ advertiserId, advertiserName, onSetupClick }) => {
-  const { data: stripeStatusData, isLoading } = useQuery({
-    queryKey: ['advertiser-stripe-status', advertiserId],
-    queryFn: () => getAdvertiserStripeStatus(advertiserId),
-    refetchInterval: false,
-  });
-
-  const stripeStatus = stripeStatusData?.data;
-  const isOnboarded = stripeStatus?.onboarding_completed;
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-1 text-xs text-gray-500">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Checking...</span>
-      </div>
-    );
-  }
-
-  if (isOnboarded) {
-    return (
-      <div className="flex items-center gap-1 text-xs text-green-600">
-        <CheckCircle className="h-3 w-3" />
-        <span>Connected</span>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onSetupClick(advertiserId, advertiserName);
-      }}
-      className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700 underline"
-    >
-      <AlertCircle className="h-3 w-3" />
-      <span>Setup Stripe</span>
-    </button>
-  );
-};
 
 /**
  * Searchable, paginated advertiser selection table
@@ -110,16 +67,13 @@ const AdvertiserSelectionTable = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { getSubtypeLabels } = usePropertySubtypes();
+  const { impersonate, isImpersonatePending } = useImpersonation();
 
   // Edit/Delete state
   const [editingAdvertiser, setEditingAdvertiser] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [advertiserToDelete, setAdvertiserToDelete] = useState(null);
-
-  // Stripe onboarding state
-  const [stripeOnboardingOpen, setStripeOnboardingOpen] = useState(false);
-  const [stripeOnboardingAdvertiser, setStripeOnboardingAdvertiser] = useState(null);
 
   // Handle copy email
   const handleCopyEmail = (email, e) => {
@@ -134,12 +88,6 @@ const AdvertiserSelectionTable = ({
     }
   };
 
-  // Handle Stripe setup click
-  const handleStripeSetup = (advertiserId, advertiserName) => {
-    setStripeOnboardingAdvertiser({ id: advertiserId, name: advertiserName });
-    setStripeOnboardingOpen(true);
-  };
-
   // Update advertiser mutation
   const updateMutation = useMutation({
     mutationFn: updateAdvertiser,
@@ -148,6 +96,20 @@ const AdvertiserSelectionTable = ({
       queryClient.invalidateQueries({ queryKey: ['advertisers'] });
       setEditingAdvertiser(null);
       setIsFormOpen(false);
+      toast({
+        title: 'Advertiser updated',
+        description: 'Your changes were saved.',
+      });
+    },
+    onError: (err) => {
+      toast({
+        variant: 'destructive',
+        title: 'Update failed',
+        description:
+          err?.response?.data?.error ||
+          err?.message ||
+          'Could not save changes. Try again.',
+      });
     },
   });
 
@@ -284,11 +246,43 @@ const AdvertiserSelectionTable = ({
     setDeleteConfirmOpen(true);
   };
 
+  // Handle Impersonate button click
+  const handleImpersonateClick = (advertiser, e) => {
+    e.stopPropagation();
+    if (advertiser.user_id) {
+      // Save current page state for "Switch back" functionality
+      const returnState = {
+        pathname: '/crm/advertiser',
+        search: urlSearch.search ? `?search=${encodeURIComponent(urlSearch.search)}` : ''
+      };
+      localStorage.setItem('impersonation_return_state', JSON.stringify(returnState));
+      impersonate({ targetUserId: advertiser.user_id });
+    } else {
+      toast({
+        title: 'Cannot impersonate',
+        description: 'This advertiser does not have a user account',
+        variant: 'destructive',
+        duration: 3000,
+      });
+    }
+  };
+
   // Define table columns
   // Use table.options.meta to access handlers with fresh state (TanStack Table pattern)
   const columns = useMemo(
     () => {
       const baseColumns = [
+        columnHelper.accessor('id', {
+          header: 'ID',
+          cell: (info) => {
+            const v = info.getValue();
+            return (
+              <span className="tabular-nums text-sm text-muted-foreground">
+                {v != null && v !== '' ? String(v) : '—'}
+              </span>
+            );
+          },
+        }),
         columnHelper.accessor('company', {
           header: 'Advertiser',
           cell: ({ getValue, row, table }) => (
@@ -314,17 +308,6 @@ const AdvertiserSelectionTable = ({
             </div>
           ),
         }),
-        columnHelper.display({
-          id: 'stripe_status',
-          header: 'Stripe Status',
-          cell: ({ row }) => (
-            <StripeStatusCell
-              advertiserId={row.original.id}
-              advertiserName={row.original.company}
-              onSetupClick={handleStripeSetup}
-            />
-          ),
-        }),
         columnHelper.accessor('week_rate', {
           header: 'Week Rate',
           cell: (info) => {
@@ -337,6 +320,18 @@ const AdvertiserSelectionTable = ({
           cell: (info) => {
             const value = info.getValue();
             return value != null ? `${value}%` : '-';
+          },
+        }),
+        columnHelper.accessor('site_mode', {
+          header: 'Mode',
+          cell: (info) => {
+            const value = info.getValue();
+            const labels = {
+              advertiser_site: 'Advertiser site',
+              '4prop_site': '4prop site',
+              agentab: 'AgentAB',
+            };
+            return labels[value] || 'Advertiser site';
           },
         }),
         columnHelper.accessor('pstids', {
@@ -422,6 +417,21 @@ const AdvertiserSelectionTable = ({
                         <p>Stats</p>
                       </TooltipContent>
                     </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="gradient-amber"
+                          size="icon"
+                          onClick={(e) => table.options.meta?.onImpersonateClick(row.original, e)}
+                          disabled={!row.original.user_id || table.options.meta?.isImpersonatePending}
+                        >
+                          <UserCog className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{row.original.user_id ? 'Impersonate' : 'No user account'}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </TooltipProvider>
                 )}
                 {showManageButtons && (
@@ -459,7 +469,7 @@ const AdvertiserSelectionTable = ({
 
       return baseColumns;
     },
-    [showActionButtons, showManageButtons, getSubtypeLabels, handleCopyEmail, handleStripeSetup]
+    [showActionButtons, showManageButtons, getSubtypeLabels, handleCopyEmail]
   );
 
   const table = useReactTable({
@@ -472,36 +482,22 @@ const AdvertiserSelectionTable = ({
       onBlogPostsClick: handleBlogPostsClick,
       onEditClick: handleEditClick,
       onDeleteClick: handleDeleteClick,
+      onImpersonateClick: handleImpersonateClick,
+      isImpersonatePending,
     },
   });
 
   // Handle form submission for edit
   const handleFormSubmit = (data) => {
-    if (editingAdvertiser) {
-      // For editing mode: only send changed fields
-      const changedData = {};
-
-      // Check each field for changes
-      Object.keys(data).forEach((key) => {
-        if (data[key] !== editingAdvertiser[key]) {
-          changedData[key] = data[key];
-        }
+    if (!editingAdvertiser) {
+      toast({
+        variant: 'destructive',
+        title: 'Nothing to update',
+        description: 'Close the dialog and open Edit again.',
       });
-
-      // Always include password if provided (it won't be in editingAdvertiser)
-      if (data.password) {
-        changedData.password = data.password;
-      }
-
-      // Only send update if there are changes
-      if (Object.keys(changedData).length > 0) {
-        updateMutation.mutate({ id: editingAdvertiser.id, ...changedData });
-      } else {
-        // No changes, just close the form
-        setEditingAdvertiser(null);
-        setIsFormOpen(false);
-      }
+      return;
     }
+    updateMutation.mutate({ id: editingAdvertiser.id, ...data });
   };
 
   // Handle delete confirmation
@@ -668,9 +664,16 @@ const AdvertiserSelectionTable = ({
       {/* Edit Advertiser Form Dialog */}
       {showManageButtons && (
         <AdvertiserForm
+          key={editingAdvertiser ? `edit-${editingAdvertiser.id}` : 'advertiser-edit-closed'}
           open={isFormOpen}
-          onOpenChange={setIsFormOpen}
+          onOpenChange={(open) => {
+            setIsFormOpen(open);
+            if (!open) {
+              setEditingAdvertiser(null);
+            }
+          }}
           advertiser={editingAdvertiser}
+          isUpdate={!!editingAdvertiser}
           onClose={closeForm}
           onSubmit={handleFormSubmit}
           isLoading={updateMutation.isPending}
@@ -707,24 +710,6 @@ const AdvertiserSelectionTable = ({
           </DialogContent>
         </Dialog>
       )}
-
-      {/* Stripe Onboarding Dialog */}
-      <Dialog open={stripeOnboardingOpen} onOpenChange={setStripeOnboardingOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Stripe Onboarding</DialogTitle>
-            <DialogDescription>
-              Connect {stripeOnboardingAdvertiser?.name} to Stripe to receive payments.
-            </DialogDescription>
-          </DialogHeader>
-          {stripeOnboardingAdvertiser && (
-            <AdvertiserOnboarding
-              advertiserId={stripeOnboardingAdvertiser.id}
-              advertiserName={stripeOnboardingAdvertiser.name}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

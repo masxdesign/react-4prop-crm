@@ -59,7 +59,6 @@ function TableDialogMetricsMyList({ info, model, className }) {
                                     value: (
                                         <ColumnNextContactMyList
                                             importId={info.id}
-                                            authUserId={model.authUserId}
                                             defaultValue={info.next_contact}
                                             table={model.table}
                                             tableDataQueryKey={model.table.options.meta.dataQueryKey}
@@ -103,10 +102,9 @@ const CompanyLogo = ({ data }) => {
     )
 }
 
+// NEW: JWT-authenticated - no need for auth.authUserId
 const BadgeTag = ({ tagId }) => {
-    const auth = useAuth()
-
-    const { data } = useSuspenseQuery(searchReferenceListingQuery(auth.authUserId))
+    const { data } = useSuspenseQuery(searchReferenceListingQuery())
 
     return (
         <div className="cursor-pointer text-xs inline-block text-sky-500">
@@ -157,10 +155,11 @@ const EnquiriesListNoItems = ({ className, ...props }) => {
     )} {...props} />
 }
 
-const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => { 
-    const { data: tagList } = useSuspenseQuery(searchReferenceListingQuery(info.owneruid))
+// NEW: JWT-authenticated - no need for info.owneruid
+const EnquiriesList = ({ model, tag, onSelectTag, shared, info, suitables }) => {
+    const { data: tagList } = useSuspenseQuery(searchReferenceListingQuery())
 
-    const stats = useSuspenseQuery(model.enquiriesQueryOptions(info.owneruid, {
+    const stats = useSuspenseQuery(model.enquiriesQueryOptions({
         suitables,
         shared
     }))
@@ -385,8 +384,9 @@ function CopyAccessLinkButton ({ info, model }) {
 
     const auth = useAuth()
 
+    // NEW: JWT-authenticated - crmGenHash no longer needs authUserId
     const genHash = useMutation({
-        mutationFn: import_id => crmGenHash(auth.authUserId, import_id)
+        mutationFn: import_id => crmGenHash(import_id)
     })
 
     useEffect(() => {

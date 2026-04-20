@@ -33,6 +33,7 @@ export const dataJsonQuery = (name) => queryOptions({
 export const typesQuery = dataJsonQuery("types")
 export const subtypesQuery = dataJsonQuery("subtypes")
 export const areasQuery = dataJsonQuery("locations")
+export const categorySvgsQuery = dataJsonQuery("categorySvgs")
 
 export const propReqContentsQuery = (ids, isProp = true) => queryOptions({
     queryKey: ["propertyContentsQuery", ids, isProp],

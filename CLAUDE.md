@@ -8,7 +8,45 @@ Confirm all field names, types, and nesting with me before using them.
 If a shape isn’t clearly defined, ask first.
 Consistency between frontend and backend is critical.
 
+## Advertiser frontend (reference only)
+
+When the user says **“advertiser frontend”**, they mean the sibling project:
+
+`apps/frontend/property-pub-react` (full path under the monorepo: `…/each-monorepo/apps/frontend/property-pub-react`).
+
+Use it **only for read-only reference** (routes, components, behaviour, copy patterns). **Do not edit files there** unless the user explicitly asks to change that codebase. Implementation work in this repo stays in **4prop-crm-react** unless stated otherwise.
+
+## Bizchat backend
+
+**Bizchat** is the primary Node/Express API this CRM talks to for magazine and related CRM routes (axios `bizchatClient`, paths under `/api/crm/...`).
+
+- **Monorepo path:** `apps/backend/bizchat` (full path: `…/each-monorepo/apps/backend/bizchat`).
+- **Magazine advertisers API** (list/create/update/delete and related handlers) lives in:  
+  `apps/backend/bizchat/code/src/routes/api-mag-advertisers.js`
+- **Magazine advertisers table (SQL Server):** `a_magAdvertisers` — persisted advertiser rows for magazine/CRM advertiser flows.
+
+When implementing or debugging CRM ↔ API behaviour (e.g. advertiser fields, `PUT /api/crm/mag/advertisers/:id`), work in that **bizchat** project—not only in this frontend repo.
+
+## 4prop backend
+
+**4prop** is the PHP API this CRM talks to for core site flows (axios `fourPropClient` / `fourPropLiveClient`, base URL `VITE_FOURPROP_BASEURL` or `window.config?.site_url` — e.g. login `api/login`, account, property search, negotiators).
+
+- **Codebase path:** `/Users/salgadom/EACH/4prop` (PHP; outside the each-monorepo tree).
+- **Frontend client:** `src/services/fourPropClient.js`
+
+When implementing or debugging behaviour that hits **fourProp** endpoints, work in that **4prop** PHP project—not only in this frontend repo.
+
+## Property Pub backend
+
+**Property Pub** is the Node API this CRM talks to for advertiser-facing services and tooling proxied alongside the magazine stack (axios `propertyPubClient`, base URL `VITE_PROPERTYPUB_BASEURL` or `window.propertyPubURL` — e.g. BullMQ jobs/drafts, keyword tools, advertiser stats, property scheduler, `/api/agents`, AI/postcode helpers used from Magazine and related modules).
+
+- **Monorepo path:** `apps/backend/property-pub` (full path: `…/each-monorepo/apps/backend/property-pub`).
+- **Frontend client:** `src/services/propertyPubClient.js`
+
+When implementing or debugging CRM ↔ API behaviour for those routes, work in that **property-pub** backend project—not only in this frontend repo. The **advertiser frontend** (React) remains separate — see **Advertiser frontend (reference only)** above.
+
 ## Use React Hook Form for All Forms
+
 All forms in the frontend must use React Hook Form — no useState or custom input handlers for managing form data.
 
 ## Development Commands
@@ -48,24 +86,28 @@ This is a React CRM application built with:
 ### Key Architecture Patterns
 
 **Routing Structure**: Uses TanStack Router with file-based routing. Routes are organized with:
+
 - `_auth` prefix for authenticated routes
 - `_dashboard` for main dashboard functionality  
 - `_com` for communication/messaging features
-- `mag.*` routes for Magazine functionality
+- `mag.`* routes for Magazine functionality
 
 **Component Organization**: Components are organized by feature in `/src/components/` with:
+
 - Individual component directories containing index.js and main component file
 - UI components in `/ui/` folder (Radix-based)
 - Custom UI variants in `/ui-custom/`
 - Magazine components organized in dedicated subdirectories
 
 **State Management**: 
+
 - Server state handled by TanStack Query with queryClient configuration
 - Local state uses Zustand stores (no centralized store directory found)
 - Custom hooks for specific state patterns (e.g., use-sheetState.js, use-DialogModel.js)
 
 **TanStack Router Data Preloading Pattern**:
 When implementing data preloading at the route level with loading overlays:
+
 1. Use `beforeLoad` to create query options and add them to context - this makes them available to child routes and components
 2. Use `loader` to preload data using the query options from context via `context.queryClient.ensureQueryData()`
 3. Components can access preloaded data immediately via useQuery with the same query key
@@ -73,13 +115,15 @@ When implementing data preloading at the route level with loading overlays:
 5. This pattern ensures data is preloaded, cached, and components get immediate access with proper loading states
 
 **Data Layer**:
+
 - API calls primarily through axios
 - Custom utilities for data transformation (propertyTypesCombiner, lowerKeyObject, etc.)
-- Backend integration with bizchat and db-sync services
+- Backend integration with **bizchat** (see **Bizchat backend** above), **property-pub** (see **Property Pub backend** above), **4prop** PHP (see **4prop backend** above), and db-sync services
 
 ### Magazine Module
 
 The Magazine component is a complex feature for property listing management with:
+
 - **AdvertiserManagement**: Handle advertiser CRUD operations and statistics
 - **AgentPropertiesTable**: Display property listings with scheduling capabilities  
 - **MagazineDashboard**: Overview and listing management interface
@@ -102,6 +146,7 @@ All Magazine components have been refactored to use a week-based scheduling syst
 - **Form Utilities**: Custom hooks and components for form state management
 
 When working with this codebase:
+
 - Follow the existing component structure with index.js exports
 - Use the established Radix UI + Tailwind pattern for new components
 - Leverage TanStack Query for all server state operations
@@ -110,3 +155,4 @@ When working with this codebase:
 - Backend: Node v20, Express.js, MSSQL 2017 compatibility level 100
 - when creating a ui form hook component always create a *.example.jsx to test it
 - property.pid is the property ID
+

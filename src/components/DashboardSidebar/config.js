@@ -1,4 +1,4 @@
-import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, Building2, Users, CalendarClock } from 'lucide-react'
+import { DatabaseIcon, ImportIcon, ListIcon, NewspaperIcon, CreditCard, ArrowRightLeft, UserCircle, CalendarCheck, TrendingUp, Building2, Users, CalendarClock, MapPin } from 'lucide-react'
 import { EnvelopeOpenIcon } from '@radix-ui/react-icons'
 import FourPropIcon from "@/assets/4prop.svg?react"
 import BizchatIcon from "@/assets/bizchat.svg?react"
@@ -42,7 +42,7 @@ export const navigationConfig = {
   magazine: [
     {
       id: 'mag-agents-list',
-      to: "/mag",
+      to: "/properties",
       icon: NewspaperIcon,
       label: "Properties",
       excludedRoles: ['advertiser']
@@ -105,6 +105,13 @@ export const navigationConfig = {
       to: '/admin/property-scheduler',
       icon: CalendarClock,
       label: 'Property Scheduler',
+      allowedNegIds: RESTRICTED_NEG_IDS,
+    },
+    {
+      id: 'admin-street-locations',
+      to: '/admin/street-locations',
+      icon: MapPin,
+      label: 'Street Locations',
       allowedNegIds: RESTRICTED_NEG_IDS,
     },
   ],

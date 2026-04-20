@@ -78,12 +78,11 @@ export const columns = [
         ),
         cell: (info) => (
             <div className="p-4">
-                <ColumnNextContactMyList 
-                importId={info.row.original.id} 
-                authUserId={info.table.options.meta.authUserId}
-                defaultValue={info.row.original.next_contact}
-                table={info.table}
-                tableDataQueryKey={info.table.options.meta.dataQueryKey}
+                <ColumnNextContactMyList
+                    importId={info.row.original.id}
+                    defaultValue={info.row.original.next_contact}
+                    table={info.table}
+                    tableDataQueryKey={info.table.options.meta.dataQueryKey}
                 />
             </div>
         ),

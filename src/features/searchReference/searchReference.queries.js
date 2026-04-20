@@ -1,12 +1,14 @@
 import { fetchTagsByUserId, fetchTagsByUserIdEnquired } from "@/services/bizchat";
 import { queryOptions } from "@tanstack/react-query";
 
-export const searchReferenceListingQuery = (authUserId) => queryOptions({
-    queryKey: ["searchReferenceListing", authUserId],
-    queryFn: () => fetchTagsByUserId(authUserId)
+// NEW: JWT-authenticated - user ID from token, not params
+export const searchReferenceListingQuery = () => queryOptions({
+    queryKey: ["searchReferenceListing"],
+    queryFn: () => fetchTagsByUserId()
 })
 
-export const searchReferenceListingEnquiredQuery = (authUserId) => queryOptions({
-    queryKey: ["searchReferenceListingEnquired", authUserId],
-    queryFn: () => fetchTagsByUserIdEnquired(authUserId)
+// NEW: JWT-authenticated - user ID from token, not params
+export const searchReferenceListingEnquiredQuery = () => queryOptions({
+    queryKey: ["searchReferenceListingEnquired"],
+    queryFn: () => fetchTagsByUserIdEnquired()
 })

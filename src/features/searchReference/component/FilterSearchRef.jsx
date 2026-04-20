@@ -1,12 +1,10 @@
-import { useAuth } from "@/components/Auth/Auth"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { searchReferenceListingQuery } from "../searchReference.queries"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
+// NEW: JWT-authenticated - no need for auth.authUserId
 export default function FilterSearchRef({ value = null, onValueChange }) {
-    const auth = useAuth()
-
-    const { data } = useSuspenseQuery(searchReferenceListingQuery(auth.authUserId))
+    const { data } = useSuspenseQuery(searchReferenceListingQuery())
 
     return (
         <Select value={value} onValueChange={onValueChange}>

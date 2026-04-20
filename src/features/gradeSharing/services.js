@@ -1,13 +1,15 @@
 import { crmFilterByEmail, crmRecentGradeShares } from "@/services/bizchat";
 
-export const filterByEmailQueryOptions = (authUserId, email, pid, enabled) => ({
-    queryKey: ['filterByEmail', authUserId, email],
-    queryFn: () => crmFilterByEmail(authUserId, email, pid),
+// NEW: JWT-authenticated - user ID from token, not params
+export const filterByEmailQueryOptions = (email, pid, enabled) => ({
+    queryKey: ['filterByEmail', email],
+    queryFn: () => crmFilterByEmail(email, pid),
     enabled: enabled,
     initialData: []
 })
 
-export const recentGradeSharesQueryOptions = (from_uid) => ({
-    queryKey: ['recentGradeShares', from_uid],
-    queryFn: () => crmRecentGradeShares(from_uid)
+// NEW: JWT-authenticated - user ID from token, not params
+export const recentGradeSharesQueryOptions = () => ({
+    queryKey: ['recentGradeShares'],
+    queryFn: () => crmRecentGradeShares()
 })

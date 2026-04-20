@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchAdvertisersByPstids, createSchedule, normalizeScheduleData } from '../api';
 import usePropertyTypeLabels from '@/hooks/usePropertyTypeLabels';
@@ -6,13 +6,11 @@ import CurrentSchedules from './CurrentSchedules';
 import ScheduleWizardModal from './ScheduleWizardModal';
 import useUsersByNids from '@/hooks/useUsersByNids';
 import { getAgentInitials, getAgentAvatar, getAgentFullName } from '../util/agentHelpers';
-import CSSCarousel from '@/components/ui/CSSCarousel';
-import AdvertiserCard from '@/components/ui/AdvertiserCard';
 import ImageWithFallback from '@/components/ui/ImageWithFallback';
-import { Building2Icon, ShoppingCartIcon } from 'lucide-react';
+import { Building2Icon } from 'lucide-react';
 
 // Enhanced Property Details Component - Uses display-ready property data
-const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid }) => {
+const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAgentNid, onOpenAdvertiserSheet }) => {
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [selectedAdvertiserForBooking, setSelectedAdvertiserForBooking] = useState(null);
   const [createdScheduleForPayment, setCreatedScheduleForPayment] = useState(null);
@@ -22,7 +20,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
 
   // Extract property subtype IDs for fetching advertisers
   const subtypeIds = property.subtypes?.map(subtype => subtype.id).join(',') || '';
-  
+
   // Extract agent NIDs for fetching agent data
   const agentNids = useMemo(() => {
     if (!property.agents || !Array.isArray(property.agents)) return [];
@@ -31,7 +29,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
 
   // Fetch agent data using the same pattern as schedule workflow
   const { getUserByNid, isLoading: agentsLoading } = useUsersByNids(agentNids);
-  
+
   // Fetch advertisers based on property subtypes
   const {
     data: advertisersData,
@@ -91,16 +89,16 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
   // Format address for multi-line display
   const formatAddress = (addressText) => {
     if (!addressText) return [];
-    
+
     // Split by comma and clean up
     const parts = addressText.split(',').map(part => part.trim()).filter(Boolean);
-    
+
     // Typical UK address format: try to identify postcode (last part that matches UK postcode pattern)
     const postcodeRegex = /^[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}$/i;
-    
+
     const lines = [];
     let postcodeIndex = -1;
-    
+
     // Find postcode from the end
     for (let i = parts.length - 1; i >= 0; i--) {
       if (postcodeRegex.test(parts[i])) {
@@ -108,7 +106,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
         break;
       }
     }
-    
+
     if (postcodeIndex > 0) {
       // Everything before postcode goes on separate lines
       lines.push(...parts.slice(0, postcodeIndex));
@@ -118,7 +116,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
       // No postcode found, just split by comma
       lines.push(...parts);
     }
-    
+
     return lines;
   };
 
@@ -169,14 +167,14 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
   });
 
   return (
-    <div className="relative z-10 bg-linear-to-b from-slate-50 to-slate-100 p-6 border-t">
+    <div className="relative z-10 p-6 border-t">
       {/* Enhanced Property Overview */}
       <div className="grid grid-cols-[20%_1fr] gap-6 mb-6">
         {/* Property Information - Using Enhanced Data */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
           <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
             <Building2Icon className='size-4 shrink-0' strokeWidth={1} />
-            Property Information 
+            Property Information
             <span className='font-light text-[9px] text-muted-foreground'>
               {property.pid}
             </span>
@@ -184,9 +182,9 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
               {property.statusText}
             </span>
           </h4>
-          
+
           {/* Property Fields - Consistent Badge Style */}
-          <div className="space-y-3">            
+          <div className="space-y-3">
             <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
               <span className="text-xs text-gray-600">Agents</span>
               <div className="flex flex-wrap gap-1">
@@ -195,7 +193,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
                 ) : agentNids.length > 0 ? (
                   agentNids.map((agentNid, index) => {
                     const agent = getUserByNid(agentNid);
-                    
+
                     return (
                       <div key={index} className="flex items-center gap-1.5 border text-slate-800 px-1 py-1 rounded-full">
                         <div className="shrink-0 size-6 rounded-full overflow-hidden">
@@ -236,14 +234,14 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
               <span className="text-xs text-gray-600">Tenure</span>
               <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
                 {property.tenureText}
               </span>
             </div>
-            
+
             {property.sizeText && (
               <div className="flex justify-between items-center border-b border-gray-100 pb-2 gap-2">
                 <span className="text-xs text-gray-600">Size</span>
@@ -261,7 +259,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
                 </span>
               </div>
             )}
-            
+
             {parsedTypes.length > 0 && (
               <div className="flex justify-between items-start border-b border-gray-100 pb-2 gap-2">
                 <span className="text-xs text-gray-600">Types</span>
@@ -286,87 +284,21 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
             propertyId={property.pid}
             isAdminViewing={isAdminViewing}
             viewingAgentNid={viewingAgentNid}
+            onScheduleNewAdvertiser={() => {
+              onOpenAdvertiserSheet?.({
+                advertisers,
+                advertisersLoading,
+                advertisersError,
+                getSubtypeLabels,
+                renderPillsWithShowMore,
+                onSelectAdvertiser: (selectedAdvertiser) => {
+                  setSelectedAdvertiserForBooking(selectedAdvertiser);
+                  setIsScheduleModalOpen(true);
+                }
+              });
+            }}
           />
         </div>
-      </div>
-
-      {/* Available Advertisers Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-        <div className="flex justify-between items-center mb-4">
-          <h4 className="font-semibold text-sm flex items-center gap-2">
-            <ShoppingCartIcon className='size-4 shrink-0' strokeWidth={1} />
-            Available Advertisers for New Booking
-          </h4>
-          <button
-            onClick={() => setIsScheduleModalOpen(true)}
-            className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium"
-            disabled={advertisers.length === 0}
-          >
-            + Schedule New Advertiser
-          </button>
-        </div>
-        
-        {advertisersLoading && (
-          <div className="text-sm text-gray-500 py-8 text-center">Loading advertisers...</div>
-        )}
-        
-        {advertisersError && (
-          <div className="text-sm text-red-500 py-8 text-center">Error loading advertisers</div>
-        )}
-        
-        {advertisers.length === 0 && !advertisersLoading && (
-          <div className="text-sm text-gray-500 py-8 text-center bg-gray-50 rounded">
-            No advertisers available for this property type
-          </div>
-        )}
-        
-        {advertisers.length > 0 && (
-          <>
-            {/* CSSCarousel - Pure CSS implementation */}
-            <CSSCarousel
-              showNavigation={true}
-              className="mx-2"
-            >
-              {advertisers.map((advertiser) => {
-                return (
-                  <AdvertiserCard
-                    key={advertiser.id}
-                    advertiser={advertiser}
-                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
-                    onBook={(selectedAdvertiser) => {
-                      setSelectedAdvertiserForBooking(selectedAdvertiser);
-                      setIsScheduleModalOpen(true);
-                    }}
-                    renderPillsWithShowMore={renderPillsWithShowMore}
-                  />
-                )
-              })}
-            </CSSCarousel>
-
-            {/* EmblaCarousel - JavaScript implementation (commented out) */}
-            {/*
-            <EmblaCarousel
-              options={{ align: 'start', slidesToScroll: 1 }}
-              className="mx-2"
-            >
-              {advertisers.map((advertiser) => {
-                return (
-                  <AdvertiserCard
-                    key={advertiser.id}
-                    advertiser={advertiser}
-                    subtypeLabels={getSubtypeLabels(advertiser.pstids)}
-                    onBook={(selectedAdvertiser) => {
-                      setSelectedAdvertiserForBooking(selectedAdvertiser);
-                      setIsScheduleModalOpen(true);
-                    }}
-                    renderPillsWithShowMore={renderPillsWithShowMore}
-                  />
-                )
-              })}
-            </EmblaCarousel>
-            */}
-          </>
-        )}
       </div>
 
       {/* Schedule Modal */}
@@ -388,6 +320,7 @@ const EnhancedPropertyDetails = ({ property, agentId, isAdminViewing, viewingAge
         isAdminViewing={isAdminViewing}
         viewingAgentNid={viewingAgentNid}
       />
+
     </div>
   );
 };

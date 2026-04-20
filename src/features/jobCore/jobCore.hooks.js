@@ -335,18 +335,15 @@ export function usePublishJobMutation(jobType) {
       const { blog_post_id, is_published } = response;
       const now = new Date().toISOString();
 
-      // Update job output cache
+      // Update job output cache (flat structure)
       queryClient.setQueryData(["jobOutput", jobId], (old) =>
         old ? {
           ...old,
           output_data: {
             ...old.output_data,
-            result: {
-              ...old.output_data?.result,
-              blog_post_id: String(blog_post_id),
-              is_published: String(is_published),
-              blog_synced_at: is_published ? now : old.output_data?.result?.blog_synced_at,
-            }
+            blog_post_id: String(blog_post_id),
+            is_published: String(is_published),
+            blog_synced_at: is_published ? now : old.output_data?.blog_synced_at,
           }
         } : old
       );

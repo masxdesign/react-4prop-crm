@@ -12,35 +12,28 @@ import useListing, { propertyCombiner, propertyTypescombiner } from "@/store/use
 import { getTime } from "date-fns";
 import { fourPropClient, FOURPROP_BASEURL } from "./fourPropClient";
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "@/store/listing.queries";
-import delay from "@/utils/delay";
-
-const grantAccess = async () => {
-
-    const body = {
-        email: 'salgadom7503@gmail.com',
-        password: 'elatt54321'
-    }
-
-    try {
-
-        const res = await fourPropClient.post("api/login", body)
-
-    } catch (e) {
-        console.log("Grant Access: " + e.message)
-    }
-
-}
+import { setToken, clearToken } from "./createAuthClient";
+import { withTokenRefresh } from "./withTokenRefresh";
 
 export const authWhoisonlineQueryOptions = (hash) => queryOptions({
     queryKey: ['whoisonline', hash],
     queryFn: async () => {
         const params = {}
-        
+
         if (hash) {
             params.i = hash
         }
 
-        const { data } = await fourPropClient.post('api/login', null, { params })
+        // Try with current token first, refresh on 401/token error
+        const data = await withTokenRefresh(async (headers) => {
+            const { data } = await fourPropClient.post('api/login', null, { params, headers })
+            return data
+        })
+
+        // Store token from response (login returns token)
+        if (data?.token) {
+            setToken(data.token)
+        }
 
         return data
     },
@@ -51,19 +44,24 @@ export const authLogin = async ({ email, password }) => {
     const { default: each_password_generator } = await import("@/utils/each_password_generator")
 
     const res = await fourPropClient.post(
-        'api/login', 
+        'api/login',
         { email, password, each_password: each_password_generator(password) }
     )
-    
+
+    // Store JWT token from login response
+    if (res.data?.token) {
+        setToken(res.data.token)
+    }
+
     return res.data
 }
 
 export const fetchUser = async (uid) => {
     const { data } = await fourPropClient.post(
-        'api/account/fetch-user', 
+        'api/account/fetch-user',
         { id: uid }
     )
-    
+
     return data
 }
 
@@ -75,8 +73,8 @@ export const fetchSearchProperties = async (pids) => {
         const { data } = await fourPropClient.get(`api/search/properties`, { params: { pids } }, { withCredentials: true })
 
         return data
-    
-    } catch(e) {
+
+    } catch (e) {
         console.error(e)
     }
 }
@@ -87,13 +85,17 @@ export const fetchNewlyGradedProperties = async () => {
         const { data } = await fourPropClient.get(`api/search/newlyGraded`, { withCredentials: true })
 
         return data
-    
+
     } catch (e) {
         console.error(e)
     }
 }
 
-export const authLogout = () => fourPropClient.post('api/account/logout')
+export const authLogout = async () => {
+    // Clear JWT token on logout
+    clearToken()
+    return fourPropClient.post('api/account/logout')
+}
 
 const defaultNegotiatorInclude = "id,type,statusData,alertStatusMessage,statusType,statusCreated,alertSentDate,alertEmailDate,a,company,status,alertEmailClick,alertPerc,openedPerc,alertStatus,alertOpened,last_contact,next_contact,email,first,last,city,postcode,phone,website,position,department,mobile,mail_list_max_date_sent,mail_list_total,mail_list_template_name"
 
@@ -106,7 +108,7 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
 
     const [sorting_] = sorting
 
-    if(sorting_) {
+    if (sorting_) {
 
         const { id, desc } = sorting_
 
@@ -121,10 +123,10 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
     const column = []
     const search = []
 
-    for(const filter of columnFilters) {
+    for (const filter of columnFilters) {
         const { id, value } = filter
         let [toSearch] = value
-        
+
         column.push(id)
 
         if (['a', 'company'].includes(id)) {
@@ -146,12 +148,12 @@ export const fetchNegotiators = async ({ columnFilters, sorting, pagination, glo
             column
         }
     }
-    
+
     let { data } = await fourPropClient.get('api/crud/CRM--EACH_db', { params })
 
     if (authUserId) {
         let d2 = []
-        
+
         if (data[1].length > 0) {
             const recipients = map(data[1], 'id')
             d2 = await getListUnreadTotal({ from: authUserId, recipients })
@@ -190,7 +192,7 @@ export const fetchSelectedNegotiatorsDataQueryOptions = (dataPool, selected) => 
 
             const fetched = await fetchNegotiatorByNids(nidsToFetch)
 
-            for(const item of fetched) {
+            for (const item of fetched) {
                 dataPool.set(item.id, item)
             }
 
@@ -210,7 +212,7 @@ export const fetchSelectedDataQueryOptions = (dataPool, selected, onFetch) => qu
 
             const fetched = await onFetch(idsToFetch)
 
-            for(const item of fetched) {
+            for (const item of fetched) {
                 dataPool.set(item.id, item)
             }
 
@@ -272,7 +274,7 @@ export const addLastContact = async (variables, { id }) => {
 export const updateGrade = async (pid, { grade, autoSearchReference, tag_id }) => {
     const search = new URLSearchParams(window.location.search)
     const body = {
-        pid, 
+        pid,
         grade,
         autoSearchReference,
         tag_id
@@ -287,7 +289,7 @@ export const updateGrade = async (pid, { grade, autoSearchReference, tag_id }) =
     const { data } = await fourPropClient.put(`/api/records/gradings`, body, { params, withCredentials: true })
 
     console.log(data);
-    
+
 
     return data
 }
@@ -300,11 +302,11 @@ export const addNote = async (variables, auth) => {
 
         if (files.length < 1 && isEmpty(message)) throw new Error('attachments and message is empty')
 
-        if(!auth.bzUserId) throw new Error('authUserId is not defined')
+        if (!auth.bzUserId) throw new Error('authUserId is not defined')
 
         const from = info.ownernid ?? auth.bzUserId
 
-        return sendBizchatMessage({ 
+        return sendBizchatMessage({
             files,
             message,
             from,
@@ -392,11 +394,11 @@ const propertyCombinerMemo = memoize((pid, original, types, subtypes, content, c
 
     const content_ = propertyParse.content({
         ...original,
-        description: content[0] ?? "", 
-        locationdesc: content[1] ?? "",  
+        description: content[0] ?? "",
+        locationdesc: content[1] ?? "",
         amenities: content[2] ?? ""
     })
-    
+
     const companies = propertyParse.companies(companies_.map(companyCombiner))(original)
 
     return {
@@ -434,12 +436,12 @@ export const propertyEnquiriesQuery = stats => {
                 queryClient.ensureQueryData(subtypesQuery)
             ])
 
-            
+
             const properties_ = results.map(property => lowerKeyObject(property))
 
             const d = stats.map((item) => {
                 let property = find(properties_, { pid: item.pid })
-                
+
                 if (!property) return null
 
                 return {
@@ -448,18 +450,18 @@ export const propertyEnquiriesQuery = stats => {
                 }
             })
 
-             console.log({d});
+            console.log({ d });
 
             const propertiesDetails = d.filter(p => p).map((property) => {
 
                 return propertyCombiner(
-                    property.pid, 
-                    property, 
+                    property.pid,
+                    property,
                     propertyTypescombiner(
-                        types, 
+                        types,
                         subtypes,
                     ),
-                    contents[property.pid], 
+                    contents[property.pid],
                     Object.values(companies).map(companyCombiner)
                 )
             })
@@ -485,13 +487,13 @@ export const propertiesDetailsSearchQuery = pids => queryOptions({
 
         const properties_ = results.map(property => lowerKeyObject(property))
 
-        const propertiesDetails =  properties_.map(property => (
+        const propertiesDetails = properties_.map(property => (
             propertyCombinerMemo(
-                property.pid, 
-                property, 
-                types, 
-                subtypes, 
-                contents[property.pid], 
+                property.pid,
+                property,
+                types,
+                subtypes,
+                contents[property.pid],
                 companies
             )
         ))
@@ -523,11 +525,11 @@ export const propertiesDetailsQuery = memoize(results => {
 
             const propertiesDetails = properties_.map(property => (
                 propertyCombinerMemo(
-                    property.pid, 
-                    property, 
-                    types, 
-                    subtypes, 
-                    contents[property.pid], 
+                    property.pid,
+                    property,
+                    types,
+                    subtypes,
+                    contents[property.pid],
                     companies
                 )
             ))
@@ -548,14 +550,14 @@ export const propertiesDetailsGlobalSelectionQuery = globalSelection => {
         queryFn: async () => {
             try {
                 if (properties_.length < 1 && globalSelection.missing.length < 1) return []
-                
+
                 const [current, missing] = await Promise.all([
                     queryClient.ensureQueryData(propertiesDetailsQuery(globalSelection)),
                     queryClient.ensureQueryData(propertiesDetailsSearchQuery(globalSelection.missing))
                 ])
 
-                const properties =  union(current, missing)
-    
+                const properties = union(current, missing)
+
                 return properties
 
             } catch (e) {

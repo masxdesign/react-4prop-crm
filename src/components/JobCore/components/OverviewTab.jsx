@@ -13,7 +13,7 @@ function getSelectedContent(originalContent, revisionHistory) {
 
 /** Preview tab showing selected versions with unsaved local edits. */
 export default function OverviewTab({ outputData, fields, revisionHistories = {}, localEdits = {} }) {
-  const result = outputData?.output_data?.result || {};
+  const result = outputData?.output_data || {};
 
   // Build preview content using selected versions, with localEdits taking priority
   const previewContent = useMemo(() => {

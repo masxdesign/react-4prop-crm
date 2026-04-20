@@ -3,48 +3,53 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Loader2, Search } from 'lucide-react';
 import { useJobOutput, usePublishJobMutation } from '@/features/jobCore';
 import { JOB_STATUS_CONFIG, formatRelativeTime, formatCostUSD } from './utils';
-import { JobOutputDialog } from './components';
+import { JobOutputSheet } from './components';
+import { useCursorInfoCard } from '@/hooks/use-CursorInfoCard';
+import { CursorInfoCard } from '@/components/ui-custom/CursorInfoCard';
 
 // Filter options for the job list
 const FILTER_OPTIONS = [
-  { id: 'all', label: 'All' },
-  { id: 'failed', label: 'Failed' },
-  { id: 'not_posted', label: 'Not posted' },
-  { id: 'published', label: 'Published' },
-  { id: 'unpublished', label: 'Unpublished' },
+  { id: 'all', label: 'All', description: 'Show all jobs regardless of status' },
+  { id: 'failed', label: 'Failed', description: 'Jobs that failed during processing' },
+  { id: 'draft', label: 'Draft', description: 'Content created but never published' },
+  { id: 'published', label: 'Published', description: 'Content live on the blog and in sync' },
+  { id: 'modified', label: 'Needs syncing', description: 'Published content with local changes not yet synced' },
+  { id: 'unpublished', label: 'Unpublished', description: 'Previously published content that was taken offline' },
 ];
 
 // Blog status badge configuration
+// Maps draft_sync_status values to display config
 const BLOG_STATUS_CONFIG = {
-  not_posted: {
-    label: 'Not posted',
+  draft: {
+    label: 'Draft',
     className: 'bg-gray-100 text-gray-600 border-gray-200',
   },
   published: {
     label: 'Published',
     className: 'bg-green-100 text-green-700 border-green-200',
   },
-  unpublished: {
-    label: 'Unpublished',
+  modified: {
+    label: 'Not synced',
     className: 'bg-amber-100 text-amber-700 border-amber-200',
   },
-  needs_sync: {
-    label: 'Needs sync',
-    className: 'bg-amber-100 text-amber-700 border-amber-200',
+  unpublished: {
+    label: 'Unpublished',
+    className: 'bg-red-100 text-red-700 border-red-200',
   },
 };
 
+/**
+ * Get blog status from job's draft_sync_status
+ * Falls back to legacy logic if no draft exists
+ */
 function getBlogStatus(job) {
-  if (!job.blog_post_id) return 'not_posted';
+  // Use draft_sync_status if available (new system)
+  if (job.draft_sync_status) {
+    return job.draft_sync_status;
+  }
+  // Legacy fallback for jobs without drafts
+  if (!job.blog_post_id) return 'draft';
   return job.is_published ? 'published' : 'unpublished';
-}
-
-function needsSyncCheck(job) {
-  return job.blog_post_id &&
-         job.is_published &&
-         job.updated_at &&
-         job.blog_synced_at &&
-         new Date(job.updated_at) > new Date(job.blog_synced_at);
 }
 
 /**
@@ -68,6 +73,13 @@ export default function JobsList({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const parentRef = useRef(null);
+  const cursorCard = useCursorInfoCard({ showDelay: 0 });
+
+  // Draft sync status (overrides job-based sync status when drafts are used)
+  const [draftSyncStatus, setDraftSyncStatus] = useState(null);
+
+  // Draft publish handlers (provided by DraftOutputContent)
+  const [draftPublishHandlers, setDraftPublishHandlers] = useState(null);
 
   // Reset filter to 'all' when resetFilterTrigger changes
   useEffect(() => {
@@ -148,6 +160,8 @@ export default function JobsList({
 
   const handleCloseDialog = () => {
     setSelectedJob(null);
+    setDraftSyncStatus(null); // Reset draft sync status when closing
+    setDraftPublishHandlers(null); // Reset draft publish handlers when closing
   };
 
   const handleJobChange = (job) => {
@@ -160,32 +174,49 @@ export default function JobsList({
   // Publish mutation
   const publishMutation = usePublishJobMutation(jobType);
 
+  // Use draft handlers if available, otherwise fall back to job-based publish
   const handlePush = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onPush) {
+      draftPublishHandlers.onPush();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id });
     }
   };
 
   const handleUnpublish = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onUnpublish) {
+      draftPublishHandlers.onUnpublish();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id, unpublish: true });
     }
   };
 
   const handlePublish = () => {
-    if (selectedJob?.id) {
+    if (draftPublishHandlers?.onPublish) {
+      draftPublishHandlers.onPublish();
+    } else if (selectedJob?.id) {
       publishMutation.mutate({ jobId: selectedJob.id });
     }
   };
 
-  const blogPostId = outputData?.output_data?.result?.blog_post_id;
-  const isPublished = outputData?.output_data?.result?.is_published === 'true';
-  const blogSyncedAt = outputData?.output_data?.result?.blog_synced_at;
-  const jobUpdatedAt = outputData?.updated_at;
-  const needsSync = blogPostId && jobUpdatedAt && blogSyncedAt && new Date(jobUpdatedAt) > new Date(blogSyncedAt);
+  // Combine loading states
+  const isPublishing = draftPublishHandlers?.isPublishing ?? publishMutation.isPending;
+
+  // Use draft sync status if available, otherwise fall back to job-based status
+  const blogPostId = draftSyncStatus?.blogPostId ?? outputData?.output_data?.blog_post_id;
+  const syncStatus = draftSyncStatus?.syncStatus;
+  // For drafts: use sync_status directly (based on hash comparison)
+  // For legacy jobs: fall back to output_data fields
+  const isPublished = syncStatus
+    ? (syncStatus === 'published' || syncStatus === 'modified')
+    : (outputData?.output_data?.is_published === 'true');
+  const needsSync = syncStatus === 'modified';
 
   return (
     <>
+      <CursorInfoCard visible={cursorCard.state.visible} x={cursorCard.state.x} y={cursorCard.state.y}>
+        {cursorCard.state.content}
+      </CursorInfoCard>
       <div className="border-2 border-gray-300 rounded-xl bg-white mt-6">
         {/* Search and filters header */}
         <div className="flex items-center gap-3 p-4 border-b">
@@ -208,11 +239,13 @@ export default function JobsList({
                 key={filter.id}
                 type="button"
                 onClick={() => setActiveFilter(filter.id)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-                  activeFilter === filter.id
-                    ? 'bg-blue-100 text-blue-700 border-blue-200'
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                }`}
+                onMouseEnter={() => cursorCard.show(filter.description)}
+                onMouseMove={cursorCard.updatePosition}
+                onMouseLeave={cursorCard.hide}
+                className={`cursor-pointer px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${activeFilter === filter.id
+                  ? 'bg-blue-100 text-blue-700 border-blue-200'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-white hover:text-blue-700 hover:border-blue-200'
+                  }`}
               >
                 {filter.label}
               </button>
@@ -292,7 +325,6 @@ export default function JobsList({
                 const title = getTitle ? getTitle(job) : job.id;
                 const blogStatus = job.status === 'completed' ? getBlogStatus(job) : null;
                 const blogConfig = blogStatus ? BLOG_STATUS_CONFIG[blogStatus] : null;
-                const showNeedsSync = job.status === 'completed' && needsSyncCheck(job);
                 const displayCost = job.total_cost_usd ?? job.cost_usd;
 
                 return (
@@ -334,11 +366,6 @@ export default function JobsList({
                           {blogConfig.label}
                         </span>
                       )}
-                      {showNeedsSync && (
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium border ${BLOG_STATUS_CONFIG.needs_sync.className}`}>
-                          !
-                        </span>
-                      )}
                     </div>
 
                     {/* Created */}
@@ -364,7 +391,7 @@ export default function JobsList({
         )}
       </div>
 
-      <JobOutputDialog
+      <JobOutputSheet
         job={selectedJob}
         open={!!selectedJob}
         onOpenChange={(open) => !open && handleCloseDialog()}
@@ -376,7 +403,7 @@ export default function JobsList({
         onPush={handlePush}
         onUnpublish={handleUnpublish}
         onPublish={handlePublish}
-        isPublishing={publishMutation.isPending}
+        isPublishing={isPublishing}
       >
         {OutputContentComponent && (
           <OutputContentComponent
@@ -385,10 +412,12 @@ export default function JobsList({
             job={selectedJob}
             advertiserId={advertiserId}
             onJobChange={handleJobChange}
+            onSyncStatusChange={setDraftSyncStatus}
+            onPublishHandlersChange={setDraftPublishHandlers}
             {...outputContentProps}
           />
         )}
-      </JobOutputDialog>
+      </JobOutputSheet>
     </>
   );
 }

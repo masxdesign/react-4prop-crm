@@ -1,37 +1,11 @@
 import propertyPubClient from '@/services/propertyPubClient';
 
 /**
- * Fetch advertiser stats with agency breakdown
- */
-export const fetchAdvertiserStats = async (advertiserId, startDate, endDate) => {
-  const response = await propertyPubClient.get(
-    `/api/stats/advertiser/${advertiserId}`,
-    {
-      params: { startDate, endDate }
-    }
-  );
-  return response.data;
-};
-
-/**
  * Fetch properties for an agency under an advertiser
  */
 export const fetchAdvertiserAgencyProperties = async (advertiserId, agencyId, startDate, endDate) => {
   const response = await propertyPubClient.get(
     `/api/stats/advertiser/${advertiserId}/agency/${agencyId}/properties`,
-    {
-      params: { startDate, endDate }
-    }
-  );
-  return response.data;
-};
-
-/**
- * Fetch agency stats with advertiser breakdown
- */
-export const fetchAgencyStats = async (agencyId, startDate, endDate) => {
-  const response = await propertyPubClient.get(
-    `/api/stats/agency/${agencyId}`,
     {
       params: { startDate, endDate }
     }

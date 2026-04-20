@@ -14,6 +14,26 @@ export const fetchAgentPaginatedProperties = async (nid, options = {}) => {
   return response.data;
 };
 
+/** Agent Properties with cursor-based infinite scroll (hybrid API) */
+export const fetchAgentPropertiesCursor = async (nid, options = {}) => {
+  const { cursor, pageSize = 20, search, sortBy, sortOrder } = options;
+  const params = { pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  if (search?.trim()) {
+    params.search = search.trim();
+  }
+  if (sortBy) {
+    params.sortExpr = sortBy;
+  }
+  if (sortOrder) {
+    params.sortDirection = sortOrder.toUpperCase();
+  }
+  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`, { params });
+  return response.data;
+};
+
 // Advertiser Management API functions
 export const fetchAllAdvertisers = async () => {
   const response = await bizchatClient.get('/api/crm/mag/advertisers');
@@ -30,6 +50,7 @@ export const createAdvertiser = async (advertiserData) => {
   return response.data;
 };
 
+/** PUT body may be a partial object (only changed fields). Server must merge into the row, not replace missing keys with null/empty. */
 export const updateAdvertiser = async ({ id, ...advertiserData }) => {
   const response = await bizchatClient.put(`/api/crm/mag/advertisers/${id}`, advertiserData);
   return response.data;
@@ -79,7 +100,7 @@ export const searchAgents = async (searchTerm) => {
     params: {
       search: searchTerm,
       page: 1,
-      limit: 10,
+      limit: 100,
       sortBy: 'surname',
       order: 'asc'
     }
@@ -110,7 +131,7 @@ export const fetchAgentDetails = async (nid) => {
  */
 export const fetchAgentsForSelection = async ({
   search = '',
-  limit = 20,
+  limit = 100,
   page = 1,
   sortBy = 'surname',
   order = 'asc'
@@ -187,7 +208,7 @@ export const assignApprover = async (scheduleId, assignData) => {
 export const fetchUsersByNids = async (nids) => {
   const filteredNids = nids.filter(Boolean);
   if (filteredNids.length === 0) return [];
-  
+
   const response = await bizchatClient.post('/api/users', {
     ids: filteredNids.join(',')
   });
