@@ -10,7 +10,7 @@ import { StatsExpandProvider } from '../context/StatsExpandContext';
 import DateRangePicker from '../DateRangePicker/DateRangePicker';
 import DailySummaryTable from '../DailySummaryTable/DailySummaryTable';
 import AgencyBreakdownTable from '../AgencyBreakdownTable/AgencyBreakdownTable';
-import { fetchAdvertiserStats } from '../api';
+import { fetchAdvertiserStats } from '../statsPageApi';
 
 /**
  * AdvertiserStatsPage Component

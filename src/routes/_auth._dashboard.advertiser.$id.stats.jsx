@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { subDays, format } from 'date-fns';
 import { Loader2 } from 'lucide-react';
-import { fetchAdvertiserStats } from '@/components/Stats/api';
+import { fetchAdvertiserStats } from '@/components/Stats/statsPageApi';
 import AdvertiserStatsPage from '@/components/Stats/AdvertiserStatsPage/AdvertiserStatsPage';
 
 export const Route = createFileRoute('/_auth/_dashboard/advertiser/$id/stats')({

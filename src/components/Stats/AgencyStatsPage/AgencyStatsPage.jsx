@@ -10,6 +10,7 @@ import { StatsExpandProvider } from '../context/StatsExpandContext';
 import DateRangePicker from '../DateRangePicker/DateRangePicker';
 import DailySummaryTable from '../DailySummaryTable/DailySummaryTable';
 import AdvertiserBreakdownTable from '../AdvertiserBreakdownTable/AdvertiserBreakdownTable';
+import { fetchAgencyStats } from '../statsPageApi';
 
 /**
  * AgencyStatsPage Component
@@ -41,10 +42,7 @@ const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
   // Get query options from route context
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['agency-stats', agencyId, startDate, endDate],
-    queryFn: async () => {
-      const { fetchAgencyStats } = await import('../api');
-      return fetchAgencyStats(agencyId, startDate, endDate);
-    },
+    queryFn: () => fetchAgencyStats(agencyId, startDate, endDate),
     enabled: !!agencyId,
   });
 
