@@ -1,5 +1,5 @@
 import { fourPropClient } from './fourPropClient'
-import { setToken } from './createAuthClient'
+import { setToken, setImpersonating } from './createAuthClient'
 import { withTokenRefresh } from './withTokenRefresh'
 
 /** Start impersonating a target user by their neg_id (agent) or user_id (advertiser) */
@@ -11,6 +11,7 @@ export const impersonate = async ({ targetNegId, targetUserId }) => {
     })
     if (data.token) {
         setToken(data.token)
+        setImpersonating(true)
     }
     return data
 }
@@ -24,5 +25,6 @@ export const exitImpersonation = async () => {
     if (data.token) {
         setToken(data.token)
     }
+    setImpersonating(false)
     return data
 }

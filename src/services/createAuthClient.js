@@ -3,6 +3,7 @@ import { FOURPROP_BASEURL } from './fourPropClient'
 
 // Token storage key
 const TOKEN_KEY = 'api_token'
+const IMPERSONATING_KEY = 'impersonating'
 
 // Refresh state management
 let isRefreshing = false
@@ -36,6 +37,18 @@ export const setToken = (token) => {
 /** Clear JWT token */
 export const clearToken = () => {
     sessionStorage.removeItem(TOKEN_KEY)
+}
+
+/** True when the current tab is running an admin impersonation session */
+export const isImpersonating = () => sessionStorage.getItem(IMPERSONATING_KEY) === '1'
+
+/** Toggle the impersonation flag (pass false to clear) */
+export const setImpersonating = (on) => {
+    if (on) {
+        sessionStorage.setItem(IMPERSONATING_KEY, '1')
+    } else {
+        sessionStorage.removeItem(IMPERSONATING_KEY)
+    }
 }
 
 /** Raw refresh call (no queue) */

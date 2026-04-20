@@ -10,9 +10,9 @@ import propertyTypesCombiner from "./propertyTypesCombiner";
 import companyCombiner from "./companyCombiner";
 import useListing, { propertyCombiner, propertyTypescombiner } from "@/store/use-listing";
 import { getTime } from "date-fns";
-import { fourPropClient, FOURPROP_BASEURL } from "./fourPropClient";
+import { fourPropClient, FOURPROP_BASEURL, isSameOriginAsFourProp } from "./fourPropClient";
 import { propReqContentsQuery, subtypesQuery, typesQuery } from "@/store/listing.queries";
-import { setToken, clearToken } from "./createAuthClient";
+import { setToken, clearToken, getToken, isImpersonating, setImpersonating } from "./createAuthClient";
 import { withTokenRefresh } from "./withTokenRefresh";
 
 export const authWhoisonlineQueryOptions = (hash) => queryOptions({
@@ -24,15 +24,26 @@ export const authWhoisonlineQueryOptions = (hash) => queryOptions({
             params.i = hash
         }
 
-        // Try with current token first, refresh on 401/token error
-        const data = await withTokenRefresh(async (headers) => {
-            const { data } = await fourPropClient.post('api/login', null, { params, headers })
-            return data
-        })
+        let data
 
-        // Store token from response (login returns token)
+        // Same-origin + not impersonating + no token yet: bootstrap JWT from PHP session.
+        // Backend mints an access token and returns it in data.token.
+        if (isSameOriginAsFourProp() && !isImpersonating() && !getToken()) {
+            const res = await fourPropClient.post('api/login', null, { params, headers: {} })
+            data = res.data
+        } else {
+            // JWT path: impersonation always lands here
+            data = await withTokenRefresh(async (headers) => {
+                const { data } = await fourPropClient.post('api/login', null, { params, headers })
+                return data
+            })
+        }
+
         if (data?.token) {
             setToken(data.token)
+        }
+        if (data?.impersonating) {
+            setImpersonating(true)
         }
 
         return data
@@ -94,6 +105,7 @@ export const fetchNewlyGradedProperties = async () => {
 export const authLogout = async () => {
     // Clear JWT token on logout
     clearToken()
+    setImpersonating(false)
     return fourPropClient.post('api/account/logout')
 }
 
