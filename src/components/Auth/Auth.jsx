@@ -5,6 +5,7 @@ import { AuthContext, AuthDispatchContext, useAuthContext, useAuthDispatch } fro
 import { flushSync } from "react-dom"
 import { RESTRICTED_NEG_IDS } from "../DashboardSidebar/permissions"
 import { clearToken, setImpersonating } from "@/services/createAuthClient"
+import { isSameOriginAsFourProp } from "@/services/fourPropClient"
 import useSessionSync from "@/hooks/useSessionSync"
 
 export const initialAuthState = {
@@ -130,6 +131,10 @@ export const useAuth = () => {
 
     const handleLogout = async () => {
         await logout.mutateAsync()
+        if (isSameOriginAsFourProp()) {
+            window.location.reload()
+            return
+        }
         flushSync(() => {
             setState({
                 logout: true

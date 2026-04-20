@@ -3,12 +3,14 @@ import { fourPropClient, isSameOriginAsFourProp } from '@/services/fourPropClien
 import { getToken } from '@/services/createAuthClient'
 
 /**
- * Same-origin only: when the CRM tab regains focus, verify the PHP session is
- * still alive. If it's gone (user logged out on the main site), dispatch
- * auth:session-expired so AuthProvider tears the CRM session down too.
+ * Same-origin only: when the CRM tab regains focus, reconcile CRM auth with
+ * the PHP session on the main site.
  *
- * Applies to impersonation as well — impersonation requires an admin PHP
- * session; if that's gone, the impersonation token must also be cleared.
+ *   - CRM has token, PHP session gone → dispatch auth:session-expired
+ *     (covers admin logout; also tears down an active impersonation since
+ *      impersonation requires an admin PHP session).
+ *   - CRM has no token, PHP session alive → reload so the boot whoisonline
+ *     call mints a JWT from the PHP session.
  */
 export const useSessionSync = () => {
     useEffect(() => {
@@ -18,7 +20,6 @@ export const useSessionSync = () => {
 
         const check = async () => {
             if (checking) return
-            if (!getToken()) return
             checking = true
             try {
                 const { data } = await fourPropClient.post('api/login', null, {
@@ -26,11 +27,17 @@ export const useSessionSync = () => {
                     params: { _sessionCheck: 1 },
                 })
                 const sessionAlive = !!data && !!data.id && !data.need_to_login
-                if (!sessionAlive) {
+                const hasToken = !!getToken()
+
+                if (hasToken && !sessionAlive) {
                     window.dispatchEvent(new CustomEvent('auth:session-expired'))
+                } else if (!hasToken && sessionAlive) {
+                    window.location.reload()
                 }
             } catch {
-                window.dispatchEvent(new CustomEvent('auth:session-expired'))
+                if (getToken()) {
+                    window.dispatchEvent(new CustomEvent('auth:session-expired'))
+                }
             } finally {
                 checking = false
             }
