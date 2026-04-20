@@ -14,7 +14,7 @@ export const Route = createFileRoute('/view-details/$pid')({
 
         if (!auth.isAuthenticated && !search.i) {
             throw redirect({
-                to: '/crm/login',
+                to: '/login',
                 search: {
                     redirect: location.href.replace(location.origin, '')
                 }

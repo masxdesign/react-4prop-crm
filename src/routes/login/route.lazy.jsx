@@ -5,7 +5,7 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { flushSync } from 'react-dom';
 
 export const Route = createLazyFileRoute('/login')({
-    component: LoginComponent,
+  component: LoginComponent,
 })
 
 function LoginComponent() {
@@ -23,8 +23,8 @@ function LoginComponent() {
 
       console.log(search.redirect);
 
-      // Default to /crm if no redirect path is provided
-      navigate({ to: search.redirect || '/crm' })
+      // Default to / if no redirect path is provided
+      navigate({ to: search.redirect || '/' })
 
     } catch (e) {
 
@@ -34,14 +34,14 @@ function LoginComponent() {
   }
 
   return (
-    <div className="container h-[800px] flex items-center justify-center">
-      <div className="w-[400px] mx-auto space-y-6 rounded-[0.5rem] border bg-background shadow-md md:shadow-xl p-8">
+    <div className="h-screen flex items-center justify-center">
+      <div className="w-[400px] mx-auto space-y-6 rounded-lg border bg-background shadow-md md:shadow-xl p-8">
         <div className="flex flex-col space-y-2 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p className="text-sm text-muted-foreground">Enter your credentials to access your account</p>
         </div>
-        <LoginForm 
-          onSubmit={handleSubmit} 
+        <LoginForm
+          onSubmit={handleSubmit}
           isPending={auth.login.isPending}
           errors={errors}
           defaultEmail={search.email}

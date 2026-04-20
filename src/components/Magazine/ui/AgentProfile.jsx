@@ -50,7 +50,7 @@ const AgentProfile = ({
     >
       {/* Profile Picture / Avatar */}
       <div className={cn(
-        "flex-shrink-0 rounded-full overflow-hidden",
+        "shrink-0 rounded-full overflow-hidden",
         size === "sm" ? "w-6 h-6" : "w-8 h-8"
       )}>
         <ImageWithFallback
@@ -59,7 +59,7 @@ const AgentProfile = ({
           className="w-full h-full object-cover"
           fallback={
             <div className={cn(
-              "w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
+              "w-full h-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-medium",
               size === "sm" ? "text-xs" : "text-sm"
             )}>
               {user.firstname?.charAt(0)?.toUpperCase() || ''}{user.surname?.charAt(0)?.toUpperCase() || ''}
@@ -89,7 +89,7 @@ const AgentProfile = ({
       {/* Role Icon */}
       {RoleIcon && showRoleIcon && (
         <div className={cn(
-          "flex-shrink-0",
+          "shrink-0",
           roleColors[role] || "text-gray-600"
         )}>
           <RoleIcon className={cn(

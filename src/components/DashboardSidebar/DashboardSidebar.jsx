@@ -1,29 +1,66 @@
-import { LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { LogOut, UserCog, ArrowLeftRight } from 'lucide-react'
 import { useNavigation } from './use-navigation'
 import { NavLink } from './NavLink'
 import { useAuth } from '../Auth/Auth-context'
+import { useImpersonation } from '@/hooks/useImpersonation'
+import { ImpersonateSheet } from '../Impersonation'
 
 export function DashboardSidebar({ negId, onLogout, context }) {
   const auth = useAuth()
-  const { mainNavItems, portalItems, magazineItems } = useNavigation(negId, auth)
+  const { isImpersonating, exitImpersonation, isExitPending } = useImpersonation()
+  const [impersonateDialogOpen, setImpersonateDialogOpen] = useState(false)
+  const { mainNavItems, portalItems, magazineItems, adminItems } = useNavigation(negId, auth)
+
+  // Admin can impersonate (even while already impersonating to switch users)
+  const canImpersonate = auth.user?.is_admin || isImpersonating
 
   return (
-    <div className="flex flex-col gap-8 items-stretch text-sm text-white h-full bg-black/40 bg-gradient-to-l from-blue-900 to-blue-950">
+    <div className="flex flex-col gap-6 items-stretch text-sm text-white h-full overflow-y-auto bg-black/40 bg-linear-to-l from-blue-900 to-blue-950">
       <div className='p-3'>
-        <span className='text-2xl font-bold text-emerald-500 tracking-tighter'>
+        <span className='text-lg font-bold text-emerald-500 tracking-tighter'>
           CRM
         </span>
         <div className='mt-2 flex flex-col gap-1'>
-          <span className='text-xs text-white/70 truncate'>{auth.displayName}</span>
-          <span className='text-[10px] px-1.5 py-0.5 rounded bg-emerald-600/30 text-emerald-400 w-fit'>
+          <span className='text-xs text-white/70 truncate'>
+            {auth.displayName}
+          </span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded w-fit ${isImpersonating
+            ? 'bg-amber-600/30 text-amber-400'
+            : 'bg-emerald-600/30 text-emerald-400'
+            }`}>
             {auth.user?.is_admin ? 'Admin' : auth.isAgent ? 'Agent' : auth.isAdvertiser ? 'Advertiser' : 'User'}
           </span>
         </div>
+
+        {/* Impersonation Controls */}
+        {canImpersonate && (
+          <div className="mt-4 flex flex-col gap-1">
+            <button
+              onClick={() => setImpersonateDialogOpen(true)}
+              className="w-full text-left px-2 py-1.5 text-xs text-white/70 hover:text-white hover:bg-white/10 rounded flex items-center gap-2"
+            >
+              <UserCog className="size-4" />
+              Impersonate
+            </button>
+
+            {isImpersonating && (
+              <button
+                onClick={() => exitImpersonation()}
+                disabled={isExitPending}
+                className="w-full text-left px-2 py-1.5 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded flex items-center gap-2"
+              >
+                <ArrowLeftRight className="h-3 w-3" />
+                {isExitPending ? 'Switching...' : 'Switch Back'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <nav className='flex flex-col gap-2'>
         {mainNavItems.map((item) => (
-          <NavLink 
+          <NavLink
             key={item.id}
             {...item}
             context={context}
@@ -37,7 +74,22 @@ export function DashboardSidebar({ negId, onLogout, context }) {
             Marketing
           </h3>
           {magazineItems.map((item) => (
-            <NavLink 
+            <NavLink
+              key={item.id}
+              {...item}
+              context={context}
+            />
+          ))}
+        </div>
+      )}
+
+      {adminItems.length > 0 && (
+        <div className='flex flex-col gap-2'>
+          <h3 className='uppercase font-bold text-xs px-3 text-emerald-500 tracking-tighter'>
+            Admin
+          </h3>
+          {adminItems.map((item) => (
+            <NavLink
               key={item.id}
               {...item}
               context={context}
@@ -51,7 +103,7 @@ export function DashboardSidebar({ negId, onLogout, context }) {
           Portals
         </h3>
         {portalItems.map((item) => (
-          <NavLink 
+          <NavLink
             key={item.id}
             {...item}
             context={context}
@@ -68,6 +120,12 @@ export function DashboardSidebar({ negId, onLogout, context }) {
           <LogOut className='size-4' />
         </button>
       </div>
+
+      {/* Impersonate Sheet */}
+      <ImpersonateSheet
+        open={impersonateDialogOpen}
+        onOpenChange={setImpersonateDialogOpen}
+      />
     </div>
   )
 }

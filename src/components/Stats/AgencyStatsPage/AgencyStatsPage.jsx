@@ -3,13 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useNavigate, useSearch } from '@tanstack/react-router';
 import { useAuth } from '@/components/Auth/Auth-context';
 import { subDays, format } from 'date-fns';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, ChevronLeft } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StatsExpandProvider } from '../context/StatsExpandContext';
 import DateRangePicker from '../DateRangePicker/DateRangePicker';
 import DailySummaryTable from '../DailySummaryTable/DailySummaryTable';
 import AdvertiserBreakdownTable from '../AdvertiserBreakdownTable/AdvertiserBreakdownTable';
+import { fetchAgencyStats } from '../statsPageApi';
 
 /**
  * AgencyStatsPage Component
@@ -17,28 +18,38 @@ import AdvertiserBreakdownTable from '../AdvertiserBreakdownTable/AdvertiserBrea
  * Main page component for agency statistics.
  * Displays number of advertisers, daily summary, and advertiser breakdown with lazy-loaded property details.
  *
- * Route: /stats/agency/:agencyId
+ * Route: /agency/:id/stats
+ *
+ * Props passed from route file:
+ * - search: URL search params (startDate, endDate)
+ * - agencyId: The agency ID from route params
  */
-const AgencyStatsPage = () => {
+const AgencyStatsPage = ({ search: propSearch, agencyId: propAgencyId }) => {
   const auth = useAuth();
-  const { agencyId } = useParams({ from: '/_auth/_dashboard/stats/agency/$agencyId' });
-  const search = useSearch({ from: '/_auth/_dashboard/stats/agency/$agencyId' });
-  const navigate = useNavigate({ from: '/stats/agency/$agencyId' });
+  // Use prop if provided, otherwise fall back to useParams for backwards compatibility
+  const params = useParams({ strict: false });
+  const agencyId = propAgencyId || params.id || params.agencyId;
+  const navigate = useNavigate();
+
+  // Use prop search if provided, otherwise use useSearch as fallback
+  const routeSearch = useSearch({ strict: false });
+  const search = propSearch || routeSearch || {};
+
+  // Default date values
+  const startDate = search.startDate || format(subDays(new Date(), 30), 'yyyy-MM-dd');
+  const endDate = search.endDate || format(new Date(), 'yyyy-MM-dd');
 
   // Get query options from route context
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['agency-stats', agencyId, search.startDate, search.endDate],
-    queryFn: async () => {
-      const { fetchAgencyStats } = await import('../api');
-      return fetchAgencyStats(agencyId, search.startDate, search.endDate);
-    },
+    queryKey: ['agency-stats', agencyId, startDate, endDate],
+    queryFn: () => fetchAgencyStats(agencyId, startDate, endDate),
     enabled: !!agencyId,
   });
 
   // Date range state for picker
   const [dateRange, setDateRange] = useState({
-    from: new Date(search.startDate),
-    to: new Date(search.endDate),
+    from: new Date(startDate),
+    to: new Date(endDate),
   });
 
   // Handle date range change
@@ -96,14 +107,32 @@ const AgencyStatsPage = () => {
 
   return (
     <StatsExpandProvider>
-      <div className="flex flex-col h-full overflow-auto">
-        <div className="flex-1 p-6 space-y-6">
-          {/* Header */}
+      <div className="flex flex-col gap-6 p-6 w-full mx-auto min-w-0">
+        {/* Header */}
+        <div className="flex flex-col gap-2">
+          {auth.user?.is_admin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate({
+                to: '/agency',
+                search: {
+                  tab: 'agencies',
+                  ...(search.returnPage ? { page: search.returnPage } : {}),
+                  ...(search.returnSearch ? { search: search.returnSearch } : {})
+                }
+              })}
+              className="self-start -ml-2 text-gray-600 hover:text-gray-900"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Back to Agencies
+            </Button>
+          )}
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Agency Statistics</h1>
-              {auth.user?.is_admin && (
-                <p className="text-gray-600 mt-1">{data.agency_name}</p>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold text-gray-900">Agency Statistics</h1>
+              {auth.user?.is_admin && data.agency_name && (
+                <p className="text-sm text-gray-600 mt-1">{data.agency_name}</p>
               )}
             </div>
             <DateRangePicker
@@ -113,6 +142,7 @@ const AgencyStatsPage = () => {
               maxDate={new Date()}
             />
           </div>
+        </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -151,10 +181,6 @@ const AgencyStatsPage = () => {
             <CardContent>
               <DailySummaryTable
                 dailySummary={data.dailySummary}
-                totalProperties={data.advertiserBreakdown?.reduce(
-                  (sum, adv) => sum + (adv.totalProperties || 0),
-                  0
-                )}
               />
             </CardContent>
           </Card>
@@ -171,12 +197,11 @@ const AgencyStatsPage = () => {
               <AdvertiserBreakdownTable
                 advertiserBreakdown={data.advertiserBreakdown}
                 agencyId={agencyId}
-                startDate={search.startDate}
-                endDate={search.endDate}
+                startDate={startDate}
+                endDate={endDate}
               />
             </CardContent>
           </Card>
-        </div>
       </div>
     </StatsExpandProvider>
   );

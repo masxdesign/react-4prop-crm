@@ -12,7 +12,7 @@ import { usePidGradesMutation } from '@/features/gradeSharing/hooks'
 
 const allowUsersList = ['U161', 'U2', 'U60726']
 
-export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid/share')({
+export const Route = createFileRoute('/_auth/grade/_gradeWidget/$pid_/share')({
   component: GradeShareComponent,
   beforeLoad: ({ context, params }) => {
     
@@ -40,13 +40,15 @@ function GradeShareComponent () {
     const { pid } = Route.useParams() 
     const { grade } = useRouteGradeContext()
 
+    // NEW: JWT-authenticated - crmAddTag no longer needs authUserId
     const addTag = useMutation({
-        mutationFn: name => crmAddTag(auth.authUserId, name)
+        mutationFn: name => crmAddTag(name)
     })
 
     const pidGradesMutation = usePidGradesMutation()
 
-    const tagListQueryOptions_ = tagListQueryOptions(auth.authUserId)
+    // NEW: JWT-authenticated - tagListQueryOptions no longer needs authUserId
+    const tagListQueryOptions_ = tagListQueryOptions()
 
     const navigate = useNavigate()
 

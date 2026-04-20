@@ -2,24 +2,23 @@ import { crmAddNextContact } from "@/services/bizchat"
 import useContactDateMyListMutationOptions from "../hooks/use-ContactDateMyListMutationOptions"
 import ColumnNextContact from "./ColumnNextContact"
 
+// NEW: JWT-authenticated - crmAddNextContact no longer needs authUserId
 const ColumnNextContactMyList = ({
-    importId, 
-    authUserId,
+    importId,
     placeholder = "Pick a date",
     name = "next_contact",
     table = null,
     defaultValue = null,
     tableDataQueryKey = null,
-    onSuccess, 
+    onSuccess,
     message,
     portalled
 }) => {
     const mutationOptions = useContactDateMyListMutationOptions({
         importId,
         tableDataQueryKey,
-        mutationFn: variables => crmAddNextContact(variables, importId, authUserId),
-        onSuccess,
-        authUserId
+        mutationFn: variables => crmAddNextContact(variables, importId),
+        onSuccess
     })
 
     return (

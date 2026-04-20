@@ -26,7 +26,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 import * as yup from "yup"
 
-export const Route = createFileRoute('/_auth/grade-sharing/setup-email')({
+export const Route = createFileRoute('/_auth/grade-sharing_/setup-email')({
   component: SetupEmailComponent
 })
 
@@ -154,7 +154,8 @@ function SetupEmailComponent () {
 
             const generalMessage = values.message
 
-            const { uid } = await getUidByImportId(auth.authUserId, selected.id, true)
+            // NEW: JWT-authenticated - getUidByImportId no longer needs authUserId
+            const { uid } = await getUidByImportId(selected.id, true)
 
             try {
 

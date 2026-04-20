@@ -19,7 +19,7 @@ import { takeRight } from "lodash"
 import { recentGradeSharesQueryOptions } from "@/features/gradeSharing/services"
 import { ArrowTopRightIcon } from "@radix-ui/react-icons"
 
-export const Route = createFileRoute('/_auth/grade-sharing/')({
+export const Route = createFileRoute('/_auth/grade-sharing_/')({
   component: GradeSharingConfirmComponent
 })
 
@@ -163,9 +163,7 @@ function GradeSharingConfirmComponent () {
                                 <span className="font-bold">SearchName</span> +new or change/select 
                             </h3>
                             <Suspense fallback={<Loader2 className="animate-spin" />}>
-                                <AssignTagControl 
-                                    from_id={auth.user.id} 
-                                    importId={selected.id}
+                                <AssignTagControl
                                     selected={tag}
                                     onSelect={setTag}
                                 />
@@ -178,7 +176,7 @@ function GradeSharingConfirmComponent () {
                 <div className='px-3 space-y-2'>
                     <h3 className="text-sm font-bold">Recent</h3>
                     <Suspense fallback={<Loader2 className="animate-spin" />}>
-                        <RecentGradeShares from_uid={auth.user.id} onSelect={applyClientTag} />
+                        <RecentGradeShares onSelect={applyClientTag} />
                     </Suspense>
                 </div> 
 
@@ -217,8 +215,9 @@ function PropertyGrade ({ pid, grade, onGrade }) {
     )
 }
 
-function AssignTagControl ({ from_id, importId, selected, onSelect }) {
-    const tagsQuery = useSuspenseQuery(sharedTagListQueryOptions(from_id, importId))
+// NEW: JWT-authenticated - sharedTagListQueryOptions no longer needs from_id, importId
+function AssignTagControl ({ selected, onSelect }) {
+    const tagsQuery = useSuspenseQuery(sharedTagListQueryOptions())
 
     return (
         <AssignTagInput 
@@ -230,8 +229,9 @@ function AssignTagControl ({ from_id, importId, selected, onSelect }) {
     )
 }
 
-function RecentGradeShares ({ from_uid, onSelect }) {
-    const query = useSuspenseQuery(recentGradeSharesQueryOptions(from_uid))
+// NEW: JWT-authenticated - recentGradeSharesQueryOptions no longer needs from_uid
+function RecentGradeShares ({ onSelect }) {
+    const query = useSuspenseQuery(recentGradeSharesQueryOptions())
 
     const setSelected = useGradeSharingStore.use.setSelected()
     const setTag = useGradeSharingStore.use.setTag()

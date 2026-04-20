@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStatsExpand } from '../context/StatsExpandContext';
+import propertyParse from '@/utils/propertyParse';
+import usePropertyTypeLabels from '@/hooks/usePropertyTypeLabels';
+import displaySize from '@/utils/displaySize';
+import displayTenure from '@/utils/displayTenure';
 
 /**
- * Simple Avatar Component
- * Displays user avatar with fallback to initials
+ * Avatar with fallback to initials
  */
 const Avatar = ({ src, alt, fallbackText }) => {
   const [imgError, setImgError] = React.useState(false);
@@ -22,7 +25,7 @@ const Avatar = ({ src, alt, fallbackText }) => {
           onError={() => setImgError(true)}
         />
       ) : (
-        <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-medium text-white">
+        <div className="h-8 w-8 rounded-full bg-linear-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-medium text-white">
           {fallbackText}
         </div>
       )}
@@ -31,31 +34,51 @@ const Avatar = ({ src, alt, fallbackText }) => {
 };
 
 /**
- * PropertyRow Component
- *
- * Displays property details with metrics and expandable enquirer list.
- * Level 3: Property card with address, agent, metrics
- * Level 4: Enquirer details (expandable)
- *
- * @param {Object} props
- * @param {Object} props.property - Property object with all details and enquirers array
+ * Property card with metrics and expandable enquirer list
  */
 const PropertyRow = ({ property }) => {
   const { isPropertyExpanded, toggleProperty } = useStatsExpand();
   const isExpanded = isPropertyExpanded(property.pid);
+  const [showAllSubtypes, setShowAllSubtypes] = React.useState(false);
 
-  // Format property address
-  const formatAddress = () => {
-    const parts = [
-      property.building,
-      property.street,
-      property.suburblocality,
-      property.towncity,
-      property.postcode,
-    ].filter(Boolean);
+  // Get type/subtype labels
+  const { getSubtypeLabels, isLoading: labelsLoading } = usePropertyTypeLabels();
 
-    return parts.join(', ') || 'Address not available';
-  };
+  // Format property address using propertyParse utility
+  const address = useMemo(() => {
+    return propertyParse.addressText({
+      showMore: true,
+      showBuilding: true,
+      showPostcode: true
+    })(property);
+  }, [property]);
+
+  // Convert pstids to readable labels
+  const subtypeLabels = useMemo(() => {
+    if (!property.pstids || labelsLoading) return [];
+    return getSubtypeLabels(property.pstids);
+  }, [property.pstids, getSubtypeLabels, labelsLoading]);
+
+  // Parse property size using propertyParse utility
+  const sizeData = useMemo(() => {
+    return propertyParse.size(property);
+  }, [property]);
+
+  // Parse property tenure using propertyParse utility
+  const tenureData = useMemo(() => {
+    return propertyParse.tenure(property);
+  }, [property]);
+
+  // Format size text for display
+  const sizeText = useMemo(() => {
+    if (!sizeData.isIn) return null;
+    return displaySize({ ...sizeData, decimal: 2 });
+  }, [sizeData]);
+
+  // Format tenure text for display
+  const tenureText = useMemo(() => {
+    return displayTenure(tenureData);
+  }, [tenureData]);
 
   // Get initials from name
   const getInitials = (first, last) => {
@@ -71,23 +94,39 @@ const PropertyRow = ({ property }) => {
       {/* Property Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h4 className="font-medium text-gray-900">{formatAddress()}</h4>
-            {property.types && (
-              <Badge variant="secondary" className="text-xs">
-                {property.types}
-              </Badge>
-            )}
+          <div className="mb-1">
+            <h4 className="font-medium text-gray-900">{address}</h4>
           </div>
-          <p className="text-sm text-gray-600">
-            Agent: {property.agent_name || 'N/A'}
-          </p>
-          {(property.price || property.rent) && (
-            <p className="text-sm text-gray-600">
-              {property.price && `£${property.price.toLocaleString()}`}
-              {property.rent && `£${property.rent.toLocaleString()}/month`}
-            </p>
+
+          {/* Subtype badges */}
+          {subtypeLabels.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {(showAllSubtypes ? subtypeLabels : subtypeLabels.slice(0, 3)).map((label, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {label}
+                </Badge>
+              ))}
+              {subtypeLabels.length > 3 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs cursor-pointer hover:bg-muted transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAllSubtypes(!showAllSubtypes);
+                  }}
+                >
+                  {showAllSubtypes ? 'Show less' : `+${subtypeLabels.length - 3} more`}
+                </Badge>
+              )}
+            </div>
           )}
+
+          {/* Tenure and Size */}
+          <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+            {tenureText && <span>{tenureText}</span>}
+            {tenureText && sizeText && <span>•</span>}
+            {sizeText && <span>{sizeText}</span>}
+          </div>
         </div>
       </div>
 

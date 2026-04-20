@@ -72,7 +72,7 @@ export const Route = createFileRoute('/_auth/_com/user/$sub')({
         const X = (
           <span 
               style={{ backgroundImage: `url(${FOURPROP_BASEURL}/svg/close/10/999)` }}
-              className="bg-no-repeat size-5 cursor-pointer bg-cover inline-block align-middle translate-y-[-1px]"
+              className="bg-no-repeat size-5 cursor-pointer bg-cover inline-block align-middle -translate-y-px"
           />
         )
 

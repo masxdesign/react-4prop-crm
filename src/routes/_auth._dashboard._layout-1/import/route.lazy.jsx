@@ -71,7 +71,7 @@ function ImportCVSListScreen () {
 
   const importList = useImportList()
 
-  const navigate = useNavigate({ from: '/crm/dashboard/import' })
+  const navigate = useNavigate({ from: '/dashboard/import' })
 
   const [result, setResult] = useState(initialResult)
   
@@ -97,7 +97,7 @@ function ImportCVSListScreen () {
   }
 
   const handleClose = () => {
-    navigate({ to: '/crm/dashboard/list' })
+    navigate({ to: '/dashboard/list' })
   }
   
   const handleComplete = () => {

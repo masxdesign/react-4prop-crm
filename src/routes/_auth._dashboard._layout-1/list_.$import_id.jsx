@@ -1,4 +1,3 @@
-import { useAuth } from '@/components/Auth/Auth'
 import PendingComponent from '@/components/PendingComponent'
 import queryClient from '@/queryClient'
 import { crmListById } from '@/services/bizchat'
@@ -7,21 +6,20 @@ import { createFileRoute, Link, Outlet, useLoaderData, useRouteContext, useRoute
 import { cx } from 'class-variance-authority'
 import { ArrowLeftCircleIcon } from 'lucide-react'
 
-export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_id')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list_/$import_id')({
   component: ListImportIdComponent,
   pendingComponent: PendingComponent,
   loader: ({ context }) => queryClient.ensureQueryData(context.resolveContactDetails),
-  beforeLoad ({ location, params, context }) {
-
-    const { auth } = context
+  // NEW: JWT-authenticated - crmListById no longer needs auth.authUserId
+  beforeLoad ({ location, params }) {
     const { import_id } = params
     const { lastLocation, info } = location.state ?? {}
-    
+
     return {
         lastLocation,
         resolveContactDetails: {
             queryKey: ['infoById', import_id],
-            queryFn: () => crmListById(import_id, auth.authUserId),
+            queryFn: () => crmListById(import_id),
             initialData: info,
             enabled: !info
         }

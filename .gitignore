@@ -13,6 +13,12 @@ package-lock.json
 dist
 dist-ssr
 *.local
+*.timestamp-*.mjs
+
+docs/plans/
+
+# TanStack Router generated files
+src/routeTree.gen.ts
 
 # Environment files
 .env

@@ -97,10 +97,10 @@ const AgentPaginatedEnhancedTable = ({
                 <img 
                   src={info.row.original.thumbnail} 
                   alt="Property thumbnail"
-                  className="w-6 h-6 rounded object-cover flex-shrink-0"
+                  className="w-6 h-6 rounded object-cover shrink-0"
                 />
               ) : (
-                <div className="w-6 h-6 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                <div className="w-6 h-6 rounded bg-gray-200 shrink-0 flex items-center justify-center">
                   <svg className="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                   </svg>
@@ -240,7 +240,7 @@ const AgentPaginatedEnhancedTable = ({
     <div className='flex flex-col min-h-0 py-4 relative'>
       {/* Admin Viewing Banner - Compact & Expandable */}
       {isAdminViewing && viewingAgent && (
-        <div className="mx-3 mb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600 rounded-lg shadow-sm">
+        <div className="mx-3 mb-3 bg-linear-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600 rounded-lg shadow-sm">
           {/* Compact Header - Always Visible */}
           <button
             onClick={() => setIsBannerExpanded(!isBannerExpanded)}

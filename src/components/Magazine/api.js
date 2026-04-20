@@ -14,9 +14,34 @@ export const fetchAgentPaginatedProperties = async (nid, options = {}) => {
   return response.data;
 };
 
+/** Agent Properties with cursor-based infinite scroll (hybrid API) */
+export const fetchAgentPropertiesCursor = async (nid, options = {}) => {
+  const { cursor, pageSize = 20, search, sortBy, sortOrder } = options;
+  const params = { pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  if (search?.trim()) {
+    params.search = search.trim();
+  }
+  if (sortBy) {
+    params.sortExpr = sortBy;
+  }
+  if (sortOrder) {
+    params.sortDirection = sortOrder.toUpperCase();
+  }
+  const response = await bizchatClient.get(`/api/crm/mag/agent/paginated/${nid}`, { params });
+  return response.data;
+};
+
 // Advertiser Management API functions
 export const fetchAllAdvertisers = async () => {
   const response = await bizchatClient.get('/api/crm/mag/advertisers');
+  return response.data;
+};
+
+export const fetchAdvertiserById = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}`);
   return response.data;
 };
 
@@ -25,6 +50,7 @@ export const createAdvertiser = async (advertiserData) => {
   return response.data;
 };
 
+/** PUT body may be a partial object (only changed fields). Server must merge into the row, not replace missing keys with null/empty. */
 export const updateAdvertiser = async ({ id, ...advertiserData }) => {
   const response = await bizchatClient.put(`/api/crm/mag/advertisers/${id}`, advertiserData);
   return response.data;
@@ -74,7 +100,7 @@ export const searchAgents = async (searchTerm) => {
     params: {
       search: searchTerm,
       page: 1,
-      limit: 10,
+      limit: 100,
       sortBy: 'surname',
       order: 'asc'
     }
@@ -105,7 +131,7 @@ export const fetchAgentDetails = async (nid) => {
  */
 export const fetchAgentsForSelection = async ({
   search = '',
-  limit = 20,
+  limit = 100,
   page = 1,
   sortBy = 'surname',
   order = 'asc'
@@ -182,7 +208,7 @@ export const assignApprover = async (scheduleId, assignData) => {
 export const fetchUsersByNids = async (nids) => {
   const filteredNids = nids.filter(Boolean);
   if (filteredNids.length === 0) return [];
-  
+
   const response = await bizchatClient.post('/api/users', {
     ids: filteredNids.join(',')
   });
@@ -255,23 +281,94 @@ export const processAllSettlements = async () => {
 
 // Booking History API functions (schedules with active subscriptions)
 export const fetchAdvertiserBookings = async (advertiserId, options = {}) => {
-  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/advertiser/${advertiserId}`,
-    {
-      params: { status, page, pageSize }
-    }
+    { params }
   );
   return response.data;
 };
 
 export const fetchAgentBookings = async (agentNid, options = {}) => {
-  const { status = 'all', page = 1, pageSize = 10 } = options;
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
   const response = await bizchatClient.get(
     `/api/crm/mag/schedules/history/agent/${agentNid}`,
-    {
-      params: { status, page, pageSize }
-    }
+    { params }
+  );
+  return response.data;
+};
+
+export const fetchAgencyBookings = async (companyId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}`,
+    { params }
+  );
+  return response.data;
+};
+
+// Grouped Agency View API functions
+export const fetchAdvertiserAgencies = async (advertiserId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/advertiser/${advertiserId}/agencies`,
+    { params }
+  );
+  return response.data;
+};
+
+export const fetchAgencyBookingsForAdvertiser = async (advertiserId, agencyId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/advertiser/${advertiserId}/agencies/${agencyId}/bookings`,
+    { params }
+  );
+  return response.data;
+};
+
+// Company Grouped by Advertiser View API functions
+export const fetchCompanyAdvertisers = async (companyId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}/advertisers`,
+    { params }
+  );
+  return response.data;
+};
+
+export const fetchAdvertiserBookingsForCompany = async (companyId, advertiserId, options = {}) => {
+  const { status = 'all', pageSize = 20, cursor } = options;
+  const params = { status, pageSize };
+  if (cursor !== undefined && cursor !== null) {
+    params.cursor = cursor;
+  }
+  const response = await bizchatClient.get(
+    `/api/crm/mag/schedules/history/company/${companyId}/advertisers/${advertiserId}/bookings`,
+    { params }
   );
   return response.data;
 };
@@ -298,4 +395,18 @@ export const normalizeScheduleData = (scheduleData, advertisers = []) => {
     advertiser_company,
     end_date
   };
+};
+
+// AI Postcodes API - returns districts grouped by prefix: [{ prefix, districts }]
+export const fetchPostcodesTree = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree', { params });
+  return response.data;
+};
+
+// AI Postcodes API - returns 4-level tree: prefix → district → source → streets
+export const fetchPostcodesTreeFull = async (list) => {
+  const params = list ? { list } : {};
+  const response = await propertyPubClient.get('/api/ai/postcodes/tree-full', { params });
+  return response.data;
 };

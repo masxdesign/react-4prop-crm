@@ -1,7 +1,6 @@
 import PendingComponent from '@/components/PendingComponent'
 import { createFileRoute, Link, Outlet, useLoaderData, useNavigate, useRouteContext, useRouterState } from '@tanstack/react-router'
 import { useQueries, useQuery, useSuspenseQuery } from '@tanstack/react-query'
-import { useAuth } from '@/components/Auth/Auth'
 import useListing from '@/store/use-listing'
 import PropertyDetail from '@/components/PropertyDetail'
 import GradingWidget from '@/components/GradingWidget'
@@ -15,7 +14,7 @@ import { useImportIdQuery, useResolveContactDetailsQuery } from '@/routes/_auth.
 import { BASEPATH, WINDOWN_NAMES } from '@/constants'
 import { sharedTagListQueryOptions } from '@/features/tags/queryOptions'
 
-export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_id/shared')({
+export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list_/$import_id/shared')({
   component: ShareListComponent,
   pendingComponent: PendingComponent,
   beforeLoad () {
@@ -25,14 +24,11 @@ export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list/$import_i
   }
 })
 
+// NEW: JWT-authenticated - SharedListPage no longer needs authUserId, from_uid
 function ShareListComponent () {
-  const auth = useAuth()
-
   return (
-    <SharedListPage 
-      authUserId={auth.authUserId}
-      from_uid={auth.user.id}
-      list={<Outlet />} 
+    <SharedListPage
+      list={<Outlet />}
       sidebarBlock={
         <Suspense fallback={<Loader2 className='animate-spin' />}>
           <>
@@ -48,10 +44,11 @@ function ShareListComponent () {
   )
 }
 
-export function SharedListPage ({ authUserId, from_uid, list, sidebarBlock }) {
+// NEW: JWT-authenticated - no longer needs authUserId, from_uid
+export function SharedListPage ({ list, sidebarBlock }) {
   const { tag_id } = Route.useParams()
-  const { data } = useShareListSuspenseQuery(authUserId)
-  const { data: tag } = useTagsSuspenseQuery(from_uid, data => find(data, { id: tag_id }))
+  const { data } = useShareListSuspenseQuery()
+  const { data: tag } = useTagsSuspenseQuery(data => find(data, { id: tag_id }))
 
   return (
     <div className='flex gap-8 max-w-[1400px] mx-auto'>
@@ -74,7 +71,7 @@ export function SharedListPage ({ authUserId, from_uid, list, sidebarBlock }) {
             <span>Filter by tag</span>
           </h2>
           <Suspense fallback={<Loader2 className='animate-spin' />}>
-            <Tags from={from} />
+            <Tags />
           </Suspense>
         </div>
         <div className='border rounded-lg p-8 space-y-5 self-start'>
@@ -85,7 +82,8 @@ export function SharedListPage ({ authUserId, from_uid, list, sidebarBlock }) {
   )
 }
 
-export function useShareListQueryOptions (from) {
+// NEW: JWT-authenticated - resolveSharedPropDetailsQueryOptions no longer needs 'from'
+export function useShareListQueryOptions () {
   const { tag_id = null } = Route.useParams()
 
   const import_id = useImportIdQuery()
@@ -93,7 +91,6 @@ export function useShareListQueryOptions (from) {
   const resolveSharedPropDetailsQueryOptions = useListing.use.resolveSharedPropDetailsQueryOptions()
 
   return resolveSharedPropDetailsQueryOptions(
-    from,
     import_id,
     tag_id
   )
@@ -143,19 +140,19 @@ export function ContactUserCard () {
   )
 }
 
-export function useTagsSuspenseQuery (from_uid, select = null) {
-  const import_id = useImportIdQuery()
-
+// NEW: JWT-authenticated - sharedTagListQueryOptions no longer needs from_uid, import_id
+export function useTagsSuspenseQuery (select = null) {
   const query = useSuspenseQuery({
-    ...sharedTagListQueryOptions(from_uid, import_id),
+    ...sharedTagListQueryOptions(),
     select
   })
 
   return query
 }
 
-export function Tags ({ from }) {
-  const query = useTagsSuspenseQuery(from)
+// NEW: JWT-authenticated - no need for 'from' prop
+export function Tags () {
+  const query = useTagsSuspenseQuery()
 
   return (
     <div className='flex flex-wrap gap-2 text-sm'>
@@ -182,7 +179,7 @@ function TagItem ({ tag }) {
       className={cx(
         'rounded-lg cursor-pointer inline-block px-3 py-2', 
         'border-transparent bg-sky-100/80 text-sky-500 hover:bg-sky-100',
-        '[&.active]:font-bold [&.active]:border [&.active]:border-sky-500 [&.active]:!bg-transparent'
+        '[&.active]:font-bold [&.active]:border [&.active]:border-sky-500 [&.active]:bg-transparent!'
       )}
     >
       {tag.name}
@@ -190,14 +187,16 @@ function TagItem ({ tag }) {
   )
 }
 
-export function useShareListSuspenseQuery (from) {
-  const shareListQueryOptions = useShareListQueryOptions(from)
+// NEW: JWT-authenticated - no longer needs 'from' param
+export function useShareListSuspenseQuery () {
+  const shareListQueryOptions = useShareListQueryOptions()
   const query = useSuspenseQuery(shareListQueryOptions)
   return query
 }
 
-export function List ({ from }) {
-  const query = useShareListSuspenseQuery(from)
+// NEW: JWT-authenticated - no longer needs 'from' prop
+export function List () {
+  const query = useShareListSuspenseQuery()
 
   return query.data.map(details => (
     <div key={details.id} className='w-full lg:w-1/2 p-2'>

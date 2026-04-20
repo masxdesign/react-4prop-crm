@@ -14,27 +14,31 @@ const SelectionVariants = cva("flex gap-3 items-center text-center cursor-pointe
             'outline-plus': "border border-sky-600 text-sky-600"
         },
         size: {
-            sm: "py-2 px-3 rounded-sm",
-            md: "py-4 px-5 rounded-md"
+            sm: "py-2 px-3 rounded-xs",
+            md: "py-4 px-5 rounded-sm"
+        },
+        disabled: {
+            true: "opacity-40"
         }
     },
     defaultVariants: {
         variant: "default",
-        size: "md"
+        size: "md",
+        disabled: false
     }
 })
 
 export default function Selection ({ variant, size, className, children, disabled, onClick: onClickProp, hoverOverlayText, ...props }) {
     return (
-        <div 
-            className={cn(SelectionVariants({ 
-                variant, 
-                size, 
-                className: cx(className, 
-                    { 'bg-opacity-40': disabled },
+        <div
+            className={cn(SelectionVariants({
+                variant,
+                size,
+                disabled,
+                className: cx(className,
                     { 'group/hoverOverlayText': hoverOverlayText }
-                ) 
-            }))} 
+                )
+            }))}
             onClick={() => {
                 if (disabled) return
                 onClickProp?.()
@@ -51,7 +55,7 @@ export default function Selection ({ variant, size, className, children, disable
                     <Plus />
                 ) : (
                     <CheckIcon 
-                        className={'group-[.default]/default:invisible group-hover/default:!visible'} 
+                        className={'group-[.default]/default:invisible group-hover/default:visible!'} 
                     />
                 )}
             </Slot>

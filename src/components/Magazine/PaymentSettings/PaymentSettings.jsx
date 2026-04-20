@@ -248,7 +248,7 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
     <div className={cn(
       gradientClass,
       'max-w-96 min-h-52', 
-      'relative bg-gradient-to-br rounded-lg p-6 text-white',
+      'relative bg-linear-to-br rounded-lg p-6 text-white',
       isDefault
         ? `shadow-xl ring-2 ring-blue-400 ring-offset-2`
         : `shadow-lg`
@@ -281,7 +281,7 @@ const PaymentMethodCard = ({ method, onSetDefault, isSettingDefault }) => {
               size="sm"
               onClick={() => onSetDefault(method.id)}
               disabled={isSettingDefault}
-              className="bg-white/10 hover:bg-white/20 border-white/30 !text-white text-xs"
+              className="bg-white/10 hover:bg-white/20 border-white/30 text-white! text-xs"
             >
               {isSettingDefault ? (
                 <Loader2 className="h-3 w-3 animate-spin" />

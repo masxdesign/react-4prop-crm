@@ -10,20 +10,20 @@ export const Route = createFileRoute('/_auth/_dashboard/_layout-1/list')({
   beforeLoad: async ({ context: { auth } }) => {
     // Advertisers should not access the list page - redirect to their profile
     if (auth.isAdvertiser) {
-      throw redirect({ to: '/crm/advertiser-profile' })
+      throw redirect({ to: '/advertiser-profile' })
     }
     const { columns, version } = await import('./-columns')
 
     const getBzId = (info) => info.bz_id
 
     const services = {
-      tableSSList: variables => crmList(variables, auth.authUserId),
-      selectedDataPool: ids => crmListByIds(ids, auth.authUserId),
-      facetList: column => crmFacetList(column, auth.authUserId),
+      tableSSList: variables => crmList(variables),
+      selectedDataPool: ids => crmListByIds(ids),
+      facetList: column => crmFacetList(column),
       tableDialog: {
-        getInfoById: (import_id) => crmListById(import_id, auth.authUserId),
+        getInfoById: (import_id) => crmListById(import_id),
         getBzId,
-        getEnquiries: (import_id, filterBy) => getCrmEnquiries(import_id, auth.authUserId, filterBy),
+        getEnquiries: (import_id, filterBy) => getCrmEnquiries(import_id, filterBy),
         noteList: (info) => crmFetchNotes(info, auth),
         addNote: (variables) => crmAddNote(variables, auth),
         deleteNote: () => {},

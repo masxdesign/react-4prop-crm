@@ -8,7 +8,7 @@ import { useGradeShareContext } from "@/routes//_auth.grade._gradeWidget/$pid_.s
 import { ArrowRight } from "lucide-react"
 
 export const Route = createLazyFileRoute(
-    "/_auth/grade/_gradeWidget/$pid/share/"
+    "/_auth/grade/_gradeWidget/$pid_/share/"
 )({
     component: AddClientComponent,
 })

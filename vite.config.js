@@ -3,6 +3,7 @@ import path from 'path'
 import react from '@vitejs/plugin-react'
 import jsconfigPaths from 'vite-jsconfig-paths'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
+import tailwindcss from '@tailwindcss/vite'
 import screens from "./tailwind.screens"
 import svgr from "vite-plugin-svgr"
 import basicSsl from '@vitejs/plugin-basic-ssl'
@@ -13,6 +14,7 @@ export default defineConfig(({ command, mode }) => {
   const shared = {
     plugins: [
       basicSsl(),
+      tailwindcss(),
       react(),
       jsconfigPaths(),
       svgr()
@@ -36,6 +38,8 @@ export default defineConfig(({ command, mode }) => {
     base: '/new/agentab_crm',
     build: {
       manifest: true,
+      // outDir: '/Users/salgadom/EACH/4prop/code/seo/agentab_crm',
+      emptyOutDir: true,
       rollupOptions: {
         input: 'src/main.jsx'
       }

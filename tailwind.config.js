@@ -64,10 +64,35 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "confetti-explode": {
+          "0%": {
+            transform: "translate(-50%, -50%) scale(0)",
+            opacity: "1",
+          },
+          "15%": {
+            transform: "translate(calc(-50% + var(--explode-x) * 0.5), calc(-50% + var(--explode-y-up))) scale(1)",
+            opacity: "1",
+          },
+          "100%": {
+            transform: "translate(calc(-50% + var(--explode-x)), calc(-50% + var(--explode-y-down))) rotate(var(--rotation))",
+            opacity: "0",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "gradient-shift": "gradient-shift 3s ease infinite",
+        "shimmer": "shimmer 2s linear infinite",
+        "confetti-explode": "confetti-explode 2s ease-out forwards",
       },
     },
   },

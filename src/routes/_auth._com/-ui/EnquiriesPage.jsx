@@ -15,7 +15,7 @@ import { createLazyFileRoute, Link, useNavigate, useRouteContext } from '@tansta
 import companyCombiner from '@/services/companyCombiner'
 import EnquiryGradingMessagingList from '@/features/messaging/components/EnquiryGradingMessagingList'
 import { authCombiner, useAuth } from '@/components/Auth/Auth'
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger, VisuallyHidden } from '@/components/ui/dialog'
 import { useInView } from 'react-intersection-observer'
 import WriteYourReplyHereInput from './WriteYourReplyHereInput'
 import { useMessagesLastNList } from './hooks'
@@ -35,7 +35,7 @@ import Choices from '@/features/messaging/components/Choices'
 import { getUsersByIdsAsync } from '@/services/bizchat'
 
 function combineQueries(result, pauth) {
-  const [ { data: dtypes }, { data: dsubtypes }, { data: pdata } ] = result
+  const [{ data: dtypes }, { data: dsubtypes }, { data: pdata }] = result
 
   if (!pdata) return null
 
@@ -43,7 +43,7 @@ function combineQueries(result, pauth) {
   const pids = map(properties, "pid")
   const companies = pdata.companies.map((row) => companyCombiner(row))
   const types = propertyTypescombiner(dtypes, dsubtypes)
-  const auth = pdata.i ? authCombiner(pdata.i): pauth
+  const auth = pdata.i ? authCombiner(pdata.i) : pauth
 
   return {
     data: {
@@ -58,7 +58,7 @@ function combineQueries(result, pauth) {
       fetchPropReqContentsQuery: propReqContentsQuery(pids, true),
       propertyDetailsCombiner: (contentsData = []) => {
 
-        const clientsFromUids = auth.isAgent ? pdata.clients: pdata.from_uids
+        const clientsFromUids = auth.isAgent ? pdata.clients : pdata.from_uids
 
         return detailsCombiner(
           types,
@@ -76,7 +76,7 @@ function combineQueries(result, pauth) {
 }
 
 const defaultPropertyDetailsSetting = {
-  addressShowBuilding: true, 
+  addressShowBuilding: true,
   addressShowMore: true
 }
 
@@ -95,7 +95,7 @@ export const useEnquiryList = (listQuery) => {
   const contentsQuery = useQuery(data.fetchPropReqContentsQuery)
 
   const list = useMemo(
-    () => data.propertyDetailsCombiner(contentsQuery.data), 
+    () => data.propertyDetailsCombiner(contentsQuery.data),
     [data, contentsQuery]
   )
 
@@ -104,28 +104,28 @@ export const useEnquiryList = (listQuery) => {
   return {
     list,
     data,
-    refetch, 
-    isFetched, 
+    refetch,
+    isFetched,
     isRefetching
   }
 }
 
 function EnquiriesPage({
-  page, 
-  isFiltersDirty, 
-  list, 
+  page,
+  isFiltersDirty,
+  list,
   bz_hash,
   isAgent,
-  data, 
-  refetch, 
-  isFetched, 
+  data,
+  refetch,
+  isFetched,
   isRefetching,
-  filters, 
+  filters,
   onGradeChange,
   onFilterChange: handleFiltersChange,
   onDealingAgentFirstMessage: handleDealingAgentFirstMessage
 }) {
-  
+
   useEffect(() => {
 
     if (isFetched) {
@@ -147,22 +147,22 @@ function EnquiriesPage({
   }
 
   const activeKey = useMap(list.map((row) => ([row.key, 0])))
-  
+
   return (
     <div className='space-y-8 sm:space-y-4'>
       <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 px-2 sm:px-0'>
         <div className='flex gap-2 items-center'>
           <h2 className='text-xs text-slate-500 w-[6em]'>Search ref</h2>
-          <FilterSearchRefEnquired 
-            value={filters.searchRef} 
-            onValueChange={handleFilterSearchRefChange} 
+          <FilterSearchRefEnquired
+            value={filters.searchRef}
+            onValueChange={handleFilterSearchRefChange}
           />
         </div>
         <div className='flex gap-2 items-center'>
           <h2 className='text-xs text-slate-500 w-[6em] sm:w-auto'>Choice</h2>
-          <FilterEnquiryChoice  
-           value={filters.choice}
-           onValueChange={handleFilterChoiceChange}
+          <FilterEnquiryChoice
+            value={filters.choice}
+            onValueChange={handleFilterChoiceChange}
           />
         </div>
         {isFiltersDirty && (
@@ -178,21 +178,21 @@ function EnquiriesPage({
           <>
             <div className="flex flex-wrap gap-2 justify-center sm:justify-between">
               <div className='flex gap-8'>
-                <Pagination 
-                  page={page} 
+                <Pagination
+                  page={page}
                   pages={data.pages}
                 />
               </div>
 
               <div className='flex gap-2'>
-                <div 
+                <div
                   className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
                 >
                   <EnvelopeClosedIcon />
                   <span className='text-slate-900 text-sm font-bold'>{data.count}</span>
-                </div>             
+                </div>
                 {data.need_reply > 0 ? (
-                  <div 
+                  <div
                     className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
                   >
                     <span>Replies</span>
@@ -201,14 +201,14 @@ function EnquiriesPage({
                     </span>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className='py-1 px-2 flex gap-1 items-center border rounded text-sm shadow-sm text-muted-foreground'
                   >
                     <span>No replies</span>
                   </div>
                 )}
                 {isFetched && (
-                  <Link 
+                  <Link
                     to="."
                     key="dd"
                     search={{ page: 1 }}
@@ -217,22 +217,22 @@ function EnquiriesPage({
                     }}
                     className='py-1 px-2 flex gap-2 items-center border rounded text-sm shadow-sm text-muted-foreground'
                   >
-                    <span>{isRefetching ? "refetching...": "Refresh"}</span>
+                    <span>{isRefetching ? "refetching..." : "Refresh"}</span>
                     <ReloadIcon />
                   </Link>
-                )} 
-              </div>  
+                )}
+              </div>
             </div>
             <div className='space-y-8'>
-              <EnquiryGradingMessagingList 
-                list={list} 
+              <EnquiryGradingMessagingList
+                list={list}
                 isAgent={isAgent}
                 rowClassName="border-2 rounded-xl overflow-hidden shadow-xl md:shadow-none"
                 onGradeChange={onGradeChange}
                 gradingComponent={Grading}
                 renderLeftSide={(row) => {
                   const handleClick = (selected) => {
-                    handleFilterSearchRefChange(selected ? selected.id: "NULL")
+                    handleFilterSearchRefChange(selected ? selected.id : "NULL")
                   }
                   const currActivekey = activeKey.get(row.key)
                   const activeClassName = "border-green-500 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-500 font-bold"
@@ -240,9 +240,9 @@ function EnquiriesPage({
                   return (
                     <>
                       <Suspense fallback={<Loader2Icon className="animate-spin" />}>
-                        <SearchReferenceSelect 
-                          tag_id={row.tag_id} 
-                          pid={row.id} 
+                        <SearchReferenceSelect
+                          tag_id={row.tag_id}
+                          pid={row.id}
                           onClick={handleClick}
                           isAgent={data.auth.isAgent}
                         />
@@ -251,9 +251,9 @@ function EnquiriesPage({
                       {row.enquired.client?.isGradeShare && (
                         <div className='flex md:flex-col gap-1'>
                           {["Applicant", "Property agents"].map((label, index) => (
-                            <Button 
+                            <Button
                               key={index}
-                              variant="outline" 
+                              variant="outline"
                               className={cn("text-xs", { [activeClassName]: currActivekey === index })}
                               onClick={() => {
                                 activeKey.set(row.key, index)
@@ -271,7 +271,7 @@ function EnquiriesPage({
                   if (!row.chat_id) return null
 
                   return activeKey.get(row.key) === 1 ? (
-                    <EnquiryMessagingWidgetInView 
+                    <EnquiryMessagingWidgetInView
                       key={1}
                       bz_hash={bz_hash}
                       property={row}
@@ -280,13 +280,13 @@ function EnquiriesPage({
                       recipientLabel="property agent"
                     />
                   ) : (
-                    <EnquiryMessagingWidgetInView 
+                    <EnquiryMessagingWidgetInView
                       key={2}
                       bz_hash={bz_hash}
                       property={row}
-                      chat_id={row.chat_id} 
+                      chat_id={row.chat_id}
                       recipientLabel={
-                        row.isGradeShare 
+                        row.isGradeShare
                           ? "applicant"
                           : "client"
                       }
@@ -312,32 +312,32 @@ function EnquiriesPage({
 function EnquiryMessagingWidget({ dteam, ownerNid, className, bz_hash, chat_id, property, recipientLabel, onDealingAgentFirstMessage }) {
   return chat_id ? (
     <div className={cn('flex flex-col gap-2 bg-cyan-400 rounded-lg', className)}>
-      <ViewAllMessagesLink 
-        chat_id={chat_id} 
-        bz_hash={bz_hash} 
+      <ViewAllMessagesLink
+        chat_id={chat_id}
+        bz_hash={bz_hash}
         dteam={dteam}
       />
       <div className='flex flex-col-reverse gap-4 px-3'>
-        <LastMessagesList 
+        <LastMessagesList
           ownerNid={ownerNid}
           chat_id={chat_id}
           recipientLabel={recipientLabel}
         />
       </div>
       <div className='p-1 sm:p-3'>
-        <WriteYourReplyHereInput 
-          chat_id={chat_id} 
-          property={property} 
+        <WriteYourReplyHereInput
+          chat_id={chat_id}
+          property={property}
         />
       </div>
     </div>
   ) : (
     <div className={cn('bg-cyan-400 px-4 py-4 text-center rounded-md space-y-4', className)}>
       <div className='rounded-md bg-cyan-100 text-cyan-800 p-3 max-w-[400px] mx-auto shadow-sm'>
-        There are no messages yet <br/>Start conversation with <b>property agents</b>
+        There are no messages yet <br />Start conversation with <b>property agents</b>
       </div>
-      <WriteYourMessageHereInput 
-        property={property} 
+      <WriteYourMessageHereInput
+        property={property}
         onSuccess={onDealingAgentFirstMessage}
       />
     </div>
@@ -351,25 +351,25 @@ export function EnquiryMessagingWidgetInView({ dteam, ownerNid, bz_hash, chat_id
 
   if (inView) {
     child = (
-      <EnquiryMessagingWidget 
+      <EnquiryMessagingWidget
         bz_hash={bz_hash}
         dteam={dteam}
         ownerNid={ownerNid}
-        chat_id={chat_id} 
-        property={property} 
-        recipientLabel={recipientLabel} 
+        chat_id={chat_id}
+        property={property}
+        recipientLabel={recipientLabel}
         onDealingAgentFirstMessage={onDealingAgentFirstMessage}
         className={widgetClassName}
       />
-    ) 
+    )
   }
 
   return (
-      <div ref={inViewRef} className={className}>
-        <Suspense fallback={<Loader2 className="animate-spin" />}>
-          {child}
-        </Suspense>
-      </div>
+    <div ref={inViewRef} className={className}>
+      <Suspense fallback={<Loader2 className="animate-spin" />}>
+        {child}
+      </Suspense>
+    </div>
   )
 }
 
@@ -377,20 +377,20 @@ const findBzUser = (bz_id, users) => {
   if (!users) return null
   return users.find((user) => {
     if (!bz_id) return false
-    return user._t === 'N' 
+    return user._t === 'N'
       ? user.id === bz_id.replace('N', '')
       : user._i === bz_id
   })
 }
 
-export const authorCombiner = ({ isSender, from, fromUser, recipientLabel,  auth }) => {
-  return isSender 
-    ? from === auth.bzUserId 
-      ? "Message you sent" 
+export const authorCombiner = ({ isSender, from, fromUser, recipientLabel, auth }) => {
+  return isSender
+    ? from === auth.bzUserId
+      ? "Message you sent"
       : `${fromUser.firstname} ${fromUser.surname}`
-        : auth.isAgent 
-          ? `Message from ${recipientLabel}` 
-          : 'Message from agent'
+    : auth.isAgent
+      ? `Message from ${recipientLabel}`
+      : 'Message from agent'
 }
 
 export const fetchUsersQueryOptions = (bz_ids) => {
@@ -408,9 +408,9 @@ export const useFetchUsersFromMessages = (data) => {
     ]).flatten().uniq().value(),
     [data]
   )
-  
+
   const { data: users, isLoading } = useQuery(fetchUsersQueryOptions(bz_ids))
-    
+
   const getUser = useCallback((bz_id) => {
     return findBzUser(bz_id, users)
   }, [users])
@@ -445,11 +445,11 @@ export function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
 
     const fromUser = getUser(row.from)
     const dteamNidUser = getUser(row.dteamNid)
-    
+
     return (
-      <ChatboxBubbleBzStyle 
-        key={row.id} 
-        variant={isSender ? "sender": "recipient"} 
+      <ChatboxBubbleBzStyle
+        key={row.id}
+        variant={isSender ? "sender" : "recipient"}
         className="relative min-w-64 shadow-sm"
       >
         <div className='space-y-1'>
@@ -460,15 +460,15 @@ export function LastMessagesList({ chat_id, ownerNid, recipientLabel }) {
             <DteamNidUserBadge data={dteamNidUser} auth={auth} />
           )}
         </div>
-        <ChatboxBubbleBzMessage 
+        <ChatboxBubbleBzMessage
           type={row.type}
-          body={!row.body ? '*no message*': row.body}
+          body={!row.body ? '*no message*' : row.body}
           from={row.from}
           chat_id={chat_id}
         />
-        <Choices 
-          choices={row.choices} 
-          className={cn("mb-2", isSender ? "text-current-400": "text-slate-400")} 
+        <Choices
+          choices={row.choices}
+          className={cn("mb-2", isSender ? "text-current-400" : "text-slate-400")}
         />
         <ChatboxSentdate sentdate={row.sent} />
       </ChatboxBubbleBzStyle>
@@ -480,22 +480,22 @@ const ChatboxBubbleBzMessage = ({ type, body, from, chat_id, className }) => {
   const message = messageCombiner(type, body, from, chat_id)
 
   return (
-      <span className={cn("space-y-1", className)}>
-          <ReactMarkdown content={message.teaser} />
-          {message.attachments?.length > 0 && (
-              message.attachments.map(({ name, url, fileType, fileSize }) => {
-                  return (
-                      <Attachment 
-                          key={url}
-                          name={name}
-                          url={url}
-                          fileType={fileType}
-                          fileSize={fileSize}
-                      />
-                  )
-              })
-          )}
-      </span>
+    <span className={cn("space-y-1", className)}>
+      <ReactMarkdown content={message.teaser} />
+      {message.attachments?.length > 0 && (
+        message.attachments.map(({ name, url, fileType, fileSize }) => {
+          return (
+            <Attachment
+              key={url}
+              name={name}
+              url={url}
+              fileType={fileType}
+              fileSize={fileSize}
+            />
+          )
+        })
+      )}
+    </span>
   )
 }
 
@@ -530,8 +530,11 @@ export function ViewAllMessagesButton({ chat_id, bz_hash, dteam, ...props }) {
 
   return (
     <Dialog>
-      <DialogTrigger {...props}/>
-      <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:-right-0 rounded-lg">
+      <DialogTrigger {...props} />
+      <DialogContent className="sm:max-w-[800px] max-w-[98%] md:h-[800px] h-[calc(100svh-100px)] p-0 border-none [&>button>svg]:size-8 [&>button]:text-white [&>button]:-top-10 [&>button]:right-0 rounded-lg">
+        <VisuallyHidden>
+          <DialogTitle>Conversation Messages</DialogTitle>
+        </VisuallyHidden>
         <iframe src={conversation_url} className='h-full w-full rounded-lg'></iframe>
       </DialogContent>
     </Dialog>
@@ -540,7 +543,7 @@ export function ViewAllMessagesButton({ chat_id, bz_hash, dteam, ...props }) {
 
 export function ViewAllMessagesLink({ chat_id, bz_hash, dteam, className }) {
   return (
-    <ViewAllMessagesButton 
+    <ViewAllMessagesButton
       chat_id={chat_id}
       bz_hash={bz_hash}
       dteam={dteam}
@@ -558,8 +561,8 @@ export function ViewAllMessagesLink({ chat_id, bz_hash, dteam, className }) {
 
 function LinkClearFilters(props) {
   return (
-    <Link 
-      to="." 
+    <Link
+      to="."
       search={{
         page: 1,
         filters: undefined
@@ -570,7 +573,7 @@ function LinkClearFilters(props) {
 }
 
 function Pagination({ page, pages, className, strokeWidth = 2 }) {
-  
+
   return (
     <div className={cn('flex gap-1 items-center text-sm text-slate-500', className)}>
 
@@ -593,7 +596,7 @@ function Pagination({ page, pages, className, strokeWidth = 2 }) {
       </Link>
 
       <span className='text-xs px-2'>page {page} of {pages}</span>
-      
+
       <Link
         // from={Route.fullPath}
         search={(prev) => ({ ...prev, page: Number(prev.page ?? 1) + 1 })}
@@ -611,7 +614,7 @@ function Pagination({ page, pages, className, strokeWidth = 2 }) {
         <span className='sr-only'>Last page</span>
         <ChevronLast strokeWidth={strokeWidth} className='size-4' />
       </Link>
-      
+
     </div>
   )
 }

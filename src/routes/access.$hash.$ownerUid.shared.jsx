@@ -16,13 +16,11 @@ export const Route = createFileRoute('/access/$hash/$ownerUid/shared')({
   }
 })
 
+// NEW: JWT-authenticated - SharedListPage no longer needs 'from' prop
 export function AccessSharedWrapperComponent () {
-    const { ownerUid } = Route.useParams()
-
     return (
         <div className='p-3'>
-            <SharedListPage 
-                from={ownerUid}
+            <SharedListPage
                 list={<Outlet />}
                 sidebarBlock={
                     <Suspense fallback={<Loader2 className='animate-spin' />}>

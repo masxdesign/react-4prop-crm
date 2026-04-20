@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
 import Logo from "@/assets/logo.svg?react"
 import { Button } from '@/components/ui/button'
 import { FOURPROP_BASEURL } from '@/services/fourPropClient'
@@ -20,13 +21,13 @@ export const Route = createFileRoute('/_auth/_com/user')({
 })
 
 const menuShared = [
-    { id: "inactive", to: 'inactive', label: <X className='text-pink-300 size-5'/> },
-    { id: "enquiries", to: 'active', search: { filters: { choice: null } }, mask: { to: 'active' }, includeSearch: true, label: <StarFilledIcon  className='text-amber-500 size-5'/> },
-    { id: "rfi", to: '/crm/user/active', search: { filters: { choice: 2 } }, label: "RFI", mask: {
-        to: '/crm/user/rfi'
+    { id: "inactive", to: '/user/inactive', label: <X className='text-pink-300 size-5'/> },
+    { id: "enquiries", to: '/user/active', search: { filters: { choice: null } }, mask: { to: '/user/active' }, includeSearch: true, label: <StarFilledIcon  className='text-amber-500 size-5'/> },
+    { id: "rfi", to: '/user/active', search: { filters: { choice: 2 } }, label: "RFI", mask: {
+        to: '/user/rfi'
     }, includeSearch: true },
-    { id: "view", to: '/crm/user/active', search: { filters: { choice: 1 } }, label: "View", mask: {
-        to: '/crm/user/view'
+    { id: "view", to: '/user/active', search: { filters: { choice: 1 } }, label: "View", mask: {
+        to: '/user/view'
     }, includeSearch: true },
 ]
 
@@ -92,7 +93,7 @@ function RouteComponent() {
                     <MoreOptionsMenuItem />
                 </nav>
             </div>
-            <div className='sm:px-4 px-2 py-4 max-w-4xl mx-auto overflow-hidden'>
+            <div className='sm:px-4 px-2 py-4 max-w-4xl mx-auto overflow-hidden relative'>
                 <Outlet />
             </div>
         </>
@@ -135,7 +136,7 @@ const MoreOptionsMenuItem = () => {
                 {/* <SubNavItem to="update details">
                     Update personal details
                 </SubNavItem> */}
-                <SubNavItem to="rename-search-reference">
+                <SubNavItem to="/user/rename-search-reference">
                     Rename search references
                 </SubNavItem>
             </PopoverContent>
