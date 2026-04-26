@@ -213,7 +213,9 @@ const AdvertiserForm = ({
           ? coerceWorkflowFlag(adv[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED], true)
           : false,
       listing_variants: (() => {
-        try { return JSON.parse(adv.listing_variants || 'null') ?? []; }
+        const v = adv.listing_variants;
+        if (Array.isArray(v)) return v;
+        try { return JSON.parse(v || 'null') ?? []; }
         catch { return []; }
       })(),
       activePropertyType: adv.activePropertyType || null,
@@ -315,6 +317,7 @@ const AdvertiserForm = ({
   const gradeClientShareEnabled = watch(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED);
   const colorThemeWatch = watch('color_theme');
   const fontPresetWatch = watch('font_preset');
+  const activePropertyTypeWatch = watch('activePropertyType');
 
   const siteModePrevForGradeRef = useRef(null);
   useEffect(() => {
@@ -435,10 +438,17 @@ const AdvertiserForm = ({
     const el = refMap[value]?.current;
     if (!el) return;
 
-    // Let Radix/CSS finish accordion-down (0.2s in index.css / tailwind) before scrolling — same for add + update.
+    // Let Radix/CSS finish accordion-down (0.2s in index.css / tailwind) before scrolling.
+    // Use scrollTop on the form scroll container instead of scrollIntoView to avoid
+    // the browser scrolling the viewport/window which shifts the fixed layout.
     requestAnimationFrame(() => {
       window.setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+        const scrollContainer = document.getElementById('advertiser-edit-form');
+        if (!scrollContainer) return;
+        const containerTop = scrollContainer.getBoundingClientRect().top;
+        const elTop = el.getBoundingClientRect().top;
+        const offset = elTop - containerTop + scrollContainer.scrollTop;
+        scrollContainer.scrollTo({ top: offset, behavior: 'smooth' });
       }, 230);
     });
   }, []);
@@ -659,11 +669,12 @@ const AdvertiserForm = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex h-full w-full flex-col gap-0 overflow-hidden border-l p-0 sm:max-w-2xl"
+        className="w-full border-l p-0 sm:max-w-2xl"
+        style={{ height: '100dvh', position: 'fixed', top: 0, right: 0, display: 'grid', gridTemplateRows: 'auto 1fr auto', overflow: 'hidden' }}
       >
         {!showSelfBillingContent ? (
           <>
-            <SheetHeader className="shrink-0 space-y-2 border-b border-border px-6 py-5 text-left">
+            <SheetHeader className="space-y-2 border-b border-border px-6 py-5 text-left">
               <SheetTitle className="text-left font-normal leading-snug text-foreground">
                 {isUpdate ? (
                   <span className="flex flex-col gap-1.5">
@@ -701,11 +712,12 @@ const AdvertiserForm = ({
             </SheetHeader>
 
             <form
+              id="advertiser-edit-form"
               onSubmit={handleSubmit(handleFormSubmit, onSubmitInvalid)}
               noValidate
-              className="flex min-h-0 flex-1 flex-col"
+              style={{ overflowY: 'auto', minHeight: 0 }}
             >
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 pb-8 pt-4">
+              <div className="space-y-4 px-6 pb-8 pt-4">
                 <div className="min-w-0 w-full">
                   <h3 className="text-sm font-semibold text-gray-700 mb-3">Mode</h3>
                   <fieldset disabled={isSelfService} className="min-w-0">
@@ -1323,13 +1335,18 @@ const AdvertiserForm = ({
                       </div>
 
                       {/* property_types_control_enabled */}
-                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/80 bg-background/80 px-3 py-2.5">
+                      <div className={cn(
+                        "flex items-center justify-between gap-3 rounded-lg border border-border/80 bg-background/80 px-3 py-2.5",
+                        activePropertyTypeWatch && "opacity-50"
+                      )}>
                         <div className="min-w-0 flex-1 pr-2">
-                          <Label className="cursor-pointer text-sm font-medium text-gray-800">
+                          <Label className="text-sm font-medium text-gray-800">
                             Show property type tab strip
                           </Label>
                           <p className="text-[11px] leading-snug text-muted-foreground">
-                            Desktop header filter controls (desktop only)
+                            {activePropertyTypeWatch
+                              ? 'Not applicable when locked to a single property type'
+                              : 'Desktop header filter controls (desktop only)'}
                           </p>
                         </div>
                         <Controller
@@ -1339,6 +1356,7 @@ const AdvertiserForm = ({
                             <Switch
                               checked={!!field.value}
                               onCheckedChange={field.onChange}
+                              disabled={!!activePropertyTypeWatch}
                               className="shrink-0"
                             />
                           )}
@@ -1685,24 +1703,25 @@ const AdvertiserForm = ({
                   </div>
                 )}
               </div>
-
-              <div className="flex shrink-0 gap-2 border-t border-border bg-background px-6 py-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 h-9 px-4 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || (isUpdate && !isDirty)}
-                  className="flex-1 h-9 px-4 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-                >
-                  {isLoading ? 'Saving...' : (isUpdate ? 'Update' : 'Create')}
-                </button>
-              </div>
             </form>
+
+            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', background: 'var(--background)', padding: '1rem 1.5rem' }}>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 h-9 px-4 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="advertiser-edit-form"
+                disabled={isLoading || (isUpdate && !isDirty)}
+                className="flex-1 h-9 px-4 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+              >
+                {isLoading ? 'Saving...' : (isUpdate ? 'Update' : 'Create')}
+              </button>
+            </div>
           </>
         ) : (
           <>
