@@ -49,6 +49,32 @@ const SITE_MODE_CARD_OPTIONS = [
   },
 ];
 
+const LISTING_VARIANT_OPTIONS = [
+  { value: 'listing', label: 'All' },
+  { value: 'businesses-for-sale', label: 'Businesses for Sale' },
+  { value: 'pop-up-shops', label: 'Pop Up Shops' },
+  { value: 'auctions', label: 'Auctions' },
+  { value: 'commercials', label: 'Commercial' },
+];
+
+const COLOR_THEME_OPTIONS = [
+  { value: 'orange', label: 'Orange', swatch: 'oklch(0.70 0.19 45)' },
+  { value: 'blue',   label: 'Blue',   swatch: 'oklch(0.42 0.15 260)' },
+  { value: 'red',    label: 'Red',    swatch: 'oklch(0.47 0.20 22)' },
+];
+
+const FONT_PRESET_OPTIONS = [
+  { value: 'swiss_institutional',   label: 'Swiss Institutional',   description: 'JLL / CBRE — clean geometric grotesque' },
+  { value: 'editorial_luxury',      label: 'Editorial Luxury',      description: "Knight Frank / Sotheby's — serif headlines" },
+  { value: 'modern_editorial',      label: 'Modern Editorial',      description: 'Contemporary gallery / The Modern House' },
+  { value: 'sharp_didone',          label: 'Sharp Didone',          description: 'Luxury fashion meets real estate' },
+  { value: 'classic_broadsheet',    label: 'Classic Broadsheet',    description: 'FT / Estates Gazette — newspaper serif' },
+  { value: 'monumental_grotesk',    label: 'Monumental Grotesk',    description: 'Architectural / Mayfair developer' },
+  { value: 'quiet_luxury',          label: 'Quiet Luxury',          description: 'Aesop / The Row — minimal humanist' },
+  { value: 'precise_modernist',     label: 'Precise Modernist',     description: 'Apple-keynote precision' },
+  { value: 'refined_neo_grotesque', label: 'Refined Neo-Grotesque', description: 'Investment-bank polish' },
+];
+
 function pstidsStringToArray(pstids) {
   if (!pstids) return [];
   return String(pstids)
@@ -186,6 +212,16 @@ const AdvertiserForm = ({
         (adv.site_mode || 'advertiser_site') === '4prop_site'
           ? coerceWorkflowFlag(adv[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED], true)
           : false,
+      listing_variants: (() => {
+        try { return JSON.parse(adv.listing_variants || 'null') ?? []; }
+        catch { return []; }
+      })(),
+      activePropertyType: adv.activePropertyType || null,
+      property_types_control_enabled: coerceWorkflowFlag(adv.property_types_control_enabled, false),
+      logo_url: adv.logo_url || '',
+      hero_url: adv.hero_url || '',
+      color_theme: adv.color_theme || null,
+      font_preset: adv.font_preset || null,
     };
   }, [advertiserSnapshot]);
 
@@ -204,6 +240,13 @@ const AdvertiserForm = ({
       commission_percent: 50,
       [GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED]: true,
       [GRADE_WORKFLOW_CLIENT_SHARE_ENABLED]: CREATE_DEFAULT_SITE_MODE === '4prop_site',
+      listing_variants: [],
+      activePropertyType: null,
+      property_types_control_enabled: false,
+      logo_url: '',
+      hero_url: '',
+      color_theme: null,
+      font_preset: null,
     }),
     []
   );
@@ -270,6 +313,8 @@ const AdvertiserForm = ({
   const clientShortlistEditable = is4propSiteMode;
   const gradeMassEnquiryEnabled = watch(GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED);
   const gradeClientShareEnabled = watch(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED);
+  const colorThemeWatch = watch('color_theme');
+  const fontPresetWatch = watch('font_preset');
 
   const siteModePrevForGradeRef = useRef(null);
   useEffect(() => {
@@ -352,6 +397,7 @@ const AdvertiserForm = ({
   const accountSectionRef = useRef(null);
   const websiteSettingsSectionRef = useRef(null);
   const websiteSectionRef = useRef(null);
+  const siteCustomisationSectionRef = useRef(null);
   const morSectionRef = useRef(null);
   const accordionOpenPrevRef = useRef(defaultAccordionOpen);
   const defaultAccordionOpenRef = useRef(defaultAccordionOpen);
@@ -383,6 +429,7 @@ const AdvertiserForm = ({
       account: accountSectionRef,
       website_settings: websiteSettingsSectionRef,
       website: websiteSectionRef,
+      site_customisation: siteCustomisationSectionRef,
       mor: morSectionRef,
     };
     const el = refMap[value]?.current;
@@ -588,6 +635,10 @@ const AdvertiserForm = ({
 
     if (Object.keys(partial).length === 0) {
       return;
+    }
+
+    if (partial.listing_variants !== undefined) {
+      partial.listing_variants = JSON.stringify(partial.listing_variants);
     }
 
     onSubmit(partial);
@@ -1186,6 +1237,214 @@ const AdvertiserForm = ({
                       the mode selected at the top of this form.
                     </p>
                   </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+
+                {/* Site customisation — admin-only */}
+                {!isSelfService && (
+                  <AccordionItem
+                    ref={siteCustomisationSectionRef}
+                    value="site_customisation"
+                    className="scroll-mt-3 overflow-hidden rounded-lg border border-border bg-card text-card-foreground shadow-sm border-b-0"
+                  >
+                    <AccordionTrigger className="group px-4 py-3.5 text-left hover:no-underline flex flex-1 items-start justify-between gap-2 font-medium text-gray-700 outline-none [&[data-state=open]>svg]:rotate-180 hover:bg-muted/40">
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5 pr-2">
+                        <span className="text-sm font-semibold">Site customisation</span>
+                        <span className="text-xs font-normal leading-snug text-gray-500 group-data-[state=open]:hidden">
+                          {colorThemeWatch
+                            ? `Theme: ${colorThemeWatch} · Font: ${fontPresetWatch ?? 'default'}`
+                            : 'Colour, font, logo, navigation'}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3 pb-4 space-y-4">
+
+                      {/* listing_variants */}
+                      <Controller
+                        name="listing_variants"
+                        control={control}
+                        render={({ field }) => (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Listing navigation tabs</label>
+                            <p className="text-xs text-gray-500 mb-2">
+                              Which listing variants appear as header tabs. Empty = no tabs shown.
+                            </p>
+                            <div className="space-y-1.5">
+                              {LISTING_VARIANT_OPTIONS.map((opt) => {
+                                const checked = (field.value || []).some((v) => v.value === opt.value);
+                                return (
+                                  <label key={opt.value} className="flex cursor-pointer items-center gap-2 text-sm text-gray-800">
+                                    <input
+                                      type="checkbox"
+                                      checked={checked}
+                                      onChange={() => {
+                                        const current = field.value || [];
+                                        field.onChange(
+                                          checked
+                                            ? current.filter((v) => v.value !== opt.value)
+                                            : [...current, opt]
+                                        );
+                                      }}
+                                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>{opt.label}</span>
+                                    <span className="text-xs text-gray-400">({opt.value})</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      />
+
+                      {/* activePropertyType */}
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Lock to single property type</label>
+                        <Controller
+                          name="activePropertyType"
+                          control={control}
+                          render={({ field }) => (
+                            <select
+                              value={field.value || ''}
+                              onChange={(e) => field.onChange(e.target.value || null)}
+                              className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                            >
+                              <option value="">— none (all types) —</option>
+                              {groupedPropertyTypes.map((type) => (
+                                <option key={type.id} value={type.label}>{type.label}</option>
+                              ))}
+                            </select>
+                          )}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                          Locks the listing to one property type; bypasses the type selector.
+                        </p>
+                      </div>
+
+                      {/* property_types_control_enabled */}
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/80 bg-background/80 px-3 py-2.5">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <Label className="cursor-pointer text-sm font-medium text-gray-800">
+                            Show property type tab strip
+                          </Label>
+                          <p className="text-[11px] leading-snug text-muted-foreground">
+                            Desktop header filter controls (desktop only)
+                          </p>
+                        </div>
+                        <Controller
+                          name="property_types_control_enabled"
+                          control={control}
+                          render={({ field }) => (
+                            <Switch
+                              checked={!!field.value}
+                              onCheckedChange={field.onChange}
+                              className="shrink-0"
+                            />
+                          )}
+                        />
+                      </div>
+
+                      {/* logo_url */}
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Logo URL</label>
+                        <input
+                          type="url"
+                          {...register('logo_url')}
+                          className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/logo.svg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Full URL to the advertiser logo (SVG preferred)</p>
+                      </div>
+
+                      {/* hero_url */}
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Hero image URL</label>
+                        <input
+                          type="url"
+                          {...register('hero_url')}
+                          className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="https://example.com/hero.jpg"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Full URL to the hero/banner image on the landing page</p>
+                      </div>
+
+                      {/* color_theme */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Colour theme</label>
+                        <Controller
+                          name="color_theme"
+                          control={control}
+                          render={({ field }) => (
+                            <div className="flex flex-wrap gap-2">
+                              {[{ value: null, label: 'None (default)', swatch: null }, ...COLOR_THEME_OPTIONS].map((opt) => (
+                                <label
+                                  key={opt.value ?? 'none'}
+                                  className={cn(
+                                    'flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors',
+                                    field.value === opt.value
+                                      ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500/25'
+                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80'
+                                  )}
+                                >
+                                  <input
+                                    type="radio"
+                                    checked={field.value === opt.value}
+                                    onChange={() => field.onChange(opt.value)}
+                                    className="sr-only"
+                                  />
+                                  {opt.swatch && (
+                                    <span
+                                      className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-black/10"
+                                      style={{ background: opt.swatch }}
+                                    />
+                                  )}
+                                  {opt.label}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        />
+                        <p className="text-xs text-gray-500 mt-1.5">
+                          Controls buttons, active states, highlights, and map pin glow across the listing UI.
+                        </p>
+                      </div>
+
+                      {/* font_preset */}
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Font preset</label>
+                        <Controller
+                          name="font_preset"
+                          control={control}
+                          render={({ field }) => (
+                            <div className="space-y-1.5">
+                              {[{ value: null, label: 'None (default)', description: 'System font stack' }, ...FONT_PRESET_OPTIONS].map((opt) => (
+                                <label
+                                  key={opt.value ?? 'none'}
+                                  className={cn(
+                                    'flex cursor-pointer gap-2.5 rounded-lg border px-3 py-2 transition-colors',
+                                    field.value === opt.value
+                                      ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500/25'
+                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80'
+                                  )}
+                                >
+                                  <input
+                                    type="radio"
+                                    checked={field.value === opt.value}
+                                    onChange={() => field.onChange(opt.value)}
+                                    className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <div className="min-w-0">
+                                    <span className="text-sm font-medium text-gray-900">{opt.label}</span>
+                                    <p className="text-xs text-gray-500">{opt.description}</p>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        />
+                      </div>
+
                     </AccordionContent>
                   </AccordionItem>
                 )}
