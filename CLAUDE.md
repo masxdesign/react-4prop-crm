@@ -45,6 +45,30 @@ When implementing or debugging behaviour that hits **fourProp** endpoints, work 
 
 When implementing or debugging CRM ↔ API behaviour for those routes, work in that **property-pub** backend project—not only in this frontend repo. The **advertiser frontend** (React) remains separate — see **Advertiser frontend (reference only)** above.
 
+## Adding a new column/setting to `a_magAdvertisers`
+
+The advertiser row is read by **two separate Node services**, and a new column must be wired through both — easy to miss because they live in different backend projects.
+
+When adding any column/setting to `a_magAdvertisers` (e.g. a new boolean toggle on the advertiser form), update **all** of the following in the same change set:
+
+1. **Frontend form** — `src/components/Magazine/AdvertiserManagement/AdvertiserForm.jsx`
+   - Default value in `editFormValues` (use `coerceWorkflowFlag` for bit/boolean) and `createFormValues`.
+   - `watch()` if needed for collapsed-section summary.
+   - Coerce in `handleFormSubmit` (`Boolean(...)` for bits) so the API receives a clean type.
+   - UI control in the appropriate accordion section.
+
+2. **Bizchat backend** — `apps/backend/bizchat/code/src/routes/api-mag-advertisers.js`
+   - Add the column to all relevant SELECTs: `GET /by_hostname`, `GET /`, `GET /:advertiser_id`.
+   - Destructure + handle it in `POST /` (insert) and `PUT /:advertiser_id` (conditional update branch with `sql.Bit` / appropriate type).
+   - Add a numbered migration in `apps/backend/bizchat/docs/migration/NNN-…sql` (idempotent `IF NOT EXISTS … ALTER TABLE … ADD …`, SQL Server 2008 / compat level 100).
+
+3. **Property-pub backend** — `apps/backend/property-pub/code/src/routes/advertisers/index.js`
+   - This is the `GET /api/advertisers` paginated listing on port 8083 used by the advertiser site frontend.
+   - Add the column to **the inner CTE SELECT, the outer SELECT, AND the response-row mapper**.
+   - In the response mapper, prefer `row.<col> ?? null` over `||` for booleans/bits so `0` is not coerced to `null`.
+
+If you skip the property-pub step, the advertiser site frontend will silently never see the new field. Mention this checklist up front when scoping the change so the user doesn't have to flag it mid-implementation.
+
 ## Use React Hook Form for All Forms
 
 All forms in the frontend must use React Hook Form — no useState or custom input handlers for managing form data.

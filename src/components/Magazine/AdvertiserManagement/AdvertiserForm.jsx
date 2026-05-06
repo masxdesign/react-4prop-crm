@@ -212,6 +212,7 @@ const AdvertiserForm = ({
         (adv.site_mode || 'advertiser_site') === '4prop_site'
           ? coerceWorkflowFlag(adv[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED], true)
           : false,
+      sandbox: coerceWorkflowFlag(adv.sandbox, false),
       listing_variants: (() => {
         const v = adv.listing_variants;
         if (Array.isArray(v)) return v;
@@ -242,6 +243,7 @@ const AdvertiserForm = ({
       commission_percent: 50,
       [GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED]: true,
       [GRADE_WORKFLOW_CLIENT_SHARE_ENABLED]: CREATE_DEFAULT_SITE_MODE === '4prop_site',
+      sandbox: false,
       listing_variants: [],
       activePropertyType: null,
       property_types_control_enabled: false,
@@ -315,6 +317,7 @@ const AdvertiserForm = ({
   const clientShortlistEditable = is4propSiteMode;
   const gradeMassEnquiryEnabled = watch(GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED);
   const gradeClientShareEnabled = watch(GRADE_WORKFLOW_CLIENT_SHARE_ENABLED);
+  const sandboxEnabled = watch('sandbox');
   const colorThemeWatch = watch('color_theme');
   const fontPresetWatch = watch('font_preset');
   const activePropertyTypeWatch = watch('activePropertyType');
@@ -570,9 +573,11 @@ const AdvertiserForm = ({
         dataSiteMode === '4prop_site'
           ? Boolean(data[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED])
           : false;
+      formattedData.sandbox = Boolean(data.sandbox);
     } else {
       delete formattedData[GRADE_WORKFLOW_MASS_ENQUIRY_ENABLED];
       delete formattedData[GRADE_WORKFLOW_CLIENT_SHARE_ENABLED];
+      delete formattedData.sandbox;
     }
 
     if (advSite) {
@@ -949,6 +954,8 @@ const AdvertiserForm = ({
                         {showGradeWorkflowSection && (
                           <>
                             <span className="text-gray-400"> · </span>
+                            Sandbox {sandboxEnabled ? 'on' : 'off'}
+                            <span className="text-gray-400"> · </span>
                             Mass enquiry {gradeMassEnquiryEnabled ? 'on' : 'off'}
                             <span className="text-gray-400"> · </span>
                             Client shortlist{' '}
@@ -995,6 +1002,34 @@ const AdvertiserForm = ({
                         <code className="rounded bg-muted px-0.5 text-[11px]">www.</code> when pasted). HTTPS assumed; full URLs trim to the host.
                       </p>
                     </div>
+
+                    {showGradeWorkflowSection && (
+                      <div className="border-t border-border/60 pt-3 pb-3">
+                        <div className="flex items-center justify-between gap-3 rounded-lg border border-border/80 bg-background/80 px-3 py-2.5">
+                          <div className="min-w-0 flex-1 pr-2">
+                            <Label htmlFor="sandbox" className="cursor-pointer text-sm font-medium text-gray-800">
+                              Sandbox
+                            </Label>
+                            <p className="text-[11px] leading-snug text-muted-foreground">
+                              Marks this advertiser as a sandbox/test environment.
+                            </p>
+                          </div>
+                          <Controller
+                            name="sandbox"
+                            control={control}
+                            render={({ field }) => (
+                              <Switch
+                                id="sandbox"
+                                checked={!!field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={isLoading}
+                                className="shrink-0"
+                              />
+                            )}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {showGradeWorkflowSection && (
                       <div className="border-t border-border/60 pt-3">
