@@ -287,12 +287,22 @@ const AdvertiserSelectionTable = ({
           header: 'Advertiser',
           cell: ({ getValue, row, table }) => (
             <div className="flex flex-col">
-              <button
-                onClick={(e) => table.options.meta?.onEditClick(row.original, e)}
-                className="font-semibold text-base text-gray-900 hover:underline text-left cursor-pointer"
-              >
-                {getValue()}
-              </button>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  onClick={(e) => table.options.meta?.onEditClick(row.original, e)}
+                  className="font-semibold text-base text-gray-900 hover:underline text-left cursor-pointer"
+                >
+                  {getValue()}
+                </button>
+                {!!row.original.sandbox && (
+                  <span
+                    className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700"
+                    title="Sandbox / test environment"
+                  >
+                    Sandbox
+                  </span>
+                )}
+              </div>
               {row.original.email ? (
                 <button
                   onClick={(e) => handleCopyEmail(row.original.email, e)}

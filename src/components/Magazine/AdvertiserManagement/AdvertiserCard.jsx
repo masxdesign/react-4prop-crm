@@ -39,8 +39,18 @@ const AdvertiserCard = ({ advertiser, onEdit, onDelete, isDeleting }) => {
   return (
     <div className="flex flex-col bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
       <div className="shrink-0 flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="text-base font-semibold mr-4">{advertiser.company}</h3>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-base font-semibold mr-4">{advertiser.company}</h3>
+            {!!advertiser.sandbox && (
+              <span
+                className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700"
+                title="Sandbox / test environment"
+              >
+                Sandbox
+              </span>
+            )}
+          </div>
 
           {advertiser.email && (
             <div className="mt-1">
