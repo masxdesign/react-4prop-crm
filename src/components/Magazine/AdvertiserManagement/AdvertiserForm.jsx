@@ -29,6 +29,7 @@ import {
   normalizeAdvertiserHostname,
   validateAdvertiserHostnameField,
 } from '@/utils/normalizeAdvertiserHostname';
+import SubdomainSlugField from './SubdomainSlugField';
 
 /** Labels + short descriptions for site mode cards (radiogroup). */
 const SITE_MODE_CARD_OPTIONS = [
@@ -63,17 +64,111 @@ const COLOR_THEME_OPTIONS = [
   { value: 'red',    label: 'Red',    swatch: 'oklch(0.47 0.20 22)' },
 ];
 
+/**
+ * Mirrors `apps/frontend/property-pub-react/src/config/fontPresets.js`.
+ * `displayCss` is used for the label, `bodyCss` for the sample line so the
+ * picker shows what each preset actually looks like before applying.
+ */
 const FONT_PRESET_OPTIONS = [
-  { value: 'swiss_institutional',   label: 'Swiss Institutional',   description: 'JLL / CBRE — clean geometric grotesque' },
-  { value: 'editorial_luxury',      label: 'Editorial Luxury',      description: "Knight Frank / Sotheby's — serif headlines" },
-  { value: 'modern_editorial',      label: 'Modern Editorial',      description: 'Contemporary gallery / The Modern House' },
-  { value: 'sharp_didone',          label: 'Sharp Didone',          description: 'Luxury fashion meets real estate' },
-  { value: 'classic_broadsheet',    label: 'Classic Broadsheet',    description: 'FT / Estates Gazette — newspaper serif' },
-  { value: 'monumental_grotesk',    label: 'Monumental Grotesk',    description: 'Architectural / Mayfair developer' },
-  { value: 'quiet_luxury',          label: 'Quiet Luxury',          description: 'Aesop / The Row — minimal humanist' },
-  { value: 'precise_modernist',     label: 'Precise Modernist',     description: 'Apple-keynote precision' },
-  { value: 'refined_neo_grotesque', label: 'Refined Neo-Grotesque', description: 'Investment-bank polish' },
+  {
+    value: 'swiss_institutional',
+    label: 'Swiss Institutional',
+    description: 'JLL / CBRE — clean geometric grotesque',
+    displayCss: '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    bodyCss: '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'editorial_luxury',
+    label: 'Editorial Luxury',
+    description: "Knight Frank / Sotheby's — serif headlines",
+    displayCss: '"Fraunces", "Times New Roman", Georgia, serif',
+    bodyCss: '"Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'modern_editorial',
+    label: 'Modern Editorial',
+    description: 'Contemporary gallery / The Modern House',
+    displayCss: '"Instrument Serif", "Times New Roman", Georgia, serif',
+    bodyCss: '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'sharp_didone',
+    label: 'Sharp Didone',
+    description: 'Luxury fashion meets real estate',
+    displayCss: '"DM Serif Display", "Didot", Georgia, serif',
+    bodyCss: '"Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'classic_broadsheet',
+    label: 'Classic Broadsheet',
+    description: 'FT / Estates Gazette — newspaper serif',
+    displayCss: '"Newsreader", "Times New Roman", Georgia, serif',
+    bodyCss: '"Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'monumental_grotesk',
+    label: 'Monumental Grotesk',
+    description: 'Architectural / Mayfair developer',
+    displayCss: '"Archivo", "Helvetica Neue", Helvetica, sans-serif',
+    bodyCss: '"Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'quiet_luxury',
+    label: 'Quiet Luxury',
+    description: 'Aesop / The Row — minimal humanist',
+    displayCss: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    bodyCss: '"DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'precise_modernist',
+    label: 'Precise Modernist',
+    description: 'Apple-keynote precision',
+    displayCss: '"Space Grotesk", "Helvetica Neue", Helvetica, sans-serif',
+    bodyCss: '"Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  {
+    value: 'refined_neo_grotesque',
+    label: 'Refined Neo-Grotesque',
+    description: 'Investment-bank polish',
+    displayCss: '"Wix Madefor Display", "Helvetica Neue", Helvetica, sans-serif',
+    bodyCss: '"Wix Madefor Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
 ];
+
+/**
+ * Single Google Fonts URL for every family the picker previews. Loaded once,
+ * lazily, when the Site customisation section opens — without it every preview
+ * falls back to system fonts and looks identical.
+ */
+const FONT_PRESET_PREVIEW_GOOGLE_FONTS_URL =
+  'https://fonts.googleapis.com/css2?' +
+  [
+    'family=Archivo:wdth,wght@100..125,500;100..125,700',
+    'family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700',
+    'family=DM+Serif+Display',
+    'family=Fraunces:opsz,wght@9..144,400;9..144,600',
+    'family=Geist:wght@400;500;700',
+    'family=Instrument+Serif',
+    'family=Inter+Tight:wght@400;500;700',
+    'family=Manrope:wght@400;500;700',
+    'family=Newsreader:opsz,wght@6..72,400;6..72,600',
+    'family=Space+Grotesk:wght@500;700',
+    'family=Wix+Madefor+Display:wght@500;700',
+    'family=Wix+Madefor+Text:wght@400;500',
+    'display=swap',
+  ].join('&');
+
+const FONT_PRESET_PREVIEW_LINK_ID = 'advertiser-form-font-preset-preview';
+
+function loadFontPresetPreviewFonts() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById(FONT_PRESET_PREVIEW_LINK_ID)) return;
+  const link = document.createElement('link');
+  link.id = FONT_PRESET_PREVIEW_LINK_ID;
+  link.rel = 'stylesheet';
+  link.href = FONT_PRESET_PREVIEW_GOOGLE_FONTS_URL;
+  document.head.appendChild(link);
+}
 
 function pstidsStringToArray(pstids) {
   if (!pstids) return [];
@@ -134,7 +229,6 @@ const AdvertiserForm = ({
   open,
   onOpenChange,
   advertiser,
-  onClose,
   onSubmit,
   isLoading,
   error,
@@ -200,6 +294,8 @@ const AdvertiserForm = ({
       pstids: pstidsStringToArray(adv.pstids),
       site_mode: adv.site_mode || 'advertiser_site',
       hostname: normalizeAdvertiserHostname(adv.hostname || ''),
+      subdomain_slug: adv.subdomain_slug || '',
+      listed_in_directory: coerceWorkflowFlag(adv.listed_in_directory, false),
       email: adv.email || '',
       password: '',
       week_rate: weekRateVal,
@@ -237,6 +333,8 @@ const AdvertiserForm = ({
       pstids: [],
       site_mode: CREATE_DEFAULT_SITE_MODE,
       hostname: '',
+      subdomain_slug: '',
+      listed_in_directory: false,
       week_rate: '',
       vat_registered: false,
       vat_number: '',
@@ -260,6 +358,7 @@ const AdvertiserForm = ({
   });
 
   const hostnameField = register('hostname', { validate: validateAdvertiserHostnameField });
+  const subdomainSlugField = register('subdomain_slug');
 
   // Create flow registers confirmPassword; update flow does not — unregister so it does not linger after switching modes.
   useEffect(() => {
@@ -268,12 +367,19 @@ const AdvertiserForm = ({
     }
   }, [isUpdate, unregister]);
 
+  // Load preview fonts the first time the form opens so each font preset
+  // row can render in its own typeface. Idempotent.
+  useEffect(() => {
+    if (open) loadFontPresetPreviewFonts();
+  }, [open]);
+
   const advertiserOnboarded = true
 
   const isVatRegistered = watch('vat_registered');
   const password = watch('password');
   const siteMode = watch('site_mode');
   const hostnameWatch = watch('hostname');
+  const subdomainSlugWatch = watch('subdomain_slug');
   const pstidsWatch = watch('pstids');
   const isAdvertiserSiteMode = siteMode === 'advertiser_site';
 
@@ -321,6 +427,18 @@ const AdvertiserForm = ({
   const colorThemeWatch = watch('color_theme');
   const fontPresetWatch = watch('font_preset');
   const activePropertyTypeWatch = watch('activePropertyType');
+
+  // Mode-hidden fields keep their RHF registration (incl. required rules) when
+  // their inputs unmount, which would block submit. Drop the rules but keep
+  // values so switching back restores what the user typed.
+  useEffect(() => {
+    if (!isAdvertiserSiteMode) {
+      unregister(
+        ['week_rate', 'commission_percent', 'vat_registered', 'vat_number'],
+        { keepValue: true }
+      );
+    }
+  }, [isAdvertiserSiteMode, unregister]);
 
   const siteModePrevForGradeRef = useRef(null);
   useEffect(() => {
@@ -377,16 +495,14 @@ const AdvertiserForm = ({
 
   /** One-line preview of fields inside each accordion (shown when section is collapsed). */
   const accountSectionSummary = useMemo(() => {
-    const parts = [];
-    if (!is4propAdminMinimal) parts.push('Company name');
-    parts.push('Email');
+    const parts = ['Company name', 'Email'];
     if (isCreate) {
       parts.push('Password', 'Confirm password');
     } else {
       parts.push('Password (optional change)');
     }
     return parts.join(' · ');
-  }, [is4propAdminMinimal, isCreate]);
+  }, [isCreate]);
 
   const morSectionSummary = useMemo(() => {
     const parts = [];
@@ -562,6 +678,10 @@ const AdvertiserForm = ({
         ? `,${data.pstids.join(',')},`
         : '',
       hostname: normalizeAdvertiserHostname(data.hostname || ''),
+      // Empty string is invalid per the CHECK constraint; send null so the
+      // column is cleared rather than rejected.
+      subdomain_slug: data.subdomain_slug ? data.subdomain_slug : null,
+      listed_in_directory: Boolean(data.listed_in_directory),
     };
 
     if (showGradeWorkflowSection) {
@@ -675,45 +795,58 @@ const AdvertiserForm = ({
       <SheetContent
         side="right"
         className="w-full border-l p-0 sm:max-w-2xl"
-        style={{ height: '100dvh', position: 'fixed', top: 0, right: 0, display: 'grid', gridTemplateRows: 'auto 1fr auto', overflow: 'hidden' }}
+        style={{ height: '100dvh', position: 'fixed', top: 0, right: 0, display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden' }}
       >
         {!showSelfBillingContent ? (
           <>
             <SheetHeader className="space-y-2 border-b border-border px-6 py-5 text-left">
-              <SheetTitle className="text-left font-normal leading-snug text-foreground">
-                {isUpdate ? (
-                  <span className="flex flex-col gap-1.5">
-                    <span className="text-[11px] font-normal leading-none text-muted-foreground/75">
-                      {editDrawerAdvertiserIdLabel ? (
-                        <>
-                          Edit
-                          <span className="text-muted-foreground/50"> · </span>
-                          <span className="tabular-nums">ID {editDrawerAdvertiserIdLabel}</span>
-                        </>
-                      ) : (
-                        'Edit advertiser'
-                      )}
-                    </span>
-                    <span className="line-clamp-2 break-words pr-8 text-base font-medium">
-                      {editDrawerTitlePrimary}
-                    </span>
-                    {editDrawerTitleSecondary ? (
-                      <span className="text-xs font-normal text-muted-foreground/90 line-clamp-1">
-                        {editDrawerTitleSecondary}
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1 space-y-2">
+                  <SheetTitle className="text-left font-normal leading-snug text-foreground">
+                    {isUpdate ? (
+                      <span className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-normal leading-none text-muted-foreground/75">
+                          {editDrawerAdvertiserIdLabel ? (
+                            <>
+                              Edit
+                              <span className="text-muted-foreground/50"> · </span>
+                              <span className="tabular-nums">ID {editDrawerAdvertiserIdLabel}</span>
+                            </>
+                          ) : (
+                            'Edit advertiser'
+                          )}
+                        </span>
+                        <span className="line-clamp-2 break-words text-base font-medium">
+                          {editDrawerTitlePrimary}
+                        </span>
+                        {editDrawerTitleSecondary ? (
+                          <span className="text-xs font-normal text-muted-foreground/90 line-clamp-1">
+                            {editDrawerTitleSecondary}
+                          </span>
+                        ) : null}
                       </span>
-                    ) : null}
-                  </span>
-                ) : (
-                  <span className="text-lg font-semibold">Add New Advertiser</span>
-                )}
-              </SheetTitle>
-              <SheetDescription>
-                {isSelfService
-                  ? 'Complete your profile and self-billing onboarding in your account. Required for Platform Merchant of Record (MoR).'
-                  : isUpdate
-                    ? 'Advertiser details and onboarding progress. Advertisers complete self-billing onboarding when signed in to their own account.'
-                    : 'Add an advertiser record. MoR settings apply when mode is Advertiser site.'}
-              </SheetDescription>
+                    ) : (
+                      <span className="text-lg font-semibold">Add New Advertiser</span>
+                    )}
+                  </SheetTitle>
+                  <SheetDescription>
+                    {isSelfService
+                      ? 'Complete your profile and self-billing onboarding in your account. Required for Platform Merchant of Record (MoR).'
+                      : isUpdate
+                        ? 'Advertiser details and onboarding progress. Advertisers complete self-billing onboarding when signed in to their own account.'
+                        : 'Add an advertiser record. MoR settings apply when mode is Advertiser site.'}
+                  </SheetDescription>
+                </div>
+                {/* Submit sits next to the SheetContent close (X) button at right-4. mr-10 keeps it clear of the X. */}
+                <button
+                  type="submit"
+                  form="advertiser-edit-form"
+                  disabled={isLoading || (isUpdate && !isDirty)}
+                  className="mr-10 mt-0.5 shrink-0 h-9 px-4 text-sm font-medium bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
+                >
+                  {isLoading ? 'Saving...' : (isUpdate ? 'Update' : 'Create')}
+                </button>
+              </div>
             </SheetHeader>
 
             <form
@@ -802,20 +935,18 @@ const AdvertiserForm = ({
                     <AccordionContent className="border-t border-border/60 bg-muted/20 px-4 pt-3">
                 <div>
 
-                  {!is4propAdminMinimal && (
-                    <div className="mb-3">
-                      <label className="block text-sm font-medium mb-1">Company Name *</label>
-                      <input
-                        type="text"
-                        {...register('company', { required: 'Company name is required' })}
-                        className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter company name"
-                      />
-                      {errors.company && (
-                        <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
-                      )}
-                    </div>
-                  )}
+                  <div className="mb-3">
+                    <label className="block text-sm font-medium mb-1">Company Name *</label>
+                    <input
+                      type="text"
+                      {...register('company', { required: 'Company name is required' })}
+                      className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter company name"
+                    />
+                    {errors.company && (
+                      <p className="text-red-500 text-sm mt-1">{errors.company.message}</p>
+                    )}
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
@@ -1001,6 +1132,42 @@ const AdvertiserForm = ({
                         <code className="rounded bg-muted px-0.5 text-[11px]">www.</code> or other subdomains (we strip{' '}
                         <code className="rounded bg-muted px-0.5 text-[11px]">www.</code> when pasted). HTTPS assumed; full URLs trim to the host.
                       </p>
+                    </div>
+
+                    <div className="pb-3 border-t border-border/60 pt-3">
+                      <SubdomainSlugField
+                        field={subdomainSlugField}
+                        value={subdomainSlugWatch}
+                        setValue={setValue}
+                        excludeId={isUpdate ? advertiser?.id : undefined}
+                        rhfError={errors.subdomain_slug}
+                      />
+                    </div>
+
+                    <div className="border-t border-border/60 pt-3 pb-3">
+                      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/80 bg-background/80 px-3 py-2.5">
+                        <div className="min-w-0 flex-1 pr-2">
+                          <Label htmlFor="listed_in_directory" className="cursor-pointer text-sm font-medium text-gray-800">
+                            List on property.pub directory
+                          </Label>
+                          <p className="text-[11px] leading-snug text-muted-foreground">
+                            Show this advertiser on the public directory page at the property.pub root.
+                          </p>
+                        </div>
+                        <Controller
+                          name="listed_in_directory"
+                          control={control}
+                          render={({ field }) => (
+                            <Switch
+                              id="listed_in_directory"
+                              checked={!!field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={isLoading}
+                              className="shrink-0"
+                            />
+                          )}
+                        />
+                      </div>
                     </div>
 
                     {showGradeWorkflowSection && (
@@ -1470,12 +1637,12 @@ const AdvertiserForm = ({
                           name="font_preset"
                           control={control}
                           render={({ field }) => (
-                            <div className="space-y-1.5">
-                              {[{ value: null, label: 'None (default)', description: 'System font stack' }, ...FONT_PRESET_OPTIONS].map((opt) => (
+                            <div className="max-h-[min(360px,50vh)] overflow-y-auto rounded-md border border-gray-200 bg-white p-2 space-y-1.5">
+                              {[{ value: null, label: 'None (default)', description: 'System font stack', displayCss: null, bodyCss: null }, ...FONT_PRESET_OPTIONS].map((opt) => (
                                 <label
                                   key={opt.value ?? 'none'}
                                   className={cn(
-                                    'flex cursor-pointer gap-2.5 rounded-lg border px-3 py-2 transition-colors',
+                                    'flex cursor-pointer gap-2.5 rounded-lg border px-3 py-2.5 transition-colors',
                                     field.value === opt.value
                                       ? 'border-blue-500 bg-blue-50/60 ring-1 ring-blue-500/25'
                                       : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/80'
@@ -1485,11 +1652,22 @@ const AdvertiserForm = ({
                                     type="radio"
                                     checked={field.value === opt.value}
                                     onChange={() => field.onChange(opt.value)}
-                                    className="mt-0.5 h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="mt-1 h-4 w-4 shrink-0 border-gray-300 text-blue-600 focus:ring-blue-500"
                                   />
-                                  <div className="min-w-0">
-                                    <span className="text-sm font-medium text-gray-900">{opt.label}</span>
-                                    <p className="text-xs text-gray-500">{opt.description}</p>
+                                  <div className="min-w-0 flex-1">
+                                    <span
+                                      className="block text-base font-semibold text-gray-900 leading-tight"
+                                      style={opt.displayCss ? { fontFamily: opt.displayCss } : undefined}
+                                    >
+                                      {opt.label}
+                                    </span>
+                                    <p className="text-xs text-gray-500 mt-0.5">{opt.description}</p>
+                                    <p
+                                      className="mt-1 text-sm text-gray-700 leading-snug"
+                                      style={opt.bodyCss ? { fontFamily: opt.bodyCss } : undefined}
+                                    >
+                                      The quick brown fox jumps over 1,234 lazy dogs.
+                                    </p>
                                   </div>
                                 </label>
                               ))}
@@ -1739,24 +1917,6 @@ const AdvertiserForm = ({
                 )}
               </div>
             </form>
-
-            <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid var(--border)', background: 'var(--background)', padding: '1rem 1.5rem' }}>
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 h-9 px-4 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="advertiser-edit-form"
-                disabled={isLoading || (isUpdate && !isDirty)}
-                className="flex-1 h-9 px-4 text-sm bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50"
-              >
-                {isLoading ? 'Saving...' : (isUpdate ? 'Update' : 'Create')}
-              </button>
-            </div>
           </>
         ) : (
           <>

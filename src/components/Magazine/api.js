@@ -61,6 +61,18 @@ export const deleteAdvertiser = async (id) => {
   return response.data;
 };
 
+/** Live availability check for the subdomain_slug field on the advertiser form.
+ *  Returns { available: bool, reason?: 'taken' | 'reserved' | 'invalid' }.
+ *  Pass excludeId when editing so the advertiser's own slug doesn't count as a conflict. */
+export const checkSubdomainAvailability = async (slug, excludeId) => {
+  const params = { slug };
+  if (excludeId !== undefined && excludeId !== null) {
+    params.exclude_id = excludeId;
+  }
+  const response = await bizchatClient.get('/api/crm/mag/advertisers/check-subdomain', { params });
+  return response.data;
+};
+
 // Property Details API functions
 export const fetchAdvertisersByPstids = async (pstids) => {
   const response = await bizchatClient.get(`/api/crm/mag/advertisers/by_pstids?pstids=${pstids}`);
