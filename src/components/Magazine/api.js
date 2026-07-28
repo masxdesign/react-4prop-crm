@@ -40,8 +40,18 @@ export const fetchAllAdvertisers = async () => {
   return response.data;
 };
 
+/** Public branding-only projection of an advertiser. Safe for display (company,
+ *  logo, theme); carries no commercial terms, Stripe ids, or owner contact details. */
 export const fetchAdvertiserById = async (advertiserId) => {
   const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}`);
+  return response.data;
+};
+
+/** Full advertiser row — commercial terms, Stripe identifiers, owner contact details.
+ *  Requires an authenticated CRM session. Use only where that data is actually needed;
+ *  prefer fetchAdvertiserById for display. */
+export const fetchAdvertiserByIdAdmin = async (advertiserId) => {
+  const response = await bizchatClient.get(`/api/crm/mag/advertisers/${advertiserId}/admin`);
   return response.data;
 };
 
